@@ -1,0 +1,232 @@
+// Secret stores : the provider registry, its per-store cache and the HashiCorp Vault
+// provider, against a fake Vault on a local port.
+import { test, describe, beforeAll, afterAll, beforeEach, vi } from "vitest";
+import assert from "node:assert/strict";
+import http from "http";
+
+process.env.DB_HOST ||= "127.0.0.1";
+process.env.DB_PORT ||= "3306";
+process.env.DB_USER ||= "test";
+process.env.DB_PASSWORD ||= "test";
+
+// the store rows by name ; create/update hand back what they were given
+let storeRows = {};
+vi.mock("../src/models/crud.model.js", () => ({
+  default: class {
+    static getCache() { return null; }
+    static async findByName(modelName, name) { return storeRows[name] ? { ...storeRows[name] } : undefined; }
+    static async findAll() { return Object.values(storeRows); }
+    static async findById() { return undefined; }
+    static async create(modelName, data) { return data; }
+    static async update(modelName, data) { return data; }
+    static async delete() { return true; }
+  },
+}));
+
+// the fake Vault : answers what `secrets` holds, records every request
+const requests = [];
+let secrets = {};
+let lookupStatus = 200;
+const server = http.createServer((req, res) => {
+  requests.push({ url: req.url, token: req.headers["x-vault-token"], namespace: req.headers["x-vault-namespace"] });
+  res.setHeader("Content-Type", "application/json");
+  if (req.url === "/v1/auth/token/lookup-self") {
+    res.statusCode = lookupStatus;
+    return res.end(JSON.stringify(lookupStatus === 200 ? { data: { ttl: 3600, renewable: true, policies: ["default"], id: "hvs.never" } } : { errors: ["permission denied"] }));
+  }
+  const path = req.url.replace(/^\/v1\//, "");
+  if (!(path in secrets)) {
+    res.statusCode = 404;
+    return res.end(JSON.stringify({ errors: [] }));
+  }
+  return res.end(JSON.stringify(secrets[path]));
+});
+
+let url;
+beforeAll(async () => {
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  url = `http://127.0.0.1:${server.address().port}`;
+});
+afterAll(() => server.close());
+
+const Registry = await import("../src/secrets/providers/index.js");
+const { buildApiPath } = await import("../src/secrets/providers/vault.js");
+const SecretStore = (await import("../src/models/secretStore.model.js")).default;
+const Import = await import("../src/secrets/importVaultEnv.js");
+
+const vaultRow = (over = {}) => ({ id: 1, name: "vault", type: "vault", url, token: "hvs.test", namespace: null, kv_version: 2, default_mount: "secret", cache_ttl_seconds: 60, ...over });
+
+beforeEach(() => {
+  storeRows = {};
+  secrets = {};
+  requests.length = 0;
+  lookupStatus = 200;
+  Registry.clearSecretCache();
+  for (const k of ["VAULT_ADDR", "VAULT_TOKEN"]) delete process.env[k];
+});
+
+describe("vault paths", () => {
+  test("KV v2 gets /data/ after the mount, unless it is already there", () => {
+    assert.equal(buildApiPath("secret/app/db", 2), "secret/data/app/db");
+    assert.equal(buildApiPath("secret/data/app/db", 2), "secret/data/app/db");
+    assert.equal(buildApiPath("/secret/app", 2), "secret/data/app");
+  });
+
+  test("KV v1 is used as written", () => {
+    assert.equal(buildApiPath("kv/app/db", 1), "kv/app/db");
+  });
+
+  test("a bare name goes under the default mount", () => {
+    assert.equal(buildApiPath("db", 2, "team"), "team/data/db");
+    assert.equal(buildApiPath("db", 1), "secret/db");
+  });
+});
+
+describe("reading a secret", () => {
+  test("KV v2 unwraps data.data and sends token and namespace", async () => {
+    storeRows.vault = vaultRow({ namespace: "ops" });
+    secrets["secret/data/app"] = { data: { data: { username: "u", password: "p" } } };
+    assert.deepEqual(await Registry.readSecret("vault", "secret/app"), { username: "u", password: "p" });
+    assert.equal(requests[0].token, "hvs.test");
+    assert.equal(requests[0].namespace, "ops");
+  });
+
+  test("KV v1 reads data directly", async () => {
+    storeRows.v1 = vaultRow({ name: "v1", kv_version: 1 });
+    secrets["kv/app"] = { data: { user: "u1", password: "p1" } };
+    assert.deepEqual(await Registry.readSecret("v1", "kv/app"), { user: "u1", password: "p1" });
+  });
+
+  test("a read is cached for the store's ttl", async () => {
+    storeRows.vault = vaultRow();
+    secrets["secret/data/app"] = { data: { data: { password: "one" } } };
+    await Registry.readSecret("vault", "secret/app");
+    secrets["secret/data/app"] = { data: { data: { password: "two" } } };
+    assert.equal((await Registry.readSecret("vault", "secret/app")).password, "one");
+    assert.equal(requests.length, 1);
+  });
+
+  test("a ttl of 0 reads on every use", async () => {
+    storeRows.vault = vaultRow({ cache_ttl_seconds: 0 });
+    secrets["secret/data/app"] = { data: { data: { password: "one" } } };
+    await Registry.readSecret("vault", "secret/app");
+    secrets["secret/data/app"] = { data: { data: { password: "two" } } };
+    assert.equal((await Registry.readSecret("vault", "secret/app")).password, "two");
+    assert.equal(requests.length, 2);
+  });
+
+  test("a missing secret is an error naming the path", async () => {
+    storeRows.vault = vaultRow();
+    await assert.rejects(Registry.readSecret("vault", "secret/nope"), /secret\/data\/nope \(HTTP 404\)/);
+  });
+
+  test("an unknown store is a not found", async () => {
+    await assert.rejects(Registry.readSecret("nope", "x"), /No secret store named 'nope'/);
+  });
+
+  test("an unknown type is refused", async () => {
+    storeRows.odd = vaultRow({ name: "odd", type: "keepass" });
+    await assert.rejects(Registry.readSecret("odd", "x"), /unknown type 'keepass'/);
+  });
+});
+
+describe("upgrading imports the VAULT_* variables once", () => {
+  const env = () => ({ VAULT_ADDR: url, VAULT_TOKEN: "hvs.env", VAULT_NAMESPACE: "ops", VAULT_KV_VERSION: "1", VAULT_DEFAULT_MOUNT: "kv", VAULT_SKIP_VERIFY: "true", VAULT_CACHE_TTL_MS: "300" });
+
+  test("the variables become the store named vault", async () => {
+    const created = [];
+    const spy = vi.spyOn(SecretStore, "create").mockImplementation(async (d) => { created.push(d); return d; });
+    try {
+      assert.match(await Import.importVaultFromEnv(env()), /Imported/);
+      assert.equal(created.length, 1);
+      const s = created[0];
+      assert.equal(s.name, "vault");
+      assert.equal(s.type, "vault");
+      assert.equal(s.url, url);
+      assert.equal(s.token, "hvs.env");
+      assert.equal(s.namespace, "ops");
+      assert.equal(s.kv_version, 1);
+      assert.equal(s.default_mount, "kv");
+      assert.equal(s.ignore_certs, true);
+      assert.equal(s.cache_ttl_seconds, 1, "300ms clamps to one second, not to 'no cache'");
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  test("a store already named vault is left alone", async () => {
+    storeRows.vault = vaultRow({ token: "hvs.row" });
+    const spy = vi.spyOn(SecretStore, "create");
+    try {
+      assert.match(await Import.importVaultFromEnv(env()), /already exists/);
+      assert.equal(spy.mock.calls.length, 0);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  test("nothing to import without address and token", async () => {
+    assert.match(await Import.importVaultFromEnv({ VAULT_ADDR: url }), /No VAULT_\*/);
+  });
+
+  test("the variables are not read at runtime : no store row, no secret", async () => {
+    process.env.VAULT_ADDR = url;
+    process.env.VAULT_TOKEN = "hvs.env";
+    await assert.rejects(Registry.readSecret("vault", "secret/app"), /No secret store named 'vault'/);
+  });
+
+  test("cache ttl conversion", () => {
+    assert.equal(Import.resolveCacheTtlSeconds("60000"), 60);
+    assert.equal(Import.resolveCacheTtlSeconds("0"), 0);
+    assert.equal(Import.resolveCacheTtlSeconds("abc"), 60, "unparseable falls back to the default");
+    assert.equal(Import.resolveCacheTtlSeconds(undefined), 60);
+  });
+});
+
+describe("checking a store", () => {
+  test("reports the token, never the token itself", async () => {
+    const info = await Registry.checkStore(vaultRow());
+    assert.equal(info.ttl, 3600);
+    assert.equal(JSON.stringify(info).includes("hvs."), false);
+  });
+
+  test("a refused token says so", async () => {
+    lookupStatus = 403;
+    await assert.rejects(Registry.checkStore(vaultRow()), /refused the token/);
+  });
+});
+
+describe("payload to credential", () => {
+  test("common key names map to user and password, the rest passes through", () => {
+    assert.deepEqual(Registry.mapPayloadToCredential({ username: "u", token: "t", host: "h" }), { username: "u", token: "t", host: "h", user: "u", password: "t" });
+    assert.deepEqual(Registry.mapPayloadToCredential(null), {});
+  });
+});
+
+describe("saving a store", () => {
+  test("the mask the api shows is not saved as the token", async () => {
+    const saved = await SecretStore.update({ token: "********", client_key: "********", url: "https://v/" }, 1);
+    assert.equal("token" in saved, false);
+    assert.equal("client_key" in saved, false);
+    assert.equal(saved.url, "https://v", "a trailing slash is dropped");
+  });
+
+  test("an unknown type is a bad request", async () => {
+    await assert.rejects(SecretStore.create({ name: "x", type: "keepass", url: "u" }), /Unknown secret store type/);
+  });
+
+  test("extra must be a JSON object", async () => {
+    await assert.rejects(SecretStore.create({ name: "x", type: "vault", url: "u", extra: "[1]" }), /JSON object/);
+    await assert.rejects(SecretStore.create({ name: "x", type: "vault", url: "u", extra: "{nope" }), /not valid JSON/);
+    assert.equal((await SecretStore.create({ name: "x", type: "vault", url: "u", extra: { a: 1 } })).extra, '{"a":1}');
+  });
+
+  test("a saved store flushes what was cached", async () => {
+    storeRows.vault = vaultRow();
+    secrets["secret/data/app"] = { data: { data: { password: "one" } } };
+    await Registry.readSecret("vault", "secret/app");
+    await SecretStore.update({ description: "x" }, 1);
+    secrets["secret/data/app"] = { data: { data: { password: "two" } } };
+    assert.equal((await Registry.readSecret("vault", "secret/app")).password, "two");
+  });
+});

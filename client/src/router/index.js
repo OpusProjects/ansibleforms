@@ -32,7 +32,7 @@ import schedules from "@/pages/admin/schedules.vue"
 import storedJobs from "@/pages/admin/stored-jobs.vue"
 import settings from "@/pages/admin/settings.vue"
 import status from "@/pages/admin/status.vue"
-import vault from "@/pages/admin/vault.vue"
+import secretStores from "@/pages/admin/secretStores.vue"
 import audit from "@/pages/admin/audit.vue"
 import categories from "@/pages/admin/categories.vue"
 import roles from "@/pages/admin/roles.vue"
@@ -147,9 +147,8 @@ const routes = [
   // 'health' name (it is the conventional one for a monitor to poll); the PAGE is
   // called Status because it states facts as well as verdicts.
   { path: '/admin/status', name: "/admin/status", component: status, beforeEnter: checkSettings },
-  // reads and writes the VAULT_* environment variables through /api/v2/config/env, which
-  // is behind checkSettingsMiddleware - so the guard matches what the endpoint requires
-  { path: '/admin/vault', name: "/admin/vault", component: vault, beforeEnter: checkSettings },
+  // /api/v2/secretstore is behind checkSettingsMiddleware, so the guard matches
+  { path: '/admin/secretStores', name: "/admin/secretStores", component: secretStores, beforeEnter: checkSettings },
   // GET /api/v2/audit is mounted behind checkSettingsMiddleware, so the guard matches
   { path: '/admin/audit', name: "/admin/audit", component: audit, beforeEnter: checkSettings },
 

@@ -461,48 +461,25 @@ fn.fnCredentials('credentialname_or_regex','fallback_credentialname_or_regex')
 
 The exact name is tried first. When no credential has that name, the name is used as a regex, and then the fallback.
 
-#### HashiCorp Vault: stored credentials
+#### Credentials from a secret store
 
-If a credential row in the admin UI has a **Vault Path** filled in, the `user` and `password` fields are read from HashiCorp Vault at runtime instead of from the local database. No code change is required — `fn.fnCredentials('myapp')` keeps working, but the secret is now sourced from Vault.
+A credential that names a [secret store](secret-stores.md) gets its `user` and `password`
+from that store at runtime. `fn.fnCredentials('myapp')` keeps working unchanged.
 
-This requires `VAULT_ADDR` and `VAULT_TOKEN` to be set on the server (see [installation](installation.md)).
-
-#### HashiCorp Vault: inline lookup with `vault:` prefix
-
-You can also fetch a secret directly from Vault without creating a credential row, by using the `vault:` prefix:
+A secret can also be read without a credential row, wherever a credential name is accepted
+(including `fnRestBasic`, `fnRestJwtSecure` and the header substitutions of `fnRestAdvanced`):
 
 ```javascript
-// KV v2 path (the /data/ segment is auto-inserted if you omit it)
-fn.fnCredentials('vault:secret/data/ontap')
-
-// Short form using VAULT_DEFAULT_MOUNT (defaults to "secret")
-fn.fnCredentials('vault:ontap')
+fn.fnCredentials('secret:vault:secret/ontap')   // secret:<store>:<reference>
+fn.fnCredentials('vault:secret/ontap')          // the store named `vault`
 ```
 
-The same syntax works wherever a credential name is accepted, including `fnRestBasic`, `fnRestJwtSecure`, and the `base64()` / `username()` / `password()` header substitutions in `fnRestAdvanced`:
+The keys of the secret are mapped as described under [Key names](secret-stores.md#key-names).
+A secret with another shape is reshaped with a `jq` expression as the third argument:
 
 ```javascript
-fn.fnRestBasic('get','https://api.example.com','','vault:secret/data/myapi')
-```
-
-#### Vault key aliases
-
-When a Vault secret is mapped to the AnsibleForms credential shape, the following key aliases are recognised:
-
-| Credential field | Accepted Vault keys |
-|---|---|
-| `user` | `user`, `username`, `login` |
-| `password` | `password`, `token`, `api_key`, `apikey`, `secret` |
-
-So a Vault secret stored as `{ "username": "admin", "password": "Netapp12" }` works out of the box, and so does `{ "api_key": "abc..." }` for token-style auth.
-
-#### Reshape unconventional secrets with `credJqe`
-
-For Vault secrets that don't match the conventions above, pass a third argument to `fnCredentials` — a `jq` expression that reshapes the payload before mapping:
-
-```javascript
-// Vault secret: { "creds": { "u": "admin", "p": "Netapp12" } }
-fn.fnCredentials('vault:secret/data/weird','','.creds | { user: .u, password: .p }')
+// secret: { "creds": { "u": "admin", "p": "Netapp12" } }
+fn.fnCredentials('vault:secret/weird','','.creds | { user: .u, password: .p }')
 ```
 
 ### Sort an Array

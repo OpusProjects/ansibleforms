@@ -26,6 +26,7 @@ declares the objects that until now existed only in the database:
 | Section        | What it declares                     |
 |----------------|--------------------------------------|
 | `awx`          | AWX / AAP connections                |
+| `secret_stores` | Secret stores (HashiCorp Vault, ...) |
 | `credentials`  | Credentials                          |
 | `oauth2`       | OAuth2 providers                     |
 | `repositories` | Git repositories                     |
@@ -52,6 +53,13 @@ awx:
       uri: https://tower.example.com
       token: ${SEED_AWX_TOKEN}
       is_default: true
+
+secret_stores:
+  items:
+    - name: vault
+      type: vault
+      url: https://vault.example.com:8200
+      token: ${SEED_VAULT_TOKEN}
 
 credentials:
   items:
@@ -167,7 +175,8 @@ A reference that cannot be resolved is a **fatal error**. It is not left as-is a
 not blanked: storing the literal string `${SEED_LDAP_PW}` as a bind password produces
 something that authenticates against nothing while looking perfectly configured.
 
-Credentials can also take their password from HashiCorp Vault instead, with `vault_path`.
+Credentials can also take their user and password from a [secret store](secret-stores.md)
+instead, with `secret_store` and `secret_ref`. `vault_path` still works in 7.x and is removed in 8.
 
 ## Managed objects
 

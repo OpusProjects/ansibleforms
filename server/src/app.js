@@ -43,6 +43,7 @@ import chatSettingsRoutes from "./routes/v2/chatSettings.routes.js";
 import chatRoutes from "./chat/router.js";
 import oauth2Routes from "./routes/v2/oauth2.routes.js";
 import credentialRoutesv2 from "./routes/v2/credential.routes.js";
+import secretStoreRoutesv2 from "./routes/v2/secretStore.routes.js";
 import knownhostsRoutes from "./routes/v2/knownhosts.routes.js";
 import scheduleRoutes from "./routes/v2/schedule.routes.js";
 import storedJobsRoutes from "./routes/v2/stored-jobs.routes.js";
@@ -193,6 +194,7 @@ const load = async (app) => {
   app.use(`/api/v2/chatsettings`, cors(), authobj, Middleware.checkSettingsMiddleware, chatSettingsRoutes);
   app.use(`/api/v2/oauth2`, cors(), authobj, Middleware.checkSettingsMiddleware, oauth2Routes);
   app.use(`/api/v2/credential`, cors(), authobj, Middleware.checkSettingsMiddleware, credentialRoutesv2);
+  app.use(`/api/v2/secretstore`, cors(), authobj, Middleware.checkSettingsMiddleware, secretStoreRoutesv2);
   app.use(`/api/v2/awx`, cors(), authobj, Middleware.checkSettingsMiddleware, awxRoutesv2);
   app.use(`/api/v2/knownhosts`, cors(), authobj, Middleware.checkSettingsMiddleware, knownhostsRoutes);
   app.use(`/api/v2/schedule`, cors(), authobj, Middleware.checkScheduledJobsMiddleware, scheduleRoutes);

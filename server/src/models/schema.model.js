@@ -479,7 +479,7 @@ const SCHEMA_MANIFEST = {
   // tables the fresh install creates, so they must exist however the database was built
   base: {
     tables: ['groups', 'users', 'tokens', 'credentials', 'ldap', 'awx', 'jobs', 'job_output',
-             'settings', 'repositories', 'schedule', 'audit', 'chat_settings'],
+             'settings', 'repositories', 'schedule', 'audit', 'chat_settings', 'secret_stores'],
   },
   patches: {
     patchVersion4: { columns: ['ldap.groups_search_base', 'ldap.groups_attribute', 'ldap.group_class',
@@ -510,6 +510,8 @@ const SCHEMA_MANIFEST = {
                                'chat_settings.request_user', 'chat_settings.extra_headers',
                                'chat_settings.ignore_certs'],
                      indexes: ['jobs.idx_jobs_retention'] },
+    patchVersion7: { tables: ['secret_stores'],
+                     columns: ['credentials.secret_store', 'credentials.secret_ref'] },
   },
 };
 
@@ -786,6 +788,35 @@ async function patchVersion7(messages, success, failed) {
   await checkPromise(dropTable("staging"), messages, success, failed);
   await checkPromise(dropTable("datasource"), messages, success, failed);
   await checkPromise(dropTable("datasource_schemas"), messages, success, failed);
+
+  // 7.x : secret stores (HashiCorp Vault, CyberArk, ...) and the credential columns that
+  // point into one
+  const buffer = fs.readFileSync(`${__dirname}/../db/create_secret_stores_table.sql`);
+  await checkPromise(addTable("secret_stores", buffer.toString()), messages, success, failed);
+  // the column is the marker of the upgrade : absent means this database predates secret
+  // stores, which is the one moment the VAULT_* variables are imported
+  const upgrading = (await mysql.do("SHOW COLUMNS FROM ??.?? WHERE Field = ?", ["AnsibleForms", "credentials", "secret_store"])).length === 0;
+  await checkPromise(addColumn("credentials", "secret_store", "varchar(250)", true, "NULL"), messages, success, failed);
+  await checkPromise(addColumn("credentials", "secret_ref", "varchar(500)", true, "NULL"), messages, success, failed);
+  // a credential that read from vault through vault_path now names the store `vault`
+  await checkPromise(copyVaultPathToSecretRef(), messages, success, failed);
+  if (upgrading) {
+    // imported late : the model chain reaches back into this module
+    const { importVaultFromEnv } = await import("../secrets/importVaultEnv.js");
+    await checkPromise(importVaultFromEnv(), messages, success, failed);
+  }
+}
+
+// Idempotent by its WHERE clause : a row is copied once, and never over a store chosen since
+function copyVaultPathToSecretRef() {
+  return mysql
+    .do("UPDATE AnsibleForms.`credentials` SET secret_store='vault', secret_ref=vault_path WHERE vault_path IS NOT NULL AND vault_path<>'' AND (secret_store IS NULL OR secret_store='')")
+    .then((res) => {
+      const n = res?.affectedRows || 0;
+      const message = n ? `pointed ${n} credential(s) with a vault_path at the secret store 'vault'` : "No credential vault_path left to copy";
+      if (n) logger.warning(message); else logger.debug(message);
+      return message;
+    });
 }
 
 // PATCHING : Patch All

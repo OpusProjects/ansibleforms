@@ -49,8 +49,35 @@ CREATE TABLE `credentials` (
   `is_database` tinyint(4) DEFAULT 1,
   `vault_path` varchar(500) DEFAULT NULL,
   `managed` tinyint(4) DEFAULT 0,
+  -- the secret store a credential reads its user and password from, and where in it
+  `secret_store` varchar(250) DEFAULT NULL,
+  `secret_ref` varchar(500) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_AnsibleForms_credentials_natural_key` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+-- create secret_stores table : HashiCorp Vault, CyberArk, ... (one row per store)
+-- keep in sync with create_secret_stores_table.sql, which the upgrade patch uses
+DROP TABLE IF EXISTS `secret_stores`;
+CREATE TABLE `secret_stores` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(250) NOT NULL,
+  `type` varchar(20) NOT NULL,
+  `description` text DEFAULT NULL,
+  `url` varchar(500) NOT NULL,
+  `token` text DEFAULT NULL,
+  `namespace` varchar(250) DEFAULT NULL,
+  `kv_version` tinyint(4) DEFAULT 2,
+  `default_mount` varchar(250) DEFAULT NULL,
+  `app_id` varchar(250) DEFAULT NULL,
+  `client_cert` text DEFAULT NULL,
+  `client_key` text DEFAULT NULL,
+  `ignore_certs` tinyint(4) DEFAULT 0,
+  `ca_bundle` text DEFAULT NULL,
+  `cache_ttl_seconds` int(11) DEFAULT 60,
+  `extra` text DEFAULT NULL,
+  `managed` tinyint(4) DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_AnsibleForms_secret_stores_natural_key` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 -- create ldap table
 DROP TABLE IF EXISTS `ldap`;

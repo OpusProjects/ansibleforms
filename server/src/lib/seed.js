@@ -32,6 +32,7 @@ import CrudModel from "../models/crud.model.js";
 import Awx from "../models/awx.model.js";
 import OAuth2 from "../models/oauth2.model.js";
 import Credential from "../models/credential.model.v2.js";
+import SecretStore from "../models/secretStore.model.js";
 import Repository from "../models/repository.model.js";
 import Ldap from "../models/ldap.model.js";
 import Settings from "../models/settings.model.js";
@@ -55,6 +56,16 @@ const listSections = [
     create: (d) => Awx.create(d, seedOpts),
     update: (d, row) => Awx.update(d, row.id, seedOpts),
     remove: (row) => Awx.delete(row.id, seedOpts),
+  },
+  {
+    // before the credentials that name them
+    key: "secret_stores",
+    modelName: "secretstore",
+    label: "secret store",
+    defaults: { description: "" },
+    create: (d) => SecretStore.create(d, seedOpts),
+    update: (d, row) => SecretStore.update(d, row.id, seedOpts),
+    remove: (row) => SecretStore.delete(row.id, seedOpts),
   },
   {
     key: "credentials",
@@ -113,7 +124,8 @@ export function canonicalJson(value) {
 // would make the audit trail claim a change on every restart and make the applied
 // counts meaningless. Comparison is loose (String()) because a port declared as 389
 // comes back from MySQL as "389" in a varchar column.
-function differs(declared, stored) {
+// Exported for the tests of the JSON comparisons.
+export function differs(declared, stored) {
   for (const [key, value] of Object.entries(declared)) {
     if (key === "managed") continue;
     const before = stored[key];
@@ -137,6 +149,14 @@ function differs(declared, stored) {
         try { parsed = JSON.parse(value); } catch { parsed = value; }
       }
       if (canonicalJson(before) !== canonicalJson(parsed)) return true;
+      continue;
+    }
+    // the other way round : an object declared for a TEXT column holding JSON
+    // (secret_stores.extra), which String() would turn into "[object Object]"
+    if (typeof value === "object") {
+      let parsed;
+      try { parsed = JSON.parse(before ?? "null"); } catch { parsed = before; }
+      if (canonicalJson(parsed) !== canonicalJson(value)) return true;
       continue;
     }
     if (String(before ?? "") !== String(value)) return true;

@@ -15,6 +15,7 @@ import User from "../models/user.model.js";
 import Group from "../models/group.model.js";
 import Token from "../models/token.model.js";
 import { applyConfigSeed } from "../lib/seed.js";
+import { warnIgnoredVaultEnv } from "../secrets/importVaultEnv.js";
 
 /**
  * @param {object} [opts]
@@ -263,6 +264,9 @@ const init = async function({ boot = false } = {}){
   // would mean an instance that no longer matches the manifest describing it, with
   // nothing saying so. Note this app is single-instance, so a deployment must use
   // replicas 1 with the Recreate strategy (docs/seed.md).
+  // imported once when upgrading ; still set means somebody expects them to work
+  warnIgnoredVaultEnv()
+
   try {
     await applyConfigSeed({ schemaIsReady })
   } catch (err) {

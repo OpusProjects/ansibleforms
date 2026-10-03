@@ -103,7 +103,7 @@ function envHelp(e) {
 // tests/env-group-coverage.test.js pins exactly that: it reads the real help.yaml and fails
 // when a variable belongs to no group, or to more than one.
 //
-// VAULT_* have their own page under Connections. BASE_URL is here for a different reason -
+// VAULT_* are only imported once, when upgrading to 7.1 (Secret stores). BASE_URL is here for a different reason -
 // it is the one setting that genuinely cannot be applied without a restart, because the
 // served index.html has the base path baked into it, so every page already open would break.
 // Showing it on a page of editable settings would only offer an edit that cannot work; it is

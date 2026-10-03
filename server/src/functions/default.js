@@ -26,7 +26,7 @@ import { assertUrlAllowed } from "../lib/hostfilter.js";
 import credentialModel from "../models/credential.model.v2.js";
 import Errors from "../lib/errors.js";
 import Helpers from '../lib/common.js';
-import { vaultRead, mapVaultPayloadToCredential } from "../lib/vault.js";
+import { readSecret, mapPayloadToCredential, VAULT_STORE_NAME } from "../secrets/providers/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -213,20 +213,33 @@ const fnDnsResolve = async function(hostname,type) {
     })
   })
 }
+// "secret:<store>:<ref>" or "vault:<path>" -> { store, ref } ; anything else -> null
+function parseInlineSecret(name) {
+  const lower = name.toLowerCase()
+  if (lower.startsWith("vault:")) return { store: VAULT_STORE_NAME, ref: name.slice(6).trim() }
+  if (lower.startsWith("secret:")) {
+    const rest = name.slice(7)
+    const colon = rest.indexOf(":")
+    if (colon < 1) throw new Error(`'${name}' : use secret:<store>:<ref>`)
+    return { store: rest.slice(0, colon).trim(), ref: rest.slice(colon + 1).trim() }
+  }
+  return null
+}
 const fnCredentials = async function(name,fallbackname="",credJqe=null){
   var result=undefined
   if(name){
     try{
-      // Inline HashiCorp Vault lookup: "vault:secret/data/foo" or "vault:foo"
-      // (the latter uses VAULT_DEFAULT_MOUNT). No DB credential row required.
-      if (typeof name === "string" && name.toLowerCase().startsWith("vault:")) {
-        const path = name.slice(6).trim()
-        const payload = await vaultRead(path)
+      // Straight from a secret store, no credential row needed :
+      //   "secret:<store>:<ref>"  e.g. "secret:cyberark:Safe=Linux;Object=root"
+      //   "vault:<path>"          the store named `vault` (HashiCorp Vault)
+      const inline = typeof name === "string" ? parseInlineSecret(name) : null
+      if (inline) {
+        const payload = await readSecret(inline.store, inline.ref)
         let projected = payload
         if (credJqe) {
           projected = await jq.run(combinedJqDef + credJqe, payload, { input: "json", output: "json" })
         }
-        result = mapVaultPayloadToCredential(projected)
+        result = mapPayloadToCredential(projected)
       } else {
         // the exact name first, with every column of the row ; then the name as a
         // regex, then the fallback - as the docs have always promised

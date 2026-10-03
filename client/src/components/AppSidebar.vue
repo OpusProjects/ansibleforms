@@ -78,7 +78,7 @@
             items: [
                 { title: t('sidebar.mail'), icon: "envelope", link: "/admin/mailSettings", permission: 'showSettings' },
                 { title: t('sidebar.credentials'), icon: "lock", link: "/admin/credentials", permission: 'showSettings' },
-                { title: t('sidebar.vault'), icon: "vault", link: "/admin/vault", permission: 'showSettings' },
+                { title: t('sidebar.secretStores'), icon: "vault", link: "/admin/secretStores", permission: 'showSettings' },
                 { title: t('sidebar.ssh'), icon: "key", link: "/admin/ssh", permission: 'showSettings' },
                 { title: t('sidebar.knownHosts'), icon: "server", link: "/admin/knownHosts", permission: 'showSettings' },
                 { title: t('sidebar.aap'), icon: "fac,ansible", link: "/admin/aap", permission: 'showSettings' },

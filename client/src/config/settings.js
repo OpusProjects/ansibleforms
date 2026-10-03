@@ -34,6 +34,11 @@ export const CHAT_PROVIDERS = [
     { value: "custom", base_url: "" },
 ];
 
+// The secret store types (server/src/secrets/providers/index.js has the same list)
+export const SECRET_STORE_TYPES = [
+    { value: "vault", label: "HashiCorp Vault" },
+];
+
 export default function getSettings(t) {
   return {
     users: {
@@ -243,7 +248,8 @@ export default function getSettings(t) {
             { key: 'name', label: t('settings.fields.name'), sortable: true, required: true, filterable: true, icon: "lock", isKey: true },
             { key: 'user', label: t('settings.fields.user'), sortable: true, required: false, filterable: true, icon: "user" },
             { key: 'password', label: t('settings.fields.password'), type: "password", sortable: false, required: false, filterable: false, icon: "lock", hidden: true },
-            { key: 'vault_path', label: t('settings.credentials.vaultPath'), placeholder: t('settings.credentials.vaultPathPlaceholder'), help: t('settings.credentials.vaultPathHelp'), sortable: false, required: false, filterable: false, icon: "shield-alt", hidden: true },
+            { key: 'secret_store', label: t('settings.credentials.secretStore'), help: t('settings.credentials.secretStoreHelp'), type: 'select', parent: 'secretstores', values: 'secretstore', valueKey: 'name', labelKey: 'name', clearable: true, sortable: false, required: false, filterable: false, icon: "vault", hidden: true },
+            { key: 'secret_ref', label: t('settings.credentials.secretRef'), placeholder: t('settings.credentials.secretRefPlaceholder'), help: t('settings.credentials.secretRefHelp'), sortable: false, required: false, filterable: false, icon: "shield-alt", hidden: true, dependency: 'secret_store' },
             { key: 'host', label: t('settings.fields.host'), sortable: true, required: false, filterable: true, icon: "server" },
             { key: 'port', label: t('settings.fields.port'), type:"number", sortable: true, required: false, filterable: false, icon: "arrows-alt-v" },
             { key: 'description', label: t('settings.fields.description'), sortable: false, hidden: true, required: true, filterable: false, icon: "info-circle" },
@@ -339,6 +345,36 @@ export default function getSettings(t) {
             { key: "timeout_seconds", icon: "clock", line: 4, type: "number", label: t('settings.chat.timeout'), dependency: "provider" },
             { key: "ignore_certs", line: 5, type: "checkbox", label: t('settings.chat.ignoreCerts'), help: t('settings.chat.ignoreCertsHelp'), dependency: "provider" },
             { key: "allow_job_status", line: 5, type: "checkbox", label: t('settings.chat.allowJobStatus'), help: t('settings.chat.allowJobStatusHelp'), dependency: "provider" },
+        ]
+    },
+    // External secret managers. The types mirror SECRET_STORE_TYPES in
+    // server/src/secrets/providers/index.js ; which fields a type shows follows its provider.
+    secretStores: {
+        type: 'secretstore',
+        label: t('settings.secretStores.label'),
+        description: t('settings.secretStores.description'),
+        icon: 'vault',
+        selectable: false,
+        actions: [
+            { name: 'edit', title: t('settings.secretStores.editStore'), icon: 'pencil', color: 'edit' },
+            { name: 'delete', title: t('settings.secretStores.deleteStore'), icon: 'trash', color: 'delete' },
+            { name: 'change_password', title: t('settings.common.changePassword'), icon: 'lock', color: 'change' },
+            { name: 'test', title: t('settings.common.testConnection'), icon: 'plug', color: 'test' }
+        ],
+        fields: [
+            { key: 'id', label: t('settings.fields.id'), sortable: false, required: false, filterable: false, noInput: true, hidden: true, icon: 'key' },
+            { key: 'name', icon: 'heading', line: 0, label: t('settings.fields.name'), required: true, filterable: true, help: t('settings.secretStores.nameHelp') },
+            { key: 'type', icon: 'vault', line: 0, label: t('settings.secretStores.type'), required: true, filterable: true, type: 'select', parent: 'secretStoreTypes', values: SECRET_STORE_TYPES, valueKey: 'value', labelKey: 'label' },
+            { key: 'description', icon: 'info-circle', line: 0, label: t('settings.fields.description'), required: false, hidden: true },
+            { key: 'url', icon: 'globe', line: 1, label: t('settings.fields.uri'), required: true, placeholder: 'https://vault.example.com:8200', dependency: 'type' },
+            { key: 'token', icon: 'lock', line: 1, label: t('settings.fields.token'), type: 'password', required: true, hidden: true, dependency: 'type', dependencyValues: ['vault'] },
+            { key: 'namespace', icon: 'folder', line: 2, label: t('settings.secretStores.namespace'), help: t('settings.secretStores.namespaceHelp'), required: false, hidden: true, dependency: 'type', dependencyValues: ['vault'] },
+            { key: 'kv_version', icon: 'code-branch', line: 2, label: t('settings.secretStores.kvVersion'), type: 'select', parent: 'kvVersions', values: [{ value: 2, label: 'KV v2' }, { value: 1, label: 'KV v1' }], valueKey: 'value', labelKey: 'label', required: false, hidden: true, dependency: 'type', dependencyValues: ['vault'] },
+            { key: 'default_mount', icon: 'folder-open', line: 2, label: t('settings.secretStores.defaultMount'), help: t('settings.secretStores.defaultMountHelp'), placeholder: 'secret', required: false, hidden: true, dependency: 'type', dependencyValues: ['vault'] },
+            { key: 'cache_ttl_seconds', icon: 'clock', line: 3, type: 'number', label: t('settings.secretStores.cacheTtl'), help: t('settings.secretStores.cacheTtlHelp'), required: false, hidden: true, dependency: 'type' },
+            { key: 'ignore_certs', line: 4, type: 'checkbox', label: t('settings.ldap.ignoreCerts'), hidden: true, dependency: 'type' },
+            { key: 'ca_bundle', icon: 'certificate', type: 'textarea', line: 5, label: t('settings.fields.caBundle'), help: t('settings.secretStores.caBundleHelp'), required: false, dependency: 'ignore_certs', negateDependency: true, placeholder: '-----BEGIN CERTIFICATE-----', hidden: true },
+            { key: 'extra', icon: 'code', type: 'textarea', line: 6, label: t('settings.secretStores.extra'), help: t('settings.secretStores.extraHelp'), placeholder: '{}', required: false, hidden: true, dependency: 'type' },
         ]
     },
     aap:{

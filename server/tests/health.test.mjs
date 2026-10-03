@@ -22,16 +22,16 @@ let dbHandler = async () => [];
 vi.mock("../src/models/db.model.js", () => ({
   default: { do: async (sql, vars) => { queries.push(sql); return await dbHandler(sql, vars); } },
 }));
-let vaultState = { configured: false, info: null, error: null };
+let storeState = { stores: [], info: null, error: null };
 let ldapRow = null;
 // a fully patched schema by default, matching the mocked manifest above
 let schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
-vi.mock("../src/lib/vault.js", () => ({
-  default: {
-    isConfigured: () => vaultState.configured,
-    vaultCheck: async () => { if (vaultState.error) throw new Error(vaultState.error); return vaultState.info; },
-  },
-  setCacheTtl: () => 0,
+// the secret stores : rows from the model, the connection test from the provider registry
+vi.mock("../src/models/secretStore.model.js", () => ({
+  default: { findAll: async () => storeState.stores },
+}));
+vi.mock("../src/secrets/providers/index.js", () => ({
+  checkStore: async () => { if (storeState.error) throw new Error(storeState.error); return storeState.info; },
 }));
 vi.mock("../src/models/schema.model.js", () => ({
   default: { isProvisioned: async () => true },
@@ -99,7 +99,7 @@ beforeEach(async () => {
   appConfig.repoPath = path.join(tmpRoot, "repositories");
   await fs.mkdir(appConfig.repoPath, { recursive: true });
   await fs.mkdir(appConfig.backupPath, { recursive: true });
-  vaultState = { configured: false, info: null, error: null };
+  storeState = { stores: [], info: null, error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {
@@ -221,7 +221,7 @@ describe("health reports problems, not just ok", () => {
   });
 
   test("a failed repository is an error and healthy ones are counted", async () => {
-    vaultState = { configured: false, info: null, error: null };
+    storeState = { stores: [], info: null, error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {
@@ -301,7 +301,7 @@ describe("health reports problems, not just ok", () => {
   });
 
   test("a database failure becomes that row's error, not a broken page", async () => {
-    vaultState = { configured: false, info: null, error: null };
+    storeState = { stores: [], info: null, error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {
@@ -344,27 +344,27 @@ describe("health reports problems, not just ok", () => {
     assert.match(w.value, /folders writable$/);
   });
 
-  // Vault is optional, so an unconfigured instance is not a fault - but once configured a
-  // dead server or an expired token breaks every vault-backed credential.
-  test("vault is ok when not configured, and makes no network call", async () => {
+  // Secret stores are optional, so an instance without one is not a fault - but once one is
+  // used a dead server or an expired token breaks every credential that reads from it.
+  test("secret stores are ok when none is configured, and make no network call", async () => {
     const r = await Health.check();
-    assert.equal(statusOf(r, "vault"), "ok");
-    assert.equal(checkOf(r, "vault").value, "not configured");
+    assert.equal(statusOf(r, "secretStores"), "ok");
+    assert.equal(checkOf(r, "secretStores").value, "none configured");
   });
 
   test("a vault token near the end of its ttl is a warning", async () => {
-    vaultState = { configured: true, error: null, info: { addr: "https://v:8200", namespace: null, kvVersion: 2, defaultMount: "secret", renewable: true, ttl: 2 * 24 * 3600, policies: ["default"] } };
+    storeState = { stores: [{ name: "vault", type: "vault", url: "https://v:8200" }], error: null, info: { addr: "https://v:8200", namespace: null, kvVersion: 2, defaultMount: "secret", renewable: true, ttl: 2 * 24 * 3600, policies: ["default"] } };
     const r = await Health.check();
-    assert.equal(statusOf(r, "vault"), "warning");
-    assert.match(checkOf(r, "vault").value, /expires in 2d/);
-    assert.match(checkOf(r, "vault").detail.reason, /renews this token/i);
+    assert.equal(statusOf(r, "secretStores"), "warning");
+    assert.match(checkOf(r, "secretStores").value, /expires in 2d/);
+    assert.match(checkOf(r, "secretStores").detail.reason, /renews this token/i);
   });
 
-  test("a token that does not expire is ok, and an unreachable vault is an error", async () => {
-    vaultState = { configured: true, error: null, info: { addr: "https://v:8200", namespace: null, kvVersion: 2, defaultMount: "secret", renewable: false, ttl: 0, policies: [] } };
-    assert.equal(statusOf(await Health.check(), "vault"), "ok");
-    vaultState = { configured: true, error: "Could not reach Vault", info: null };
-    assert.equal(statusOf(await Health.check(), "vault"), "error");
+  test("a token that does not expire is ok, and an unreachable store is an error", async () => {
+    storeState = { stores: [{ name: "vault", type: "vault", url: "https://v:8200" }], error: null, info: { addr: "https://v:8200", namespace: null, kvVersion: 2, defaultMount: "secret", renewable: false, ttl: 0, policies: [] } };
+    assert.equal(statusOf(await Health.check(), "secretStores"), "ok");
+    storeState = { stores: [{ name: "vault", type: "vault", url: "https://v:8200" }], error: "Could not reach Vault", info: null };
+    assert.equal(statusOf(await Health.check(), "secretStores"), "error");
   });
 
   // The page must never BIND to ldap : that is an authentication attempt against the
@@ -467,7 +467,7 @@ describe("health reports problems, not just ok", () => {
     // runtime moved to `info` because they have no failing value.
     assert.deepEqual(keys, [
       "backupTooling", "configSeed", "database", "designerLock", "disk", "expressions",
-      "jobs", "lastBackup", "ldap", "repositories", "scheduler", "schema", "storage", "vault", "writable",
+      "jobs", "lastBackup", "ldap", "repositories", "scheduler", "schema", "secretStores", "storage", "writable",
     ]);
     // and every info entry is status-free by construction
     assert.ok(r.info.length > 0);
@@ -477,7 +477,7 @@ describe("health reports problems, not just ok", () => {
 
 describe("the database check names the engine, not just a version number", () => {
   test("MySQL is identified from @@version_comment", async () => {
-    vaultState = { configured: false, info: null, error: null };
+    storeState = { stores: [], info: null, error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {
@@ -492,7 +492,7 @@ describe("the database check names the engine, not just a version number", () =>
   });
 
   test("MariaDB is identified, and the suffix is not repeated", async () => {
-    vaultState = { configured: false, info: null, error: null };
+    storeState = { stores: [], info: null, error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {
@@ -549,7 +549,7 @@ describe("the checks added after the first release round", () => {
   });
 
   test("a job stuck in running is a warning", async () => {
-    vaultState = { configured: false, info: null, error: null };
+    storeState = { stores: [], info: null, error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {

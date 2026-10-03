@@ -6,7 +6,8 @@ import BackupModel from './backup.model.js';
 import cronService from '../services/cron.service.js';
 import appConfig from '../../config/app.config.js';
 import logConfig from '../../config/log.config.js';
-import Vault from '../lib/vault.js';
+import SecretStore from './secretStore.model.js';
+import { checkStore } from '../secrets/providers/index.js';
 import { getSeedState } from '../lib/seed.js';
 import { getExpressionMode } from '../lib/expressionMode.js';
 import net from 'net';
@@ -426,40 +427,55 @@ async function repositoriesCheck() {
 
 // Job output is longtext and nothing prunes it, so this is the table that grows
 // without limit on a busy instance. Surface it before it becomes a problem.
-// Vault is optional, so an instance without it is fine - but once configured it is a HARD
-// dependency: credential.model.v2 rethrows on a failed read, so a job using a vault-backed
-// credential fails outright. And nothing renews the token, so the realistic failure is not
-// a dead server but a token quietly reaching the end of its ttl.
+// Secret stores are optional, so an instance without any is fine - but once one is used it
+// is a HARD dependency: credential.model.v2 rethrows on a failed read, so a job using a
+// credential from it fails outright. For a Vault, nothing renews the token, so the
+// realistic failure is not a dead server but a token quietly reaching the end of its ttl.
 const VAULT_TTL_WARN_SECONDS = 7 * 24 * 3600;
 
-async function vaultCheck() {
-  // no network at all when it is not in use
-  if (!Vault.isConfigured()) return check('vault', OK, 'not configured');
-  // 5s, not the 10s default : these checks run in parallel and a hanging Vault would
-  // hold the whole page
-  const info = await Vault.vaultCheck({ timeoutMs: 5000 });
-  const detail = {
-    addr: info.addr,
-    namespace: info.namespace,
-    kvVersion: info.kvVersion,
-    defaultMount: info.defaultMount,
-    renewable: info.renewable,
-    policies: info.policies,
-    ttlSeconds: info.ttl,
-  };
+function describeVaultToken(info) {
   // Vault reports 0 for a token that does not expire
-  if (!info.ttl) return check('vault', OK, 'reachable, token does not expire', detail);
+  if (!info?.ttl) return { status: OK, value: 'token does not expire' };
   const days = Math.floor(info.ttl / 86400);
-  const value = days >= 1 ? `reachable, token expires in ${days}d` : `reachable, token expires in ${Math.max(1, Math.round(info.ttl / 3600))}h`;
-  if (info.ttl <= VAULT_TTL_WARN_SECONDS) {
-    return check('vault', WARNING, value, {
-      ...detail,
-      reason: info.renewable
-        ? 'Nothing renews this token automatically - every vault-backed credential fails when it expires'
-        : 'This token is not renewable - issue a new one before it expires, or every vault-backed credential fails',
-    });
-  }
-  return check('vault', OK, value, detail);
+  const value = days >= 1 ? `token expires in ${days}d` : `token expires in ${Math.max(1, Math.round(info.ttl / 3600))}h`;
+  if (info.ttl > VAULT_TTL_WARN_SECONDS) return { status: OK, value };
+  return {
+    status: WARNING,
+    value,
+    reason: info.renewable
+      ? 'Nothing renews this token automatically - every credential reading from this store fails when it expires'
+      : 'This token is not renewable - issue a new one before it expires, or every credential reading from this store fails',
+  };
+}
+
+async function secretStoresCheck() {
+  const stores = await SecretStore.findAll() || [];
+  // no network at all when none is in use
+  if (!stores.length) return check('secretStores', OK, 'none configured');
+  // 5s, not the 10s default : these checks run in parallel and a hanging store would hold
+  // the whole page
+  const results = await Promise.all(stores.map(async (store) => {
+    const base = { name: store.name, type: store.type, url: store.url };
+    try {
+      const info = await checkStore(store, { timeoutMs: 5000 });
+      if (store.type !== 'vault') return { ...base, status: OK, value: 'reachable' };
+      const token = describeVaultToken(info);
+      return { ...base, status: token.status, value: `reachable, ${token.value}`, ...(token.reason ? { reason: token.reason } : {}),
+        namespace: info.namespace, kvVersion: info.kvVersion, defaultMount: info.defaultMount, renewable: info.renewable, policies: info.policies, ttlSeconds: info.ttl };
+    } catch (e) {
+      return { ...base, status: ERROR, value: 'unreachable', reason: e.message || String(e) };
+    }
+  }));
+  const worst = results.reduce((w, r) => (SEVERITY[r.status] > SEVERITY[w] ? r.status : w), OK);
+  const failing = results.filter((r) => r.status !== OK);
+  const value = !failing.length
+    ? `${results.length} store(s) reachable`
+    : failing.length === 1 && results.length === 1
+      ? failing[0].value
+      : `${failing.length} of ${results.length} store(s) need attention : ${failing.map((r) => r.name).join(', ')}`;
+  // one store failing : its reason is the check's reason, as it was for the single Vault
+  const reason = failing.length === 1 ? failing[0].reason : undefined;
+  return check('secretStores', worst, value, { ...(reason ? { reason } : {}), stores: results });
 }
 
 // LDAP, WITHOUT binding.
@@ -728,7 +744,7 @@ async function configSeedCheck() {
 // How many records the seed currently owns, per table. A fact, not a verdict : it is
 // the quickest way to tell whether the file everybody edits is actually in force.
 async function seedManagedFacts() {
-  const tables = ['awx', 'credentials', 'oauth2_providers', 'repositories', 'ldap', 'settings'];
+  const tables = ['awx', 'credentials', 'secret_stores', 'oauth2_providers', 'repositories', 'ldap', 'settings'];
   const counts = {};
   let total = 0;
   for (const table of tables) {
@@ -753,7 +769,7 @@ Health.check = async function () {
     safely('repositories', repositoriesCheck),
     // next to repositories : both are about configuration arriving from outside the app
     safely('configSeed', configSeedCheck),
-    safely('vault', vaultCheck),
+    safely('secretStores', secretStoresCheck),
     safely('expressions', expressionsCheck),
     safely('ldap', ldapCheck),
     safely('storage', storageCheck),

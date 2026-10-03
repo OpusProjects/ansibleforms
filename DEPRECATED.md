@@ -1,6 +1,12 @@
 # Deprecated Features
 
-Nothing is deprecated right now.
+Removed in 8.0.0. Each logs a warning when it is used.
+
+| Deprecated | Replacement | Since |
+|---|---|---|
+| `VAULT_*` environment variables (imported once on upgrade, then ignored) | a secret store named `vault` (Connections > Secret stores) | 7.1.0 |
+| `vault_path` on a credential (API, seed) | `secret_store` + `secret_ref` | 7.1.0 |
+| `POST /api/v2/config/vault/check`, `GET /api/v2/config/vault/mounts` | `POST /api/v2/secretstore/{id}/check`, `GET /api/v2/secretstore/{id}/mounts` | 7.1.0 |
 
 ## Removed in 7.0.0
 

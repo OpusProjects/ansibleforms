@@ -34,7 +34,7 @@ vi.mock("../src/models/db.model.js", () => ({
 const { validateSeed, interpolateEnv } = await import("../src/lib/seed-schema.js");
 const appConfig = (await import("./__mocks__/app.config.js")).default;
 appConfig.encryptionSecret ||= "0123456789abcdef0123456789abcdef";
-const { buildRecord, listSections, canonicalJson, applyChat } = await import("../src/lib/seed.js");
+const { buildRecord, listSections, canonicalJson, applyChat, differs } = await import("../src/lib/seed.js");
 const seedCrypto = (await import("../src/lib/crypto.js")).default;
 const CrudModel = (await import("../src/models/crud.model.js")).default;
 const Schema = (await import("../src/models/schema.model.js")).default;
@@ -355,6 +355,38 @@ describe("a JSON column is compared canonically, or the row rewrites for ever", 
   test("null and scalars round-trip", () => {
     assert.equal(canonicalJson(null), "null");
     assert.equal(canonicalJson("x"), '"x"');
+  });
+});
+
+describe("secret stores are seedable", () => {
+  const store = { name: "vault", type: "vault", url: "https://vault:8200", token: "${VAULT_TOKEN}", kv_version: 2, cache_ttl_seconds: "60", extra: { a: 1 } };
+
+  test("a secret store and a credential reading from it validate", () => {
+    assert.doesNotThrow(() => validateSeed({
+      secret_stores: { items: [store] },
+      credentials: { items: [{ name: "db", secret_store: "vault", secret_ref: "secret/db" }] },
+    }));
+  });
+
+  test("a store without its type is rejected", () => {
+    assert.throws(() => validateSeed({ secret_stores: { items: [{ name: "v", url: "u" }] } }), /validation failed/);
+  });
+
+  test("an unknown store field is rejected", () => {
+    assert.throws(() => validateSeed({ secret_stores: { items: [{ ...store, tokn: "x" }] } }), /validation failed/);
+  });
+
+  test("stores are applied before the credentials that name them", () => {
+    const keys = listSections.map((s) => s.key);
+    assert.ok(keys.indexOf("secret_stores") < keys.indexOf("credentials"));
+  });
+
+  // extra is a TEXT column holding JSON : an object declared for it must compare by
+  // content, or the row rewrites on every boot
+  test("an object declared for a JSON text column compares by content", () => {
+    assert.equal(differs({ extra: { b: 2, a: 1 } }, { extra: '{"a":1,"b":2}' }), false);
+    assert.equal(differs({ extra: { a: 1 } }, { extra: '{"a":2}' }), true);
+    assert.equal(differs({ extra: { a: 1 } }, { extra: null }), true);
   });
 });
 
