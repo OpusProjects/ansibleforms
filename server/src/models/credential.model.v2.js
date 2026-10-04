@@ -3,7 +3,7 @@ import Errors from '../lib/errors.js';
 import logger from '../lib/logger.js';
 import mysql from './db.model.js';
 import crypto from '../lib/crypto.js';
-import { readSecret, mapPayloadToCredential, VAULT_STORE_NAME } from '../secrets/providers/index.js';
+import { readSecret, mapPayloadToCredential, parseInlineSecret, VAULT_STORE_NAME } from '../secrets/providers/index.js';
 import dbConfig from '../../config/db.config.js';
 
 class CredentialModel extends CrudModel {
@@ -69,6 +69,9 @@ class CredentialModel extends CrudModel {
     // no name in the log : callers pass names taken from extravars, which CodeQL rightly
     // cannot tell apart from the secrets next to them
     logger.debug("Resolving a credential");
+    // "vault:<path>" / "secret:<store>:<ref>" : straight from the store, no row
+    const inline = parseInlineSecret(nameOrRegex);
+    if (inline) return resolveInlineSecret(nameOrRegex, inline);
     const cache = this.getCache(this.modelName);
     const cacheKey = `regex:${nameOrRegex}|${fallbackName || ""}`;
     // the ROW is cached, password still encrypted ; decrypting and reading the secret
@@ -166,6 +169,28 @@ async function overlaySecret(result, source, isDatabase) {
   if (isEmpty(result.host) && !isEmpty(mapped.host)) result.host = mapped.host;
   if (isEmpty(result.port) && !isEmpty(mapped.port)) result.port = mapped.port;
   if (isDatabase && isEmpty(result.db_name) && !isEmpty(mapped.db_name)) result.db_name = mapped.db_name;
+}
+
+// An inline secret carries the whole connection itself, under the keys mapPayloadToCredential
+// knows (docs/secret-stores.md). With a db_type it is a database credential, shaped like a
+// database row ; without one, user and password with the rest of the secret passed through.
+async function resolveInlineSecret(name, source) {
+  // no log here : the caller reports the error, and the store name comes from the
+  // inline reference, which CodeQL cannot tell apart from the secrets next to it
+  const mapped = mapPayloadToCredential(await readSecret(source.store, source.ref));
+  if (!mapped.db_type) return { ...mapped, name };
+  return {
+    name,
+    user: mapped.user || "",
+    password: mapped.password || "",
+    host: mapped.host || "",
+    port: mapped.port ?? null,
+    db_name: mapped.db_name || "",
+    db_type: mapped.db_type,
+    secure: mapped.secure === true || mapped.secure === 1 || mapped.secure === "true" ? 1 : 0,
+    is_database: 1,
+    multipleStatements: true,
+  };
 }
 
 // a playbook receives the credential as an extra var : where it came from is not its business
