@@ -57,7 +57,7 @@
     "happy-dom": "^20.14.5",
     "nodemon": "^3.1.14",
     "pinia": "^3.0.4",
-    "sass": "^1.105.0",
+    "sass": "^1.105.1",
     "terser": "^5.51.2",
     "unplugin-auto-import": "^21.1.0",
     "unplugin-vue-components": "^32.1.0",
