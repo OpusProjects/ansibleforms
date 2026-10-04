@@ -175,13 +175,9 @@ async function overlaySecret(result, source, isDatabase) {
 // knows (docs/secret-stores.md). With a db_type it is a database credential, shaped like a
 // database row ; without one, user and password with the rest of the secret passed through.
 async function resolveInlineSecret(name, source) {
-  let mapped;
-  try {
-    mapped = mapPayloadToCredential(await readSecret(source.store, source.ref));
-  } catch (e) {
-    logger.error(`Failed to read an inline secret from secret store '${source.store}': ${e.message}`);
-    throw e;
-  }
+  // no log here : the caller reports the error, and the store name comes from the
+  // inline reference, which CodeQL cannot tell apart from the secrets next to it
+  const mapped = mapPayloadToCredential(await readSecret(source.store, source.ref));
   if (!mapped.db_type) return { ...mapped, name };
   return {
     name,
