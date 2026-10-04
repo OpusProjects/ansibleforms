@@ -10,7 +10,6 @@ import Errors from "../lib/errors.js";
 import Settings from "./settings.model.js";
 import logger from "../lib/logger.js";
 import Cmd from "../lib/cmd.js";
-import { shellQuote } from "../lib/shell.js";
 import { safeParse } from "../lib/safejson.js";
 import ansibleConfig from "../../config/ansible.config.js";
 import loggerConfig from "../../config/log.config.js";
@@ -191,7 +190,12 @@ var Exec = function () {};
 Exec.executeCommand = (cmd, jobid, counter) => {
   // a counter to order the output (as it's very fast and the database can mess up the order)
   var jobstatus = "success";
-  var command = cmd.command;
+  // a program and its arguments, run without a shell : form values never pass through one
+  var file = cmd.file;
+  var args = cmd.args || [];
+  // written to the process's stdin, then closed (the vault password ; ansible reads it
+  // with --vault-password-file=/bin/cat)
+  var stdin = cmd.stdin || "";
   var directory = cmd.directory;
   var description = cmd.description;
   var extravars = cmd.extravars;
@@ -208,7 +212,7 @@ Exec.executeCommand = (cmd, jobid, counter) => {
 
   // execute the procces
   return new Promise((resolve, reject) => {
-    logger.debug(`${description}, ${directory} > ${Helpers.logSafe(command)}`);
+    logger.debug(`${description}, ${directory} > ${Helpers.logSafe([file, ...args].join(" "))}`);
     try {
       if (extravarsFileName) {
         logger.debug(`Storing extravars to file ${extravarsFileName}`);
@@ -225,16 +229,18 @@ Exec.executeCommand = (cmd, jobid, counter) => {
       }
 
       // adding abort signal
-      // spawn, not exec : exec ignores `detached`. Detached, the command runs in its own
-      // process group, so stopping it stops the whole `sh -c` pipeline (ansible-playbook
-      // and its workers), not only the shell. /bin/sh is the shell exec used.
-      var child = spawn("/bin/sh", ["-c", command], {
+      // spawn, not exec : no shell, and exec ignores `detached`. Detached, the process runs
+      // in its own process group, so stopping it stops ansible-playbook and all its workers.
+      var child = spawn(file, args, {
         cwd: directory,
         signal: ac.signal,
         detached: true,
       });
       child.stdout.setEncoding("utf8");
       child.stderr.setEncoding("utf8");
+      // a playbook that prompts gets end-of-input instead of waiting for ever
+      child.stdin.on("error", (e) => logger.debug(`[Job ${jobid}] stdin : ${e.message}`));
+      child.stdin.end(stdin);
 
       const stopProcess = (why) => {
         if (killed) return;
@@ -2257,40 +2263,33 @@ Ansible.launch = async (
   const extravarsFileName = `extravars_${jobid}.json`;
   const hiddenExtravarsFileName = `he_${extravarsFileName}`;
   logger.debug(`Extravars File: ${extravarsFileName}`);
-  // prepare my ansible command
+  // prepare my ansible command line
 
-  var command;
-  if (!vaultPassword) {
-    command = `ansible-playbook -e '@${extravarsFileName}' -e '@${hiddenExtravarsFileName}'`;
-  } else {
-    command = `echo ${Buffer.from(vaultPassword).toString(
-      "base64"
-    )} | base64 -d | ansible-playbook -e '@${extravarsFileName}' -e '@${hiddenExtravarsFileName}' --vault-password-file=/bin/cat`;
+  // the ansible-playbook arguments ; no shell runs them, so no value needs quoting
+  var args = ["-e", `@${extravarsFileName}`, "-e", `@${hiddenExtravarsFileName}`];
+  if (vaultPassword) {
+    // the vault password goes in on stdin, never into a file or the command line
+    args.push("--vault-password-file=/bin/cat");
   }
-
-  // All form-controlled segments below MUST be wrapped in shellQuote().
-  // The command runs through `/bin/sh -c` (Exec.executeCommand), so any unquoted value
-  // ending up in the string is a shell injection vector.
   inventory.forEach((item) => {
-    command += ` -i ${shellQuote(item)}`;
+    args.push("-i", item);
   });
   if (tags) {
-    command += ` -t ${shellQuote(tags)}`;
+    args.push("-t", tags);
   }
   if (check) {
-    command += ` --check`;
+    args.push("--check");
   }
   if (diff) {
-    command += ` --diff`;
+    args.push("--diff");
   }
   if (verbose) {
-    command += ` -vvv`;
+    args.push("-vvv");
   }
   if (limit) {
-    command += ` --limit ${shellQuote(limit)}`;
+    args.push("--limit", limit);
   }
-
-  command += ` ${shellQuote(playbook)}`;
+  args.push(String(playbook));
   var directory = await Repository.getAnsiblePath();
   directory = directory || ansibleConfig.path;
   if (playbookSubPath) {
@@ -2298,7 +2297,9 @@ Ansible.launch = async (
   }
   var cmdObj = {
     directory: directory,
-    command: command,
+    file: "ansible-playbook",
+    args: args,
+    stdin: vaultPassword,
     description: "Running playbook",
     task: "Playbook",
     extravars: extravars,

@@ -29,6 +29,7 @@ vi.mock("child_process", async (importOriginal) => {
       child.signalCode = null;
       child.stdout = Object.assign(new EventEmitter(), { setEncoding() {} });
       child.stderr = Object.assign(new EventEmitter(), { setEncoding() {} });
+      child.stdin = Object.assign(new EventEmitter(), { end(data) { child.stdinWritten = data; } });
       return child;
     }),
   };
@@ -90,9 +91,11 @@ afterEach(() => {
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
-function run() {
+function run(extra = {}) {
   return Exec.executeCommand({
-    command: "ansible-playbook site.yml",
+    file: "ansible-playbook",
+    args: ["-e", "@extravars_7.json", "site.yml"],
+    ...extra,
     directory: dir,
     description: "Running playbook",
     task: "Playbook",
@@ -107,13 +110,24 @@ function run() {
 const flush = () => new Promise((resolve) => setImmediate(resolve));
 
 describe("a playbook stops when its abort flag is set", () => {
-  test("runs through /bin/sh -c in its own process group", async () => {
+  test("runs ansible-playbook without a shell, in its own process group", async () => {
     const result = run().then(() => "resolved", () => "rejected");
     const last = spawned[spawned.length - 1];
-    assert.equal(last.file, "/bin/sh");
-    assert.deepEqual(last.args, ["-c", "ansible-playbook site.yml"]);
-    assert.equal(last.options.detached, true, "its own process group, so one signal stops the pipeline");
+    assert.equal(last.file, "ansible-playbook", "no shell : form values never pass through one");
+    assert.deepEqual(last.args, ["-e", "@extravars_7.json", "site.yml"]);
+    assert.equal(last.options.shell, undefined);
+    assert.equal(last.options.detached, true, "its own process group, so one signal stops all its workers");
     assert.equal(last.options.cwd, dir);
+    assert.equal(child.stdinWritten, "", "stdin is closed, a prompt gets end-of-input");
+    child.emit("exit", 0);
+    assert.equal(await result, "resolved");
+  });
+
+  test("the vault password goes in on stdin, not on the command line", async () => {
+    const result = run({ args: ["--vault-password-file=/bin/cat", "site.yml"], stdin: "s3cret" }).then(() => "resolved", () => "rejected");
+    const last = spawned[spawned.length - 1];
+    assert.equal(child.stdinWritten, "s3cret");
+    assert.equal(last.args.join(" ").includes("s3cret"), false);
     child.emit("exit", 0);
     assert.equal(await result, "resolved");
   });
