@@ -64,3 +64,6 @@ dist
 
 # tar file
 ansibleforms.tar
+
+# copied from server/help.yaml when the docs site is built
+docs/_data/help.yaml

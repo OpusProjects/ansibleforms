@@ -1,7 +1,6 @@
 import path from "path";
 import os from "os";
 import { fileURLToPath } from "url";
-import { existsSync } from "fs";
 import { normalizeBaseUrl } from "../src/lib/baseurl.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -66,9 +65,7 @@ var app_config = {
   yttLibData: {},
   yttVarsPrefix: process.env.YTT_VARS_PREFIX || "",
   lockPath: process.env.LOCK_PATH || path.resolve(__dirname + "/../persistent/ansibleForms.lock"),
-  helpPath: existsSync(path.resolve(__dirname + "/../help.yaml"))
-    ? path.resolve(__dirname + "/../help.yaml")
-    : path.resolve(__dirname + "/../../docs/_data/help.yaml"),
+  helpPath: path.resolve(__dirname + "/../help.yaml"),
   encryptionSecret: ((process.env.ENCRYPTION_SECRET || "undefinedvOVH6sdmpNWjRRIqCc7rdxs") + "vOVH6sdmpNWjRRIqCc7rdxs01lwHzfr3").substring(0, 32),
   homePath: process.env.HOME_PATH || os.homedir(),
   uploadPath: process.env.UPLOAD_PATH || path.resolve(__dirname + "/../persistent/uploads"),

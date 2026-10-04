@@ -123,7 +123,7 @@ column that holds configuration - settings, a connection, a provider - must be d
 `docs/seed.md`, with a test in `server/tests/config-seed.test.mjs`. If it should not be
 seedable, say why in the pull request.
 
-**Environment variables need a `docs/_data/help.yaml` entry.** That file is the single
+**Environment variables need a `server/help.yaml` entry.** That file is the single
 source of truth for the label, the help text, the type and the allowed values. A variable
 missing from it appears nowhere in the settings UI.
 

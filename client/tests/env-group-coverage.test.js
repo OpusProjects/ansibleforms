@@ -22,7 +22,7 @@ const repoRoot = path.join(here, '../..');
 
 /** Every environment variable documented in help.yaml. */
 function documentedVariables() {
-  const doc = yaml.parse(readFileSync(path.join(repoRoot, 'docs/_data/help.yaml'), 'utf8'));
+  const doc = yaml.parse(readFileSync(path.join(repoRoot, 'server/help.yaml'), 'utf8'));
   const section = doc.find((s) => s.link === 'environment-variable');
   expect(section, 'the environment-variable section moved in help.yaml').toBeTruthy();
   return section.items.map((i) => i.name);
