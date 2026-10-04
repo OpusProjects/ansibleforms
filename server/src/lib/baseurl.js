@@ -1,12 +1,13 @@
 // helpers to host the application under a url subpath (issue #106)
 // the subpath comes from the BASE_URL environment variable, e.g. "/ansibleforms"
+import { stripLeadingSlashes, stripTrailingSlashes } from "./url.js";
 
 // normalize a base url to "" (root hosting) or "/subpath" (leading slash, no trailing slash)
 export function normalizeBaseUrl(baseUrl) {
   if (!baseUrl) return "";
   var result = baseUrl.trim();
   // strip surrounding slashes and collapse to a clean path
-  result = result.replace(/^\/+|\/+$/g, "");
+  result = stripLeadingSlashes(stripTrailingSlashes(result));
   if (!result) return "";
   return "/" + result;
 }
