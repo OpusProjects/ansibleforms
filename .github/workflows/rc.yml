@@ -91,7 +91,7 @@ jobs:
           fi
           rc="$next-rc.$PR.$RUN"
           echo "rc=$rc" >> "$GITHUB_OUTPUT"
-          # GHCR rejects uppercase, and github.repository keeps the owner's case (OpusProjects/...)
+          # GHCR rejects uppercase, and github.repository keeps the owner's case
           echo "ghcr=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
           echo "release candidate $rc (manifest $base)"
 

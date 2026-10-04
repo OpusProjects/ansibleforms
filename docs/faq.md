@@ -130,13 +130,13 @@ Add a schema header to your form YAML files to get live validation and autocompl
 Install the [YAML extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) and add this comment as the **first line** of any form file:
 
 ```yaml
-# yaml-language-server: $schema=https://raw.githubusercontent.com/OpusProjects/ansibleforms/main/server/schema/public/form_schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/ansibleforms/ansibleforms/main/server/schema/public/form_schema.json
 ```
 
 This works for both single-form files (a YAML dict) and multi-form files (a YAML list):
 
 ```yaml
-# yaml-language-server: $schema=https://raw.githubusercontent.com/OpusProjects/ansibleforms/main/server/schema/public/form_schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/ansibleforms/ansibleforms/main/server/schema/public/form_schema.json
 - name: My Form
   type: ansible
   playbook: site.yml
