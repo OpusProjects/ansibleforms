@@ -143,7 +143,7 @@ describe("every environment variable the server reads is documented", () => {
 
   test("nothing is read that help.yaml does not describe", async () => {
     const yaml = (await import("yaml")).default;
-    const help = yaml.parse(readFileSync(path.join(serverRoot, "../docs/_data/help.yaml"), "utf8"));
+    const help = yaml.parse(readFileSync(path.join(serverRoot, "help.yaml"), "utf8"));
     const section = Object.values(help).find((s) => s && s.link === "environment-variable");
     assert.ok(section, "the Environment Variables section must exist - config.controller.env needs it");
     const documented = new Set(section.items.map((i) => i.name));

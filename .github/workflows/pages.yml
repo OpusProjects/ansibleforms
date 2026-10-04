@@ -1,8 +1,9 @@
 name: Docs
 
-# A pull request BUILDS the site but does not deploy it. docs/_data/help.yaml is the
+# A pull request BUILDS the site but does not deploy it. server/help.yaml is the
 # single source of truth for the settings pages and is read by four tests, so a malformed
 # edit used to be discovered only after the merge, when this workflow failed on main.
+# The app owns that file; the site gets a copy in docs/_data at build time.
 
 on:
   push:
@@ -12,6 +13,7 @@ on:
     paths:
       - 'docs/**'
       - 'CHANGELOG.md'
+      - 'server/help.yaml'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -35,6 +37,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
       
+      - name: Copy the settings help into docs
+        run: mkdir -p docs/_data && cp server/help.yaml docs/_data/help.yaml
+
       - name: Copy changelog into docs
         run: |
           { echo '---'; echo 'layout: default'; echo 'title: Changelog'; echo 'nav_order: 10'; echo '---'; echo ''; cat CHANGELOG.md; } > docs/changelog.md

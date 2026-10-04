@@ -67,9 +67,6 @@ COPY ./server .
 # Generate server build-info.json
 RUN /tmp/generate-build-info.sh . "$GIT_SHA" "$BUILD_TIME" "$VERSION"
 
-# Copy the docs help file to /app/server
-COPY ./docs/_data/help.yaml .
-
 # clean files
 RUN rm .env.*
 RUN rm -rf ./views
