@@ -9,6 +9,9 @@ process.env.DB_PORT ||= "3306";
 process.env.DB_USER ||= "test";
 process.env.DB_PASSWORD ||= "test";
 
+// nothing here may reach a database
+vi.mock("../src/models/db.model.js", () => ({ default: { do: async () => [] } }));
+
 // the store rows by name ; create/update hand back what they were given
 let storeRows = {};
 vi.mock("../src/models/crud.model.js", () => ({
@@ -130,14 +133,18 @@ describe("reading a secret", () => {
   });
 });
 
-describe("upgrading imports the VAULT_* variables once", () => {
+describe("the first start with VAULT_* imports them once", () => {
   const env = () => ({ VAULT_ADDR: url, VAULT_TOKEN: "hvs.env", VAULT_NAMESPACE: "ops", VAULT_KV_VERSION: "1", VAULT_DEFAULT_MOUNT: "kv", VAULT_SKIP_VERIFY: "true", VAULT_CACHE_TTL_MS: "300" });
+  // the marker in settings, in memory
+  const fakeMarker = (at = null) => ({ at, read: async function () { return this.at; }, write: async function () { this.at = new Date(); } });
 
-  test("the variables become the store named vault", async () => {
+  test("the variables become the store named vault, and the import is recorded", async () => {
     const created = [];
     const spy = vi.spyOn(SecretStore, "create").mockImplementation(async (d) => { created.push(d); return d; });
+    const marker = fakeMarker();
     try {
-      assert.match(await Import.importVaultFromEnv(env()), /Imported/);
+      assert.equal(await Import.importVaultFromEnvOnce({ env: env(), marker }), "imported");
+      assert.ok(marker.at, "recorded");
       assert.equal(created.length, 1);
       const s = created[0];
       assert.equal(s.name, "vault");
@@ -154,19 +161,33 @@ describe("upgrading imports the VAULT_* variables once", () => {
     }
   });
 
-  test("a store already named vault is left alone", async () => {
-    storeRows.vault = vaultRow({ token: "hvs.row" });
+  test("imported before : nothing is created, even when the store was deleted since", async () => {
     const spy = vi.spyOn(SecretStore, "create");
     try {
-      assert.match(await Import.importVaultFromEnv(env()), /already exists/);
+      assert.equal(await Import.importVaultFromEnvOnce({ env: env(), marker: fakeMarker(new Date()) }), "ignored");
       assert.equal(spy.mock.calls.length, 0);
     } finally {
       spy.mockRestore();
     }
   });
 
-  test("nothing to import without address and token", async () => {
-    assert.match(await Import.importVaultFromEnv({ VAULT_ADDR: url }), /No VAULT_\*/);
+  test("a store already named vault is kept, and the decision is recorded", async () => {
+    storeRows.vault = vaultRow({ token: "hvs.row" });
+    const spy = vi.spyOn(SecretStore, "create");
+    const marker = fakeMarker();
+    try {
+      assert.equal(await Import.importVaultFromEnvOnce({ env: env(), marker }), "kept");
+      assert.equal(spy.mock.calls.length, 0);
+      assert.ok(marker.at);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  test("nothing to do without address and token, and nothing recorded", async () => {
+    const marker = fakeMarker();
+    assert.equal(await Import.importVaultFromEnvOnce({ env: { VAULT_ADDR: url }, marker }), "none");
+    assert.equal(marker.at, null);
   });
 
   test("the variables are not read at runtime : no store row, no secret", async () => {

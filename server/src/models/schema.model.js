@@ -511,7 +511,7 @@ const SCHEMA_MANIFEST = {
                                'chat_settings.ignore_certs'],
                      indexes: ['jobs.idx_jobs_retention'] },
     patchVersion7: { tables: ['secret_stores'],
-                     columns: ['credentials.secret_store', 'credentials.secret_ref'] },
+                     columns: ['credentials.secret_store', 'credentials.secret_ref', 'settings.vault_env_imported_at'] },
   },
 };
 
@@ -793,18 +793,13 @@ async function patchVersion7(messages, success, failed) {
   // point into one
   const buffer = fs.readFileSync(`${__dirname}/../db/create_secret_stores_table.sql`);
   await checkPromise(addTable("secret_stores", buffer.toString()), messages, success, failed);
-  // the column is the marker of the upgrade : absent means this database predates secret
-  // stores, which is the one moment the VAULT_* variables are imported
-  const upgrading = (await mysql.do("SHOW COLUMNS FROM ??.?? WHERE Field = ?", ["AnsibleForms", "credentials", "secret_store"])).length === 0;
   await checkPromise(addColumn("credentials", "secret_store", "varchar(250)", true, "NULL"), messages, success, failed);
   await checkPromise(addColumn("credentials", "secret_ref", "varchar(500)", true, "NULL"), messages, success, failed);
   // a credential that read from vault through vault_path now names the store `vault`
   await checkPromise(copyVaultPathToSecretRef(), messages, success, failed);
-  if (upgrading) {
-    // imported late : the model chain reaches back into this module
-    const { importVaultFromEnv } = await import("../secrets/importVaultEnv.js");
-    await checkPromise(importVaultFromEnv(), messages, success, failed);
-  }
+  // when the VAULT_* variables were imported as the secret store `vault` (once, at the
+  // first 7.x start that has them - secrets/importVaultEnv.js)
+  await checkPromise(addColumn("settings", "vault_env_imported_at", "datetime", true, "NULL"), messages, success, failed);
 }
 
 // Idempotent by its WHERE clause : a row is copied once, and never over a store chosen since

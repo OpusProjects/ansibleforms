@@ -123,9 +123,11 @@ See [Config seed](seed.md).
 Before 7.1 the only store was a HashiCorp Vault configured with `VAULT_*` environment
 variables, and a credential pointed at it with **Vault path**.
 
-- **Upgrading imports the variables once** as a secret store named `vault`, with the token
-  encrypted in the database. From then on the variables are ignored: change the Vault on the
-  Secret stores page, and remove the variables from your environment. As long as they are
-  still set, each start logs a warning. A store you delete later is not imported again.
-- **Credentials with a `vault_path`** are pointed at the store `vault` by the same upgrade.
+- **The first 7.x start that finds them imports the variables once** as a secret store named
+  `vault`, with the token encrypted in the database, and records that it did. From then on the
+  variables are ignored: change the Vault on the Secret stores page, and remove the variables
+  from your environment. As long as they are still set, each start logs a warning. A store you
+  delete later is not imported again. If a store named `vault` already exists, it is kept and
+  the variables are not imported.
+- **Credentials with a `vault_path`** are pointed at the store `vault` by the upgrade.
   `vault_path` is still accepted by the API and the seed in 7.x and is removed in 8.
