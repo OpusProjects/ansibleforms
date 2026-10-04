@@ -81,22 +81,32 @@ jobs:
     secrets: inherit
 
   # Tells ansibleforms/website to rebuild, so its changelog page shows this release.
-  # GITHUB_TOKEN cannot start a workflow in another repository, hence WEBSITE_DISPATCH_TOKEN :
-  # a fine-grained token with Contents: write on ansibleforms/website and nothing else.
-  # Without the secret the job only says so - the site still catches up on its nightly run.
+  # GITHUB_TOKEN cannot start a workflow in another repository, so the token comes from the
+  # same GitHub App as above, which is installed on ansibleforms/website too. It is asked for
+  # that one repository only. Without the App the job only says so - the site still catches
+  # up on its nightly run.
   website:
     name: Rebuild the website
     needs: release-please
     if: needs.release-please.outputs.release_created == 'true'
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/create-github-app-token@v3
+        id: app
+        if: vars.RELEASE_APP_ID != ''
+        with:
+          app-id: ${{ vars.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: website
+
       - name: Send app-release to ansibleforms/website
         env:
-          GH_TOKEN: ${{ secrets.WEBSITE_DISPATCH_TOKEN }}
+          GH_TOKEN: ${{ steps.app.outputs.token }}
           TAG: ${{ needs.release-please.outputs.tag_name }}
         run: |
           if [ -z "$GH_TOKEN" ]; then
-            echo "::notice::WEBSITE_DISPATCH_TOKEN is not set - the website picks up $TAG on its nightly build"
+            echo "::notice::RELEASE_APP_ID is not set - the website picks up $TAG on its nightly build"
             exit 0
           fi
           gh api repos/ansibleforms/website/dispatches -f event_type=app-release -f "client_payload[tag]=$TAG"
