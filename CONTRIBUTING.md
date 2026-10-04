@@ -116,11 +116,11 @@ is not. Note that SQL file **drops every table** — never run it against anythi
 about.
 
 **Configuration in the database needs the config seed.** A Kubernetes deployment rebuilds its
-configuration from the seed file (`CONFIG_SEED_PATH`, see `docs/seed.md`). A new table or
+configuration from the seed file (`CONFIG_SEED_PATH`, see the [seed page](https://ansibleforms.com/seed)). A new table or
 column that holds configuration - settings, a connection, a provider - must be declared in
 `server/src/lib/seed-schema.js`, applied in `server/src/lib/seed.js` (secrets as
 `${ENV_VAR}` references, the `managed` flag for single-row sections) and documented in
-`docs/seed.md`, with a test in `server/tests/config-seed.test.mjs`. If it should not be
+`seed.md` of [ansibleforms/website](https://github.com/ansibleforms/website), with a test in `server/tests/config-seed.test.mjs`. If it should not be
 seedable, say why in the pull request.
 
 **Environment variables need a `server/help.yaml` entry.** That file is the single

@@ -18,7 +18,7 @@ var app_config = {
   configPath: process.env.CONFIG_PATH || path.resolve(__dirname + "/../persistent/config.yaml"),
   // Declarative config seed for the admin objects (awx, credentials, oauth2 providers,
   // repositories, ldap, mail/url). Empty = feature off. NOT the same thing as configPath,
-  // which holds the forms configuration - see docs/seed.md.
+  // which holds the forms configuration - see https://ansibleforms.com/seed.
   configSeedPath: process.env.CONFIG_SEED_PATH || "",
   // How often the seed file is re-read and re-applied when its content changed, in
   // seconds. 0 turns the poll off, leaving the boot apply, POST /api/v2/config-seed/apply

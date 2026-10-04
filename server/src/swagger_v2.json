@@ -2035,7 +2035,7 @@
           "config"
         ],
         "summary": "Apply the config seed now",
-        "description": "Re-applies the file in CONFIG_SEED_PATH immediately, even when it has not changed (the same as SIGHUP). See docs/seed.md. Requires settings access.",
+        "description": "Re-applies the file in CONFIG_SEED_PATH immediately, even when it has not changed (the same as SIGHUP). See https://ansibleforms.com/seed. Requires settings access.",
         "security": [
           {
             "bearerAuth": []

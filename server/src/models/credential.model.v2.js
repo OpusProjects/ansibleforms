@@ -172,7 +172,7 @@ async function overlaySecret(result, source, isDatabase) {
 }
 
 // An inline secret carries the whole connection itself, under the keys mapPayloadToCredential
-// knows (docs/secret-stores.md). With a db_type it is a database credential, shaped like a
+// knows (https://ansibleforms.com/secret-stores). With a db_type it is a database credential, shaped like a
 // database row ; without one, user and password with the rest of the secret passed through.
 async function resolveInlineSecret(name, source) {
   // no log here : the caller reports the error, and the store name comes from the

@@ -263,7 +263,7 @@ const init = async function({ boot = false } = {}){
   // A broken seed refuses to start, on purpose : running on the previous configuration
   // would mean an instance that no longer matches the manifest describing it, with
   // nothing saying so. Note this app is single-instance, so a deployment must use
-  // replicas 1 with the Recreate strategy (docs/seed.md).
+  // replicas 1 with the Recreate strategy (https://ansibleforms.com/seed).
   // the VAULT_* variables of before 7.1 become the secret store `vault`, once. Before the
   // seed, so a seed that declares `vault` takes the imported row over.
   if(schemaIsReady){

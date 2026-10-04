@@ -152,7 +152,7 @@ class CrudModel {
 
   /**
    * Records flagged `managed` are owned by the declarative config seed
-   * (docs/seed.md). The seed is re-applied on every start, so a change made
+   * (https://ansibleforms.com/seed). The seed is re-applied on every start, so a change made
    * through the API would be silently reverted - refusing it is honest.
    *
    * 403, never 401 : App.vue's axios interceptor treats any 401 as a dead

@@ -697,7 +697,7 @@ async function configSeedCheck() {
   const seedPath = appConfig.configSeedPath;
   if (!seedPath) {
     return check('configSeed', OK, 'not configured',
-      { note: 'Set CONFIG_SEED_PATH to declare the admin objects in a file - see docs/seed.md' });
+      { note: 'Set CONFIG_SEED_PATH to declare the admin objects in a file - see https://ansibleforms.com/seed' });
   }
   // Before anything read from disk : a failed reload means what is on disk is NOT what is
   // running, so reporting the file as healthy would describe configuration nobody applied.

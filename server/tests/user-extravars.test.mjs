@@ -8,7 +8,7 @@
 //
 // Two properties are being pinned here, and the first is the important one:
 //
-//   * the DEFAULT does not change. docs/faq.md recommends asserting on
+//   * the DEFAULT does not change. https://ansibleforms.com/faq recommends asserting on
 //     ansibleforms_user.groups inside a playbook as a defence in depth check, so trimming
 //     by default would silently weaken a check somebody wrote deliberately.
 //   * under `none` the key must be REMOVED, not merely left unassigned. A client controls
