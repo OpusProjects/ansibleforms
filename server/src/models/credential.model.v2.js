@@ -55,7 +55,9 @@ class CredentialModel extends CrudModel {
   // nameOrRegex is a MySQL REGEXP ; fallbackName is tried when it matches nothing.
   // Returns a fresh object on every call - callers reshape it (mysql.js does).
   static async resolveCredential(nameOrRegex, fallbackName = "") {
-    logger.debug(`Resolving credential ${nameOrRegex}${fallbackName ? ` (fallback ${fallbackName})` : ""}`);
+    // no name in the log : callers pass names taken from extravars, which CodeQL rightly
+    // cannot tell apart from the secrets next to them
+    logger.debug("Resolving a credential");
     const cache = this.getCache(this.modelName);
     const cacheKey = `regex:${nameOrRegex}|${fallbackName || ""}`;
     // the ROW is cached, password still encrypted ; decrypting and reading the secret
