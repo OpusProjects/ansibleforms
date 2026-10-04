@@ -10,7 +10,7 @@ name: Release
 # Two lines : main (the next major) and release/<major>.x (patches for the current one).
 # Each branch has its own manifest and CHANGELOG ; the tags never collide (6.5.3, 7.0.1).
 #
-# The token comes from the GitHub App ansibleforms-release, not GITHUB_TOKEN. A pull request
+# The token comes from the GitHub App ansibleforms, not GITHUB_TOKEN. A pull request
 # opened with GITHUB_TOKEN starts no workflows, so the release pull request would never get
 # its required checks and could never be merged. See RELEASING.md for the App setup.
 #
