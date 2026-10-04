@@ -60,6 +60,19 @@ expires within 7 days.
 The secret reference is the path, e.g. `secret/myapp/prod`. For KV v2 the `/data/` segment
 is inserted when you leave it out.
 
+#### Dynamic database credentials
+
+A reference of the form `<mount>/creds/<role>`, e.g. `database/creds/readonly`, reads from a
+dynamic secrets engine such as Vault's database engine. Vault then creates a new database
+account for each read, valid for the lease.
+
+- AnsibleForms reuses the account for 80% of its lease rather than for the store's cache
+  time, so it does not create an account on every query. A store with cache `0` still reads
+  every time.
+- Vault returns only `username` and `password`. Put host, port, database type and database
+  name in the credential row, and point the row at the store with `database/creds/<role>`.
+- Nothing revokes the lease early; the account expires when Vault ends the lease.
+
 ## Using a store
 
 ### In a credential
@@ -69,13 +82,32 @@ reference**. Leave user and password empty.
 
 ### Inline, without a credential row
 
-Anywhere a credential name is accepted (`fnCredentials`, `fnRestBasic`, the `credentials:`
-of a form):
+Anywhere a credential name is accepted: `fnCredentials`, `fnRestBasic`, the `credentials:`
+of a form, and the `dbConfig` of a query.
 
 ```javascript
 fn.fnCredentials('secret:vault:secret/myapp/prod')   // secret:<store>:<reference>
 fn.fnCredentials('vault:secret/myapp/prod')          // the store named `vault`
 ```
+
+```yaml
+- name: servers
+  type: enum
+  query: SELECT name FROM servers
+  dbConfig: secret:vault:secret/cmdb/db
+```
+
+Without a credential row the secret must carry the whole connection. For a database that
+means `db_type` (`mysql`, `mssql`, `postgres`, `oracle` or `mongodb`) and a host, under the
+key names below, e.g.:
+
+```json
+{ "username": "forms", "password": "...", "host": "cmdb.example.com", "port": 3306,
+  "db_type": "mysql", "database": "cmdb" }
+```
+
+A secret without `db_type` is treated as a plain credential: user and password, with the
+other keys passed through. A query on it assumes `mysql`, like a credential row without a type.
 
 ### Key names
 
@@ -85,7 +117,13 @@ A secret is mapped to a credential with these aliases. Other keys are passed thr
 |---|---|
 | `user` | `user`, `username`, `login` |
 | `password` | `password`, `token`, `api_key`, `apikey`, `secret` |
-| `host`, `port`, `db_name` | same name, used only when the credential row leaves them empty |
+| `host` | `host`, `address` |
+| `port` | `port` |
+| `db_name` | `db_name`, `database` |
+| `db_type`, `secure` | same name (inline secrets only) |
+
+For a credential row, host, port and database name from the secret are used only where the
+row leaves them empty.
 
 A secret with another shape can be reshaped with a `jq` expression, the third argument of
 `fnCredentials`:

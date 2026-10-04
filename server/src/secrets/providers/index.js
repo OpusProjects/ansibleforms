@@ -5,6 +5,7 @@ import vault from "./vault.js";
 import SecretStore from "../../models/secretStore.model.js";
 import Errors from "../../lib/errors.js";
 import { getCached, setCached, clearSecretCache } from "../cache.js";
+import { LEASE_SECONDS, leaseCacheSeconds } from "../lease.js";
 
 const PROVIDERS = { vault };
 export const SECRET_STORE_TYPES = Object.keys(PROVIDERS);
@@ -47,7 +48,11 @@ export async function readSecret(storeName, ref) {
     if (cached) return cached;
   }
   const payload = await provider.read(store, ref);
-  setCached(key, payload, ttl);
+  const lease = payload?.[LEASE_SECONDS];
+  if (lease !== undefined) delete payload[LEASE_SECONDS];
+  // a leased secret (Vault dynamic credentials) is kept for its lease, not the store's ttl :
+  // every read issues a new account. A store set to 0 still means "never cache".
+  setCached(key, payload, ttl > 0 && lease ? leaseCacheSeconds(lease) : ttl);
   return payload;
 }
 
@@ -70,9 +75,35 @@ export function mapPayloadToCredential(payload) {
   if (!payload || typeof payload !== "object") return {};
   const user = payload.user ?? payload.username ?? payload.login ?? "";
   const password = payload.password ?? payload.token ?? payload.api_key ?? payload.apikey ?? payload.secret ?? "";
-  return { ...payload, user, password };
+  const out = { ...payload, user, password };
+  // the connection, under the names a secret commonly uses ; only set when present, so an
+  // empty field of a credential row is never overwritten with undefined
+  const host = payload.host ?? payload.address;
+  const dbName = payload.db_name ?? payload.database;
+  if (host !== undefined) out.host = host;
+  if (dbName !== undefined) out.db_name = dbName;
+  return out;
+}
+
+/**
+ * An inline secret instead of a credential name, anywhere a name is accepted :
+ *   "secret:<store>:<ref>"  e.g. "secret:cyberark:Safe=Linux;Object=root"
+ *   "vault:<path>"          the store named `vault`
+ * Returns { store, ref }, or null for an ordinary credential name.
+ */
+export function parseInlineSecret(name) {
+  if (typeof name !== "string") return null;
+  const lower = name.toLowerCase();
+  if (lower.startsWith("vault:")) return { store: VAULT_STORE_NAME, ref: name.slice(6).trim() };
+  if (lower.startsWith("secret:")) {
+    const rest = name.slice(7);
+    const colon = rest.indexOf(":");
+    if (colon < 1) throw new Errors.BadRequestError(`'${name}' : use secret:<store>:<ref>`);
+    return { store: rest.slice(0, colon).trim(), ref: rest.slice(colon + 1).trim() };
+  }
+  return null;
 }
 
 export { clearSecretCache };
 
-export default { SECRET_STORE_TYPES, VAULT_STORE_NAME, readSecret, checkStore, listMounts, getStore, mapPayloadToCredential, clearSecretCache };
+export default { SECRET_STORE_TYPES, VAULT_STORE_NAME, readSecret, checkStore, listMounts, getStore, mapPayloadToCredential, parseInlineSecret, clearSecretCache };

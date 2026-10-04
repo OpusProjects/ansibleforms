@@ -47,7 +47,13 @@ const vault = { payload: {}, reads: 0, last: null };
 vi.mock("../src/secrets/providers/index.js", () => ({
   VAULT_STORE_NAME: "vault",
   readSecret: async (store, ref) => { vault.reads++; vault.last = { store, ref }; return vault.payload; },
-  mapPayloadToCredential: (p) => ({ ...p, user: p.user ?? p.username ?? "", password: p.password ?? "" }),
+  mapPayloadToCredential: (p) => ({ ...p, user: p.user ?? p.username ?? "", password: p.password ?? "", ...(p.address ? { host: p.address } : {}) }),
+  parseInlineSecret: (n) => {
+    if (typeof n !== "string") return null;
+    if (n.startsWith("vault:")) return { store: "vault", ref: n.slice(6) };
+    if (n.startsWith("secret:")) { const [store, ...ref] = n.slice(7).split(":"); return { store, ref: ref.join(":") }; }
+    return null;
+  },
 }));
 
 const appConfig = (await import("./__mocks__/app.config.js")).default;
@@ -151,6 +157,26 @@ describe("resolveCredential", () => {
     const c = await Credential.resolveCredential("db1");
     assert.equal(c.host, "db.local");
     assert.equal(c.db_name, "inventory");
+  });
+
+  test("an inline secret with a db_type is a database credential, without a row", async () => {
+    vault.payload = { username: "dyn", password: "pw", address: "db.dyn", port: 5432, db_type: "postgres", database: "x" };
+    const c = await Credential.resolveCredential("secret:vault:database/creds/ro");
+    assert.deepEqual(vault.last, { store: "vault", ref: "database/creds/ro" });
+    assert.equal(lookups, 0, "no row is looked up");
+    assert.equal(c.user, "dyn");
+    assert.equal(c.host, "db.dyn");
+    assert.equal(c.db_type, "postgres");
+    assert.equal(c.is_database, 1);
+    assert.equal(c.multipleStatements, true);
+  });
+
+  test("an inline secret without a db_type passes the secret through", async () => {
+    vault.payload = { username: "api", token: "t", tenant: "acme" };
+    const c = await Credential.resolveCredential("vault:secret/api");
+    assert.equal(c.user, "api");
+    assert.equal(c.tenant, "acme");
+    assert.equal("is_database" in c, false);
   });
 
   test("a deleted credential is not resolvable from the cache", async () => {

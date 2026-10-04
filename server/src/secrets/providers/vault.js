@@ -1,6 +1,7 @@
 // HashiCorp Vault : KV v2 (default) and KV v1, token authentication.
 import axios from "axios";
 import { agentsFor, baseUrl } from "./http.js";
+import { LEASE_SECONDS } from "../lease.js";
 
 function headers(store) {
   const h = { "X-Vault-Token": store.token };
@@ -31,9 +32,16 @@ function assertConfigured(store) {
   if (!store.url || !store.token) throw new Error(`Secret store '${store.name}' has no url or no token`);
 }
 
+// A dynamic secret engine (database, aws, ...) issues credentials at <mount>/creds/<role> :
+// read as written, not as KV, and every read creates a NEW account in the target system.
+export function isDynamicPath(ref) {
+  return /^\/*[^/]+\/creds\/[^/]+/.test(String(ref || ""));
+}
+
 /** the secret's key/value pairs */
 async function read(store, ref) {
   assertConfigured(store);
+  if (isDynamicPath(ref)) return readDynamic(store, String(ref).replace(/^\/+/, ""));
   const version = kvVersion(store);
   const apiPath = buildApiPath(ref, version, store.default_mount);
   let res;
@@ -50,6 +58,25 @@ async function read(store, ref) {
     throw new Error(`Vault response for ${apiPath} did not contain a usable secret payload`);
   }
   return payload;
+}
+
+// { data: { username, password }, lease_duration } : the credentials are valid for the
+// lease, which the registry's cache honours - reading again would create another account
+async function readDynamic(store, apiPath) {
+  let res;
+  try {
+    res = await axios.get(`${baseUrl(store)}/v1/${apiPath}`, { headers: headers(store), ...agentsFor(store), timeout: 10000 });
+  } catch (e) {
+    const status = e?.response?.status;
+    const msg = e?.response?.data?.errors?.join(", ") || e.message;
+    throw new Error(`Vault read failed for ${apiPath} (HTTP ${status || "?"}): ${msg}`, { cause: e });
+  }
+  const payload = res?.data?.data;
+  if (!payload || typeof payload !== "object") {
+    throw new Error(`Vault response for ${apiPath} did not contain usable credentials`);
+  }
+  const lease = parseInt(res?.data?.lease_duration, 10);
+  return { ...payload, ...(lease > 0 ? { [LEASE_SECONDS]: lease } : {}) };
 }
 
 // Verifies the address, the token and the namespace WITHOUT reading a secret :

@@ -50,7 +50,7 @@ beforeAll(async () => {
 afterAll(() => server.close());
 
 const Registry = await import("../src/secrets/providers/index.js");
-const { buildApiPath } = await import("../src/secrets/providers/vault.js");
+const { buildApiPath, isDynamicPath } = await import("../src/secrets/providers/vault.js");
 const SecretStore = (await import("../src/models/secretStore.model.js")).default;
 const Import = await import("../src/secrets/importVaultEnv.js");
 
@@ -127,6 +127,58 @@ describe("reading a secret", () => {
   test("an unknown type is refused", async () => {
     storeRows.odd = vaultRow({ name: "odd", type: "keepass" });
     await assert.rejects(Registry.readSecret("odd", "x"), /unknown type 'keepass'/);
+  });
+});
+
+describe("vault dynamic credentials", () => {
+  test("<mount>/creds/<role> is a dynamic path, KV paths are not", () => {
+    assert.equal(isDynamicPath("database/creds/readonly"), true);
+    assert.equal(isDynamicPath("/db-prod/creds/app"), true);
+    assert.equal(isDynamicPath("secret/creds"), false);
+    assert.equal(isDynamicPath("secret/app/creds/x"), false);
+  });
+
+  test("read as written, kept for its lease, the lease never reaching the caller", async () => {
+    storeRows.vault = vaultRow({ cache_ttl_seconds: 60 });
+    secrets["database/creds/ro"] = { lease_duration: 3600, data: { username: "v-ro-1", password: "p1" } };
+    const first = await Registry.readSecret("vault", "database/creds/ro");
+    assert.deepEqual(first, { username: "v-ro-1", password: "p1" });
+    assert.equal(Object.getOwnPropertySymbols(first).length, 0);
+    assert.equal(requests[0].url, "/v1/database/creds/ro", "no /data/ inserted");
+    secrets["database/creds/ro"] = { lease_duration: 3600, data: { username: "v-ro-2", password: "p2" } };
+    assert.equal((await Registry.readSecret("vault", "database/creds/ro")).username, "v-ro-1", "no second account");
+    assert.equal(requests.length, 1);
+  });
+
+  test("a store set to 0 still reads every time", async () => {
+    storeRows.vault = vaultRow({ cache_ttl_seconds: 0 });
+    secrets["database/creds/ro"] = { lease_duration: 3600, data: { username: "a", password: "p" } };
+    await Registry.readSecret("vault", "database/creds/ro");
+    await Registry.readSecret("vault", "database/creds/ro");
+    assert.equal(requests.length, 2);
+  });
+
+  test("the lease is used at 80%, at least one second", async () => {
+    const { leaseCacheSeconds } = await import("../src/secrets/lease.js");
+    assert.equal(leaseCacheSeconds(3600), 2880);
+    assert.equal(leaseCacheSeconds(1), 1);
+  });
+});
+
+describe("inline secrets", () => {
+  test("secret:<store>:<ref> and vault:<path>", () => {
+    assert.deepEqual(Registry.parseInlineSecret("secret:pam:Safe=a;Object=b"), { store: "pam", ref: "Safe=a;Object=b" });
+    assert.deepEqual(Registry.parseInlineSecret("vault:database/creds/ro"), { store: "vault", ref: "database/creds/ro" });
+    assert.equal(Registry.parseInlineSecret("plain-name"), null);
+    assert.equal(Registry.parseInlineSecret(undefined), null);
+    assert.throws(() => Registry.parseInlineSecret("secret:nostore"), /secret:<store>:<ref>/);
+  });
+
+  test("host and database are read under their common names", () => {
+    const c = Registry.mapPayloadToCredential({ username: "u", password: "p", address: "h", database: "d" });
+    assert.equal(c.host, "h");
+    assert.equal(c.db_name, "d");
+    assert.equal("host" in Registry.mapPayloadToCredential({ password: "p" }), false);
   });
 });
 
