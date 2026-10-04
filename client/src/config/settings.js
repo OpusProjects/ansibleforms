@@ -37,6 +37,7 @@ export const CHAT_PROVIDERS = [
 // The secret store types (server/src/secrets/providers/index.js has the same list)
 export const SECRET_STORE_TYPES = [
     { value: "vault", label: "HashiCorp Vault" },
+    { value: "cyberark_ccp", label: "CyberArk Central Credential Provider" },
 ];
 
 export default function getSettings(t) {
@@ -371,6 +372,9 @@ export default function getSettings(t) {
             { key: 'namespace', icon: 'folder', line: 2, label: t('settings.secretStores.namespace'), help: t('settings.secretStores.namespaceHelp'), required: false, hidden: true, dependency: 'type', dependencyValues: ['vault'] },
             { key: 'kv_version', icon: 'code-branch', line: 2, label: t('settings.secretStores.kvVersion'), type: 'select', parent: 'kvVersions', values: [{ value: 2, label: 'KV v2' }, { value: 1, label: 'KV v1' }], valueKey: 'value', labelKey: 'label', required: false, hidden: true, dependency: 'type', dependencyValues: ['vault'] },
             { key: 'default_mount', icon: 'folder-open', line: 2, label: t('settings.secretStores.defaultMount'), help: t('settings.secretStores.defaultMountHelp'), placeholder: 'secret', required: false, hidden: true, dependency: 'type', dependencyValues: ['vault'] },
+            { key: 'app_id', icon: 'id-badge', line: 2, label: t('settings.secretStores.appId'), help: t('settings.secretStores.appIdHelp'), required: true, hidden: true, dependency: 'type', dependencyValues: ['cyberark_ccp'] },
+            { key: 'client_cert', icon: 'certificate', type: 'textarea', line: 2, label: t('settings.secretStores.clientCert'), help: t('settings.secretStores.clientCertHelp'), placeholder: '-----BEGIN CERTIFICATE-----', required: false, hidden: true, dependency: 'type', dependencyValues: ['cyberark_ccp'] },
+            { key: 'client_key', icon: 'key', type: 'textarea', line: 2, label: t('settings.secretStores.clientKey'), help: t('settings.secretStores.clientKeyHelp'), placeholder: '-----BEGIN PRIVATE KEY-----', required: false, hidden: true, dependency: 'type', dependencyValues: ['cyberark_ccp'] },
             { key: 'cache_ttl_seconds', icon: 'clock', line: 3, type: 'number', label: t('settings.secretStores.cacheTtl'), help: t('settings.secretStores.cacheTtlHelp'), required: false, hidden: true, dependency: 'type' },
             { key: 'ignore_certs', line: 4, type: 'checkbox', label: t('settings.ldap.ignoreCerts'), hidden: true, dependency: 'type' },
             { key: 'ca_bundle', icon: 'certificate', type: 'textarea', line: 5, label: t('settings.fields.caBundle'), help: t('settings.secretStores.caBundleHelp'), required: false, dependency: 'ignore_certs', negateDependency: true, placeholder: '-----BEGIN CERTIFICATE-----', hidden: true },

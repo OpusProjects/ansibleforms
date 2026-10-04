@@ -2,12 +2,13 @@
 // adding a backend is one file here and one entry in PROVIDERS (and in the client's list in
 // client/src/config/settings.js).
 import vault from "./vault.js";
+import cyberark_ccp from "./cyberark_ccp.js";
 import SecretStore from "../../models/secretStore.model.js";
 import Errors from "../../lib/errors.js";
 import { getCached, setCached, clearSecretCache } from "../cache.js";
 import { LEASE_SECONDS, leaseCacheSeconds } from "../lease.js";
 
-const PROVIDERS = { vault };
+const PROVIDERS = { vault, cyberark_ccp };
 export const SECRET_STORE_TYPES = Object.keys(PROVIDERS);
 
 // The store that a credential's deprecated vault_path and the inline "vault:" prefix read

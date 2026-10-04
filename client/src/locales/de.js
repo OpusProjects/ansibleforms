@@ -511,6 +511,12 @@ export default {
       caBundleHelp: "Leer lassen, um den Zertifizierungsstellen des Systems zu vertrauen.",
       extra: "Zusätzliche Optionen (JSON)",
       extraHelp: "Optionen des Store-Typs, als JSON-Objekt.",
+      appId: "AppID",
+      appIdHelp: "Die in CyberArk für AnsibleForms angelegte Application ID.",
+      clientCert: "Client-Zertifikat",
+      clientCertHelp: "PEM-Zertifikat, wenn die AppID auf ein Client-Zertifikat beschränkt ist. Leer lassen bei einer Beschränkung auf IP oder OS-Benutzer.",
+      clientKey: "Client-Schlüssel",
+      clientKeyHelp: "PEM-Privatschlüssel des Client-Zertifikats. Wird verschlüsselt gespeichert.",
     },
     storedJobs: {
       label: "Gespeicherter Job",
@@ -540,7 +546,7 @@ export default {
       secretStoreHelp: "Wenn gesetzt, werden Benutzer und Passwort aus diesem Secret Store gelesen. Lassen Sie die Felder Benutzer und Passwort leer.",
       secretRef: "Secret-Referenz",
       secretRefPlaceholder: "z.B. secret/myapp/prod",
-      secretRefHelp: "Wo das Secret im Store liegt. Bei HashiCorp Vault der Pfad, z.B. secret/myapp/prod.",
+      secretRefHelp: "Wo das Secret im Store liegt. Bei HashiCorp Vault der Pfad, z.B. secret/myapp/prod ; bei CyberArk das Konto, z.B. Safe=Linux;Object=root-srv01.",
     },
     ssh: {
       label: "SSH-Schluessel",
