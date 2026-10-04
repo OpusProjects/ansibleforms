@@ -3,6 +3,7 @@
 import http from "http";
 import https from "https";
 import { createHash } from "crypto";
+import { stripTrailingSlashes } from "../../lib/url.js";
 
 const httpAgent = new http.Agent({ keepAlive: true, keepAliveMsecs: 30000, maxSockets: 10 });
 const httpsAgents = new Map();
@@ -32,5 +33,5 @@ export function agentsFor(store) {
 }
 
 export function baseUrl(store) {
-  return String(store.url || "").replace(/\/+$/, "");
+  return stripTrailingSlashes(store.url || "");
 }

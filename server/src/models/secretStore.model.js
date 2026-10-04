@@ -4,6 +4,7 @@ import CrudModel from './crud.model.js';
 import Errors from '../lib/errors.js';
 import { SECRET_STORE_TYPES } from '../secrets/providers/index.js';
 import { clearSecretCache } from '../secrets/cache.js';
+import { stripTrailingSlashes } from '../lib/url.js';
 
 // what secretStore.controller.js shows instead of a stored secret
 export const SECRET_MASK = '********';
@@ -22,7 +23,7 @@ class SecretStore extends CrudModel {
     if (data.type !== undefined && !SECRET_STORE_TYPES.includes(data.type)) {
       throw new Errors.BadRequestError(`Unknown secret store type '${data.type}' - use one of ${SECRET_STORE_TYPES.join(', ')}`);
     }
-    if (typeof data.url === 'string') data.url = data.url.trim().replace(/\/+$/, '');
+    if (typeof data.url === 'string') data.url = stripTrailingSlashes(data.url.trim());
     if (data.kv_version !== undefined) {
       const v = data.kv_version === '' || data.kv_version === null ? 2 : parseInt(data.kv_version, 10);
       if (![1, 2].includes(v)) throw new Errors.BadRequestError('kv_version must be 1 or 2');
