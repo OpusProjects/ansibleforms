@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.1.0](https://github.com/OpusProjects/ansibleforms/compare/7.0.0...7.1.0) (2026-10-04)
+
+
+### Added
+
+* **credentials:** a CyberArk Central Credential Provider secret store ([#572](https://github.com/OpusProjects/ansibleforms/issues/572)) ([a19ae72](https://github.com/OpusProjects/ansibleforms/commit/a19ae72d37d48d55886c886f2aed30de00688ae7))
+* **credentials:** dynamic Vault credentials and inline secrets in dbConfig ([#571](https://github.com/OpusProjects/ansibleforms/issues/571)) ([262154b](https://github.com/OpusProjects/ansibleforms/commit/262154b9c0330a7b3b77fcd238d6472eaa8877c4))
+* **credentials:** secret stores with a provider registry (HashiCorp Vault) ([#570](https://github.com/OpusProjects/ansibleforms/issues/570)) ([da3fe6a](https://github.com/OpusProjects/ansibleforms/commit/da3fe6aef0df90b613fb167228cbca77f1725ac3))
+* **gui:** column presets, number and yes/no filters and CSV export in admin tables ([#573](https://github.com/OpusProjects/ansibleforms/issues/573)) ([944832c](https://github.com/OpusProjects/ansibleforms/commit/944832c1e82578924d7bb8b89b31ae7c6aba0ba9))
+
+
+### Fixed
+
+* **credentials:** fnCredentials honours its fallback, one credential resolver ([#569](https://github.com/OpusProjects/ansibleforms/issues/569)) ([ee59299](https://github.com/OpusProjects/ansibleforms/commit/ee592996b3807a88033d3b42541904977efeae68))
+
 ## [7.0.0](https://github.com/OpusProjects/ansibleforms/compare/6.5.2...7.0.0) (2026-10-02)
 
 
