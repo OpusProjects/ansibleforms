@@ -30,6 +30,7 @@ import AwxModel from "./awx.model.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import i18n from "../lib/i18n.js";
+import { stripTrailingSlashes } from "../lib/url.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1526,7 +1527,7 @@ Job._buildAndSendEmail = async function ({
 }) {
   try {
     const config = await Settings.findUrl();
-    const url = config.url?.replace(/\/$/g, "");
+    const url = config.url ? stripTrailingSlashes(config.url) : config.url;
 
     if (!url) {
       logger.warning(
