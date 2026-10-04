@@ -3,7 +3,8 @@ version: 2
 # Dependabot NEVER proposes a major version : every entry ignores semver-major updates.
 # Majors carry breaking changes by definition, so they are done by hand (npm outdated,
 # read the changelog, decide) and never arrive through a routine-looking pull request.
-# Minor and patch updates are grouped into one pull request per entry per week.
+# Updates are never grouped : every dependency gets its own pull request, so each one can be
+# reviewed, tested and reverted on its own.
 #
 # Every pull request title here must pass the PR / Title check (Conventional Commits), so
 # each entry sets a commit-message prefix : build(deps) for what ships in the image, ci for
@@ -20,9 +21,6 @@ updates:
     ignore:
       - dependency-name: '*'
         update-types: ['version-update:semver-major']
-    groups:
-      client:
-        patterns: ['*']
 
   - package-ecosystem: npm
     directory: /server
@@ -34,9 +32,6 @@ updates:
     ignore:
       - dependency-name: '*'
         update-types: ['version-update:semver-major']
-    groups:
-      server:
-        patterns: ['*']
 
   - package-ecosystem: github-actions
     directory: /
@@ -47,9 +42,6 @@ updates:
     ignore:
       - dependency-name: '*'
         update-types: ['version-update:semver-major']
-    groups:
-      actions:
-        patterns: ['*']
 
   # Moves the digest pin on ansibleforms-base in Dockerfile when .github/workflows/base.yml
   # publishes a new base image. Dockerfile.base (node) is watched too - within its major.
@@ -78,9 +70,6 @@ updates:
     ignore:
       - dependency-name: '*'
         update-types: ['version-update:semver-major', 'version-update:semver-minor']
-    groups:
-      client-6x:
-        patterns: ['*']
 
   - package-ecosystem: npm
     directory: /server
@@ -93,9 +82,6 @@ updates:
     ignore:
       - dependency-name: '*'
         update-types: ['version-update:semver-major', 'version-update:semver-minor']
-    groups:
-      server-6x:
-        patterns: ['*']
 
   - package-ecosystem: docker
     directory: /
