@@ -4,7 +4,7 @@
 // When CONFIG_SEED_PATH is set, that file is read at startup and the objects it
 // declares (awx, credentials, oauth2 providers, repositories, ldap, mail/url) are
 // upserted into the database. This is the piece that lets a whole instance be
-// rebuilt from git on an empty database - see docs/seed.md.
+// rebuilt from git on an empty database - see https://ansibleforms.com/seed.
 //
 // Objects that come from the seed are flagged `managed` : the seed re-applies them on
 // every start and the API refuses to change them, so the file stays authoritative.
@@ -350,7 +350,7 @@ export async function applyConfigSeed({ schemaIsReady = true } = {}) {
   // including a single addIndex that could not apply, which schemaCheck itself grades only a
   // WARNING ("slow, not broken"). Refusing to start on that turned an upgrade into a
   // CrashLoopBackOff with no way in: the app never listens, so POST /api/v2/schema - the
-  // documented manual repair, and the readiness probe in docs/seed.md - is unreachable, and
+  // documented manual repair, and the readiness probe in https://ansibleforms.com/seed - is unreachable, and
   // the only escape is editing the Deployment to unset CONFIG_SEED_PATH. It also contradicted
   // schema.model.js's own note that a missing ALTER grant "does not stop the app".
   //

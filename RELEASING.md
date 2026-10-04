@@ -35,7 +35,8 @@ feature PR ──squash──▶ main ──▶ release-please updates the open 
 ### The image tags
 
 The tags and what they point to are listed once, for users, under
-[Image tags](docs/installation.md#image-tags). Do not repeat or change them elsewhere.
+[Image tags](https://ansibleforms.com/installation#image-tags) (`installation.md` in
+[ansibleforms/website](https://github.com/ansibleforms/website)). Do not repeat or change them elsewhere.
 publish.yml implements that list: `latest`, `<major>` and `<major>.<minor>` only move when
 the release is the highest of its kind, so a patch on an older line never moves them
 backwards. The release workflow also keeps GitHub's "Latest release" badge on the highest
@@ -123,7 +124,6 @@ A test server does not need an image copied to it: it can pull `latest-rc`.
 | `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` | secrets of the `dockerhub` environment | publish.yml, base.yml |
 | `DOCKERHUB_REPOSITORY`, `DOCKERHUB_BASE_REPOSITORY` | optional repository variables | publish.yml, base.yml |
 | `dockerhub` environment | must allow `main`, `release/*` and pull request refs | publish.yml (rc runs on a pull request) |
-| `github-pages` environment | deployment branch `main` (it also builds the frozen `release/6.x` docs under `/v6/`) | pages.yml |
 | ruleset on `main` and `release/*` | pull request required, squash only, required checks, no force push | everything |
 
 The App token is needed because a pull request opened with the default `GITHUB_TOKEN`

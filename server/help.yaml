@@ -1001,7 +1001,7 @@
 
       A single form can override this with its `userExtravars` property.  The frontend `__user__` object comes from the login token and is not affected, and neither are role checks or the form's own `roles` list.
 
-      **Note** : `docs/faq.md` suggests asserting on `ansibleforms_user.groups` inside a playbook as a defence in depth check.  If you do that, keep `groups` in the list.
+      **Note** : the [FAQ](https://ansibleforms.com/faq) suggests asserting on `ansibleforms_user.groups` inside a playbook as a defence in depth check.  If you do that, keep `groups` in the list.
   - name: UPLOAD_PATH
     type: string
     version: 4.0.16

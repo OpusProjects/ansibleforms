@@ -9,7 +9,7 @@
 //   - a placeholder inside a longer string got a JS literal, so its quotes ended up in the
 //     middle of the string : fn.fnReadYamlFile('$(BASEDIR)/playbooks/vars/clusters.yml')
 //     resolved to '"/app/dist/persistent"/playbooks/...' and ENOENT'd on every path and
-//     url built that way (the documented AWX examples in docs/faq.md are all this shape)
+//     url built that way (the documented AWX examples in https://ansibleforms.com/faq are all this shape)
 //   - a quoted placeholder must take the quotes WITH it, or a value carrying an apostrophe
 //     closes the string early and the rest of it is read as code
 //   - a bare placeholder must stay a JS literal, or `$(count) + 1` concatenates
@@ -52,7 +52,7 @@ describe('a placeholder inside a longer string', () => {
   });
 
   it('keeps a url query intact', () => {
-    // docs/faq.md : fn.fnRestJwtSecure('get','https://.../job_templates?organization=$(organization)',...)
+    // https://ansibleforms.com/faq : fn.fnRestJwtSecure('get','https://.../job_templates?organization=$(organization)',...)
     const out = sub("'https://awx/api/v2/job_templates?organization=$(organization)'",
       '$(organization)', 'my org');
     expect(evaluate(out)).toBe('https://awx/api/v2/job_templates?organization=my org');

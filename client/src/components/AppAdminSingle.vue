@@ -179,7 +179,7 @@
         return showDisabled.value && !field.hideWhenDisabled;
     }
 
-    // Owned by the declarative config seed (docs/seed.md). The API answers 403, and the
+    // Owned by the declarative config seed (https://ansibleforms.com/seed). The API answers 403, and the
     // seed re-applies on every start, so an editable form here could only mislead. The
     // values stay visible - an operator still needs to read what is in force.
     const isManaged = computed(() => !!item.value?.managed);

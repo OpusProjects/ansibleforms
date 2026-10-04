@@ -674,7 +674,7 @@
         }];
     });
 
-    // Records the declarative config seed owns (docs/seed.md). The API answers 403 on
+    // Records the declarative config seed owns (https://ansibleforms.com/seed). The API answers 403 on
     // them, so offering Edit and Delete would only produce an error - and the seed
     // re-applies on every start, so even a successful change would be reverted.
     // Read-only actions (test, preview, trigger) stay available.

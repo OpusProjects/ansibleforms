@@ -464,7 +464,7 @@ const Helpers = {
    *                                of the string : '$(dir)/vars' with /app/persistent became
    *                                '"/app/persistent"/vars', which is what ENOENT'd on every
    *                                path and url built this way (the documented AWX examples
-   *                                in docs/faq.md are all of this shape).
+   *                                in https://ansibleforms.com/faq are all of this shape).
    *   $(count) + 1                 no string at all -> a JS literal, so a number stays a
    *                                number and still adds instead of concatenating.
    *

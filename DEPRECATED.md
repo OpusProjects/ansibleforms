@@ -11,7 +11,7 @@ Removed in 8.0.0. Each logs a warning when it is used.
 ## Removed in 7.0.0
 
 Everything 6.x marked as deprecated was removed in 7.0.0. The upgrade guide
-([docs/upgrade-7.md](docs/upgrade-7.md), on the site under *Upgrading to 7*) says what
+([Upgrading to 7](https://ansibleforms.com/upgrade-7) on the site) says what
 replaces each item and how to move over while still on 6.5.
 
 | Removed | Replacement | Deprecated since |
