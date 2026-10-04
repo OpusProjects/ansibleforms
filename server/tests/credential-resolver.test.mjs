@@ -42,10 +42,12 @@ vi.mock("../src/models/db.model.js", () => ({
   },
 }));
 
-const vault = { payload: {}, reads: 0 };
-vi.mock("../src/lib/vault.js", () => ({
-  vaultRead: async () => { vault.reads++; return vault.payload; },
-  mapVaultPayloadToCredential: (p) => ({ ...p, user: p.user ?? p.username ?? "", password: p.password ?? "" }),
+// the store registry : the store's own cache is its business, so every read reaches here
+const vault = { payload: {}, reads: 0, last: null };
+vi.mock("../src/secrets/providers/index.js", () => ({
+  VAULT_STORE_NAME: "vault",
+  readSecret: async (store, ref) => { vault.reads++; vault.last = { store, ref }; return vault.payload; },
+  mapPayloadToCredential: (p) => ({ ...p, user: p.user ?? p.username ?? "", password: p.password ?? "" }),
 }));
 
 const appConfig = (await import("./__mocks__/app.config.js")).default;
@@ -65,6 +67,7 @@ beforeEach(() => {
   lookups = 0;
   vault.payload = {};
   vault.reads = 0;
+  vault.last = null;
 });
 
 describe("resolveCredential", () => {
@@ -126,6 +129,28 @@ describe("resolveCredential", () => {
     assert.equal((await Credential.resolveCredential("db1")).password, "rotated");
     assert.equal(vault.reads, 2);
     assert.equal(lookups, 1);
+    assert.deepEqual(vault.last, { store: "vault", ref: "secret/db1" }, "vault_path reads the store named vault");
+  });
+
+  test("a row naming a secret store reads from it, and empty row fields are filled from the secret", async () => {
+    rows = [dbRow({ secret_store: "cyberark", secret_ref: "Safe=db;Object=db1", password: null, host: "", port: null, db_name: "" })];
+    vault.payload = { username: "pam", password: "pampw", host: "db.pam", port: 5432, db_name: "sales" };
+    const c = await Credential.resolveCredential("db1");
+    assert.deepEqual(vault.last, { store: "cyberark", ref: "Safe=db;Object=db1" });
+    assert.equal(c.user, "pam");
+    assert.equal(c.password, "pampw");
+    assert.equal(c.host, "db.pam");
+    assert.equal(c.port, 5432);
+    assert.equal(c.db_name, "sales");
+    for (const k of ["secret_store", "secret_ref", "vault_path"]) assert.equal(k in c, false, `${k} is not handed out`);
+  });
+
+  test("a secret never overrides a host the row sets", async () => {
+    rows = [dbRow({ secret_store: "cyberark", secret_ref: "x", password: null })];
+    vault.payload = { username: "pam", password: "pampw", host: "elsewhere", db_name: "other" };
+    const c = await Credential.resolveCredential("db1");
+    assert.equal(c.host, "db.local");
+    assert.equal(c.db_name, "inventory");
   });
 
   test("a deleted credential is not resolvable from the cache", async () => {

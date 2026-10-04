@@ -3,19 +3,34 @@ import Errors from '../lib/errors.js';
 import logger from '../lib/logger.js';
 import mysql from './db.model.js';
 import crypto from '../lib/crypto.js';
-import { vaultRead, mapVaultPayloadToCredential } from '../lib/vault.js';
+import { readSecret, mapPayloadToCredential, VAULT_STORE_NAME } from '../secrets/providers/index.js';
 import dbConfig from '../../config/db.config.js';
 
 class CredentialModel extends CrudModel {
   static modelName = 'credential';
 
+  // vault_path is deprecated : a credential names its store and the place in it. A write
+  // that still uses vault_path is pointed at the store named `vault`, and a write that
+  // names a store clears vault_path, so the two can never disagree.
+  static mirrorVaultPath(data) {
+    if (data.secret_store === '') data.secret_store = null;
+    if (data.vault_path && !data.secret_store) {
+      logger.warning(`Credential '${data.name || ''}' : vault_path is deprecated since 7.1 and removed in 8 - use secret_store and secret_ref`);
+      data.secret_store = VAULT_STORE_NAME;
+      data.secret_ref = data.vault_path;
+    } else if (data.secret_store !== undefined) {
+      data.vault_path = null;
+    }
+    return data;
+  }
+
   // opts carries { fromSeed:true } for the declarative config seed only
   static async create(data, opts = {}) {
-    return super.create(this.modelName, data, opts);
+    return super.create(this.modelName, this.mirrorVaultPath(data), opts);
   }
 
   static async update(data, id, opts = {}) {
-    return super.update(this.modelName, data, id, opts);
+    return super.update(this.modelName, this.mirrorVaultPath(data), id, opts);
   }
 
   static async delete(id, opts = {}) {
@@ -35,18 +50,14 @@ class CredentialModel extends CrudModel {
   }
 
   // Exact name, every column of the row (the API's ?name= and fnCredentials use it).
-  // user/password come from HashiCorp Vault when the row has a vault_path.
+  // user/password come from the secret store when the row names one.
   static async findByName(name) {
     const cached = await super.findByName(this.modelName, name);
     if (!cached) return cached;
     const result = { ...cached };
-    if (result.vault_path) {
-      await overlaySecret(result);
-      // a vault-backed row is not kept in the long-lived cache, so a rotated password is
-      // picked up promptly ; the vault lib has its own, shorter cache
-      this.getCache(this.modelName)?.del(`name:${name}`);
-    }
-    delete result.vault_path;
+    const source = secretSource(result);
+    if (source) await overlaySecret(result, source, !!result.is_database);
+    stripSecretSource(result);
     return result;
   }
 
@@ -68,6 +79,7 @@ class CredentialModel extends CrudModel {
       cache?.set(cacheKey, row);
     }
     const result = { ...row };
+    const isDatabase = !!result.is_database;
     if (result.is_database) {
       result.multipleStatements = true;
     } else {
@@ -76,8 +88,9 @@ class CredentialModel extends CrudModel {
       delete result.db_type;
       delete result.is_database;
     }
-    if (result.vault_path) {
-      await overlaySecret(result);
+    const source = secretSource(result);
+    if (source) {
+      await overlaySecret(result, source, isDatabase);
     } else {
       try {
         result.password = crypto.decrypt(result.password);
@@ -86,7 +99,7 @@ class CredentialModel extends CrudModel {
         result.password = "";
       }
     }
-    delete result.vault_path;
+    stripSecretSource(result);
     return result;
   }
 
@@ -116,7 +129,7 @@ class CredentialModel extends CrudModel {
   }
 }
 
-const ROW_SQL = "SELECT host,port,db_name,name,user,password,secure,db_type,is_database,vault_path FROM AnsibleForms.`credentials` WHERE name REGEXP ?";
+const ROW_SQL = "SELECT host,port,db_name,name,user,password,secure,db_type,is_database,vault_path,secret_store,secret_ref FROM AnsibleForms.`credentials` WHERE name REGEXP ?";
 
 async function lookupRow(nameOrRegex, fallbackName) {
   let res = await mysql.do(ROW_SQL, nameOrRegex);
@@ -127,17 +140,39 @@ async function lookupRow(nameOrRegex, fallbackName) {
   return res[0];
 }
 
-// user/password from HashiCorp Vault ; host, port and the database settings stay those of
-// the row
-async function overlaySecret(result) {
+// Where the row's user and password live : the store it names, or - for a row written
+// before secret stores existed - the store named `vault` at its vault_path.
+function secretSource(row) {
+  if (row.secret_store) return { store: row.secret_store, ref: row.secret_ref || "" };
+  if (row.vault_path) return { store: VAULT_STORE_NAME, ref: row.vault_path };
+  return null;
+}
+
+const isEmpty = (v) => v === undefined || v === null || v === "";
+
+// user and password always come from the store. Host, port and database name stay those of
+// the row, and are taken from the store only where the row leaves them empty - a CyberArk
+// account carries its address, so the row need not repeat it.
+async function overlaySecret(result, source, isDatabase) {
+  let mapped;
   try {
-    const mapped = mapVaultPayloadToCredential(await vaultRead(result.vault_path));
-    result.user = mapped.user || result.user || "";
-    result.password = mapped.password || "";
+    mapped = mapPayloadToCredential(await readSecret(source.store, source.ref));
   } catch (e) {
-    logger.error(`Failed to read credential '${result.name}' from Vault: ${e.message}`);
+    logger.error(`Failed to read credential '${result.name}' from secret store '${source.store}': ${e.message}`);
     throw e;
   }
+  result.user = mapped.user || result.user || "";
+  result.password = mapped.password || "";
+  if (isEmpty(result.host) && !isEmpty(mapped.host)) result.host = mapped.host;
+  if (isEmpty(result.port) && !isEmpty(mapped.port)) result.port = mapped.port;
+  if (isDatabase && isEmpty(result.db_name) && !isEmpty(mapped.db_name)) result.db_name = mapped.db_name;
+}
+
+// a playbook receives the credential as an extra var : where it came from is not its business
+function stripSecretSource(result) {
+  delete result.vault_path;
+  delete result.secret_store;
+  delete result.secret_ref;
 }
 
 export default CredentialModel;

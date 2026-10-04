@@ -93,20 +93,13 @@ describe("editing environment variables", () => {
       assert.equal(Env.applyLive("JOB_RETENTION_DAYS", "45"), true);
       assert.equal(appConfig.jobRetentionDays, 45, "takes effect without a restart");
       assert.equal(Env.applyLive("PORT", "9999"), false, "PORT is captured before listen");
-      // vault.js:getEnv() rebuilds from process.env on every operation, so no restart
-      assert.equal(Env.classify("VAULT_TOKEN"), "live");
-      assert.equal(Env.applyLive("VAULT_TOKEN", "hvs.test"), true);
-      assert.equal(process.env.VAULT_TOKEN, "hvs.test");
-      // its cache ttl is applied through setCacheTtl : node-cache reads options.stdTTL on
-      // every set(), so it needs no restart either
-      assert.equal(Env.classify("VAULT_CACHE_TTL_MS"), "live");
-      assert.equal(Env.applyLive("VAULT_CACHE_TTL_MS", "5000"), true);
+      // VAULT_* are imported once when upgrading and ignored afterwards : nothing to apply
+      assert.equal(Env.applyLive("VAULT_TOKEN", "hvs.test"), false);
       assert.equal(process.env.PORT, "9999", "still written to the environment");
     } finally {
       appConfig.jobRetentionDays = saved;
       delete process.env.PORT;
       delete process.env.VAULT_TOKEN;
-      delete process.env.VAULT_CACHE_TTL_MS;
     }
   });
 

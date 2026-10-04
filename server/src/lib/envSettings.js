@@ -12,7 +12,6 @@ import { rebuildBodyParsers } from './bodyParsers.js';
 import authConfig from '../../config/auth.config.js';
 import logConfig from '../../config/log.config.js';
 import ansibleConfig from '../../config/ansible.config.js';
-import { setCacheTtl } from './vault.js';
 
 // Editing environment variables from the settings page.
 //
@@ -115,11 +114,7 @@ const LIVE = {
 
 // Read straight from process.env at call time by their consumer rather than captured into
 // appConfig, so setting the environment variable is enough - no appConfig key to update.
-// vault.js:getEnv() rebuilds its config on every operation, which is why these are live.
-// VAULT_CACHE_TTL_MS is NOT here: its NodeCache is constructed once at import.
 const LIVE_ENV_ONLY = new Set([
-  'VAULT_ADDR', 'VAULT_TOKEN', 'VAULT_NAMESPACE', 'VAULT_KV_VERSION',
-  'VAULT_DEFAULT_MOUNT', 'VAULT_SKIP_VERIFY',
   // app.routes reads these inside the /api/v2/app/config handler, so the next page load
   // has them
   'NAV_HOME_LABEL', 'NAV_HOME_ICON',
@@ -132,7 +127,6 @@ const LIVE_ENV_ONLY = new Set([
 // Live, but needing more than an appConfig field or process.env : a function that
 // reconfigures something already constructed.
 const LIVE_CUSTOM = {
-  VAULT_CACHE_TTL_MS: (value) => setCacheTtl(value),
   // jwt.sign() reads these off authConfig at call time (token.controller, login.controller),
   // so updating the object is enough - the next token issued uses the new value
   ACCESS_TOKEN_EXPIRATION: (v) => { authConfig.jwtExpiration = v; },

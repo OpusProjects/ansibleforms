@@ -53,9 +53,38 @@ const credentialItem = {
     db_type: str,
     secure: bool,
     is_database: bool,
-    // a credential can take its password from HashiCorp Vault instead of carrying
-    // one here at all - see the Vault page
+    // a credential can take its user and password from a secret store instead of
+    // carrying them here at all : the store's name and the place in it
+    secret_store: str,
+    secret_ref: str,
+    // deprecated since 7.1, removed in 8 : the same as secret_store 'vault' + secret_ref
     vault_path: str,
+  },
+};
+
+// Which fields a type uses is up to its provider (src/secrets/providers) ; the schema
+// accepts them all so a seed can declare any store type.
+const secretStoreItem = {
+  type: "object",
+  additionalProperties: false,
+  required: ["name", "type", "url"],
+  properties: {
+    name: str,
+    type: str,
+    description: str,
+    url: str,
+    token: str,
+    namespace: str,
+    kv_version: strOrInt,
+    default_mount: str,
+    app_id: str,
+    client_cert: str,
+    client_key: str,
+    ignore_certs: bool,
+    ca_bundle: str,
+    cache_ttl_seconds: strOrInt,
+    // an object, or the same as JSON text
+    extra: { type: ["object", "string"] },
   },
 };
 
@@ -213,6 +242,7 @@ export const seedSchema = {
   properties: {
     version: { type: "integer", enum: [1] },
     awx: listSection(awxItem),
+    secret_stores: listSection(secretStoreItem),
     credentials: listSection(credentialItem),
     oauth2: listSection(oauth2Item),
     repositories: listSection(repositoryItem),

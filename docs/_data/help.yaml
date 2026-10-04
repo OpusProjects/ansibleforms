@@ -63,61 +63,68 @@
   - name: VAULT_ADDR
     type: string
     allowed: a valid HashiCorp Vault URL
-    short: HashiCorp Vault address
+    short: HashiCorp Vault address (deprecated)
     required: false
     description: |
+      **Deprecated since 7.1, removed in 8.** The first 7.x start that finds these variables imports them once as the secret store `vault`; after that they are ignored. Manage the Vault under Connections > Secret stores.
       Base URL of a HashiCorp Vault server (e.g. `https://vault.example.com:8200`).
       When set together with `VAULT_TOKEN`, AnsibleForms can resolve credentials from Vault.
       A credential row in the local database can specify a `vault_path`; when present, the user/password are fetched from Vault at runtime instead of being read from the local encrypted columns.
   - name: VAULT_TOKEN
     type: string
     allowed: a valid Vault token
-    short: HashiCorp Vault token
+    short: HashiCorp Vault token (deprecated)
     required: false
     description: |
+      **Deprecated since 7.1, removed in 8.** The first 7.x start that finds these variables imports them once as the secret store `vault`; after that they are ignored. Manage the Vault under Connections > Secret stores.
       Authentication token used by AnsibleForms to read secrets from Vault.
       Required when `VAULT_ADDR` is set.
       Use a token with read-only access to the relevant secret paths.
   - name: VAULT_NAMESPACE
     type: string
-    short: HashiCorp Vault namespace
+    short: HashiCorp Vault namespace (deprecated)
     required: false
     description: |
+      **Deprecated since 7.1, removed in 8.** The first 7.x start that finds these variables imports them once as the secret store `vault`; after that they are ignored. Manage the Vault under Connections > Secret stores.
       Optional Vault Enterprise namespace. Sent as the `X-Vault-Namespace` header on every request.
   - name: VAULT_KV_VERSION
     type: number
     allowed: 1, 2
-    short: Vault KV secret engine version
+    short: Vault KV secret engine version (deprecated)
     required: false
     default: 2
     description: |
+      **Deprecated since 7.1, removed in 8.** The first 7.x start that finds these variables imports them once as the secret store `vault`; after that they are ignored. Manage the Vault under Connections > Secret stores.
       Version of the Vault KV secret engine. Defaults to 2 (recommended).
       For KV v2, the client automatically inserts the `/data/` segment in the API path if it is missing.
   - name: VAULT_DEFAULT_MOUNT
     type: string
-    short: Default Vault KV mount
+    short: Default Vault KV mount (deprecated)
     required: false
     default: secret
     description: |
+      **Deprecated since 7.1, removed in 8.** The first 7.x start that finds these variables imports them once as the secret store `vault`; after that they are ignored. Manage the Vault under Connections > Secret stores.
       Default KV mount used when a credential's `vault_path` is provided as a bare key (no slash).
       For example, with the default `secret` mount, `vault_path = "myapp"` resolves to `secret/data/myapp` (KV v2).
   - name: VAULT_CACHE_TTL_MS
     type: number
-    short: Vault read cache TTL (ms)
+    short: Vault read cache TTL (ms) (deprecated)
     hint: How long a secret read from Vault is cached, in milliseconds.
     required: false
     default: 60000
     description: |
+      **Deprecated since 7.1, removed in 8.** The first 7.x start that finds these variables imports them once as the secret store `vault`; after that they are ignored. Manage the Vault under Connections > Secret stores.
       Time-to-live in milliseconds of the in-memory cache used by AnsibleForms when reading secrets from Vault.
       Lower this if you rotate secrets aggressively; raise it to reduce load on Vault.
   - name: VAULT_SKIP_VERIFY
     type: string
     allowed: "true, false"
-    short: Skip Vault TLS verification
+    short: Skip Vault TLS verification (deprecated)
     hint: Skips certificate checks when calling Vault. For development only.
     required: false
     default: "false"
     description: |
+      **Deprecated since 7.1, removed in 8.** The first 7.x start that finds these variables imports them once as the secret store `vault`; after that they are ignored. Manage the Vault under Connections > Secret stores.
       Disable TLS certificate verification when calling Vault. **For development/testing only** — never enable this in production.
   - name: PORT
     type: number

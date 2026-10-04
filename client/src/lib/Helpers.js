@@ -7,8 +7,8 @@ const Helpers = {
   // is a short enum. 'true, false' and '1, 2' become dropdowns ; 'a valid Vault token' and
   // 'a url subpath, for example /ansibleforms' stay free text.
   //
-  // This matters beyond tidiness: vault.js tests VAULT_SKIP_VERIFY with
-  // `String(v).toLowerCase() === "true"`, so 'yes', '1' or 'True' silently do nothing. A
+  // This matters beyond tidiness: the server tests a boolean like VAULT_SKIP_VERIFY against
+  // the literals it knows, so 'yes' or 'on' silently do nothing. A
   // dropdown that can only emit the documented literals removes that whole class of typo.
   envAllowedOptions(allowed) {
     if (!allowed) return null;

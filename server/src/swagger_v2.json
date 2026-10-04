@@ -11,6 +11,7 @@
     { "name": "user", "description": "User management and profile" },
     { "name": "group", "description": "Group management" },
     { "name": "settings", "description": "Application settings and configuration" },
+    { "name": "secretstore", "description": "Secret stores (HashiCorp Vault, ...) that credentials read from" },
     { "name": "config", "description": "Form configuration (config.yaml) and designer support" },
     { "name": "ssh", "description": "SSH key management" },
     { "name": "log", "description": "Application log access and download" },
@@ -1203,6 +1204,56 @@
           },
           "401": { "description": "Unauthorized" }
         }
+      }
+    },
+    "/secretstore": {
+      "get": {
+        "security": [ { "bearerAuth": [] } ],
+        "tags": ["secretstore"],
+        "summary": "List secret stores, or one by name (token and client_key masked)", "parameters": [ { "name": "name", "in": "query", "required": false, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Secret store list or single secret store" } }
+      },
+      "post": {
+        "security": [ { "bearerAuth": [] } ],
+        "tags": ["secretstore"],
+        "summary": "Create a secret store", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SecretStore" } } } },
+        "responses": { "201": { "description": "Secret store created" }, "400": { "description": "Unknown type or invalid field" } }
+      }
+    },
+    "/secretstore/{id}": {
+      "get": {
+        "security": [ { "bearerAuth": [] } ],
+        "tags": ["secretstore"],
+        "summary": "Get a secret store by ID (token and client_key masked)", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Secret store" }, "404": { "description": "Not found" } }
+      },
+      "put": {
+        "security": [ { "bearerAuth": [] } ],
+        "tags": ["secretstore"],
+        "summary": "Update a secret store by ID; a masked token or client_key is left unchanged", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SecretStore" } } } },
+        "responses": { "200": { "description": "Secret store updated" }, "404": { "description": "Not found" } }
+      },
+      "delete": {
+        "security": [ { "bearerAuth": [] } ],
+        "tags": ["secretstore"],
+        "summary": "Delete a secret store by ID", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Secret store deleted" }, "404": { "description": "Not found" } }
+      }
+    },
+    "/secretstore/{id}/check": {
+      "post": {
+        "security": [ { "bearerAuth": [] } ],
+        "tags": ["secretstore"],
+        "summary": "Test the connection to a secret store without reading a secret", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Connection OK, with details" }, "404": { "description": "Not found" } }
+      }
+    },
+    "/secretstore/{id}/mounts": {
+      "get": {
+        "security": [ { "bearerAuth": [] } ],
+        "tags": ["secretstore"],
+        "summary": "The KV mounts a HashiCorp Vault token can see", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Mount list" } }
       }
     },
     "/awx": {
@@ -2489,6 +2540,25 @@
       }
     },
     "schemas": {
+      "SecretStore": {
+        "type": "object",
+        "description": "A secret store. Which fields are used depends on the type.",
+        "required": ["name", "type", "url"],
+        "properties": {
+          "name": { "type": "string", "example": "vault" },
+          "type": { "type": "string", "enum": ["vault"] },
+          "description": { "type": "string" },
+          "url": { "type": "string", "example": "https://vault.example.com:8200" },
+          "token": { "type": "string", "description": "HashiCorp Vault token" },
+          "namespace": { "type": "string", "description": "Vault Enterprise namespace" },
+          "kv_version": { "type": "integer", "enum": [1, 2], "default": 2 },
+          "default_mount": { "type": "string", "example": "secret" },
+          "ignore_certs": { "type": "boolean" },
+          "ca_bundle": { "type": "string" },
+          "cache_ttl_seconds": { "type": "integer", "minimum": 0, "default": 60, "description": "0 reads the secret on every use" },
+          "extra": { "type": "string", "description": "JSON object with options of the store type" }
+        }
+      },
       "Awx": {
         "type": "object",
         "description": "AWX configuration object.",
@@ -2516,8 +2586,8 @@
         "properties": {
           "id": { "type": "integer", "description": "Unique identifier for the credential.", "example": 1 },
           "name": { "type": "string", "description": "Credential name.", "example": "db-main" },
-          "user": { "type": "string", "description": "Database user (leave empty when using vault_path).", "example": "dbuser" },
-          "password": { "type": "string", "description": "Database password (leave empty when using vault_path).", "example": "secret" },
+          "user": { "type": "string", "description": "Database user (leave empty when using a secret store).", "example": "dbuser" },
+          "password": { "type": "string", "description": "Database password (leave empty when using a secret store).", "example": "secret" },
           "host": { "type": "string", "description": "Database host.", "example": "localhost" },
           "port": { "type": "integer", "description": "Database port.", "example": 3306 },
           "db_name": { "type": "string", "description": "Database name.", "example": "mydb" },
@@ -2525,7 +2595,9 @@
           "is_database": { "type": "boolean", "description": "Is this a database credential?", "example": true },
           "description": { "type": "string", "description": "Description of the credential.", "example": "Main DB credential" },
           "db_type": { "type": "string", "description": "Type of database (mysql, postgres, etc).", "example": "mysql" },
-          "vault_path": { "type": "string", "description": "Optional HashiCorp Vault path. When set, user and password are read from Vault at this path instead of from the local DB columns.", "example": "secret/data/myapp/prod" }
+          "secret_store": { "type": "string", "description": "Name of the secret store user and password are read from.", "example": "vault" },
+          "secret_ref": { "type": "string", "description": "Where the secret lives in the store, e.g. a Vault path.", "example": "secret/myapp/prod" },
+          "vault_path": { "type": "string", "deprecated": true, "description": "Deprecated since 7.1, removed in 8 : the same as secret_store 'vault' with this secret_ref.", "example": "secret/data/myapp/prod" }
         },
         "required": ["name"]
   },

@@ -59,6 +59,34 @@ const crudConfigs = {
       { name: 'description' },
       { name: 'db_type' },
       { name: 'vault_path' },
+      { name: 'secret_store' },
+      { name: 'secret_ref' },
+      { name: 'managed', isBoolean: true }
+    ],
+    allowCache: true,
+    cacheTTL: 3600
+  },
+  // HashiCorp Vault, CyberArk, ... : where credentials read their user and password from.
+  // Which fields a type uses is up to its provider in src/secrets/providers.
+  secretstore: {
+    table: 'AnsibleForms.secret_stores',
+    fields: [
+      { name: 'id', isKey: true },
+      { name: 'name', isNaturalKey: true, required: true },
+      { name: 'type', required: true },
+      { name: 'description' },
+      { name: 'url', required: true },
+      { name: 'token', isEncrypted: true },
+      { name: 'namespace' },
+      { name: 'kv_version' },
+      { name: 'default_mount' },
+      { name: 'app_id' },
+      { name: 'client_cert' },
+      { name: 'client_key', isEncrypted: true },
+      { name: 'ignore_certs', isBoolean: true },
+      { name: 'ca_bundle' },
+      { name: 'cache_ttl_seconds' },
+      { name: 'extra' },
       { name: 'managed', isBoolean: true }
     ],
     allowCache: true,

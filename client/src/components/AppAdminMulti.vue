@@ -210,7 +210,12 @@
             if (field.parent && field.values && typeof field.values == 'string') {
                 // a dropdown source can live on another api version than the page
                 // itself
-                parentLists.value[field.parent] = await loadList(field.values, false, field.valuesApiVersion);
+                const list = await loadList(field.values, false, field.valuesApiVersion);
+                // an optional reference (a credential's secret store) must be clearable : a
+                // select has no way back to "nothing" without an empty option
+                parentLists.value[field.parent] = field.clearable
+                    ? [{ [field.valueKey]: '', [field.labelKey]: '' }, ...list]
+                    : list;
             }
             if (field.parent && field.values && Array.isArray(field.values)) {
                 parentLists.value[field.parent] = field.values;
