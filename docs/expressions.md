@@ -459,6 +459,8 @@ fn.fnCredentials('credentialname_or_regex','fallback_credentialname_or_regex')
 // output : a credential object with all properties (username, password, host, port)
 ```
 
+The exact name is tried first. When no credential has that name, the name is used as a regex, and then the fallback.
+
 #### HashiCorp Vault: stored credentials
 
 If a credential row in the admin UI has a **Vault Path** filled in, the `user` and `password` fields are read from HashiCorp Vault at runtime instead of from the local database. No code change is required — `fn.fnCredentials('myapp')` keeps working, but the secret is now sourced from Vault.

@@ -24,6 +24,7 @@ import ip from "../lib/ip.js";
 import { shellQuote } from "../lib/shell.js";
 import { assertUrlAllowed } from "../lib/hostfilter.js";
 import credentialModel from "../models/credential.model.v2.js";
+import Errors from "../lib/errors.js";
 import Helpers from '../lib/common.js';
 import { vaultRead, mapVaultPayloadToCredential } from "../lib/vault.js";
 
@@ -227,7 +228,17 @@ const fnCredentials = async function(name,fallbackname="",credJqe=null){
         }
         result = mapVaultPayloadToCredential(projected)
       } else {
-        result = await credentialModel.findByName(name,fallbackname)
+        // the exact name first, with every column of the row ; then the name as a
+        // regex, then the fallback - as the docs have always promised
+        result = await credentialModel.findByName(name)
+        if (!result) {
+          try {
+            result = await credentialModel.resolveCredential(name, fallbackname)
+          } catch (e) {
+            if (!(e instanceof Errors.NotFoundError)) throw e
+            logger.warning(`fnCredentials : no credential matches '${name}'${fallbackname ? ` or '${fallbackname}'` : ""}`)
+          }
+        }
         if (result && credJqe) {
           // Allow callers to reshape a stored credential too (rare, but symmetric).
           result = await jq.run(combinedJqDef + credJqe, result, { input: "json", output: "json" })

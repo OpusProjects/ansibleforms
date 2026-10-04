@@ -7,7 +7,7 @@ const Postgres = {}
 
 // rewritten with await 5.0.3
 Postgres.query = async function (connection_name, query) {
-  var creds = await Credential.findByNameRegex(connection_name)
+  var creds = await Credential.resolveCredential(connection_name)
   var config = {
       host: creds.host,
       user: creds.user,

@@ -19,7 +19,7 @@ Mongo.query = async function (connection_name, query) {
   }catch(err){
     throw new Error("["+connection_name+"] query must be valid json. Use double quotes, not single quotes.  " + queryarr[2], { cause: err })
   }
-  var creds = await Credential.findByNameRegex(connection_name)
+  var creds = await Credential.resolveCredential(connection_name)
   var uri = `mongodb://${encodeURI(creds.user)}:${encodeURI(creds.password)}@${creds.host}:${creds.port}`
   var client
   try{

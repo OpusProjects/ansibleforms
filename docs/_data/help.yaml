@@ -5054,7 +5054,8 @@
 
         // Try to use `fnRestBasic` and `fnRestJwtSecured` if possible, this avoids passwords and tokens going over the network.
 
-        // output : a credential object with all properties (username, password, host, port)    
+        // output : a credential object with all properties (username, password, host, port)
+        // the exact name is tried first, then the name as a regex, then the fallback
     - name: sort an array
       code: |
         fn.fnSort(['a','b','z','q','c'],{'':{direction:'asc'}})

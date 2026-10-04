@@ -17,7 +17,7 @@ process.env.DB_PASSWORD ||= "test";
 // which db_type each named datasource resolves to
 let credTypes = {};
 vi.mock("../src/models/credential.model.v2.js", () => ({
-  default: { findByNameRegex: async (name) => ({ db_type: credTypes[name] }) },
+  default: { resolveCredential: async (name) => ({ db_type: credTypes[name] }) },
 }));
 
 // every driver records the sql it was handed

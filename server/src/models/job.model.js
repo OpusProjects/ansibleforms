@@ -14,7 +14,6 @@ import { shellQuote } from "../lib/shell.js";
 import { safeParse } from "../lib/safejson.js";
 import ansibleConfig from "../../config/ansible.config.js";
 import loggerConfig from "../../config/log.config.js";
-import dbConfig from "../../config/db.config.js";
 import appConfig from "../../config/app.config.js";
 import Repository from "./repository.model.js";
 import mysql from "./db.model.js";
@@ -1098,45 +1097,8 @@ Job.launch = async function ({
     
     // the rest is now happening in the background
     // if credentials are requested, we now get them.
-    var credentials = {};
-
     // perhaps credentials were passed through extravars, they have precedence over the others !
-    try {
-      const afCreds = extravars.__credentials__ || creds || {};
-      if (afCreds) {
-        for (const [key, value] of Object.entries(afCreds)) {
-          if (value == "__self__") {
-            credentials[key] = {
-              host: dbConfig.host,
-              user: dbConfig.user,
-              port: dbConfig.port,
-              password: dbConfig.password,
-            };
-          } else {
-            logger.notice(`found cred for key ${key}`);
-
-            // if it were AF credentials, we get the credential now
-            try {
-              if (value.includes(",")) {
-                // If value contains a comma, split it and call with two parameters
-                const [part1, part2] = value.split(",").map((val) => val.trim());
-                credentials[key] = await Credential.findByNameRegex(part1, part2);
-              } else {
-                // If no comma, call with one parameter
-                credentials[key] = await Credential.findByNameRegex(value);
-              }
-            } catch (err) {
-              // Log only, do not fail the job : the credential simply stays unset and
-              // the playbook runs without that extra var, as it did before 6.3.
-              logger.error(`Cannot resolve credential '${key}' : ${err.message || err}`);
-            }
-          }
-        }
-      }
-    } catch (err) {
-      var message = `Failed to process credentials : ${err.message}`;
-      logger.error(message);
-    }
+    const credentials = await Credential.resolveCredentialMap(extravars.__credentials__ || creds || {});
 
     if (jobtype == "ansible") {
       return await Ansible.launch(
@@ -1243,32 +1205,7 @@ Job.continue = async function ({ form, user, credentials = {}, extravars = {}, j
 
   // the rest is now happening in the background
   // if credentials are requested, we now get them.
-  credentials = {};
-  if (creds) {
-    for (const [key, value] of Object.entries(creds)) {
-      if (value == "__self__") {
-        credentials[key] = {
-          host: dbConfig.host,
-          user: dbConfig.user,
-          port: dbConfig.port,
-          password: dbConfig.password,
-        };
-      } else {
-        try {
-          if (value.includes(",")) {
-            // If value contains a comma, split it and call with two parameters (fall back credential)
-            const parts = value.split(",").map((val) => val.trim());
-            credentials[key] = await Credential.findByNameRegex(parts[0], parts[1]);
-          } else {
-            // If no comma, call with one parameter
-            credentials[key] = await Credential.findByNameRegex(value);
-          }
-        } catch (err) {
-          logger.error("Failed to find credentials by name : ", err);
-        }
-      }
-    }
-  }
+  credentials = await Credential.resolveCredentialMap(creds);
 
   // Launch job in background and return immediately
   const executeApprovedJob = async () => {
@@ -2229,7 +2166,7 @@ Ansible.launch = async (
   var hiddenExtravars = {};
   try {
     if (ansibleCredentials) {
-      const runCredential = await Credential.findByNameRegex(ansibleCredentials);
+      const runCredential = await Credential.resolveCredential(ansibleCredentials);
       hiddenExtravars.ansible_user = runCredential.user;
       hiddenExtravars.ansible_password = runCredential.password;
     }
@@ -2250,7 +2187,7 @@ Ansible.launch = async (
   var vaultPassword = "";
   try {
     if (vaultCredentials) {
-      const vaultCredential = await Credential.findByNameRegex(vaultCredentials);
+      const vaultCredential = await Credential.resolveCredential(vaultCredentials);
       vaultPassword = vaultCredential.password;
     }
   } catch (err) {
