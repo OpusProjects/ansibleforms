@@ -5,10 +5,15 @@
  * Props
  * ─────
  *  items          Array   Full dataset
- *  columns        Array   [{ key, label, filterable?, sortable?, render?(val,row)→string }]
+ *  columns        Array   [{ key, label, filterable?, sortable?, render?(val,row)→string,
+ *                           sortValue?(row)→number|string,
+ *                           filterType?: 'number' | 'boolean' | 'gt0' }]
  *  pageSize       Number  Initial page size (default 25) — a page size the user
  *                         picked before (cookie, needs `name`) wins over it
- *  name           String  Cookie key for pagination persistence
+ *  name           String  Cookie key for pagination and column persistence ; also
+ *                         enables column presets (kept in this browser's localStorage)
+ *  exportName     String  Base filename for the CSV export (omit to hide the button)
+ *  initialFilter  String  Initial text of the global search
  *  selectedIds    Set     Parent-owned Set of selected item ids (v-model:selectedIds)
  *  idKey          String  Field used as row id (default 'id')
  *
@@ -22,6 +27,7 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Helpers from '@/lib/Helpers';
 import BsPagination from './BsPagination.vue';
+import { parseNumberFilter, csvCell } from '@/lib/dataTable';
 
 const { t } = useI18n();
 
@@ -34,6 +40,8 @@ const props = defineProps({
   idKey:       { type: String, default: 'id' },
   selectable:  { type: Boolean, default: true },
   activeId:    { type: [String, Number], default: null },
+  exportName:    { type: String, default: null },
+  initialFilter: { type: String, default: '' },
 });
 
 const emit = defineEmits(['update:selectedIds', 'row-click']);
@@ -47,29 +55,98 @@ function toggleColumn(key) {
   const s = new Set(hiddenColumns.value);
   if (s.has(key)) s.delete(key); else s.add(key);
   hiddenColumns.value = s;
-  // Drop the column's filter when it is hidden. The filter inputs are rendered only for
-  // VISIBLE columns while filteredItems applies every entry in columnFilters, so hiding a
-  // column you had filtered left the table filtered by an input that no longer existed -
-  // with the row count and "Select all" still reduced and no control to clear it. Column
-  // visibility is persisted in a cookie and the filters are not, so a reload silently
-  // changed the row count too.
-  if (s.has(key) && columnFilters.value[key]) {
-    const next = { ...columnFilters.value };
-    delete next[key];
-    columnFilters.value = next;
-  }
-  // Persist to cookie
-  if (props.name) {
-    Helpers.setCookie(`dt_cols_${props.name}`, JSON.stringify([...s]), 365);
-  }
+  dropFiltersOfHidden(s);
+  if (props.name) persistHiddenColumns(s);
+}
+
+// Drop the filter of every hidden column. The filter inputs are rendered only for VISIBLE
+// columns while filteredItems applies every entry in columnFilters, so hiding a column you
+// had filtered left the table filtered by an input that no longer existed - with the row
+// count and "Select all" still reduced and no control to clear it. Column visibility is
+// persisted in a cookie and the filters are not, so a reload silently changed the row
+// count too.
+function dropFiltersOfHidden(hiddenSet) {
+  const stale = Object.keys(columnFilters.value).filter(k => hiddenSet.has(k) && columnFilters.value[k]);
+  if (!stale.length) return;
+  const next = { ...columnFilters.value };
+  stale.forEach(k => delete next[k]);
+  columnFilters.value = next;
+}
+
+// Stored as { hidden, known } : `known` is every column key that existed when the choice
+// was saved. Without it a column added to the config later (a new defaultHidden field)
+// looks the same as one the user deliberately showed - both are simply "not hidden" - and
+// would come up visible instead of honouring its own defaultHidden. A legacy cookie (a bare
+// array, no `known`) is read as it is, without hiding anything retroactively.
+function persistHiddenColumns(hiddenSet) {
+  const payload = { hidden: [...hiddenSet], known: props.columns.map(c => c.key) };
+  Helpers.setCookie(`dt_cols_${props.name}`, JSON.stringify(payload), 365);
+}
+
+// ─── Column presets ───────────────────────────────────────────────────────────
+// A named set of hidden columns, kept in this browser (localStorage, per table `name`).
+// Storage can be unavailable (private window, blocked site data) : the presets then simply
+// do not persist, and the table works as before.
+const presets = ref([]);
+const presetNameInput = ref('');
+const showPresetInput = ref(false);
+
+function loadPresets() {
+  if (!props.name) return;
+  try {
+    const raw = localStorage.getItem(`dt_presets_${props.name}`);
+    const parsed = raw ? JSON.parse(raw) : [];
+    presets.value = Array.isArray(parsed) ? parsed.filter(p => p && typeof p.name === 'string' && Array.isArray(p.hidden)) : [];
+  } catch (e) { presets.value = []; }
+}
+
+function savePresetsToStorage() {
+  if (!props.name) return;
+  try { localStorage.setItem(`dt_presets_${props.name}`, JSON.stringify(presets.value)); } catch (e) { /* not persisted */ }
+}
+
+function applyPreset(preset) {
+  const s = new Set(preset.hidden);
+  hiddenColumns.value = s;
+  dropFiltersOfHidden(s);
+  if (props.name) persistHiddenColumns(s);
+}
+
+function savePreset() {
+  const name = presetNameInput.value.trim();
+  if (!name) return;
+  const hidden = [...hiddenColumns.value];
+  const idx = presets.value.findIndex(p => p.name === name);
+  if (idx >= 0) presets.value[idx] = { name, hidden };
+  else presets.value.push({ name, hidden });
+  savePresetsToStorage();
+  presetNameInput.value = '';
+  showPresetInput.value = false;
+}
+
+function deletePreset(name) {
+  presets.value = presets.value.filter(p => p.name !== name);
+  savePresetsToStorage();
 }
 
 // Restore column visibility from cookie
 onMounted(() => {
+  loadPresets();
   if (props.name) {
     const saved = Helpers.getCookie(`dt_cols_${props.name}`);
     if (saved) {
-      try { hiddenColumns.value = new Set(JSON.parse(saved)); return; } catch (e) { /* ignore */ }
+      try {
+        const parsed = JSON.parse(saved);
+        const hidden = new Set(Array.isArray(parsed) ? parsed : (parsed.hidden || []));
+        // a current column that is not in `known` did not exist when this was saved :
+        // it gets its own default rather than "visible because it is not in the list"
+        if (!Array.isArray(parsed) && Array.isArray(parsed.known)) {
+          const known = new Set(parsed.known);
+          props.columns.filter(c => c.defaultHidden && !known.has(c.key)).forEach(c => hidden.add(c.key));
+        }
+        hiddenColumns.value = hidden;
+        return;
+      } catch (e) { /* ignore */ }
     }
   }
   // First-visit defaults:
@@ -86,7 +163,7 @@ onMounted(() => {
 });
 
 // ─── Filter state (one per column + optional global) ─────────────────────────
-const globalFilter = ref('');
+const globalFilter = ref(props.initialFilter || '');
 const columnFilters = ref({});
 
 const filterableColumns = computed(() => visibleColumns.value.filter(c => c.filterable));
@@ -119,17 +196,33 @@ const filteredItems = computed(() => {
   }
 
   for (const [key, val] of Object.entries(columnFilters.value)) {
-    if (!val?.trim()) continue;
-    const q = val.trim().toLowerCase();
+    if (val == null || val === '') continue;
     const col = props.columns.find(c => c.key === key);
-    list = list.filter(item => cellText(item, col).toLowerCase().includes(q));
+    if (!col) continue;
+    if (col.filterType === 'boolean') {
+      const want = val === 'yes';
+      list = list.filter(item => Boolean(item[col.key]) === want);
+    } else if (col.filterType === 'gt0') {
+      list = list.filter(item => Number(item[col.key]) > 0);
+    } else if (col.filterType === 'number' && parseNumberFilter(val)) {
+      const test = parseNumberFilter(val);
+      list = list.filter(item => test(Number(item[col.key])));
+    } else if (String(val).trim()) {
+      const q = String(val).trim().toLowerCase();
+      list = list.filter(item => cellText(item, col).toLowerCase().includes(q));
+    }
   }
 
   if (sortKey.value) {
     const key = sortKey.value;
     const col = props.columns.find(c => c.key === key);
     const dir = sortDir.value;
+    // numerically when both raw values are numbers - a text compare puts "10" before
+    // "2" ; a column can bring sortValue(row) when its rendered text does not sort (dates)
     list = [...list].sort((a, b) => {
+      const ra = col.sortValue ? col.sortValue(a) : a[col.key];
+      const rb = col.sortValue ? col.sortValue(b) : b[col.key];
+      if (typeof ra === 'number' && typeof rb === 'number') return (ra - rb) * dir;
       const ta = cellText(a, col).toLowerCase();
       const tb = cellText(b, col).toLowerCase();
       return ta < tb ? -dir : ta > tb ? dir : 0;
@@ -335,6 +428,23 @@ function clearSelection() {
   emit('update:selectedIds', new Set());
 }
 
+// ─── CSV export ───────────────────────────────────────────────────────────────
+// The filtered rows, every column, as the plain text the table shows. CSV rather than
+// .xlsx : no library, and Excel opens it. The BOM makes Excel read it as UTF-8.
+function exportCsv() {
+  const lines = [props.columns.map(c => csvCell(c.label)).join(',')];
+  for (const item of filteredItems.value) {
+    lines.push(props.columns.map(col => csvCell(cellPlain(item, col))).join(','));
+  }
+  const blob = new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (props.exportName || 'export') + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(a.href);
+}
 </script>
 
 <template>
@@ -375,15 +485,54 @@ function clearSelection() {
           <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside">
             <font-awesome-icon icon="table-columns" class="me-1" />{{ t('dataTable.columns') }}
           </button>
-          <ul class="dropdown-menu dropdown-menu-end" style="min-width:200px">
+          <ul class="dropdown-menu dropdown-menu-end" style="min-width:220px">
             <li v-for="col in columns" :key="'cp-' + col.key" class="dropdown-item">
               <label class="form-check mb-0 d-flex align-items-center gap-2" style="cursor:pointer">
                 <input type="checkbox" class="form-check-input" :checked="!hiddenColumns.has(col.key)" @change="toggleColumn(col.key)" />
                 {{ col.label }}
               </label>
             </li>
+            <!-- Presets -->
+            <template v-if="name">
+              <li><hr class="dropdown-divider my-1" /></li>
+              <li class="px-3 py-1 bs-dt-presets-header">{{ t('dataTable.presets') }}</li>
+              <li v-for="preset in presets" :key="'preset-' + preset.name" class="px-2 py-1 d-flex align-items-center gap-1">
+                <button class="btn btn-sm btn-link text-start p-0 flex-grow-1 text-truncate text-body text-decoration-none" :title="preset.name" @click.stop="applyPreset(preset)">
+                  <font-awesome-icon icon="table-columns" class="me-1 text-muted" />{{ preset.name }}
+                </button>
+                <button class="btn btn-link p-0 text-danger" :title="t('dataTable.presetDelete')" @click.stop="deletePreset(preset.name)">
+                  <font-awesome-icon icon="times" />
+                </button>
+              </li>
+              <li v-if="!presets.length" class="px-3 py-1 text-muted small">{{ t('dataTable.presetsEmpty') }}</li>
+              <li class="px-2 py-1">
+                <div v-if="showPresetInput" class="d-flex gap-1" @click.stop>
+                  <input
+                    v-model="presetNameInput"
+                    class="form-control form-control-sm"
+                    :placeholder="t('dataTable.presetNamePlaceholder')"
+                    @keyup.enter="savePreset"
+                    @keyup.escape="showPresetInput = false"
+                  />
+                  <button class="btn btn-sm btn-primary px-2" :title="t('dataTable.presetSave')" @click.stop="savePreset">
+                    <font-awesome-icon icon="check" />
+                  </button>
+                  <button class="btn btn-sm btn-outline-secondary px-2" @click.stop="showPresetInput = false">
+                    <font-awesome-icon icon="times" />
+                  </button>
+                </div>
+                <button v-else class="btn btn-sm btn-outline-secondary w-100" @click.stop="showPresetInput = true">
+                  <font-awesome-icon icon="floppy-disk" class="me-1" />{{ t('dataTable.presetSaveAs') }}
+                </button>
+              </li>
+            </template>
           </ul>
         </div>
+
+        <!-- CSV export -->
+        <button v-if="exportName" class="btn btn-sm btn-outline-secondary" @click="exportCsv">
+          <font-awesome-icon icon="file-csv" class="me-1" />{{ t('dataTable.export') }}
+        </button>
       </div>
     </div>
 
@@ -431,12 +580,32 @@ function clearSelection() {
           <tr v-if="filterableColumns.length" class="bs-dt-filter-row">
             <th v-if="selectable"></th>
             <th v-for="col in visibleColumns" :key="'f-' + col.key">
+              <select
+                v-if="col.filterable && col.filterType === 'boolean'"
+                v-model="columnFilters[col.key]"
+                class="form-select form-select-sm"
+                @click.stop
+              >
+                <option value="">{{ t('dataTable.filterAll') }}</option>
+                <option value="yes">{{ t('common.yes') }}</option>
+                <option value="no">{{ t('common.no') }}</option>
+              </select>
+              <select
+                v-else-if="col.filterable && col.filterType === 'gt0'"
+                v-model="columnFilters[col.key]"
+                class="form-select form-select-sm"
+                @click.stop
+              >
+                <option value="">{{ t('dataTable.filterAll') }}</option>
+                <option value="gt0">{{ t('dataTable.filterGt0') }}</option>
+              </select>
               <input
-                v-if="col.filterable"
+                v-else-if="col.filterable"
                 v-model="columnFilters[col.key]"
                 type="search"
                 class="form-control form-control-sm"
-                :placeholder="col.label"
+                :placeholder="col.filterType === 'number' ? t('dataTable.filterNumberHint') : col.label"
+                :title="col.filterType === 'number' ? t('dataTable.filterNumberHelp') : null"
                 @click.stop
               />
             </th>
@@ -503,6 +672,12 @@ function clearSelection() {
 </template>
 
 <style scoped>
+.bs-dt-presets-header {
+  font-size: .78em;
+  color: var(--bs-secondary-color);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
 .bs-dt-sortable {
   cursor: pointer;
 }

@@ -619,6 +619,11 @@
                     // picker so users can show them when wanted.
                     defaultHidden: !!f.hidden,
                 };
+                // how the column filters and sorts : a field can say so itself, and a
+                // checkbox or number field gets the matching filter by default
+                const filterType = f.filterType || (f.type === 'checkbox' ? 'boolean' : f.type === 'number' ? 'number' : undefined);
+                if (filterType) col.filterType = filterType;
+                if (typeof f.sortValue === 'function') col.sortValue = f.sortValue;
                 // a field may bring its own cell renderer (see config/settings.js) :
                 // without this a `datetime` column shows the raw value it was sent
                 if (typeof f.render === 'function') {
@@ -854,6 +859,7 @@
                 :selectable="dataTableSelectable"
                 :activeId="!dataTableSelectable ? activeRowId : null"
                 :name="Helpers.cleanupString(objectLabelPlural)"
+                :exportName="Helpers.cleanupString(objectLabelPlural)"
                 @update:selectedIds="selectedIds = $event"
                 @row-click="onDataTableRowClick"
             >
