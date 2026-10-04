@@ -2,6 +2,7 @@
 import axios from "axios";
 import { agentsFor, baseUrl } from "./http.js";
 import { LEASE_SECONDS } from "../lease.js";
+import { stripTrailingSlashes, stripLeadingSlashes } from "../../lib/url.js";
 
 function headers(store) {
   const h = { "X-Vault-Token": store.token };
@@ -18,7 +19,7 @@ function kvVersion(store) {
 //   "secret/foo/bar"        -> KV v2 : /data/ inserted after the mount
 //   "foo"                   -> prefixed with the store's default mount
 export function buildApiPath(rawPath, version, defaultMount) {
-  let p = String(rawPath || "").replace(/^\/+/, "");
+  let p = stripLeadingSlashes(rawPath);
   if (!p) throw new Error("Vault path is empty");
   if (!p.includes("/")) p = `${defaultMount || "secret"}/${p}`;
   if (version === 2) {
@@ -41,7 +42,7 @@ export function isDynamicPath(ref) {
 /** the secret's key/value pairs */
 async function read(store, ref) {
   assertConfigured(store);
-  if (isDynamicPath(ref)) return readDynamic(store, String(ref).replace(/^\/+/, ""));
+  if (isDynamicPath(ref)) return readDynamic(store, stripLeadingSlashes(ref));
   const version = kvVersion(store);
   const apiPath = buildApiPath(ref, version, store.default_mount);
   let res;
@@ -123,7 +124,7 @@ async function mounts(store) {
     // only kv : a database or pki mount cannot answer a credential read
     .filter(([, v]) => String(v?.type || "").toLowerCase() === "kv")
     .map(([mountPath, v]) => ({
-      path: String(mountPath).replace(/\/+$/, ""),
+      path: stripTrailingSlashes(mountPath),
       version: String(v?.options?.version || v?.version || "") || null,
     }))
     .sort((a, b) => a.path.localeCompare(b.path));
