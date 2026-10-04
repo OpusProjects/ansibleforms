@@ -45,7 +45,7 @@ aux_links:
   "Docs for 6.x":
     - "/v6/"
   "GitHub":
-    - "https://github.com/OpusProjects/ansibleforms"
+    - "https://github.com/ansibleforms/ansibleforms"
   "Docker Hub":
     - "https://hub.docker.com/r/ansibleguy/ansibleforms"
 

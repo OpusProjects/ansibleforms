@@ -102,7 +102,7 @@ jobs:
       - name: Work out the tags
         id: tags
         run: |
-          # GHCR rejects uppercase, and github.repository keeps the owner's case (OpusProjects/...)
+          # GHCR rejects uppercase, and github.repository keeps the owner's case
           ghcr="ghcr.io/${GITHUB_REPOSITORY,,}"
           hub="${{ vars.DOCKERHUB_REPOSITORY || 'ansibleguy/ansibleforms' }}"
           major="${VERSION%%.*}"

@@ -234,7 +234,7 @@ static getGroups(user, groupObj, ldapConfig = {}) {
       ldapgroups.forEach(function (v) {
         // grab groupname part
         // logger.debug(JSON.stringify(v))
-        var groupObject = v["objectName"] || v; // https://github.com/OpusProjects/ansibleforms/issues/119 first try objectName and then fall back.  Different flavours of ldap servers return different group objects.  Until someone else hit's another flavour, these are the ones we implement.
+        var groupObject = v["objectName"] || v; // https://github.com/ansibleforms/ansibleforms/issues/119 first try objectName and then fall back.  Different flavours of ldap servers return different group objects.  Until someone else hit's another flavour, these are the ones we implement.
         var groupMatch = groupObject.match("^[cCnN]{2}=([^,]*)");
         if (groupMatch.length > 0) {
           groups.push(groupMatch[1]);
