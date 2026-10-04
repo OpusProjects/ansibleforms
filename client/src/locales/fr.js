@@ -511,6 +511,12 @@ export default {
       caBundleHelp: "Laissez vide pour faire confiance aux autorités de certification du système.",
       extra: "Options supplémentaires (JSON)",
       extraHelp: "Options propres au type de coffre, sous forme d'objet JSON.",
+      appId: "AppID",
+      appIdHelp: "L'identifiant d'application défini pour AnsibleForms dans CyberArk.",
+      clientCert: "Certificat client",
+      clientCertHelp: "Certificat PEM, quand l'AppID est limité à un certificat client. Laissez vide pour une restriction par IP ou utilisateur système.",
+      clientKey: "Clé client",
+      clientKeyHelp: "Clé privée PEM du certificat client. Stockée chiffrée.",
     },
     storedJobs: {
       label: "Job enregistre",
@@ -540,7 +546,7 @@ export default {
       secretStoreHelp: "Si défini, l'utilisateur et le mot de passe sont lus depuis ce coffre de secrets. Laissez les champs utilisateur et mot de passe vides.",
       secretRef: "Référence du secret",
       secretRefPlaceholder: "ex. secret/myapp/prod",
-      secretRefHelp: "Emplacement du secret dans le coffre. Pour HashiCorp Vault, le chemin, ex. secret/myapp/prod.",
+      secretRefHelp: "Emplacement du secret dans le coffre. Pour HashiCorp Vault, le chemin, ex. secret/myapp/prod ; pour CyberArk, le compte, ex. Safe=Linux;Object=root-srv01.",
     },
     ssh: {
       label: "Cle SSH",

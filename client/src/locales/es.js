@@ -511,6 +511,12 @@ export default {
       caBundleHelp: "Déjelo vacío para confiar en las autoridades de certificación del sistema.",
       extra: "Opciones adicionales (JSON)",
       extraHelp: "Opciones propias del tipo de almacén, como objeto JSON.",
+      appId: "AppID",
+      appIdHelp: "El ID de aplicación definido para AnsibleForms en CyberArk.",
+      clientCert: "Certificado de cliente",
+      clientCertHelp: "Certificado PEM, cuando el AppID está limitado a un certificado de cliente. Déjelo vacío para una restricción por IP o usuario del sistema.",
+      clientKey: "Clave de cliente",
+      clientKeyHelp: "Clave privada PEM del certificado de cliente. Se guarda cifrada.",
     },
     storedJobs: {
       label: "Trabajo Almacenado",
@@ -540,7 +546,7 @@ export default {
       secretStoreHelp: "Si está definido, el usuario y la contraseña se leen desde este almacén de secretos. Deje vacíos los campos de usuario y contraseña.",
       secretRef: "Referencia del secreto",
       secretRefPlaceholder: "ej. secret/myapp/prod",
-      secretRefHelp: "Dónde está el secreto en el almacén. Para HashiCorp Vault, la ruta, ej. secret/myapp/prod.",
+      secretRefHelp: "Dónde está el secreto en el almacén. Para HashiCorp Vault, la ruta, ej. secret/myapp/prod ; para CyberArk, la cuenta, ej. Safe=Linux;Object=root-srv01.",
     },
     ssh: {
       label: "Clave SSH",

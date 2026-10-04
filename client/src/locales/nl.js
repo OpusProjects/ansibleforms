@@ -511,6 +511,12 @@ export default {
       caBundleHelp: "Leeg laten om de certificaatautoriteiten van het systeem te vertrouwen.",
       extra: "Extra opties (JSON)",
       extraHelp: "Opties eigen aan het type store, als JSON object.",
+      appId: "AppID",
+      appIdHelp: "De application ID die in CyberArk voor AnsibleForms is aangemaakt.",
+      clientCert: "Clientcertificaat",
+      clientCertHelp: "PEM-certificaat, wanneer de AppID beperkt is tot een clientcertificaat. Leeg laten bij een beperking op IP of OS-gebruiker.",
+      clientKey: "Clientsleutel",
+      clientKeyHelp: "PEM private key van het clientcertificaat. Wordt versleuteld opgeslagen.",
     },
     storedJobs: {
       label: "Opgeslagen invoer",
@@ -540,7 +546,7 @@ export default {
       secretStoreHelp: "Indien ingesteld worden gebruiker en wachtwoord uit deze secret store gelezen. Laat de gebruiker- en wachtwoordvelden leeg.",
       secretRef: "Secret referentie",
       secretRefPlaceholder: "bv. secret/myapp/prod",
-      secretRefHelp: "Waar het secret in de store staat. Voor HashiCorp Vault het pad, bv. secret/myapp/prod.",
+      secretRefHelp: "Waar het secret in de store staat. Voor HashiCorp Vault het pad, bv. secret/myapp/prod ; voor CyberArk het account, bv. Safe=Linux;Object=root-srv01.",
     },
     ssh: {
       label: "SSH Sleutel",
