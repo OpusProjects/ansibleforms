@@ -123,6 +123,16 @@ describe("a playbook stops when its abort flag is set", () => {
     assert.equal(await result, "resolved");
   });
 
+  test("every argument is text, as the quoted shell string made it", async () => {
+    const result = run({ args: ["-i", "hosts,extra", "site.yml"] }).then(() => "resolved", () => "rejected");
+    child.emit("exit", 0);
+    assert.equal(await result, "resolved");
+    const { readFileSync } = await import("fs");
+    const src = readFileSync(new URL("../src/models/job.model.js", import.meta.url), "utf8");
+    // a list inventory, tags or limit must not reach spawn as an array : spawn refuses it
+    for (const v of ["item", "tags", "limit", "playbook"]) assert.match(src, new RegExp(`arg\\(${v}\\)`));
+  });
+
   test("the vault password goes in on stdin, not on the command line", async () => {
     const result = run({ args: ["--vault-password-file=/bin/cat", "site.yml"], stdin: "s3cret" }).then(() => "resolved", () => "rejected");
     const last = spawned[spawned.length - 1];

@@ -2265,17 +2265,19 @@ Ansible.launch = async (
   logger.debug(`Extravars File: ${extravarsFileName}`);
   // prepare my ansible command line
 
-  // the ansible-playbook arguments ; no shell runs them, so no value needs quoting
+  // the ansible-playbook arguments ; no shell runs them, so no value needs quoting. Each
+  // is text the way the quoted shell string made it : a list becomes "a,b", empty "".
+  const arg = (value) => String(value ?? "");
   var args = ["-e", `@${extravarsFileName}`, "-e", `@${hiddenExtravarsFileName}`];
   if (vaultPassword) {
     // the vault password goes in on stdin, never into a file or the command line
     args.push("--vault-password-file=/bin/cat");
   }
   inventory.forEach((item) => {
-    args.push("-i", item);
+    args.push("-i", arg(item));
   });
   if (tags) {
-    args.push("-t", tags);
+    args.push("-t", arg(tags));
   }
   if (check) {
     args.push("--check");
@@ -2287,9 +2289,9 @@ Ansible.launch = async (
     args.push("-vvv");
   }
   if (limit) {
-    args.push("--limit", limit);
+    args.push("--limit", arg(limit));
   }
-  args.push(String(playbook));
+  args.push(arg(playbook));
   var directory = await Repository.getAnsiblePath();
   directory = directory || ansibleConfig.path;
   if (playbookSubPath) {
