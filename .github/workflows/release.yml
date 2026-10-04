@@ -10,9 +10,9 @@ name: Release
 # Two lines : main (the next major) and release/<major>.x (patches for the current one).
 # Each branch has its own manifest and CHANGELOG ; the tags never collide (6.5.3, 7.0.1).
 #
-# The token comes from a GitHub App (or PAT_TOKEN until the App exists), not GITHUB_TOKEN. A pull request opened with
-# GITHUB_TOKEN starts no workflows, so the release pull request would never get its
-# required checks and could never be merged. See RELEASING.md for the App setup.
+# The token comes from the GitHub App ansibleforms-release, not GITHUB_TOKEN. A pull request
+# opened with GITHUB_TOKEN starts no workflows, so the release pull request would never get
+# its required checks and could never be merged. See RELEASING.md for the App setup.
 #
 # A release also rebuilds ansibleforms.com : the site (ansibleforms/website) pulls
 # CHANGELOG.md and server/help.yaml from here when it is built.
@@ -36,10 +36,9 @@ jobs:
       release_created: ${{ steps.rp.outputs.release_created }}
       tag_name: ${{ steps.rp.outputs.tag_name }}
     steps:
-      # the App once RELEASE_APP_ID is set, PAT_TOKEN until then - see RELEASING.md
+      # RELEASE_APP_ID and RELEASE_APP_PRIVATE_KEY - see RELEASING.md
       - uses: actions/create-github-app-token@v3
         id: app
-        if: vars.RELEASE_APP_ID != ''
         with:
           app-id: ${{ vars.RELEASE_APP_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
@@ -47,7 +46,7 @@ jobs:
       - uses: googleapis/release-please-action@v5
         id: rp
         with:
-          token: ${{ steps.app.outputs.token || secrets.PAT_TOKEN }}
+          token: ${{ steps.app.outputs.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
           target-branch: ${{ github.ref_name }}
@@ -57,7 +56,7 @@ jobs:
       - name: Keep the Latest badge on the highest release
         if: steps.rp.outputs.release_created == 'true'
         env:
-          GH_TOKEN: ${{ steps.app.outputs.token || secrets.PAT_TOKEN }}
+          GH_TOKEN: ${{ steps.app.outputs.token }}
           TAG: ${{ steps.rp.outputs.tag_name }}
         run: |
           highest=$(gh api "repos/${{ github.repository }}/tags" --paginate --jq '.[].name' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
@@ -83,8 +82,8 @@ jobs:
   # Tells ansibleforms/website to rebuild, so its changelog page shows this release.
   # GITHUB_TOKEN cannot start a workflow in another repository, so the token comes from the
   # same GitHub App as above, which is installed on ansibleforms/website too. It is asked for
-  # that one repository only. Without the App the job only says so - the site still catches
-  # up on its nightly run.
+  # that one repository only. Should this job fail, the site still catches up on its nightly
+  # run - the release itself is already done.
   website:
     name: Rebuild the website
     needs: release-please
@@ -93,7 +92,6 @@ jobs:
     steps:
       - uses: actions/create-github-app-token@v3
         id: app
-        if: vars.RELEASE_APP_ID != ''
         with:
           app-id: ${{ vars.RELEASE_APP_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
@@ -105,9 +103,5 @@ jobs:
           GH_TOKEN: ${{ steps.app.outputs.token }}
           TAG: ${{ needs.release-please.outputs.tag_name }}
         run: |
-          if [ -z "$GH_TOKEN" ]; then
-            echo "::notice::RELEASE_APP_ID is not set - the website picks up $TAG on its nightly build"
-            exit 0
-          fi
           gh api repos/ansibleforms/website/dispatches -f event_type=app-release -f "client_payload[tag]=$TAG"
           echo "ansibleforms/website rebuilds for $TAG"
