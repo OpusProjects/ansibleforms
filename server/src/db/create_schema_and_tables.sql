@@ -198,6 +198,7 @@ CREATE TABLE `settings` (
   `default_language` varchar(5) DEFAULT NULL,
   `default_theme` varchar(10) DEFAULT NULL,
   `default_theme_color` varchar(7) DEFAULT NULL,
+  `vault_env_imported_at` datetime DEFAULT NULL,
   `managed` tinyint(4) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 -- oauth2 providers table

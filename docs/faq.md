@@ -770,7 +770,7 @@ REST_DENIED_HOSTS=169.254.169.254,127.0.0.0/8,internal-admin.example
 
 Credentials can read their user and password from HashiCorp Vault, configured as a
 **secret store**. See [Secret stores](secret-stores.md). The `VAULT_*` environment variables
-of earlier versions are imported once as the store `vault` when you upgrade.
+of earlier versions are imported once as the store `vault` at the first 7.x start.
 
 For secrets used only inside one playbook you can also use the `community.hashi_vault`
 lookup plugin, which reads from Vault directly and bypasses AnsibleForms.
