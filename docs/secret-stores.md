@@ -32,6 +32,7 @@ nothing in your forms.
 | Store type | Status |
 |---|---|
 | HashiCorp Vault (KV v1 and v2, token authentication) | available |
+| HashiCorp Vault dynamic credentials (`<mount>/creds/<role>`) | experimental |
 | CyberArk Central Credential Provider (CCP) | experimental |
 
 ## Adding a store
@@ -62,6 +63,10 @@ The secret reference is the path, e.g. `secret/myapp/prod`. For KV v2 the `/data
 is inserted when you leave it out.
 
 #### Dynamic database credentials
+
+{: .warning }
+> **Experimental.** Tested against a simulated Vault, not yet against a live database secrets
+> engine. Please report what you find.
 
 A reference of the form `<mount>/creds/<role>`, e.g. `database/creds/readonly`, reads from a
 dynamic secrets engine such as Vault's database engine. Vault then creates a new database
