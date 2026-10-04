@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.1.2](https://github.com/ansibleforms/ansibleforms/compare/7.1.1...7.1.2) (2026-10-04)
+
+
+### Changed
+
+* help.yaml lives with the server, not in docs ([#600](https://github.com/ansibleforms/ansibleforms/issues/600)) ([b54d95a](https://github.com/ansibleforms/ansibleforms/commit/b54d95a1b396e33062793991d0807eb68e24f7bd))
+
 ## [7.1.1](https://github.com/OpusProjects/ansibleforms/compare/7.1.0...7.1.1) (2026-10-04)
 
 
