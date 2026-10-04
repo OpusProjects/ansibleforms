@@ -210,9 +210,15 @@ describe('the data table paginator', () => {
   it('hiding a column drops its filter', () => {
     // the filter inputs render only for visible columns, but filteredItems applies every
     // entry - so a hidden column kept filtering with no control left to clear it
-    const fn = src.slice(src.indexOf('function toggleColumn'), src.indexOf('// Restore column visibility'));
-    expect(fn).toMatch(/delete next\[key\]/);
-    expect(fn).toMatch(/columnFilters\.value = next/);
+    const block = src.slice(src.indexOf('function toggleColumn'), src.indexOf('// Restore column visibility'));
+    const drop = block.slice(block.indexOf('function dropFiltersOfHidden'));
+    expect(drop).toMatch(/delete next\[k\]/);
+    expect(drop).toMatch(/columnFilters\.value = next/);
+    // both ways of hiding a column go through it : the picker and a preset
+    const toggle = block.slice(0, block.indexOf('\n}\n'));
+    expect(toggle).toMatch(/dropFiltersOfHidden\(s\)/);
+    const preset = block.slice(block.indexOf('function applyPreset'));
+    expect(preset.slice(0, preset.indexOf('\n}\n'))).toMatch(/dropFiltersOfHidden\(s\)/);
   });
 });
 
