@@ -4,7 +4,7 @@ import fs from "fs";
 import yaml from "yaml";
 import moment from "moment";
 import os from "os";
-import { exec } from "child_process";
+import { spawn } from "child_process";
 import Helpers from "../lib/common.js";
 import Errors from "../lib/errors.js";
 import Settings from "./settings.model.js";
@@ -201,6 +201,10 @@ Exec.executeCommand = (cmd, jobid, counter) => {
   var keepExtravars = cmd.keepExtravars;
   var task = cmd.task;
   const ac = new AbortController();
+  // the abort flag lives in the database (Job.abort sets it), so whoever runs the process
+  // - this host or another - notices it here and stops the playbook itself
+  let killed = false;
+  let abortPoll = null;
 
   // execute the procces
   return new Promise((resolve, reject) => {
@@ -221,12 +225,46 @@ Exec.executeCommand = (cmd, jobid, counter) => {
       }
 
       // adding abort signal
-      var child = exec(command, {
+      // spawn, not exec : exec ignores `detached`. Detached, the command runs in its own
+      // process group, so stopping it stops the whole `sh -c` pipeline (ansible-playbook
+      // and its workers), not only the shell. /bin/sh is the shell exec used.
+      var child = spawn("/bin/sh", ["-c", command], {
         cwd: directory,
         signal: ac.signal,
-        maxBuffer: appConfig.processMaxBuffer,
-        encoding: "UTF-8",
+        detached: true,
       });
+      child.stdout.setEncoding("utf8");
+      child.stderr.setEncoding("utf8");
+
+      const stopProcess = (why) => {
+        if (killed) return;
+        killed = true;
+        logger.warning(`[Job ${jobid}] ${why}, stopping the playbook`);
+        try {
+          process.kill(-child.pid, "SIGTERM");
+        } catch (e) {
+          // no process group (already gone, or a platform without them) : walk the tree
+          logger.debug(`[Job ${jobid}] Process group kill failed : ${e.message}`);
+          Cmd.killChildren(child.pid);
+        }
+      };
+      const stopIfAborted = (abortRequested) => {
+        if (abortRequested) stopProcess("Abort requested");
+      };
+      // exec stopped a process whose output on one stream passed maxBuffer ; kept, so a
+      // playbook with that much output still ends the way it did (the 'main process'
+      // message below, since nobody requested an abort)
+      const outputBytes = { stdout: 0, stderr: 0 };
+      const countOutput = (stream, data) => {
+        outputBytes[stream] += Buffer.byteLength(data);
+        if (outputBytes[stream] > appConfig.processMaxBuffer) stopProcess(`Output passed PROCESS_MAX_BUFFER (${appConfig.processMaxBuffer} bytes)`);
+      };
+      // a quiet playbook writes no output for minutes, so the flag is also polled
+      abortPoll = setInterval(() => {
+        Job.isAbortRequested(jobid)
+          .then(stopIfAborted)
+          .catch((e) => logger.debug(`[Job ${jobid}] Abort check failed : ${e.message}`));
+      }, 2000);
 
       // Store the process ID and host identifier in the database for job control
       if (child.pid) {
@@ -252,6 +290,7 @@ Exec.executeCommand = (cmd, jobid, counter) => {
 
       // add output eventlistener to the process to save output
       child.stdout.on("data", function (data) {
+        countOutput("stdout", data);
         // save the output to database
         Job.createOutput({
           output: data,
@@ -259,20 +298,22 @@ Exec.executeCommand = (cmd, jobid, counter) => {
           job_id: jobid,
           order: ++counter,
         })
+          .then(stopIfAborted)
           .catch((error) => {
             logger.error("Failed to create output : ", error);
           });
       });
       // add error eventlistener to the process to save output
       child.stderr.on("data", async function (data) {
+        countOutput("stderr", data);
         // save the output to database
         try {
-          await Job.createOutput({
+          stopIfAborted(await Job.createOutput({
             output: data,
             output_type: "stderr",
             job_id: jobid,
             order: ++counter,
-          });
+          }));
         } catch (error) {
           logger.error("Failed to create output: ", error);
         }
@@ -280,6 +321,7 @@ Exec.executeCommand = (cmd, jobid, counter) => {
 
       // add exit eventlistener to the process to handle status update
       child.on("exit", async function (data) {
+        clearInterval(abortPoll);
         // Clear the PID and host from the database as the process has ended
         logger.debug(`[Job ${jobid}] Process with PID ${child.pid} has exited`);
         await mysql.do("UPDATE AnsibleForms.`jobs` SET pid=NULL, host=NULL WHERE id=?", [jobid])
@@ -344,6 +386,7 @@ Exec.executeCommand = (cmd, jobid, counter) => {
       });
       // add error eventlistener to the process; set failed
       child.on("error", async function (data) {
+        clearInterval(abortPoll);
         // Clear the PID and host from the database as the process has errored
         logger.debug(`[Job ${jobid}] Process with PID ${child.pid} encountered an error`);
         await mysql.do("UPDATE AnsibleForms.`jobs` SET pid=NULL, host=NULL WHERE id=?", [jobid])
@@ -360,6 +403,7 @@ Exec.executeCommand = (cmd, jobid, counter) => {
         );
       });
     } catch (e) {
+      clearInterval(abortPoll);
       Job.endJobStatus(
         jobid,
         ++counter,
@@ -533,14 +577,21 @@ Job.abort = async function (user, id) {
       if (jobHost === currentHost) {
         logger.info(`[Job ${id}] Killing process with PID ${pid} on host ${currentHost}`);
         try {
-          await Cmd.killChildren(pid);
+          // the playbook runs in its own process group (Exec.executeCommand), so one
+          // signal stops the whole pipeline ; walking the tree needs `ps`, which the
+          // image does not ship, so it is only the fallback
+          try {
+            process.kill(-pid, "SIGTERM");
+          } catch {
+            await Cmd.killChildren(pid);
+          }
           logger.info(`[Job ${id}] Successfully sent kill signal to PID ${pid}`);
         } catch (err) {
           logger.error(`[Job ${id}] Failed to kill PID ${pid}: ${err.message}`);
           // Don't throw - the abort flag is set, so the process will still abort on next output
         }
       } else {
-        logger.warning(`[Job ${id}] Process is running on different host (job on '${jobHost}', current '${currentHost}'). Abort flag set, waiting for that instance to handle termination.`);
+        logger.warning(`[Job ${id}] Process is running on different host (job on '${jobHost}', current '${currentHost}'). Abort flag set, that instance stops it within a few seconds.`);
       }
     } else if (!pid && !jobHost) {
       logger.warning(`[Job ${id}] No PID/host found for job, abort flag set but cannot kill process directly`);
@@ -2218,7 +2269,7 @@ Ansible.launch = async (
   }
 
   // All form-controlled segments below MUST be wrapped in shellQuote().
-  // The command runs through `exec` (i.e. /bin/sh -c), so any unquoted value
+  // The command runs through `/bin/sh -c` (Exec.executeCommand), so any unquoted value
   // ending up in the string is a shell injection vector.
   inventory.forEach((item) => {
     command += ` -i ${shellQuote(item)}`;
@@ -3212,4 +3263,4 @@ Awx.findInventoryByName = async function (awxName, name) {
 
 export default Job;
 // named export of the awx interaction functions (mainly for testing)
-export { Awx, stripReservedExtravars, setUserExtravars, guardLaunch, launchValidationMode, pushForminfoToExtravars };
+export { Awx, Exec, stripReservedExtravars, setUserExtravars, guardLaunch, launchValidationMode, pushForminfoToExtravars };
