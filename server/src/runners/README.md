@@ -1,6 +1,6 @@
 # Runners and the RTE
 
-Developer notes on where AnsibleForms runs a job. Since 8.0 the app runs nothing itself:
+Developer notes on where AnsibleForms runs a job. Since 7.2 the app runs nothing itself:
 every job runs on a **runner**, a row of the `runners` table with a type.
 
 | Type | Runs | What it is |
@@ -11,7 +11,7 @@ every job runs on a **runner**, a row of the `runners` table with a type.
 
 ## Why
 
-Until 7.x a playbook ran as a child process of the app container, and AWX was wired into
+Until 7.1 a playbook ran as a child process of the app container, and AWX was wired into
 `job.model.js` in its own way. Customers could not change the runtime (collections, python
 packages, ssh setup) without rebuilding the app image, the app could not scale, and every new
 target would have been another special case. Now there is one interface for every target,
@@ -61,7 +61,7 @@ Three choices carry the design:
 | `rte/ansible-core.js` | The one place a playbook runs: `runAnsibleJob`, `buildAnsibleArgs` (no shell), `executeCommand` (process group, abort flag, output limit, job log). |
 | `models/runner.model.js` | The `runners` table: per-type validation, one default per type, masked secrets. |
 | `models/job.model.js` | `Job.launch`, `Job.continue` (approval), multistep, notifications, `Job.lastOrder`. |
-| `/Dockerfile.rte`, `/examples/rte/Dockerfile.minimal` | The published RTE image (everything the 7.x app image had) and a minimal fork template. |
+| `/Dockerfile.rte`, `/examples/rte/Dockerfile.minimal` | The published RTE image (everything the app image had before 7.2) and a minimal fork template. |
 
 ### The runner contract
 
@@ -90,7 +90,7 @@ so steps can name different runners.
 | nothing | yes | on the default runner of the matching type (`rte` for playbooks, `awx` for templates) |
 | nothing | no | nowhere: the job fails with "No runner to run this playbook : add one of type rte ..." |
 
-`awx: <name>` logs a deprecation warning once per name; it is removed in 9.
+`awx: <name>` logs a deprecation warning once per name; it is removed in 8.
 
 ## The life of a playbook job
 
@@ -147,8 +147,8 @@ code and the schema.
    app's `ENCRYPTION_SECRET`, a name (`RTE_ID`) and a token (`RTE_TOKEN`).
 2. **Add it**: Connections > Runners > add, type *RTE*, its address and the same token.
    *Test connection* shows its version and ansible version. An AWX/AAP connection is a
-   runner of type *AWX* (a token, or *Use credentials* with a username and password); the 8.0
-   upgrade moves the 7.x AAP connections there.
+   runner of type *AWX* (a token, or *Use credentials* with a username and password); the 7.2
+   upgrade moves the existing AAP connections there.
 3. **Point forms at it**: `runner: <name>` on a form or a step (also in the designer's form
    settings), or tick *Default* on the runner.
 
@@ -200,7 +200,7 @@ docker run -d --name rte -p 8010:8000 \
   -e ENCRYPTION_SECRET=<the app's> -e RTE_TOKEN=<token> -e RTE_ID=rte-1 \
   -v <playbooks or repositories>:/app/dist/persistent/playbooks \
   -v <the app's .ssh>:/root/.ssh:ro \
-  ghcr.io/ansibleforms/ansibleforms-rte:8
+  ghcr.io/ansibleforms/ansibleforms-rte:7
 ```
 
 Customers make it their own by forking `Dockerfile.rte` (the full flavour) or

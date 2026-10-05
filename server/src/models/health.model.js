@@ -455,14 +455,14 @@ async function secretStoresCheck() {
   return check('secretStores', worst, value, { ...(reason ? { reason } : {}), stores: results });
 }
 
-// Runners : where jobs run (RTEs for playbooks, AWX/AAP for templates). Since 8.0 the app
+// Runners : where jobs run (RTEs for playbooks, AWX/AAP for templates). Since 7.2 the app
 // runs nothing itself, so with no runner no form can run a job - a warning, not an error :
 // a fresh instance has none yet. Each runner is asked for its health (an RTE also proves it
 // runs this release), in parallel, like the secret stores.
 async function runnersCheck() {
   const runners = await Runner.findAll() || [];
   if (!runners.length) {
-    return check('runners', WARNING, 'none configured', { reason: 'Since 8.0 jobs run on runners : add one under Connections > Runners (an RTE for playbooks, AWX/AAP for templates)' });
+    return check('runners', WARNING, 'none configured', { reason: 'Since 7.2 jobs run on runners : add one under Connections > Runners (an RTE for playbooks, AWX/AAP for templates)' });
   }
   const results = await Promise.all(runners.map(async (runner) => {
     const base = { name: runner.name, type: runner.type, uri: runner.uri, isDefault: !!runner.is_default };

@@ -20,7 +20,7 @@ const strOrInt = { type: ["string", "integer"] };
 // unattended at startup, so a misspelled key must be an error the operator sees
 // immediately, not a value that is silently dropped.
 
-// Deprecated since 8.0, removed in 9 : the 7.x section for AWX connections. Its items are
+// Deprecated since 7.2, removed in 8 : the section for AWX connections. Its items are
 // runners of type awx now (foldAwxIntoRunners) ; the shape is still validated as it was.
 const awxItem = {
   type: "object",
@@ -112,8 +112,8 @@ const runnerItem = {
 };
 
 /**
- * The 7.x `awx:` section as runners of type awx : a seed written for 7.x keeps working on
- * 8.x (deprecated, removed in 9). Returns a new document ; the warning is the caller's.
+ * The `awx:` section as runners of type awx : a seed written before 7.2 keeps working
+ * (deprecated, removed in 8). Returns a new document ; the warning is the caller's.
  */
 export function foldAwxIntoRunners(doc) {
   if (!doc?.awx) return doc;

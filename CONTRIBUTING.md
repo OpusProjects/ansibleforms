@@ -11,8 +11,8 @@ as you like — only the pull request title survives.
 
 | Branch | Holds | Releases |
 |---|---|---|
-| `main` | the newest major (8) | `8.x.y` |
-| `release/7.x` | the previous major, fixes only | `7.x.y` patches |
+| `main` | the newest major (7) | `7.x.y` |
+| `release/6.x` | the current major, fixes only | `6.5.x` patches |
 
 1. Branch from `main`, named `<type>/<short-description>`, for example
    `fix/ldap-group-filter` or `feat/constants-editor`.
@@ -21,18 +21,18 @@ as you like — only the pull request title survives.
 
 The branch is deleted automatically once it is merged.
 
-### A fix that 7.x needs too
+### A fix that 6.x needs too
 
 Fix it on `main` first. Once that is merged, bring the squash commit to the maintenance line:
 
 ```bash
-git switch -c fix/<short-description>-7x origin/release/7.x
+git switch -c fix/<short-description>-6x origin/release/6.x
 git cherry-pick -x <the squash commit on main>
 ```
 
-and open a pull request against `release/7.x` with the same `fix:` title. A fix that only
-makes sense on 7 (the code is gone on main) goes to `release/7.x` directly. Only fixes go to
-`release/7.x` - no features. A schema change there is appended to `patchVersion7` on both
+and open a pull request against `release/6.x` with the same `fix:` title. A fix that only
+makes sense on 6 (the code is gone on main) goes to `release/6.x` directly. Only fixes go to
+`release/6.x` - no features. A schema change there is appended to `patchVersion6` on both
 branches; the patches are idempotent, so applying it twice is safe.
 
 ### The title is the changelog

@@ -181,6 +181,63 @@ async function checkTable(table) {
     throw new Error(message);
   }
 }
+// PATCHING : whether a table exists (the awx table is gone once 7.2 moved it to runners)
+async function tablePresent(table) {
+  const res = await mysql.do("SHOW TABLES FROM ?? WHERE ?? = ?", ["AnsibleForms", "Tables_in_AnsibleForms", table]);
+  return res.length > 0;
+}
+function addIdPrimaryKey(table) {
+  var message;
+  var db = "AnsibleForms";
+  var checksql = "SHOW COLUMNS FROM ??.?? WHERE Field = ?";
+  var sql = "ALTER TABLE ??.?? ADD COLUMN id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY";
+  logger.debug(`adding id primary key column on table '${table}'`);
+  return mysql
+    .do(checksql, [db, table, 'id'])
+    .then((checkres) => {
+      if (checkres.length == 0) {
+        return mysql.do(sql, [db, table]);
+      }
+      return false;
+    })
+    .then((res) => {
+      if (!res) {
+        message = `Column 'id' is already present on '${table}'`;
+        logger.debug(message);
+        return message;
+      }
+      message = `added id primary key column on '${table}'`;
+      logger.warning(message);
+      return message;
+    });
+}
+
+function addUniqueKey(table, column) {
+  var message;
+  var db = "AnsibleForms";
+  var indexName = `unique_${column}`;
+  var checksql = "SHOW INDEX FROM ??.?? WHERE Key_name = ?";
+  var sql = "ALTER TABLE ??.?? ADD UNIQUE KEY ?? (??)";
+  logger.debug(`adding unique key '${indexName}' on column '${column}' in table '${table}'`);
+  return mysql
+    .do(checksql, [db, table, indexName])
+    .then((checkres) => {
+      if (checkres.length == 0) {
+        return mysql.do(sql, [db, table, indexName, column]);
+      }
+      return false;
+    })
+    .then((res) => {
+      if (!res) {
+        message = `Unique key '${indexName}' is already present on '${table}'`;
+        logger.debug(message);
+        return message;
+      }
+      message = `added unique key '${indexName}' on '${table}'`;
+      logger.warning(message);
+      return message;
+    });
+}
 // PATCHING : add a column to a table
 function addColumn(table, name, fieldtype, nullable, defaultvalue) {
   var message;
@@ -458,11 +515,11 @@ const SCHEMA_MANIFEST = {
                                'chat_settings.request_user', 'chat_settings.extra_headers',
                                'chat_settings.ignore_certs'],
                      indexes: ['jobs.idx_jobs_retention'] },
+    // 7.2 : runners - AWX connections are runners of type awx (the awx table is copied, then
+    // dropped), and the job log a playbook writes is stored on the job
     patchVersion7: { tables: ['secret_stores', 'runners'],
-                     columns: ['schedule.owner', 'credentials.secret_store', 'credentials.secret_ref', 'settings.vault_env_imported_at', 'jobs.runner'] },
-    // 8.0 : AWX connections are runners of type awx (the awx table is copied, then dropped),
-    // and the job log a playbook writes is stored on the job
-    patchVersion8: { columns: ['runners.username', 'runners.password', 'runners.use_credentials', 'jobs.job_log'] },
+                     columns: ['schedule.owner', 'credentials.secret_store', 'credentials.secret_ref', 'settings.vault_env_imported_at', 'jobs.runner',
+                               'runners.username', 'runners.password', 'runners.use_credentials', 'jobs.job_log'] },
   },
 };
 
@@ -517,7 +574,11 @@ async function patchVersion5(messages, success, failed) {
   // on request, the awx_id was added to the jobs table, to later retrieve it for future tracking
   await checkPromise(addColumn("jobs", "awx_id", "int(11)", true, "NULL"), messages, success, failed); // add for future tracking
 
-  // (5.x added awx.use_credentials here ; 8.0 dropped the awx table, see patchVersion8)
+  // patch for awx credentials, the use_credentials was added to the awx table, to allow the use of credentials
+  // (only while the awx table exists : 7.2 moves it to runners, see patchVersion7)
+  if (await tablePresent("awx")) {
+    await checkPromise(addColumn("awx", "use_credentials", "tinyint(4)", true, "0"), messages, success, failed); // bugfix for awx credentials
+  }
 
   // A new feature was added, the repositories table, to store the repositories for the forms and playbooks
   // A real gamechanger, because now the forms and playbooks can be stored in a git repository
@@ -550,8 +611,15 @@ async function patchVersion5(messages, success, failed) {
   // In 5.1.0, add abort_requested bit to jobs table, default 0
   await checkPromise(addColumn("jobs", "abort_requested", "tinyint(4)", true, "NULL"), messages, success, failed); // add abort_requested column
 
-  // (6.0.0 added id, name, description and is_default to the awx table here ; 8.0 dropped
-  // the awx table, so an upgrade to 8 must come from 7.x, where the table has them all)
+  // In 6.0.0, we allow multiple awx instances, so we need to add id, name and description to the awx table
+  // (only while the awx table exists : 7.2 moves it to runners, see patchVersion7)
+  if (await tablePresent("awx")) {
+    await checkPromise(addIdPrimaryKey("awx"), messages, success, failed); // add id column with auto_increment primary key
+    await checkPromise(addColumn("awx", "name", "varchar(250)", true, "NULL"), messages, success, failed); // add name column
+    await checkPromise(addUniqueKey("awx", "name"), messages, success, failed); // make name unique
+    await checkPromise(addColumn("awx", "description", "varchar(250)", true, "NULL"), messages, success, failed); // add description column
+    await checkPromise(addColumn("awx", "is_default", "tinyint(4)", true, "0"), messages, success, failed); // add is_default column
+  }
 }
 
 // Patches for v6 
@@ -724,6 +792,10 @@ async function patchVersion6(messages, success, failed) {
   for (const table of ["credentials", "oauth2_providers", "repositories", "ldap", "settings"]) {
     await checkPromise(addColumn(table, "managed", "tinyint(4)", true, "0"), messages, success, failed);
   }
+  // the awx table too, while it exists (7.2 moves it to runners, see patchVersion7)
+  if (await tablePresent("awx")) {
+    await checkPromise(addColumn("awx", "managed", "tinyint(4)", true, "0"), messages, success, failed);
+  }
 
 }
 
@@ -753,6 +825,13 @@ async function patchVersion7(messages, success, failed) {
   const runners = fs.readFileSync(`${__dirname}/../db/create_runners_table.sql`);
   await checkPromise(addTable("runners", runners.toString()), messages, success, failed);
   await checkPromise(addColumn("jobs", "runner", "varchar(250)", true, "NULL"), messages, success, failed);
+  // AWX/AAP/Ascender connections are runners of type awx : the awx table is copied into
+  // runners once, then dropped ; the job log a playbook writes is stored on the job
+  await checkPromise(addColumn("runners", "username", "varchar(250)", true, "NULL"), messages, success, failed);
+  await checkPromise(addColumn("runners", "password", "text", true, "NULL"), messages, success, failed);
+  await checkPromise(addColumn("runners", "use_credentials", "tinyint(4)", true, "0"), messages, success, failed);
+  await checkPromise(copyAwxToRunners(), messages, success, failed);
+  await checkPromise(addColumn("jobs", "job_log", "longtext", true, "NULL"), messages, success, failed);
 }
 
 // Idempotent by its WHERE clause : a row is copied once, and never over a store chosen since
@@ -767,17 +846,6 @@ function copyVaultPathToSecretRef() {
     });
 }
 
-// Patches for v8
-// 8.0.0 : AWX/AAP/Ascender connections are runners of type awx. The awx table is copied into
-// runners once, then dropped ; the job log a playbook writes is stored on the job.
-async function patchVersion8(messages, success, failed) {
-  await checkPromise(addColumn("runners", "username", "varchar(250)", true, "NULL"), messages, success, failed);
-  await checkPromise(addColumn("runners", "password", "text", true, "NULL"), messages, success, failed);
-  await checkPromise(addColumn("runners", "use_credentials", "tinyint(4)", true, "0"), messages, success, failed);
-  await checkPromise(copyAwxToRunners(), messages, success, failed);
-  await checkPromise(addColumn("jobs", "job_log", "longtext", true, "NULL"), messages, success, failed);
-}
-
 /**
  * Copies every AWX connection into runners (type awx), then drops the awx table. Idempotent :
  * a row is copied once (by name), and with no awx table left there is nothing to do. Both
@@ -786,8 +854,7 @@ async function patchVersion8(messages, success, failed) {
  * kept (nothing is lost) and the log says which name to change ; the next start retries.
  */
 export async function copyAwxToRunners() {
-  const present = await mysql.do("SHOW TABLES FROM ?? WHERE ?? = ?", ["AnsibleForms", "Tables_in_AnsibleForms", "awx"]);
-  if (!present.length) return "No awx table left to copy";
+  if (!(await tablePresent("awx"))) return "No awx table left to copy";
   const copied = await mysql.do(
     "INSERT INTO AnsibleForms.`runners` (name, type, description, uri, token, username, password, use_credentials, ignore_certs, ca_bundle, is_default, managed) " +
     "SELECT a.name, 'awx', a.description, a.uri, NULLIF(a.token,''), NULLIF(a.username,''), NULLIF(a.password,''), COALESCE(a.use_credentials,0), COALESCE(a.ignore_certs,0), a.ca_bundle, COALESCE(a.is_default,0), COALESCE(a.managed,0) " +
@@ -815,7 +882,6 @@ async function patchAll(messages, success, failed) {
   await checkPromise(patchVersion5(messages, success, failed), messages, success, failed);
   await checkPromise(patchVersion6(messages, success, failed), messages, success, failed);
   await checkPromise(patchVersion7(messages, success, failed), messages, success, failed);
-  await checkPromise(patchVersion8(messages, success, failed), messages, success, failed);
 }
 async function checkPromise(promise, messages, success, failed) {
   try {
@@ -856,7 +922,7 @@ async function checkAll() {
   }
 
   // check all the tables
-  // not awx : 8.0 copies it into runners and drops it (patchVersion8)
+  // not awx : 7.2 copies it into runners and drops it (patchVersion7)
   var tables = ["credentials", "groups", "job_output", "jobs", "ldap", "tokens", "users"];
   await checkPromise(checkTables(tables, messages, success, failed), messages, success, failed);
 

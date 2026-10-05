@@ -1,4 +1,4 @@
-// 8.0 : AWX connections move from the awx table into runners (type awx), then the awx
+// 7.2 : AWX connections move from the awx table into runners (type awx), then the awx
 // table goes. The copy runs on every start (patches re-run), so it must be idempotent, and
 // it must never drop the table while a connection could not move.
 import { test, describe, beforeEach, vi } from "vitest";

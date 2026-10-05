@@ -35,12 +35,12 @@ The [installation guide](https://ansibleforms.com/installation) covers every opt
 ## Release lines
 
 Two major versions are maintained, each on its own branch with its own changelog and image tags.
-Coming from 7? 8.0 runs playbooks on runners: read [DEPRECATED.md](DEPRECATED.md) before you move over.
+Coming from 6? Read [Upgrading to 7](https://ansibleforms.com/upgrade-7) before you move over.
 
 | Branch | Version | Status |
 |---|---|---|
-| `main` | 8.x | new features and fixes |
-| `release/7.x` | 7.x | fixes only |
+| `main` | 7.x | new features and fixes |
+| `release/6.x` | 6.x | fixes only |
 
 ## Deployment topology
 

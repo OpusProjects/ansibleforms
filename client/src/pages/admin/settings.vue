@@ -184,7 +184,7 @@ function envHelp(e) {
 // reported as a fact on the Status page instead.
 // AF_ROLE and RTE_* describe which process this is and where its RTE lives : set in the
 // environment of the container, not edited from inside the app. ANSIBLE_PATH and
-// PROCESS_MAX_BUFFER are read by an RTE only : since 8.0 the app runs no playbook itself.
+// PROCESS_MAX_BUFFER are read by an RTE only : since 7.2 the app runs no playbook itself.
 const OWNED_ELSEWHERE = /^VAULT_|^BASE_URL$|^AF_ROLE$|^RTE_|^ANSIBLE_PATH$|^PROCESS_MAX_BUFFER$/;
 
 const envGroups = computed(() => {

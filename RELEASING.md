@@ -5,7 +5,7 @@ For maintainers. Contributors only need [CONTRIBUTING.md](CONTRIBUTING.md).
 Everything below runs in GitHub Actions. Nothing is built or pushed from a laptop, and no
 version number or changelog line is ever typed by hand.
 
-There are two release lines: `main` (the newest major, 8) and `release/7.x` (patches of
+There are two release lines: `main` (the newest major, 7) and `release/6.x` (patches of
 the previous one). Everything below works the same on both; each
 branch has its own release pull request, manifest and `CHANGELOG.md`.
 
@@ -45,7 +45,7 @@ version.
 ### Changing the changelog wording before a release
 
 Edit `CHANGELOG.md` on the release pull request's branch (`release-please--branches--main`,
-or `release-please--branches--release/7.x`) and push. Once the release exists, you can also edit the GitHub release notes directly.
+or `release-please--branches--release/6.x`) and push. Once the release exists, you can also edit the GitHub release notes directly.
 
 ### Forcing a specific version
 
@@ -104,13 +104,12 @@ versioned by date (`2026.10.05`, plus `latest`), independent of the application.
   request for that. Build a release candidate of it to test the app on the new base, then
   merge it. Retitle it `fix(base): ...` if the update should appear in the changelog.
 
-## A patch release of 7.x
+## A patch release of 6.x
 
-Open the fix against `release/7.x` (see CONTRIBUTING.md: fix on main first, then
-cherry-pick). release-please keeps a "chore: release 7.x.y" pull request open on that
+Open the fix against `release/6.x` (see CONTRIBUTING.md: fix on main first, then
+cherry-pick). release-please keeps a "chore: release 6.5.x" pull request open on that
 branch; merging it releases and publishes, exactly like on main. Its config bumps the patch
-only (`"versioning": "always-bump-patch"` in its `release-please-config.json`), so a stray
-`feat:` cannot make a new minor.
+only, so a stray `feat:` cannot make a 6.6.0.
 
 ## Setup this depends on
 
