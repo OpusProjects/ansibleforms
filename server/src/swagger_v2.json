@@ -2294,112 +2294,6 @@
         }
       }
     },
-    "/config/vault/check": {
-      "post": {
-        "tags": [
-          "config"
-        ],
-        "summary": "Test the HashiCorp Vault connection",
-        "description": "Read-only: looks up the token, nothing is written. Requires settings access.",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Vault reachable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "addr": {
-                      "type": "string"
-                    },
-                    "namespace": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "kvVersion": {
-                      "type": "string"
-                    },
-                    "defaultMount": {
-                      "type": "string"
-                    },
-                    "renewable": {
-                      "type": "boolean"
-                    },
-                    "ttl": {
-                      "type": "integer",
-                      "nullable": true,
-                      "description": "Seconds left, null when the token does not expire"
-                    },
-                    "policies": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Vault is not configured, unreachable or refused the token"
-          },
-          "403": {
-            "description": "Forbidden - no settings access"
-          }
-        }
-      }
-    },
-    "/config/vault/mounts": {
-      "get": {
-        "tags": [
-          "config"
-        ],
-        "summary": "List the KV mounts in Vault",
-        "description": "Only kv mounts. Requires settings access.",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "KV mounts",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "path": {
-                        "type": "string"
-                      },
-                      "version": {
-                        "type": "string",
-                        "description": "1 or 2, as Vault reports it",
-                        "nullable": true
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Vault is not configured or unreachable"
-          },
-          "403": {
-            "description": "Forbidden - no settings access"
-          }
-        }
-      }
-    },
     "/config/templated": {
       "get": {
         "tags": [
@@ -2595,8 +2489,7 @@
           "description": { "type": "string", "description": "Description of the credential.", "example": "Main DB credential" },
           "db_type": { "type": "string", "description": "Type of database (mysql, postgres, etc).", "example": "mysql" },
           "secret_store": { "type": "string", "description": "Name of the secret store user and password are read from.", "example": "vault" },
-          "secret_ref": { "type": "string", "description": "Where the secret lives in the store, e.g. a Vault path.", "example": "secret/myapp/prod" },
-          "vault_path": { "type": "string", "deprecated": true, "description": "Deprecated since 7.1, removed in 8 : the same as secret_store 'vault' with this secret_ref.", "example": "secret/data/myapp/prod" }
+          "secret_ref": { "type": "string", "description": "Where the secret lives in the store, e.g. a Vault path.", "example": "secret/myapp/prod" }
         },
         "required": ["name"]
   },

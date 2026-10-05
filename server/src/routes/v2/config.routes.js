@@ -12,8 +12,6 @@ router.get('/env', middleware.checkSettingsMiddleware, configController.env);
 // writes persistent/.env ; refuses anything already set in the real environment
 router.put('/env', middleware.checkSettingsMiddleware, configController.saveEnv);
 // read-only connection test for the Vault page
-router.post('/vault/check', middleware.checkSettingsMiddleware, configController.vaultCheck);
-router.get('/vault/mounts', middleware.checkSettingsMiddleware, configController.vaultMounts);
 // config mode (database vs file) - designer accessible so designers without settings access can learn the mode
 router.get('/mode', middleware.checkDesignerMiddleware, configController.configMode);
 // is the stored config a ytt template ? designer accessible for the same reason as /mode :

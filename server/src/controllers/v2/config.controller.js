@@ -12,7 +12,6 @@ import i18n from "../../lib/i18n.js";
 import { auditConfigChange } from "../../lib/configAudit.js";
 import EnvSettings from "../../lib/envSettings.js";
 import Audit from "../../models/audit.model.js";
-import { getStore, checkStore, listMounts, VAULT_STORE_NAME } from "../../secrets/providers/index.js";
 import appConfig from "../../../config/app.config.js";
 
 import { fileURLToPath } from 'url';
@@ -173,48 +172,6 @@ const saveEnv = async function(req,res){
 // file, not the key itself, and the path is useful to see.
 const SECRET_ENV_NAME = /PASSWORD|SECRET|_TOKEN$/;
 const MASK = "*** NOT REVEALED ***";
-
-// Deprecated since 7.1 (removed in 8) : the Vault page these served is replaced by the
-// secret stores page (/api/v2/secretstore/:id/check and /mounts). They now answer for the
-// store named `vault`, which is what the old page configured.
-//
-// Connection test. Read only : token/lookup-self proves the address, token and namespace
-// without touching a secret.
-let vaultEndpointsWarned = false;
-function warnVaultEndpoints(){
-  if (vaultEndpointsWarned) return;
-  vaultEndpointsWarned = true;
-  logger.warning("/api/v2/config/vault/* is deprecated since 7.1 and removed in 8 - use /api/v2/secretstore/{id}/check and /mounts");
-}
-
-const vaultCheck = async function(req,res){
-  warnVaultEndpoints()
-  try{
-    const info = await checkStore(await getStore(VAULT_STORE_NAME))
-    Audit.log({ user: req.user?.user, ip: req.ip, action: 'vault.check', outcome: 'success', targetType: 'vault', target: info.addr })
-    return res.json(RestResult.single(info))
-  }catch(err){
-    const message = helpers.getError(err)
-    // the address is what was tested, and it is known even when the test failed - the
-    // success branch records it, so leaving it off here made the failures the only vault
-    // rows with no target. VAULT_ADDR is an address, not a credential (that is VAULT_TOKEN)
-    Audit.log({ user: req.user?.user, ip: req.ip, action: 'vault.check', outcome: 'failure', targetType: 'vault', target: 'vault', detail: { reason: message } })
-    return res.status(400).json(RestResult.error(i18n.t(req, 'config.failedVaultCheck'), message))
-  }
-}
-
-// The KV mounts the configured token can see. Read only, and deliberately quiet: the page
-// falls back to a text field when this fails, so a 403 or an unreachable Vault is not an
-// error worth shouting about.
-const vaultMounts = async function(req,res){
-  warnVaultEndpoints()
-  try{
-    return res.json(RestResult.list(await listMounts(await getStore(VAULT_STORE_NAME))))
-  }catch(err){
-    logger.debug(`Could not list vault mounts : ${helpers.getError(err)}`)
-    return res.status(400).json(RestResult.error(i18n.t(req, 'config.failedVaultMounts'), helpers.getError(err)))
-  }
-}
 
 const env = async function(req,res){
   try{
@@ -483,8 +440,6 @@ export default {
   backups,
   env,
   saveEnv,
-  vaultCheck,
-  vaultMounts,
   restore,
   save,
   validate,

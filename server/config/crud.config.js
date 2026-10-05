@@ -38,7 +38,6 @@ const crudConfigs = {
       { name: 'is_database', isBoolean: true, setDefault: true },
       { name: 'description' },
       { name: 'db_type' },
-      { name: 'vault_path' },
       { name: 'secret_store' },
       { name: 'secret_ref' },
       { name: 'managed', isBoolean: true }

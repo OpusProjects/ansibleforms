@@ -46,8 +46,6 @@ export default {
     failedGetBackups: "Failed to get backups",
     failedGetEnvVars: "Failed to get environment variables",
     failedSaveEnvVars: "Failed to save the environment settings",
-    failedVaultCheck: "Vault connection test failed",
-    failedVaultMounts: "Could not list the Vault mounts",
     noEnvVarsGiven: "No environment variables were given",
     envVarsSaved: "Environment settings saved",
     envVarsNotFound: "Environment Variables section not found in help.yaml",
