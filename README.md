@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-ansibleforms.com-informational)](https://ansibleforms.com)
 
-AnsibleForms is a self-hosted web application that turns Ansible playbooks and AWX/AAP templates
+AnsibleForms is a self-hosted web application that turns Ansible playbooks and AWX/AAP/Ascender templates
 into self-service forms: users fill in a form, AnsibleForms builds the extravars and launches the job.
 Everything about installing, configuring and writing forms is documented at [ansibleforms.com](https://ansibleforms.com).
 
