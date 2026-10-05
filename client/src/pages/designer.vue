@@ -1,43 +1,69 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed, nextTick } from "vue";
-import Form from "@/lib/Form";
-import Lock from "@/lib/Lock";
-import Backup from "@/lib/Backup";
-import Profile from "@/lib/Profile";
-import YAML from "yaml";
-import { toast } from "vue-sonner";
-import { useRoute, useRouter, onBeforeRouteLeave } from "vue-router";
-import Helpers from "@/lib/Helpers";
-import BaseUrl from "@/lib/BaseUrl";
-import axios from "axios";
-import TokenStorage from "@/lib/TokenStorage";
-import dayjs from "dayjs";
-import relativeTime from "dayjs/plugin/relativeTime";
-import { availableIcons } from "@/config/icons";
-import { editorStyle } from "@/config/editorStyle";
-import { authProviders, roleOptionKeys, roleOptionDefaults, roleOptionLabel as roleOptionLabelFor, roleToEditable, serializeRole } from "@/config/roles";
-import { coerceConstantValue, constantValueError, constantValueRows, constantsToArray, arrayToConstants, flattenConstants } from "@/config/constants";
-import { isDefaultCategory, flattenCategories, canMoveUp, canMoveDown, canIndent, canOutdent, moveCategoryUp, moveCategoryDown, indentCategory, outdentCategory, movedCategoryPaths } from "@/config/categories";
+import { ref, onMounted, onBeforeUnmount, computed, nextTick } from 'vue';
+import Form from '@/lib/Form';
+import Lock from '@/lib/Lock';
+import Backup from '@/lib/Backup';
+import Profile from '@/lib/Profile';
+import YAML from 'yaml';
+import { toast } from 'vue-sonner';
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router';
+import Helpers from '@/lib/Helpers';
+import BaseUrl from '@/lib/BaseUrl';
+import axios from 'axios';
+import TokenStorage from '@/lib/TokenStorage';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import { availableIcons } from '@/config/icons';
+import { editorStyle } from '@/config/editorStyle';
+import {
+  authProviders,
+  roleOptionKeys,
+  roleOptionDefaults,
+  roleOptionLabel as roleOptionLabelFor,
+  roleToEditable,
+  serializeRole,
+} from '@/config/roles';
+import {
+  coerceConstantValue,
+  constantValueError,
+  constantValueRows,
+  constantsToArray,
+  arrayToConstants,
+  flattenConstants,
+} from '@/config/constants';
+import {
+  isDefaultCategory,
+  flattenCategories,
+  canMoveUp,
+  canMoveDown,
+  canIndent,
+  canOutdent,
+  moveCategoryUp,
+  moveCategoryDown,
+  indentCategory,
+  outdentCategory,
+  movedCategoryPaths,
+} from '@/config/categories';
 
 dayjs.extend(relativeTime);
 
 const { t } = useI18n();
 
-const categories = ref("");
-const roles = ref("");
-const constants = ref("");
+const categories = ref('');
+const roles = ref('');
+const constants = ref('');
 const forms = ref({});
 const formMeta = ref({});
 const loaded = ref(false);
 const lockLoading = ref(false);
 const currentForm = ref(null);
 const tabs = [
-  { name: "Categories", icon: "th-list" },
-  { name: "Roles", icon: "user-shield" },
-  { name: "Constants", icon: "sliders-h" },
-  { name: "Forms", icon: "pen-to-square" },
+  { name: 'Categories', icon: 'th-list' },
+  { name: 'Roles', icon: 'user-shield' },
+  { name: 'Constants', icon: 'sliders-h' },
+  { name: 'Forms', icon: 'pen-to-square' },
 ];
-const currentTab = ref("Forms");
+const currentTab = ref('Forms');
 const showWarnings = ref(false);
 const action = ref(null);
 const lock = ref(false);
@@ -94,15 +120,25 @@ async function editorPaste() {
   if (text) activeEditor.value.insert(text);
 }
 function editorFormat() {
-  const fmt = (val) => { try { return YAML.stringify(YAML.parse(val)); } catch { return null; } };
+  const fmt = (val) => {
+    try {
+      return YAML.stringify(YAML.parse(val));
+    } catch {
+      return null;
+    }
+  };
   if (currentTab.value === 'Categories') {
-    const r = fmt(categories.value); if (r) categories.value = r;
+    const r = fmt(categories.value);
+    if (r) categories.value = r;
   } else if (currentTab.value === 'Roles') {
-    const r = fmt(roles.value); if (r) roles.value = r;
+    const r = fmt(roles.value);
+    if (r) roles.value = r;
   } else if (currentTab.value === 'Constants') {
-    const r = fmt(constants.value); if (r) constants.value = r;
+    const r = fmt(constants.value);
+    if (r) constants.value = r;
   } else if (currentTab.value === 'Forms' && currentForm.value) {
-    const r = fmt(forms.value[currentForm.value]); if (r) forms.value[currentForm.value] = r;
+    const r = fmt(forms.value[currentForm.value]);
+    if (r) forms.value[currentForm.value] = r;
   }
 }
 
@@ -186,7 +222,12 @@ const isDirty = computed(() => dirtyBaseline.value !== null && contentSnapshot()
 // promises something the save path cannot deliver.
 function parsedForm(raw) {
   if (raw === undefined) return undefined;
-  try { return JSON.stringify(YAML.parse(raw)); } catch { return raw; } // unparsable: fall back to the text
+  try {
+    return JSON.stringify(YAML.parse(raw));
+  } catch {
+    // unparsable: fall back to the text
+    return raw;
+  }
 }
 function isFormDirty(id) {
   if (!baselineRaw.value.forms[id] && forms.value[id]) return true;
@@ -270,7 +311,9 @@ const currentFormIsSubform = computed(() => {
   if (currentTab.value !== 'Forms' || !currentForm.value) return false;
   try {
     return YAML.parse(forms.value[currentForm.value])?.type === 'subform';
-  } catch { return false; }
+  } catch {
+    return false;
+  }
 });
 
 // Icon picker
@@ -324,7 +367,7 @@ const iconSections = ref({ icons: true, style: false, overlay: false });
 const filteredIcons = computed(() => {
   if (!iconSearch.value) return availableIcons;
   const q = iconSearch.value.toLowerCase();
-  return availableIcons.filter(i => i.includes(q));
+  return availableIcons.filter((i) => i.includes(q));
 });
 
 function openIconPicker() {
@@ -349,7 +392,9 @@ function openIconPicker() {
       overlayIconTextPosition: parsed.overlayIconTextPosition || 'bottom-left',
       overlayIconTextColor: parsed.overlayIconTextColor || 'success',
     };
-  } catch { /* defaults are fine */ }
+  } catch {
+    /* defaults are fine */
+  }
   iconSearch.value = '';
   showIconPicker.value = true;
 }
@@ -360,14 +405,30 @@ function pickIcon(iconName) {
 
 function applyIconForm() {
   editCurrentFormDoc((doc) => {
-    const props = ['icon', 'iconColor', 'iconSize', 'overlayIcon', 'overlayIconColor', 'overlayIconCircle', 'overlayIconText', 'overlayIconTextPosition', 'overlayIconTextColor'];
-    const defaults = { overlayIconColor: 'success', overlayIconCircle: true, overlayIconTextPosition: 'bottom-left', overlayIconTextColor: 'success' };
+    const props = [
+      'icon',
+      'iconColor',
+      'iconSize',
+      'overlayIcon',
+      'overlayIconColor',
+      'overlayIconCircle',
+      'overlayIconText',
+      'overlayIconTextPosition',
+      'overlayIconTextColor',
+    ];
+    const defaults = {
+      overlayIconColor: 'success',
+      overlayIconCircle: true,
+      overlayIconTextPosition: 'bottom-left',
+      overlayIconTextColor: 'success',
+    };
     for (const p of props) {
       const v = iconForm.value[p];
       if (v === '' || v === undefined || v === null) {
         doc.delete(p);
       } else if (p === 'overlayIconCircle') {
-        if (v === true) doc.delete(p); else doc.set(p, v);
+        if (v === true) doc.delete(p);
+        else doc.set(p, v);
       } else if (defaults[p] && v === defaults[p] && !doc.get('overlayIcon') && !doc.get('overlayIconText')) {
         doc.delete(p);
       } else {
@@ -395,7 +456,7 @@ const catIconSearch = ref('');
 const filteredCatIcons = computed(() => {
   if (!catIconSearch.value) return availableIcons;
   const q = catIconSearch.value.toLowerCase();
-  return availableIcons.filter(i => i.includes(q));
+  return availableIcons.filter((i) => i.includes(q));
 });
 
 function flattenCatNames(cats, prefix) {
@@ -430,7 +491,7 @@ function findCatByPath(cats, path) {
   let current = cats;
   let target = null;
   for (const part of parts) {
-    target = current.find(c => c && c.name === part);
+    target = current.find((c) => c && c.name === part);
     if (!target) return null;
     current = target.items || [];
   }
@@ -439,21 +500,36 @@ function findCatByPath(cats, path) {
 
 function doAddCategory() {
   const name = newCatName.value.trim();
-  if (!name) { toast.warning(t('designer.categoryNameRequired')); return; }
+  if (!name) {
+    toast.warning(t('designer.categoryNameRequired'));
+    return;
+  }
   const icon = newCatIcon.value || 'bars';
   const cats = parseSeqYaml(categories.value);
-  if (cats === null) { toast.error(t('designer.badYamlUpdate')); return; }
+  if (cats === null) {
+    toast.error(t('designer.badYamlUpdate'));
+    return;
+  }
 
   if (newCatParent.value) {
     const parent = findCatByPath(cats, newCatParent.value);
-    if (!parent) { toast.error(t('designer.badYamlUpdate')); return; }
+    if (!parent) {
+      toast.error(t('designer.badYamlUpdate'));
+      return;
+    }
     const siblings = parent.items || [];
-    if (siblings.some(c => c && c.name === name)) { toast.warning(t('designer.categoryExists')); return; }
+    if (siblings.some((c) => c && c.name === name)) {
+      toast.warning(t('designer.categoryExists'));
+      return;
+    }
     if (!parent.items) parent.items = [];
     parent.items.push({ name, icon });
     categories.value = YAML.stringify(cats);
   } else {
-    if (cats.some(c => c && c.name === name)) { toast.warning(t('designer.categoryExists')); return; }
+    if (cats.some((c) => c && c.name === name)) {
+      toast.warning(t('designer.categoryExists'));
+      return;
+    }
     categories.value = appendToSeqYaml(categories.value, { name, icon });
   }
   showAddCategory.value = false;
@@ -468,7 +544,7 @@ const editCatIconSearch = ref('');
 const filteredEditCatIcons = computed(() => {
   if (!editCatIconSearch.value) return availableIcons;
   const q = editCatIconSearch.value.toLowerCase();
-  return availableIcons.filter(i => i.includes(q));
+  return availableIcons.filter((i) => i.includes(q));
 });
 
 // `_path` is the index path of the yaml node the row was cloned from, so the
@@ -499,7 +575,11 @@ function editCatMove(op, cat) {
 // refused, because reorganizing on purpose is the normal case.
 const editCatMovedPaths = computed(() => {
   let before;
-  try { before = YAML.parse(categories.value) || []; } catch { before = []; }
+  try {
+    before = YAML.parse(categories.value) || [];
+  } catch {
+    before = [];
+  }
   if (!Array.isArray(before)) before = [];
   return movedCategoryPaths(before, editCats.value);
 });
@@ -523,7 +603,11 @@ function openEditCategories() {
   }
   let cats = [];
   if (categories.value) {
-    try { cats = YAML.parse(categories.value) || []; } catch { cats = []; }
+    try {
+      cats = YAML.parse(categories.value) || [];
+    } catch {
+      cats = [];
+    }
   }
   if (!Array.isArray(cats)) cats = [];
   editCats.value = cloneCats(cats);
@@ -557,7 +641,10 @@ function editCatRemove(cat) {
   if (editCatIconIdx.value !== null) editCatIconIdx.value = null;
   function removeFrom(list) {
     const idx = list.indexOf(cat);
-    if (idx >= 0) { list.splice(idx, 1); return true; }
+    if (idx >= 0) {
+      list.splice(idx, 1);
+      return true;
+    }
     for (const item of list) {
       if (item.items && removeFrom(item.items)) return true;
     }
@@ -594,14 +681,13 @@ function buildCleanCatNodes(doc, cats) {
     } else {
       node = doc.createNode({ name, icon: c.icon });
     }
-    const children = (c.items && c.items.length > 0) ? buildCleanCatNodes(doc, c.items) : [];
+    const children = c.items && c.items.length > 0 ? buildCleanCatNodes(doc, c.items) : [];
     if (children.length > 0) {
       const sub = node.get('items');
       if (YAML.isSeq(sub)) {
         hoistSeqComment(sub);
         sub.items = children;
-      }
-      else node.set('items', doc.createNode(children));
+      } else node.set('items', doc.createNode(children));
     } else {
       node.delete('items');
     }
@@ -612,10 +698,16 @@ function buildCleanCatNodes(doc, cats) {
 
 function applyEditCategories() {
   const doc = parseDocOrNull(categories.value);
-  if (!doc) { toast.error(t('designer.badYamlUpdate')); return; }
+  if (!doc) {
+    toast.error(t('designer.badYamlUpdate'));
+    return;
+  }
   // the buffer could have changed since the modal opened : an alias must never
   // reach the rebuild
-  if (catsHaveAlias(doc.contents)) { toast.warning(t('designer.aliasNotSupported')); return; }
+  if (catsHaveAlias(doc.contents)) {
+    toast.warning(t('designer.aliasNotSupported'));
+    return;
+  }
   hoistSeqComment(doc.contents);
   const nodes = buildCleanCatNodes(doc, editCats.value);
   if (YAML.isSeq(doc.contents)) doc.contents.items = nodes;
@@ -657,7 +749,6 @@ function blankRole() {
   };
 }
 
-
 // Parse a raw yaml sequence: [] when empty, null when unparsable or not a
 // sequence (callers must abort then instead of silently wiping the section).
 function parseSeqYaml(raw) {
@@ -666,7 +757,9 @@ function parseSeqYaml(raw) {
     const v = YAML.parse(raw);
     if (v === null || v === undefined) return [];
     return Array.isArray(v) ? v : null;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 // Parse a raw section as a yaml document (the node tree, comments included).
@@ -675,7 +768,9 @@ function parseDocOrNull(raw) {
   try {
     const doc = YAML.parseDocument(raw || '');
     return doc.errors.length > 0 ? null : doc;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 // Append one item to a raw yaml sequence, preserving comments/formatting of
@@ -706,7 +801,7 @@ const sortedLocalUsers = computed(() => [...localUsers.value].sort());
 async function loadLocalGroups() {
   try {
     const result = await axios.get('/api/v2/group/', TokenStorage.getAuthentication());
-    localGroups.value = (result.data.records || result.data).map(g => g.name);
+    localGroups.value = (result.data.records || result.data).map((g) => g.name);
   } catch {
     localGroups.value = [];
   }
@@ -715,7 +810,7 @@ async function loadLocalGroups() {
 async function loadLocalUsers() {
   try {
     const result = await axios.get('/api/v2/user/', TokenStorage.getAuthentication());
-    localUsers.value = (result.data.records || result.data).map(u => u.username);
+    localUsers.value = (result.data.records || result.data).map((u) => u.username);
   } catch {
     localUsers.value = [];
   }
@@ -727,25 +822,32 @@ async function loadLocalUsers() {
 // meant to look at.
 function localGroupOptions(current) {
   const opts = sortedLocalGroups.value;
-  return (current && !opts.includes(current)) ? [current, ...opts] : opts;
+  return current && !opts.includes(current) ? [current, ...opts] : opts;
 }
 function localUserOptions(current) {
   const opts = sortedLocalUsers.value;
-  return (current && !opts.includes(current)) ? [current, ...opts] : opts;
+  return current && !opts.includes(current) ? [current, ...opts] : opts;
 }
 // a picked name belongs to the provider it was picked from : switching provider
 // resets it (the same reset the settings roles page does)
 function onRoleProviderChange(entry, type) {
-  entry.name = entry.provider === 'local'
-    ? (type === 'group' ? sortedLocalGroups.value[0] : sortedLocalUsers.value[0]) || ''
-    : '';
+  entry.name =
+    entry.provider === 'local' ? (type === 'group' ? sortedLocalGroups.value[0] : sortedLocalUsers.value[0]) || '' : '';
 }
 
 // shared member-row helpers, used by both the add and edit modals
-function roleAddGroup(role) { role.groups.push({ provider: 'local', name: sortedLocalGroups.value[0] || '' }); }
-function roleRemoveGroup(role, idx) { role.groups.splice(idx, 1); }
-function roleAddUser(role) { role.users.push({ provider: 'local', name: sortedLocalUsers.value[0] || '' }); }
-function roleRemoveUser(role, idx) { role.users.splice(idx, 1); }
+function roleAddGroup(role) {
+  role.groups.push({ provider: 'local', name: sortedLocalGroups.value[0] || '' });
+}
+function roleRemoveGroup(role, idx) {
+  role.groups.splice(idx, 1);
+}
+function roleAddUser(role) {
+  role.users.push({ provider: 'local', name: sortedLocalUsers.value[0] || '' });
+}
+function roleRemoveUser(role, idx) {
+  role.users.splice(idx, 1);
+}
 
 // Add role
 const showAddRole = ref(false);
@@ -758,18 +860,30 @@ function openAddRole() {
 
 function doAddRole() {
   const name = newRole.value.name.trim();
-  if (!name) { toast.warning(t('designer.roleNameRequired')); return; }
+  if (!name) {
+    toast.warning(t('designer.roleNameRequired'));
+    return;
+  }
   const list = parseRolesYaml();
   // bad/typed-wrong yaml must abort, not silently replace the whole section
-  if (list === null) { toast.error(t('designer.badYamlUpdate')); return; }
-  if (list.some(r => r && r.name === name)) { toast.warning(t('designer.roleExists')); return; }
+  if (list === null) {
+    toast.error(t('designer.badYamlUpdate'));
+    return;
+  }
+  if (list.some((r) => r && r.name === name)) {
+    toast.warning(t('designer.roleExists'));
+    return;
+  }
   // Same rule as the roles editor (admin/roles.vue): 'admin' is a privilege bypass by
   // NAME - middleware.js and job.model.js test roles.includes("admin") regardless of the
   // option flags - so adding one here would grant admin to whatever groups were typed in.
   // The duplicate check above only catches it when the config already has an admin role.
   // 'public' is deliberately NOT blocked: the schema requires one, so a config that lost
   // it has to be repairable from here.
-  if (name === 'admin') { toast.warning(t('settings.settingsPage.reservedRoleName', { name })); return; }
+  if (name === 'admin') {
+    toast.warning(t('settings.settingsPage.reservedRoleName', { name }));
+    return;
+  }
   roles.value = appendToSeqYaml(roles.value, serializeRole({ ...newRole.value, name }));
   showAddRole.value = false;
 }
@@ -780,7 +894,11 @@ function doAddRole() {
 // the recovery tool then.
 function parsedOrNull(raw) {
   if (!raw || !raw.trim()) return null;
-  try { return YAML.parse(raw); } catch { return null; }
+  try {
+    return YAML.parse(raw);
+  } catch {
+    return null;
+  }
 }
 // the Add modals can only append to a parsable section (empty is fine) ;
 // bad yaml disables Add so the modal can never wipe hand-edited content
@@ -811,7 +929,7 @@ function openEditRoles() {
   // _required/_public are stamped ONCE at open (never evaluated against the
   // name being typed : a live check would disable the input mid-keystroke when
   // a custom name passes through 'admin'/'public')
-  editRoles.value = (parseRolesYaml() || []).map(r => ({
+  editRoles.value = (parseRolesYaml() || []).map((r) => ({
     _uid: ++editRoleUid,
     _required: isRequiredRole(r.name),
     _public: isPublicRole(r.name),
@@ -831,12 +949,21 @@ function editRoleRemove(idx) {
 }
 
 function applyEditRoles() {
-  const names = editRoles.value.map(r => r.name.trim());
-  if (names.some(n => !n)) { toast.warning(t('designer.roleNameRequired')); return; }
-  if (new Set(names).size !== names.length) { toast.warning(t('designer.roleExists')); return; }
+  const names = editRoles.value.map((r) => r.name.trim());
+  if (names.some((n) => !n)) {
+    toast.warning(t('designer.roleNameRequired'));
+    return;
+  }
+  if (new Set(names).size !== names.length) {
+    toast.warning(t('designer.roleExists'));
+    return;
+  }
   // a custom role must not take over a built-in name
-  if (editRoles.value.some(r => !r._required && isRequiredRole(r.name.trim()))) { toast.warning(t('designer.roleExists')); return; }
-  roles.value = YAML.stringify(editRoles.value.map(r => serializeRole({ ...r, name: r.name.trim() })));
+  if (editRoles.value.some((r) => !r._required && isRequiredRole(r.name.trim()))) {
+    toast.warning(t('designer.roleExists'));
+    return;
+  }
+  roles.value = YAML.stringify(editRoles.value.map((r) => serializeRole({ ...r, name: r.name.trim() })));
   showEditRoles.value = false;
 }
 
@@ -852,8 +979,10 @@ function parseConstantsYaml() {
   try {
     const v = YAML.parse(constants.value);
     if (v === null || v === undefined) return {};
-    return (typeof v === 'object' && !Array.isArray(v)) ? v : null;
-  } catch { return null; }
+    return typeof v === 'object' && !Array.isArray(v) ? v : null;
+  } catch {
+    return null;
+  }
 }
 
 // Add constant
@@ -898,7 +1027,7 @@ function collectConstantLeaves(obj, prefix, result) {
     if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
       collectConstantLeaves(v, path, result);
     } else {
-      result.push({ path, value: (v !== null && typeof v === 'object') ? JSON.stringify(v) : String(v ?? '') });
+      result.push({ path, value: v !== null && typeof v === 'object' ? JSON.stringify(v) : String(v ?? '') });
     }
   }
   return result;
@@ -938,18 +1067,30 @@ function openAddConstant() {
 
 function doAddConstant() {
   const key = newConstKey.value.trim();
-  if (!key) { toast.warning(t('designer.constantKeyRequired')); return; }
+  if (!key) {
+    toast.warning(t('designer.constantKeyRequired'));
+    return;
+  }
   const root = addConstRoot.value;
-  if (!root) { toast.error(t('designer.badYamlUpdate')); return; }
+  if (!root) {
+    toast.error(t('designer.badYamlUpdate'));
+    return;
+  }
 
   // a list or a map that cannot be parsed would be stored as its own yaml source
   // text, so `$(KEY)` would hand a form a string that merely looks like a list
   const valueError = constantValueError(newConstValue.value);
-  if (valueError) { toast.warning(t('designer.constantValueInvalid', { key, error: valueError })); return; }
+  if (valueError) {
+    toast.warning(t('designer.constantValueInvalid', { key, error: valueError }));
+    return;
+  }
 
   const value = coerceConstantValue(newConstValue.value);
   const parent = newConstParent.value === '' ? null : addConstParents.value[Number(newConstParent.value)];
-  if (newConstParent.value !== '' && !parent) { toast.error(t('designer.badYamlUpdate')); return; }
+  if (newConstParent.value !== '' && !parent) {
+    toast.error(t('designer.badYamlUpdate'));
+    return;
+  }
 
   let target = root;
   let dropped = '';
@@ -965,7 +1106,10 @@ function doAddConstant() {
       target = existing;
     }
   }
-  if (Object.prototype.hasOwnProperty.call(target, key)) { toast.warning(t('designer.constantExists')); return; }
+  if (Object.prototype.hasOwnProperty.call(target, key)) {
+    toast.warning(t('designer.constantExists'));
+    return;
+  }
   target[key] = value;
 
   constants.value = YAML.stringify(root);
@@ -1008,7 +1152,10 @@ function editConstAddSub(row) {
 function editConstRemove(target, list) {
   if (!list) list = editConsts.value;
   const idx = list.indexOf(target);
-  if (idx !== -1) { list.splice(idx, 1); return true; }
+  if (idx !== -1) {
+    list.splice(idx, 1);
+    return true;
+  }
   for (const item of list) {
     if (item.children && editConstRemove(target, item.children)) return true;
   }
@@ -1016,8 +1163,8 @@ function editConstRemove(target, list) {
 }
 
 function validateConstKeys(arr) {
-  const keys = arr.map(c => c.key.trim());
-  if (keys.some(k => !k)) return false;
+  const keys = arr.map((c) => c.key.trim());
+  if (keys.some((k) => !k)) return false;
   if (new Set(keys).size !== keys.length) return 'duplicate';
   for (const row of arr) {
     if (row.children && row.children.length > 0) {
@@ -1029,7 +1176,7 @@ function validateConstKeys(arr) {
 }
 
 function trimConstKeys(arr) {
-  return arr.map(r => ({
+  return arr.map((r) => ({
     ...r,
     key: r.key.trim(),
     children: r.children ? trimConstKeys(r.children) : [],
@@ -1054,10 +1201,19 @@ function findInvalidConstValue(arr) {
 
 function applyEditConstants() {
   const valid = validateConstKeys(editConsts.value);
-  if (valid === false) { toast.warning(t('designer.constantKeyRequired')); return; }
-  if (valid === 'duplicate') { toast.warning(t('designer.constantExists')); return; }
+  if (valid === false) {
+    toast.warning(t('designer.constantKeyRequired'));
+    return;
+  }
+  if (valid === 'duplicate') {
+    toast.warning(t('designer.constantExists'));
+    return;
+  }
   const invalid = findInvalidConstValue(editConsts.value);
-  if (invalid) { toast.warning(t('designer.constantValueInvalid', invalid)); return; }
+  if (invalid) {
+    toast.warning(t('designer.constantValueInvalid', invalid));
+    return;
+  }
   constants.value = YAML.stringify(arrayToConstants(trimConstKeys(editConsts.value)));
   showEditConstants.value = false;
 }
@@ -1088,7 +1244,9 @@ const currentFormTile = computed(() => {
   if (!currentForm.value || !forms.value[currentForm.value]) return null;
   try {
     return YAML.parse(forms.value[currentForm.value])?.tileClass || null;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 });
 
 const selectedTile = ref('');
@@ -1128,7 +1286,9 @@ function openImagePicker() {
   }
   try {
     imageUrl.value = YAML.parse(forms.value[currentForm.value])?.image || '';
-  } catch { imageUrl.value = ''; }
+  } catch {
+    imageUrl.value = '';
+  }
   showImagePicker.value = true;
 }
 
@@ -1154,7 +1314,9 @@ function openCatPicker() {
   }
   try {
     selectedCats.value = [...(YAML.parse(forms.value[currentForm.value])?.categories || [])];
-  } catch { selectedCats.value = []; }
+  } catch {
+    selectedCats.value = [];
+  }
   showCatPicker.value = true;
 }
 
@@ -1186,7 +1348,9 @@ function openRolePicker() {
   }
   try {
     selectedRoles.value = [...(YAML.parse(forms.value[currentForm.value])?.roles || [])];
-  } catch { selectedRoles.value = []; }
+  } catch {
+    selectedRoles.value = [];
+  }
   showRolePicker.value = true;
 }
 
@@ -1218,7 +1382,7 @@ function downloadYaml() {
     filename = 'constants.yaml';
   } else if (currentTab.value === 'Forms' && currentForm.value) {
     content = forms.value[currentForm.value] || '';
-    const mapping = idmapping.value.find(x => x.id === currentForm.value);
+    const mapping = idmapping.value.find((x) => x.id === currentForm.value);
     filename = mapping?.source || 'form.yaml';
   }
   if (!content) return;
@@ -1247,7 +1411,7 @@ const importSkipped = ref(0);
 // the files the import can go into. The base config is deliberately absent : since
 // 7.0.0 every form lives in a file of its own.
 const importFileOptions = computed(() => {
-  const opts = files.value.filter(Boolean).map(f => ({ value: f, label: f }));
+  const opts = files.value.filter(Boolean).map((f) => ({ value: f, label: f }));
   if (importFileName.value && !files.value.includes(importFileName.value)) {
     opts.unshift({ value: importFileName.value, label: `${importFileName.value} (${t('designer.importNewFile')})` });
   }
@@ -1257,7 +1421,9 @@ const importFileOptions = computed(() => {
 // the uploaded filename as a forms file the designer would accept (addFile uses
 // the same shape) : anything else becomes a '-', an unusable result falls back
 function importFileNameFrom(name) {
-  const cleaned = String(name || '').replace(/[^A-Za-z0-9._-]/g, '-').replace(/^[-.]+/, '');
+  const cleaned = String(name || '')
+    .replace(/[^A-Za-z0-9._-]/g, '-')
+    .replace(/^[-.]+/, '');
   return /^[A-Za-z0-9._-]+\.(yaml|yml)$/.test(cleaned) ? cleaned : 'imported.yaml';
 }
 
@@ -1268,11 +1434,17 @@ function collectImportForms(docs) {
   const found = [];
   let skipped = 0;
   const push = (node) => {
-    if (!YAML.isMap(node)) { skipped++; return; }
+    if (!YAML.isMap(node)) {
+      skipped++;
+      return;
+    }
     const name = node.get('name');
     // a form without a name has nothing to be identified by, and the designer
     // would only flag it as a warning right after the import
-    if (typeof name !== 'string' || !name.trim()) { skipped++; return; }
+    if (typeof name !== 'string' || !name.trim()) {
+      skipped++;
+      return;
+    }
     found.push({ name: name.trim(), yaml: YAML.stringify(node) });
   };
   for (const doc of docs) {
@@ -1297,7 +1469,10 @@ function collectImportForms(docs) {
 }
 
 function openImport() {
-  if (busyOrTemplated.value) { toast.warning(t('designer.readOnly')); return; }
+  if (busyOrTemplated.value) {
+    toast.warning(t('designer.readOnly'));
+    return;
+  }
   importInput.value?.click();
 }
 
@@ -1306,7 +1481,10 @@ async function onImportFile(event) {
   // clear the input, otherwise picking the very same file again fires no change
   event.target.value = '';
   if (!file) return;
-  if (!/\.(yaml|yml)$/i.test(file.name)) { toast.error(t('designer.importNotYaml')); return; }
+  if (!/\.(yaml|yml)$/i.test(file.name)) {
+    toast.error(t('designer.importNotYaml'));
+    return;
+  }
   let text;
   try {
     text = await file.text();
@@ -1322,7 +1500,7 @@ async function onImportFile(event) {
   }
   // it must parse as a whole before anything is offered : a half-read file would
   // import the forms it managed to read and silently drop the rest
-  if (docs.length === 0 || docs.some(d => d.errors.length > 0)) {
+  if (docs.length === 0 || docs.some((d) => d.errors.length > 0)) {
     toast.error(t('designer.importBadYaml'));
     return;
   }
@@ -1342,7 +1520,7 @@ async function onImportFile(event) {
   }
   // a name that already exists (in the config or earlier in this same file) is
   // renamed, never merged onto the form that holds it
-  const taken = idmapping.value.map(x => x.name);
+  const taken = idmapping.value.map((x) => x.name);
   const suffix = t('designer.importedSuffix');
   for (const entry of found) {
     entry.include = true;
@@ -1368,15 +1546,24 @@ async function onImportFile(event) {
 // repository (see idmapping), so leaving it undefined splits the file in two
 // and writes the imported forms outside the repository the file lives in.
 function repositoryForSource(source) {
-  return Object.values(formMeta.value).find(m => m?.source === source && m?.repository)?.repository;
+  return Object.values(formMeta.value).find((m) => m?.source === source && m?.repository)?.repository;
 }
 
 function doImport() {
-  if (busyOrTemplated.value) { toast.warning(t('designer.readOnly')); return; }
-  const selected = importCandidates.value.filter(x => x.include);
-  if (selected.length === 0) { toast.warning(t('designer.importNothingSelected')); return; }
+  if (busyOrTemplated.value) {
+    toast.warning(t('designer.readOnly'));
+    return;
+  }
+  const selected = importCandidates.value.filter((x) => x.include);
+  if (selected.length === 0) {
+    toast.warning(t('designer.importNothingSelected'));
+    return;
+  }
   const target = importTarget.value;
-  if (!target) { toast.warning(t('designer.importNoTarget')); return; }
+  if (!target) {
+    toast.warning(t('designer.importNoTarget'));
+    return;
+  }
   const targetRepo = repositoryForSource(target);
   const renamed = [];
   let firstId = null;
@@ -1407,7 +1594,24 @@ function doImport() {
 // Field properties editor
 const showFieldEditor = ref(false);
 const fieldEditorRows = ref([]);
-const fieldTypes = ['text','textarea','password','checkbox','enum','number','radio','expression','local','local_out','credential','list','datetime','html','file','yaml'];
+const fieldTypes = [
+  'text',
+  'textarea',
+  'password',
+  'checkbox',
+  'enum',
+  'number',
+  'radio',
+  'expression',
+  'local',
+  'local_out',
+  'credential',
+  'list',
+  'datetime',
+  'html',
+  'file',
+  'yaml',
+];
 
 // Mirror of the per-type `oneOf` of a FIELD in server/schema/form_schema.json,
 // the same idea as forbiddenFormKeys one level up : a field type FORBIDS a set of
@@ -1416,22 +1620,535 @@ const fieldTypes = ['text','textarea','password','checkbox','enum','number','rad
 // remove it (eg an 'enum' turned into a 'text' keeps its `values`). A key is
 // listed here when EVERY schema branch that accepts the type forbids it.
 const forbiddenFieldKeys = {
-  text: ['accept', 'allowDelete', 'allowInsert', 'convertToUtc', 'dateType', 'dbConfig', 'deleteMarker', 'editable', 'expression', 'filterColumns', 'horizontal', 'insertMarker', 'isHtml', 'jq', 'maxSize', 'maxValue', 'minSize', 'minValue', 'multiple', 'outputObject', 'pctColumns', 'query', 'refresh', 'runLocal', 'showDownloadButton', 'showLoadButton', 'sticky', 'switch', 'titleAdd', 'titleEdit', 'updateMarker', 'values'],
-  textarea: ['accept', 'allowDelete', 'allowInsert', 'asCredential', 'convertToUtc', 'dateType', 'dbConfig', 'deleteMarker', 'editable', 'expression', 'filterColumns', 'hide', 'horizontal', 'icon', 'in', 'insertMarker', 'isHtml', 'jq', 'keydown', 'maxLength', 'maxSize', 'maxValue', 'minLength', 'minSize', 'minValue', 'multiple', 'notIn', 'outputObject', 'pctColumns', 'query', 'refresh', 'regex', 'runLocal', 'sameAs', 'showDownloadButton', 'showLoadButton', 'sticky', 'switch', 'titleAdd', 'titleEdit', 'updateMarker', 'values'],
-  password: ['accept', 'allowDelete', 'allowInsert', 'convertToUtc', 'dateType', 'dbConfig', 'deleteMarker', 'editable', 'expression', 'filterColumns', 'horizontal', 'insertMarker', 'isHtml', 'jq', 'maxSize', 'maxValue', 'minSize', 'minValue', 'multiple', 'outputObject', 'pctColumns', 'query', 'refresh', 'runLocal', 'showDownloadButton', 'showLoadButton', 'sticky', 'switch', 'titleAdd', 'titleEdit', 'updateMarker', 'values'],
-  checkbox: ['accept', 'allowDelete', 'allowInsert', 'asCredential', 'convertToUtc', 'dateType', 'dbConfig', 'deleteMarker', 'editable', 'expression', 'filterColumns', 'hide', 'horizontal', 'insertMarker', 'isHtml', 'jq', 'keydown', 'maxLength', 'maxSize', 'maxValue', 'minLength', 'minSize', 'minValue', 'multiple', 'outputObject', 'pctColumns', 'query', 'refresh', 'regex', 'runLocal', 'showDownloadButton', 'showLoadButton', 'sticky', 'titleAdd', 'titleEdit', 'updateMarker', 'values'],
-  enum: ['allowDelete', 'allowInsert', 'convertToUtc', 'dateType', 'deleteMarker', 'editable', 'hide', 'insertMarker', 'isHtml', 'keydown', 'maxLength', 'maxSize', 'maxValue', 'minLength', 'minSize', 'minValue', 'regex', 'showDownloadButton', 'showLoadButton', 'switch', 'titleAdd', 'titleEdit', 'updateMarker'],
-  number: ['accept', 'allowDelete', 'allowInsert', 'asCredential', 'convertToUtc', 'dateType', 'dbConfig', 'deleteMarker', 'editable', 'expression', 'filterColumns', 'hide', 'horizontal', 'insertMarker', 'isHtml', 'jq', 'maxLength', 'maxSize', 'minLength', 'minSize', 'multiple', 'outputObject', 'pctColumns', 'query', 'refresh', 'runLocal', 'showDownloadButton', 'showLoadButton', 'sticky', 'switch', 'titleAdd', 'titleEdit', 'updateMarker', 'values'],
-  radio: ['accept', 'allowDelete', 'allowInsert', 'asCredential', 'convertToUtc', 'dateType', 'dbConfig', 'deleteMarker', 'editable', 'expression', 'filterColumns', 'hide', 'horizontal', 'icon', 'insertMarker', 'isHtml', 'jq', 'keydown', 'maxLength', 'maxSize', 'maxValue', 'minLength', 'minSize', 'minValue', 'multiple', 'outputObject', 'pctColumns', 'query', 'refresh', 'regex', 'runLocal', 'showDownloadButton', 'showLoadButton', 'sticky', 'switch', 'titleAdd', 'titleEdit', 'updateMarker'],
-  expression: ['accept', 'allowDelete', 'allowInsert', 'deleteMarker', 'filterColumns', 'horizontal', 'insertMarker', 'keydown', 'maxSize', 'maxValue', 'minSize', 'minValue', 'multiple', 'outputObject', 'pctColumns', 'showDownloadButton', 'showLoadButton', 'sticky', 'switch', 'titleAdd', 'titleEdit', 'updateMarker'],
-  local: ['accept', 'allowDelete', 'allowInsert', 'dbConfig', 'deleteMarker', 'filterColumns', 'horizontal', 'insertMarker', 'keydown', 'maxSize', 'maxValue', 'minSize', 'minValue', 'multiple', 'outputObject', 'pctColumns', 'showDownloadButton', 'showLoadButton', 'sticky', 'switch', 'titleAdd', 'titleEdit', 'updateMarker'],
-  local_out: ['accept', 'allowDelete', 'allowInsert', 'dbConfig', 'deleteMarker', 'filterColumns', 'horizontal', 'insertMarker', 'keydown', 'maxSize', 'maxValue', 'minSize', 'minValue', 'multiple', 'outputObject', 'pctColumns', 'showDownloadButton', 'showLoadButton', 'sticky', 'switch', 'titleAdd', 'titleEdit', 'updateMarker'],
-  credential: ['accept', 'allowDelete', 'allowInsert', 'dbConfig', 'deleteMarker', 'filterColumns', 'horizontal', 'insertMarker', 'keydown', 'maxSize', 'maxValue', 'minSize', 'minValue', 'multiple', 'outputObject', 'pctColumns', 'showDownloadButton', 'showLoadButton', 'sticky', 'switch', 'titleAdd', 'titleEdit', 'updateMarker', 'values'],
-  list: ['accept', 'asCredential', 'convertToUtc', 'dateType', 'editable', 'horizontal', 'icon', 'in', 'isHtml', 'keydown', 'maxLength', 'maxSize', 'maxValue', 'minLength', 'minSize', 'minValue', 'multiple', 'notIn', 'outputObject', 'refresh', 'regex', 'sameAs', 'sticky', 'switch', 'values'],
-  datetime: ['accept', 'columns', 'filterColumns', 'from', 'maxLength', 'maxSize', 'maxValue', 'minLength', 'minSize', 'minValue', 'outputObject', 'pctColumns', 'previewColumn', 'showDownloadButton', 'showLoadButton', 'switch', 'titleAdd', 'titleEdit', 'valueColumn', 'values'],
-  html: ['accept', 'allowDelete', 'allowInsert', 'asCredential', 'columns', 'convertToUtc', 'dateType', 'dbConfig', 'deleteMarker', 'editable', 'filterColumns', 'help', 'hide', 'horizontal', 'icon', 'in', 'insertMarker', 'isHtml', 'jq', 'keydown', 'maxLength', 'maxSize', 'maxValue', 'minLength', 'minSize', 'minValue', 'model', 'multiple', 'notIn', 'outputObject', 'pctColumns', 'placeholder', 'placeholderColumn', 'previewColumn', 'query', 'refresh', 'regex', 'required', 'sameAs', 'showDownloadButton', 'showLoadButton', 'size', 'sticky', 'switch', 'updateMarker', 'validIf', 'validIfNot', 'valueColumn', 'values'],
-  file: ['allowDelete', 'allowInsert', 'asCredential', 'columns', 'convertToUtc', 'dateType', 'dbConfig', 'deleteMarker', 'editable', 'filterColumns', 'hide', 'horizontal', 'in', 'insertMarker', 'isHtml', 'jq', 'keydown', 'maxLength', 'maxValue', 'minLength', 'minValue', 'multiple', 'notIn', 'outputObject', 'pctColumns', 'placeholderColumn', 'previewColumn', 'query', 'refresh', 'runLocal', 'sameAs', 'showDownloadButton', 'showLoadButton', 'size', 'sticky', 'switch', 'updateMarker', 'validIf', 'validIfNot', 'valueColumn', 'values'],
-  yaml: ['accept', 'allowDelete', 'allowInsert', 'asCredential', 'convertToUtc', 'dateType', 'deleteMarker', 'editable', 'filterColumns', 'horizontal', 'in', 'insertMarker', 'isHtml', 'keydown', 'maxLength', 'maxSize', 'maxValue', 'minLength', 'minSize', 'minValue', 'multiple', 'notIn', 'outputObject', 'pctColumns', 'regex', 'sameAs', 'sticky', 'switch', 'titleAdd', 'titleEdit', 'updateMarker', 'values'],
+  text: [
+    'accept',
+    'allowDelete',
+    'allowInsert',
+    'convertToUtc',
+    'dateType',
+    'dbConfig',
+    'deleteMarker',
+    'editable',
+    'expression',
+    'filterColumns',
+    'horizontal',
+    'insertMarker',
+    'isHtml',
+    'jq',
+    'maxSize',
+    'maxValue',
+    'minSize',
+    'minValue',
+    'multiple',
+    'outputObject',
+    'pctColumns',
+    'query',
+    'refresh',
+    'runLocal',
+    'showDownloadButton',
+    'showLoadButton',
+    'sticky',
+    'switch',
+    'titleAdd',
+    'titleEdit',
+    'updateMarker',
+    'values',
+  ],
+  textarea: [
+    'accept',
+    'allowDelete',
+    'allowInsert',
+    'asCredential',
+    'convertToUtc',
+    'dateType',
+    'dbConfig',
+    'deleteMarker',
+    'editable',
+    'expression',
+    'filterColumns',
+    'hide',
+    'horizontal',
+    'icon',
+    'in',
+    'insertMarker',
+    'isHtml',
+    'jq',
+    'keydown',
+    'maxLength',
+    'maxSize',
+    'maxValue',
+    'minLength',
+    'minSize',
+    'minValue',
+    'multiple',
+    'notIn',
+    'outputObject',
+    'pctColumns',
+    'query',
+    'refresh',
+    'regex',
+    'runLocal',
+    'sameAs',
+    'showDownloadButton',
+    'showLoadButton',
+    'sticky',
+    'switch',
+    'titleAdd',
+    'titleEdit',
+    'updateMarker',
+    'values',
+  ],
+  password: [
+    'accept',
+    'allowDelete',
+    'allowInsert',
+    'convertToUtc',
+    'dateType',
+    'dbConfig',
+    'deleteMarker',
+    'editable',
+    'expression',
+    'filterColumns',
+    'horizontal',
+    'insertMarker',
+    'isHtml',
+    'jq',
+    'maxSize',
+    'maxValue',
+    'minSize',
+    'minValue',
+    'multiple',
+    'outputObject',
+    'pctColumns',
+    'query',
+    'refresh',
+    'runLocal',
+    'showDownloadButton',
+    'showLoadButton',
+    'sticky',
+    'switch',
+    'titleAdd',
+    'titleEdit',
+    'updateMarker',
+    'values',
+  ],
+  checkbox: [
+    'accept',
+    'allowDelete',
+    'allowInsert',
+    'asCredential',
+    'convertToUtc',
+    'dateType',
+    'dbConfig',
+    'deleteMarker',
+    'editable',
+    'expression',
+    'filterColumns',
+    'hide',
+    'horizontal',
+    'insertMarker',
+    'isHtml',
+    'jq',
+    'keydown',
+    'maxLength',
+    'maxSize',
+    'maxValue',
+    'minLength',
+    'minSize',
+    'minValue',
+    'multiple',
+    'outputObject',
+    'pctColumns',
+    'query',
+    'refresh',
+    'regex',
+    'runLocal',
+    'showDownloadButton',
+    'showLoadButton',
+    'sticky',
+    'titleAdd',
+    'titleEdit',
+    'updateMarker',
+    'values',
+  ],
+  enum: [
+    'allowDelete',
+    'allowInsert',
+    'convertToUtc',
+    'dateType',
+    'deleteMarker',
+    'editable',
+    'hide',
+    'insertMarker',
+    'isHtml',
+    'keydown',
+    'maxLength',
+    'maxSize',
+    'maxValue',
+    'minLength',
+    'minSize',
+    'minValue',
+    'regex',
+    'showDownloadButton',
+    'showLoadButton',
+    'switch',
+    'titleAdd',
+    'titleEdit',
+    'updateMarker',
+  ],
+  number: [
+    'accept',
+    'allowDelete',
+    'allowInsert',
+    'asCredential',
+    'convertToUtc',
+    'dateType',
+    'dbConfig',
+    'deleteMarker',
+    'editable',
+    'expression',
+    'filterColumns',
+    'hide',
+    'horizontal',
+    'insertMarker',
+    'isHtml',
+    'jq',
+    'maxLength',
+    'maxSize',
+    'minLength',
+    'minSize',
+    'multiple',
+    'outputObject',
+    'pctColumns',
+    'query',
+    'refresh',
+    'runLocal',
+    'showDownloadButton',
+    'showLoadButton',
+    'sticky',
+    'switch',
+    'titleAdd',
+    'titleEdit',
+    'updateMarker',
+    'values',
+  ],
+  radio: [
+    'accept',
+    'allowDelete',
+    'allowInsert',
+    'asCredential',
+    'convertToUtc',
+    'dateType',
+    'dbConfig',
+    'deleteMarker',
+    'editable',
+    'expression',
+    'filterColumns',
+    'hide',
+    'horizontal',
+    'icon',
+    'insertMarker',
+    'isHtml',
+    'jq',
+    'keydown',
+    'maxLength',
+    'maxSize',
+    'maxValue',
+    'minLength',
+    'minSize',
+    'minValue',
+    'multiple',
+    'outputObject',
+    'pctColumns',
+    'query',
+    'refresh',
+    'regex',
+    'runLocal',
+    'showDownloadButton',
+    'showLoadButton',
+    'sticky',
+    'switch',
+    'titleAdd',
+    'titleEdit',
+    'updateMarker',
+  ],
+  expression: [
+    'accept',
+    'allowDelete',
+    'allowInsert',
+    'deleteMarker',
+    'filterColumns',
+    'horizontal',
+    'insertMarker',
+    'keydown',
+    'maxSize',
+    'maxValue',
+    'minSize',
+    'minValue',
+    'multiple',
+    'outputObject',
+    'pctColumns',
+    'showDownloadButton',
+    'showLoadButton',
+    'sticky',
+    'switch',
+    'titleAdd',
+    'titleEdit',
+    'updateMarker',
+  ],
+  local: [
+    'accept',
+    'allowDelete',
+    'allowInsert',
+    'dbConfig',
+    'deleteMarker',
+    'filterColumns',
+    'horizontal',
+    'insertMarker',
+    'keydown',
+    'maxSize',
+    'maxValue',
+    'minSize',
+    'minValue',
+    'multiple',
+    'outputObject',
+    'pctColumns',
+    'showDownloadButton',
+    'showLoadButton',
+    'sticky',
+    'switch',
+    'titleAdd',
+    'titleEdit',
+    'updateMarker',
+  ],
+  local_out: [
+    'accept',
+    'allowDelete',
+    'allowInsert',
+    'dbConfig',
+    'deleteMarker',
+    'filterColumns',
+    'horizontal',
+    'insertMarker',
+    'keydown',
+    'maxSize',
+    'maxValue',
+    'minSize',
+    'minValue',
+    'multiple',
+    'outputObject',
+    'pctColumns',
+    'showDownloadButton',
+    'showLoadButton',
+    'sticky',
+    'switch',
+    'titleAdd',
+    'titleEdit',
+    'updateMarker',
+  ],
+  credential: [
+    'accept',
+    'allowDelete',
+    'allowInsert',
+    'dbConfig',
+    'deleteMarker',
+    'filterColumns',
+    'horizontal',
+    'insertMarker',
+    'keydown',
+    'maxSize',
+    'maxValue',
+    'minSize',
+    'minValue',
+    'multiple',
+    'outputObject',
+    'pctColumns',
+    'showDownloadButton',
+    'showLoadButton',
+    'sticky',
+    'switch',
+    'titleAdd',
+    'titleEdit',
+    'updateMarker',
+    'values',
+  ],
+  list: [
+    'accept',
+    'asCredential',
+    'convertToUtc',
+    'dateType',
+    'editable',
+    'horizontal',
+    'icon',
+    'in',
+    'isHtml',
+    'keydown',
+    'maxLength',
+    'maxSize',
+    'maxValue',
+    'minLength',
+    'minSize',
+    'minValue',
+    'multiple',
+    'notIn',
+    'outputObject',
+    'refresh',
+    'regex',
+    'sameAs',
+    'sticky',
+    'switch',
+    'values',
+  ],
+  datetime: [
+    'accept',
+    'columns',
+    'filterColumns',
+    'from',
+    'maxLength',
+    'maxSize',
+    'maxValue',
+    'minLength',
+    'minSize',
+    'minValue',
+    'outputObject',
+    'pctColumns',
+    'previewColumn',
+    'showDownloadButton',
+    'showLoadButton',
+    'switch',
+    'titleAdd',
+    'titleEdit',
+    'valueColumn',
+    'values',
+  ],
+  html: [
+    'accept',
+    'allowDelete',
+    'allowInsert',
+    'asCredential',
+    'columns',
+    'convertToUtc',
+    'dateType',
+    'dbConfig',
+    'deleteMarker',
+    'editable',
+    'filterColumns',
+    'help',
+    'hide',
+    'horizontal',
+    'icon',
+    'in',
+    'insertMarker',
+    'isHtml',
+    'jq',
+    'keydown',
+    'maxLength',
+    'maxSize',
+    'maxValue',
+    'minLength',
+    'minSize',
+    'minValue',
+    'model',
+    'multiple',
+    'notIn',
+    'outputObject',
+    'pctColumns',
+    'placeholder',
+    'placeholderColumn',
+    'previewColumn',
+    'query',
+    'refresh',
+    'regex',
+    'required',
+    'sameAs',
+    'showDownloadButton',
+    'showLoadButton',
+    'size',
+    'sticky',
+    'switch',
+    'updateMarker',
+    'validIf',
+    'validIfNot',
+    'valueColumn',
+    'values',
+  ],
+  file: [
+    'allowDelete',
+    'allowInsert',
+    'asCredential',
+    'columns',
+    'convertToUtc',
+    'dateType',
+    'dbConfig',
+    'deleteMarker',
+    'editable',
+    'filterColumns',
+    'hide',
+    'horizontal',
+    'in',
+    'insertMarker',
+    'isHtml',
+    'jq',
+    'keydown',
+    'maxLength',
+    'maxValue',
+    'minLength',
+    'minValue',
+    'multiple',
+    'notIn',
+    'outputObject',
+    'pctColumns',
+    'placeholderColumn',
+    'previewColumn',
+    'query',
+    'refresh',
+    'runLocal',
+    'sameAs',
+    'showDownloadButton',
+    'showLoadButton',
+    'size',
+    'sticky',
+    'switch',
+    'updateMarker',
+    'validIf',
+    'validIfNot',
+    'valueColumn',
+    'values',
+  ],
+  yaml: [
+    'accept',
+    'allowDelete',
+    'allowInsert',
+    'asCredential',
+    'convertToUtc',
+    'dateType',
+    'deleteMarker',
+    'editable',
+    'filterColumns',
+    'horizontal',
+    'in',
+    'insertMarker',
+    'isHtml',
+    'keydown',
+    'maxLength',
+    'maxSize',
+    'maxValue',
+    'minLength',
+    'minSize',
+    'minValue',
+    'multiple',
+    'notIn',
+    'outputObject',
+    'pctColumns',
+    'regex',
+    'sameAs',
+    'sticky',
+    'switch',
+    'titleAdd',
+    'titleEdit',
+    'updateMarker',
+    'values',
+  ],
 };
 
 // Same source, the other way round : these types need at least one of the listed
@@ -1511,21 +2228,36 @@ let fieldValueUid = 0;
 function readFieldValues(seq) {
   if (!YAML.isSeq(seq)) return [];
   return seq.items.map((item, i) => {
-    const entry = { _uid: ++fieldValueUid, _origIndex: i, kind: 'other', text: '', _origText: '', pairs: [], preview: '' };
+    const entry = {
+      _uid: ++fieldValueUid,
+      _origIndex: i,
+      kind: 'other',
+      text: '',
+      _origText: '',
+      pairs: [],
+      preview: '',
+    };
     if (YAML.isScalar(item) && typeof item.value === 'string') {
       entry.kind = 'string';
       entry.text = item.value;
       entry._origText = item.value;
-    } else if (YAML.isMap(item) && item.items.length > 0
-      && item.items.every(p => YAML.isScalar(p.key) && YAML.isScalar(p.value))) {
+    } else if (
+      YAML.isMap(item) &&
+      item.items.length > 0 &&
+      item.items.every((p) => YAML.isScalar(p.key) && YAML.isScalar(p.value))
+    ) {
       entry.kind = 'object';
       entry.pairs = item.items.map((p) => {
         const key = String(p.key.value ?? '');
-        const value = (p.value.value === null || p.value.value === undefined) ? '' : String(p.value.value);
+        const value = p.value.value === null || p.value.value === undefined ? '' : String(p.value.value);
         return { _uid: ++fieldValueUid, key, value, _origKey: key, _origValue: value };
       });
     } else {
-      try { entry.preview = JSON.stringify(YAML.isNode(item) ? item.toJSON() : item); } catch { entry.preview = ''; }
+      try {
+        entry.preview = JSON.stringify(YAML.isNode(item) ? item.toJSON() : item);
+      } catch {
+        entry.preview = '';
+      }
     }
     return entry;
   });
@@ -1535,7 +2267,7 @@ function readFieldValues(seq) {
 // changed, so a field whose values were only looked at keeps its node - and with
 // it every comment and quoting style inside the list.
 function fieldValuesSnapshot(values) {
-  return JSON.stringify((values || []).map(e => [e._uid, e.kind, e.text, e.pairs.map(p => [p.key, p.value])]));
+  return JSON.stringify((values || []).map((e) => [e._uid, e.kind, e.text, e.pairs.map((p) => [p.key, p.value])]));
 }
 
 // Text typed into a value property -> the scalar it spells. Same rule the field
@@ -1563,7 +2295,7 @@ function writeFieldValues(doc, node, entries) {
   if (orig) hoistSeqComment(orig);
   const nodes = [];
   for (const entry of entries) {
-    const origNode = (orig && entry._origIndex !== undefined) ? orig.get(entry._origIndex, true) : null;
+    const origNode = orig && entry._origIndex !== undefined ? orig.get(entry._origIndex, true) : null;
     if (entry.kind === 'other') {
       // nothing here can describe it : keep it exactly as it was
       if (origNode !== undefined && origNode !== null) nodes.push(origNode);
@@ -1621,9 +2353,18 @@ function toggleFieldValues(i) {
 function addFieldValue(kind) {
   const row = fieldEditorRows.value[fieldValuesIdx.value];
   if (!row) return;
-  row.values.push(kind === 'object'
-    ? { _uid: ++fieldValueUid, kind: 'object', text: '', _origText: '', pairs: [{ _uid: ++fieldValueUid, key: '', value: '', _origKey: null, _origValue: null }], preview: '' }
-    : { _uid: ++fieldValueUid, kind: 'string', text: '', _origText: '', pairs: [], preview: '' });
+  row.values.push(
+    kind === 'object'
+      ? {
+          _uid: ++fieldValueUid,
+          kind: 'object',
+          text: '',
+          _origText: '',
+          pairs: [{ _uid: ++fieldValueUid, key: '', value: '', _origKey: null, _origValue: null }],
+          preview: '',
+        }
+      : { _uid: ++fieldValueUid, kind: 'string', text: '', _origText: '', pairs: [], preview: '' },
+  );
 }
 
 function removeFieldValue(entry) {
@@ -1657,8 +2398,17 @@ function removeFieldValuePair(entry, idx) {
 function addFieldRow() {
   fieldValuesIdx.value = null;
   fieldEditorRows.value.push({
-    name: '', type: 'text', label: '', help: '', required: false, default: '', _defaultDisplay: '',
-    output: true, values: [], _valuesSnapshot: fieldValuesSnapshot([]), _valuesAlias: false,
+    name: '',
+    type: 'text',
+    label: '',
+    help: '',
+    required: false,
+    default: '',
+    _defaultDisplay: '',
+    output: true,
+    values: [],
+    _valuesSnapshot: fieldValuesSnapshot([]),
+    _valuesAlias: false,
   });
 }
 
@@ -1733,7 +2483,11 @@ function previewForm() {
   const yaml = forms.value[currentForm.value];
   if (!yaml) return;
   let parsed;
-  try { parsed = YAML.parse(yaml); } catch { parsed = null; }
+  try {
+    parsed = YAML.parse(yaml);
+  } catch {
+    parsed = null;
+  }
   // a comment-only / '---' buffer parses to null : there is nothing to preview
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     toast.error(t('designer.badYamlUpdate'));
@@ -1743,7 +2497,10 @@ function previewForm() {
   if (missing.length > 0) {
     toast.warning(`${t('designer.previewMissingSubforms')}: ${missing.join(', ')}`);
   }
-  sessionStorage.setItem('designer-preview', JSON.stringify({ form: yaml, subforms, constants: constantsObj.value || {} }));
+  sessionStorage.setItem(
+    'designer-preview',
+    JSON.stringify({ form: yaml, subforms, constants: constantsObj.value || {} }),
+  );
   // the app can be hosted under a subpath (BASE_URL), like the router does
   window.open(`${BaseUrl}/form?form=${encodeURIComponent(currentFormName.value)}&preview=1`, '_blank');
 }
@@ -1753,7 +2510,10 @@ function openFieldEditor() {
   if (!src) return;
   // never open on a list the apply cannot rebuild : the table would show what it
   // managed to read (possibly nothing) and Apply would make that the truth
-  if (src.error) { fieldEditorRefused(src); return; }
+  if (src.error) {
+    fieldEditorRefused(src);
+    return;
+  }
   fieldValuesIdx.value = null;
   fieldEditorRows.value = (src.seq ? src.seq.items : []).map((item, i) => {
     const def = item.get('default', true);
@@ -1785,7 +2545,10 @@ const fieldDragIdx = ref(null);
 
 // the row indices shift while dragging, so an open values panel would follow the
 // position rather than the field it was opened on : close it
-function fieldDragStart(i) { fieldValuesIdx.value = null; fieldDragIdx.value = i; }
+function fieldDragStart(i) {
+  fieldValuesIdx.value = null;
+  fieldDragIdx.value = i;
+}
 function fieldDragOver(e, i) {
   e.preventDefault();
   if (fieldDragIdx.value === null || fieldDragIdx.value === i) return;
@@ -1794,13 +2557,18 @@ function fieldDragOver(e, i) {
   rows.splice(i, 0, moved);
   fieldDragIdx.value = i;
 }
-function fieldDragEnd() { fieldDragIdx.value = null; }
+function fieldDragEnd() {
+  fieldDragIdx.value = null;
+}
 
 function applyFieldEditor() {
   // the buffer can have changed since the editor opened (the raw editor stays
   // live) : re-check, an apply on a list that can't be rebuilt would wipe it
   const src = fieldEditorSource.value;
-  if (!src || src.error) { fieldEditorRefused(src); return; }
+  if (!src || src.error) {
+    fieldEditorRefused(src);
+    return;
+  }
   const removed = [];
   const missing = [];
   const ok = editCurrentFormDoc((doc) => {
@@ -1815,7 +2583,7 @@ function applyFieldEditor() {
       // match on the identity stamped when the editor opened, never on the
       // (possibly renamed) name : the original node carries every property the
       // editor does not show, plus its comments
-      let node = (YAML.isSeq(seq) && row._origIndex !== undefined) ? seq.get(row._origIndex) : null;
+      let node = YAML.isSeq(seq) && row._origIndex !== undefined ? seq.get(row._origIndex) : null;
       if (!YAML.isMap(node)) node = doc.createNode({ name, type: row.type });
       setDocValueIfChanged(node, 'name', name);
       setDocValueIfChanged(node, 'type', row.type);
@@ -1823,7 +2591,8 @@ function applyFieldEditor() {
       // help/required are not rendered for a type that forbids them (html) : the
       // row still carries what an earlier type had, so don't write it back
       if (fieldTypeAllows(row.type, 'help')) setDocValueIfChanged(node, 'help', row.help.trim() || undefined);
-      if (fieldTypeAllows(row.type, 'required')) setDocValueIfChanged(node, 'required', row.required ? true : undefined);
+      if (fieldTypeAllows(row.type, 'required'))
+        setDocValueIfChanged(node, 'required', row.required ? true : undefined);
       // an untouched default keeps its node : that preserves the formatting of a
       // scalar ('5' stays quoted) and a list/map default the table can't show
       if (row.default !== row._defaultDisplay) {
@@ -1847,21 +2616,28 @@ function applyFieldEditor() {
       // `values` is only rewritten when the values panel actually changed it :
       // an untouched list keeps its own nodes, comments included. A type that
       // forbids it is skipped here and cleaned up by the loop below.
-      if (fieldTypeAllows(row.type, 'values') && !row._valuesAlias && fieldValuesSnapshot(row.values) !== row._valuesSnapshot) {
+      if (
+        fieldTypeAllows(row.type, 'values') &&
+        !row._valuesAlias &&
+        fieldValuesSnapshot(row.values) !== row._valuesSnapshot
+      ) {
         writeFieldValues(doc, node, row.values);
       }
       // whatever the previous type left behind : the schema rejects the config
       // as a whole, so a type change has to clean up after itself here too.
       // Report it, these keys hold real work (values, query, columns, ...).
       const dropped = [];
-      for (const key of (forbiddenFieldKeys[row.type] || [])) {
-        if (node.has(key)) { node.delete(key); dropped.push(key); }
+      for (const key of forbiddenFieldKeys[row.type] || []) {
+        if (node.has(key)) {
+          node.delete(key);
+          dropped.push(key);
+        }
       }
       if (dropped.length > 0) removed.push(`${name} (${row.type}): ${dropped.join(', ')}`);
       // and what the new type needs but the table cannot provide
       const needs = requiredFieldKeys[row.type];
-      if (needs && !needs.some(set => set.every(key => node.has(key)))) {
-        missing.push(`${name} (${row.type}): ${needs.map(set => set.join(' + ')).join(' | ')}`);
+      if (needs && !needs.some((set) => set.every((key) => node.has(key)))) {
+        missing.push(`${name} (${row.type}): ${needs.map((set) => set.join(' + ')).join(' | ')}`);
       }
       nodes.push(node);
     }
@@ -1888,10 +2664,86 @@ const formSettings = ref({});
 // longer rendered to remove it. The modal therefore only writes the keys the
 // selected type allows, and drops the ones it forbids.
 const forbiddenFormKeys = {
-  ansible: ['template', 'awx', 'steps', 'awxCredentials', 'executionEnvironment', 'scm_branch', 'instanceGroups', 'expression'],
+  ansible: [
+    'template',
+    'awx',
+    'steps',
+    'awxCredentials',
+    'executionEnvironment',
+    'scm_branch',
+    'instanceGroups',
+    'expression',
+  ],
   awx: ['playbook', 'playbookSubPath', 'ansibleCredentials', 'vaultCredentials', 'steps', 'expression'],
-  multistep: ['playbook', 'playbookSubPath', 'template', 'awx', 'inventory', 'tags', 'limit', 'check', 'diff', 'scm_branch', 'executionEnvironment', 'instanceGroups', 'ansibleCredentials', 'awxCredentials', 'vaultCredentials', 'key', 'expression'],
-  subform: ['playbook', 'playbookSubPath', 'template', 'awx', 'steps', 'expression', 'roles', 'categories', 'notifications', 'approval', 'hasApproval', 'onSubmit', 'onSuccess', 'onFailure', 'onAbort', 'onFinish', 'inventory', 'tags', 'limit', 'check', 'diff', 'scm_branch', 'executionEnvironment', 'instanceGroups', 'ansibleCredentials', 'awxCredentials', 'vaultCredentials', 'credentials', 'abortable', 'allowRelaunch', 'launchValidation', 'enableForChat', 'verbose', 'keepExtravars', 'userExtravars', 'image', 'icon', 'iconColor', 'iconSize', 'overlayIcon', 'overlayIconTransform', 'overlayIconColor', 'overlayIconCircle', 'overlayIconText', 'overlayIconTextPosition', 'overlayIconTextColor', 'tileClass', 'order'],
+  multistep: [
+    'playbook',
+    'playbookSubPath',
+    'template',
+    'awx',
+    'inventory',
+    'tags',
+    'limit',
+    'check',
+    'diff',
+    'scm_branch',
+    'executionEnvironment',
+    'instanceGroups',
+    'ansibleCredentials',
+    'awxCredentials',
+    'vaultCredentials',
+    'key',
+    'expression',
+  ],
+  subform: [
+    'playbook',
+    'playbookSubPath',
+    'template',
+    'awx',
+    'steps',
+    'expression',
+    'roles',
+    'categories',
+    'notifications',
+    'approval',
+    'hasApproval',
+    'onSubmit',
+    'onSuccess',
+    'onFailure',
+    'onAbort',
+    'onFinish',
+    'inventory',
+    'tags',
+    'limit',
+    'check',
+    'diff',
+    'scm_branch',
+    'executionEnvironment',
+    'instanceGroups',
+    'ansibleCredentials',
+    'awxCredentials',
+    'vaultCredentials',
+    'credentials',
+    'abortable',
+    'allowRelaunch',
+    'launchValidation',
+    'enableForChat',
+    'verbose',
+    'keepExtravars',
+    'userExtravars',
+    'image',
+    'icon',
+    'iconColor',
+    'iconSize',
+    'overlayIcon',
+    'overlayIconTransform',
+    'overlayIconColor',
+    'overlayIconCircle',
+    'overlayIconText',
+    'overlayIconTextPosition',
+    'overlayIconTextColor',
+    'tileClass',
+    'order',
+  ],
 };
 
 // also used by the template : an input for a key the selected type forbids must
@@ -1938,7 +2790,9 @@ function openFormSettings() {
       userExtravars: parsed.userExtravars || '',
       scmBranch: parsed.scm_branch || '',
       executionEnvironment: parsed.executionEnvironment || '',
-      instanceGroups: Array.isArray(parsed.instanceGroups) ? parsed.instanceGroups.join(', ') : (parsed.instanceGroups || ''),
+      instanceGroups: Array.isArray(parsed.instanceGroups)
+        ? parsed.instanceGroups.join(', ')
+        : parsed.instanceGroups || '',
       ansibleCredentials: parsed.ansibleCredentials || '',
       vaultCredentials: parsed.vaultCredentials || '',
     };
@@ -1960,31 +2814,49 @@ function applyFormSettings() {
     if (formTypeAllows('inventory')) setDocValue(doc, 'inventory', s.inventory.trim() || undefined);
     if (formTypeAllows('tags')) setDocValue(doc, 'tags', s.tags.trim() || undefined);
     if (formTypeAllows('limit')) setDocValue(doc, 'limit', s.limit.trim() || undefined);
-    if (formTypeAllows('order')) setDocValue(doc, 'order', (s.order !== '' && !isNaN(Number(s.order))) ? Number(s.order) : undefined);
+    if (formTypeAllows('order'))
+      setDocValue(doc, 'order', s.order !== '' && !isNaN(Number(s.order)) ? Number(s.order) : undefined);
     setDocValue(doc, 'help', s.help.trim() || undefined);
     setDocValue(doc, 'showHelp', s.showHelp ? true : undefined);
     if (formTypeAllows('check')) setDocValue(doc, 'check', s.check ? true : undefined);
     if (formTypeAllows('diff')) setDocValue(doc, 'diff', s.diff ? true : undefined);
     if (formTypeAllows('allowRelaunch')) setDocValue(doc, 'allowRelaunch', s.allowRelaunch ? true : undefined);
-    if (formTypeAllows('launchValidation') && !s.hasWizard) setDocValue(doc, 'launchValidation', s.launchValidation || undefined);
-    if (formTypeAllows('enableForChat') && !s.hasWizard) setDocValue(doc, 'enableForChat', s.enableForChat ? true : undefined);
+    if (formTypeAllows('launchValidation') && !s.hasWizard)
+      setDocValue(doc, 'launchValidation', s.launchValidation || undefined);
+    if (formTypeAllows('enableForChat') && !s.hasWizard)
+      setDocValue(doc, 'enableForChat', s.enableForChat ? true : undefined);
     if (formTypeAllows('abortable')) setDocValue(doc, 'abortable', s.abortable ? true : undefined);
     if (formTypeAllows('verbose')) setDocValue(doc, 'verbose', s.verbose ? true : undefined);
     if (formTypeAllows('keepExtravars')) setDocValue(doc, 'keepExtravars', s.keepExtravars ? true : undefined);
     if (formTypeAllows('userExtravars')) setDocValue(doc, 'userExtravars', (s.userExtravars || '').trim() || undefined);
     if (formTypeAllows('scm_branch')) setDocValue(doc, 'scm_branch', s.scmBranch.trim() || undefined);
-    if (formTypeAllows('executionEnvironment')) setDocValue(doc, 'executionEnvironment', s.executionEnvironment.trim() || undefined);
+    if (formTypeAllows('executionEnvironment'))
+      setDocValue(doc, 'executionEnvironment', s.executionEnvironment.trim() || undefined);
     if (formTypeAllows('instanceGroups')) {
       const ig = s.instanceGroups.trim();
-      setDocValue(doc, 'instanceGroups', ig ? ig.split(',').map(x => x.trim()).filter(Boolean) : undefined);
+      setDocValue(
+        doc,
+        'instanceGroups',
+        ig
+          ? ig
+              .split(',')
+              .map((x) => x.trim())
+              .filter(Boolean)
+          : undefined,
+      );
     }
-    if (formTypeAllows('ansibleCredentials')) setDocValue(doc, 'ansibleCredentials', s.ansibleCredentials.trim() || undefined);
-    if (formTypeAllows('vaultCredentials')) setDocValue(doc, 'vaultCredentials', s.vaultCredentials.trim() || undefined);
+    if (formTypeAllows('ansibleCredentials'))
+      setDocValue(doc, 'ansibleCredentials', s.ansibleCredentials.trim() || undefined);
+    if (formTypeAllows('vaultCredentials'))
+      setDocValue(doc, 'vaultCredentials', s.vaultCredentials.trim() || undefined);
     // whatever the previous type left behind : the schema rejects the config as
     // a whole, so a type change has to clean up after itself. Report it, some of
     // these keys are written by other modals (icon, categories, roles, ...).
-    for (const key of (forbiddenFormKeys[s.type] || [])) {
-      if (doc.has(key)) { doc.delete(key); removed.push(key); }
+    for (const key of forbiddenFormKeys[s.type] || []) {
+      if (doc.has(key)) {
+        doc.delete(key);
+        removed.push(key);
+      }
     }
   });
   if (ok && removed.length > 0) {
@@ -2032,18 +2904,18 @@ const diffLines = computed(() => {
 });
 
 const formTemplate = {
-  name: "New Form",
-  type: "ansible",
-  playbook: "dummy.yaml",
-  description: "",
-  roles: ["public"],
+  name: 'New Form',
+  type: 'ansible',
+  playbook: 'dummy.yaml',
+  description: '',
+  roles: ['public'],
   categories: [],
-  tileClass: "has-background-info-light",
+  tileClass: 'has-background-info-light',
   fields: [
     {
-      name: "field1",
-      type: "text",
-      label: "field1",
+      name: 'field1',
+      type: 'text',
+      label: 'field1',
     },
   ],
 };
@@ -2051,9 +2923,7 @@ const formTemplate = {
 // computed values
 
 const files = computed(() => {
-  return formsObj.value
-    .map((x) => x.source)
-    .filter((v, i, a) => a.indexOf(v) === i);
+  return formsObj.value.map((x) => x.source).filter((v, i, a) => a.indexOf(v) === i);
 });
 
 const folders = computed(() => {
@@ -2097,7 +2967,13 @@ const fileTreeFlat = computed(() => {
       const node = obj[key];
       const nodePath = parentPath ? `${parentPath}/${key}` : key;
       if (node.__file) {
-        result.push({ type: 'file', name: key || null, source: node.source, depth, key: `file:${node.source || '__base__'}` });
+        result.push({
+          type: 'file',
+          name: key || null,
+          source: node.source,
+          depth,
+          key: `file:${node.source || '__base__'}`,
+        });
       } else {
         result.push({ type: 'folder', name: key, path: nodePath, depth, key: `folder:${nodePath}` });
         if (!collapsedPaths.value.has(`folder:${nodePath}`)) {
@@ -2116,7 +2992,7 @@ const fileTreeFlat = computed(() => {
         matchingFiles.add(m.source);
       }
     }
-    return result.filter(item => {
+    return result.filter((item) => {
       if (item.type === 'folder') return true;
       return (item.name || '').toLowerCase().includes(q) || matchingFiles.has(item.source);
     });
@@ -2148,7 +3024,7 @@ const formsObj = computed(() => {
         if (meta?.repository) result.repository = meta.repository;
         return result;
       } else {
-        throw new Error("parsing issue");
+        throw new Error('parsing issue');
       }
     } catch {
       // same as idmapping : the file a form belongs to is known from formMeta and does
@@ -2185,14 +3061,14 @@ const flatCategoriesForPicker = computed(() => {
 // writes, and refusing it here blocked EVERY save of the whole designer.
 const categoriesObj = computed(() => {
   if (!categories.value) {
-    return [{ name: "Default", icon: "bars" }];
+    return [{ name: 'Default', icon: 'bars' }];
   }
   try {
     var result = YAML.parse(categories.value);
     if (Array.isArray(result)) {
       return result;
     } else {
-      throw new Error("parsing issue");
+      throw new Error('parsing issue');
     }
   } catch {
     return undefined;
@@ -2202,8 +3078,8 @@ const categoriesObj = computed(() => {
 const rolesObj = computed(() => {
   if (!roles.value) {
     return [
-      { name: "admin", groups: ["local/admins"] },
-      { name: "public", groups: [] },
+      { name: 'admin', groups: ['local/admins'] },
+      { name: 'public', groups: [] },
     ];
   }
   try {
@@ -2214,7 +3090,7 @@ const rolesObj = computed(() => {
     if (Array.isArray(result)) {
       return result;
     } else {
-      throw new Error("parsing issue");
+      throw new Error('parsing issue');
     }
   } catch {
     return undefined;
@@ -2265,11 +3141,13 @@ const lockAge = computed(() => {
   if (lock.value?.lock) {
     return dayjs(lock.value.lock.created).fromNow();
   } else {
-    return "";
+    return '';
   }
 });
 
-function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
 
 // A warning is rendered with v-html (two lines : a title and an explanation), so
 // build it from translated text here instead of hardcoding english markup. Every
@@ -2317,8 +3195,9 @@ function goToWarning(w) {
 // dropping it makes every save fail on a raw schema error, so catch it here (the
 // Edit categories modal protects that row, the raw yaml editor cannot).
 function hasDefaultCategory(cats) {
-  return Array.isArray(cats) && cats.some(
-    (c) => c && c.name === 'Default' && c.icon === 'bars' && Object.keys(c).length === 2
+  return (
+    Array.isArray(cats) &&
+    cats.some((c) => c && c.name === 'Default' && c.icon === 'bars' && Object.keys(c).length === 2)
   );
 }
 
@@ -2331,40 +3210,46 @@ const warnings = computed(() => {
   // keeps the file it belongs to so the tree does not move it while you type
   var parsing = idmapping.value.filter((item) => item.issue);
   var badsource = idmapping.value.filter(
-    (item) =>
-      item.source &&
-      !(item.source.endsWith(".yaml") || item.source.endsWith(".yml"))
+    (item) => item.source && !(item.source.endsWith('.yaml') || item.source.endsWith('.yml')),
   );
   warnings = warnings.concat(
-    dups.map(
-      (x) =>
-        // a duplicate is by definition several forms : point at the first one
-        // carrying the name, the other is one click away in the same file
-        formWarning(warning(t('designer.warnFormDuplicate', { name: escHtml(x) }), t('designer.warnUniqueFormName')), formIdByName(x))
-    )
+    dups.map((x) =>
+      // a duplicate is by definition several forms : point at the first one
+      // carrying the name, the other is one click away in the same file
+      formWarning(
+        warning(t('designer.warnFormDuplicate', { name: escHtml(x) }), t('designer.warnUniqueFormName')),
+        formIdByName(x),
+      ),
+    ),
   );
   warnings = warnings.concat(
-    empties.map(
-      (x) =>
-        formWarning(warning(t('designer.warnEmptyFormName'), t('designer.warnUniqueFormName')), x.id)
-    )
+    empties.map((x) => formWarning(warning(t('designer.warnEmptyFormName'), t('designer.warnUniqueFormName')), x.id)),
   );
   warnings = warnings.concat(
-    parsing.map(
-      (x) =>
-        formWarning(warning(t('designer.warnBadFormYaml', { name: escHtml(x.name) }), escHtml(x.issue)), x.id)
-    )
+    parsing.map((x) =>
+      formWarning(warning(t('designer.warnBadFormYaml', { name: escHtml(x.name) }), escHtml(x.issue)), x.id),
+    ),
   );
   warnings = warnings.concat(
-    badsource.map(
-      (x) =>
-        formWarning(warning(t('designer.warnBadSource', { name: escHtml(x.name) }), t('designer.warnBadSourceHint'), t('designer.warnBadSourceKeep')), x.id)
-    )
+    badsource.map((x) =>
+      formWarning(
+        warning(
+          t('designer.warnBadSource', { name: escHtml(x.name) }),
+          t('designer.warnBadSourceHint'),
+          t('designer.warnBadSourceKeep'),
+        ),
+        x.id,
+      ),
+    ),
   );
   if (!categoriesObj.value) {
-    warnings.push(tabWarning(warning(t('designer.warnBadCategories'), t('designer.warnBadCategoriesHint')), 'Categories'));
+    warnings.push(
+      tabWarning(warning(t('designer.warnBadCategories'), t('designer.warnBadCategoriesHint')), 'Categories'),
+    );
   } else if (!hasDefaultCategory(categoriesObj.value)) {
-    warnings.push(tabWarning(warning(t('designer.warnNoDefaultCategory'), t('designer.warnNoDefaultCategoryHint')), 'Categories'));
+    warnings.push(
+      tabWarning(warning(t('designer.warnNoDefaultCategory'), t('designer.warnNoDefaultCategoryHint')), 'Categories'),
+    );
   }
   if (!rolesObj.value) {
     warnings.push(tabWarning(warning(t('designer.warnBadRoles'), t('designer.warnBadRolesHint')), 'Roles'));
@@ -2382,7 +3267,13 @@ const warnings = computed(() => {
       var dups = Helpers.findDuplicates(fields);
       dups.forEach((item2, _i) => {
         warnings.push(
-          formWarning(warning(t('designer.warnFieldDuplicate', { field: escHtml(item2), form: escHtml(item.name) }), t('designer.warnUniqueFieldName')), formIdByName(item.name))
+          formWarning(
+            warning(
+              t('designer.warnFieldDuplicate', { field: escHtml(item2), form: escHtml(item.name) }),
+              t('designer.warnUniqueFieldName'),
+            ),
+            formIdByName(item.name),
+          ),
         );
       });
     }
@@ -2418,7 +3309,7 @@ async function loadForms() {
     for (const source of files.value) {
       collapsedPaths.value.add(`file:${source || '__base__'}`);
     }
-    const sel = idmapping.value.find(x => x.id === currentForm.value);
+    const sel = idmapping.value.find((x) => x.id === currentForm.value);
     if (sel) {
       collapsedPaths.value.delete(`file:${sel.source || '__base__'}`);
     }
@@ -2494,7 +3385,7 @@ function selectForm(id) {
 
 function deleteForm(id) {
   selectForm(id);
-  action.value = "delete";
+  action.value = 'delete';
 }
 
 const collapsedPaths = ref(new Set());
@@ -2530,11 +3421,13 @@ function isCollapsed(key) {
 // folders. Derived from the sources/folders themselves, so a key of a file that
 // is gone never keeps the toggle in the wrong state.
 const allTreeKeys = computed(() => {
-  const keys = files.value.map(s => `file:${s || '__base__'}`);
+  const keys = files.value.map((s) => `file:${s || '__base__'}`);
   for (const f of folders.value) keys.push(`folder:${f}`);
   return keys;
 });
-const allTreeCollapsed = computed(() => allTreeKeys.value.length > 0 && allTreeKeys.value.every(k => collapsedPaths.value.has(k)));
+const allTreeCollapsed = computed(
+  () => allTreeKeys.value.length > 0 && allTreeKeys.value.every((k) => collapsedPaths.value.has(k)),
+);
 
 function toggleCollapseAll() {
   if (allTreeCollapsed.value) {
@@ -2569,10 +3462,16 @@ function onDropOnForm(targetId, event) {
   event.stopPropagation();
   const dragId = dragFormId.value;
   dropTargetId.value = null;
-  if (!dragId || dragId === targetId) { dragFormId.value = null; return; }
-  const dragMap = idmapping.value.find(x => x.id === dragId);
-  const targetMap = idmapping.value.find(x => x.id === targetId);
-  if (!dragMap || !targetMap) { dragFormId.value = null; return; }
+  if (!dragId || dragId === targetId) {
+    dragFormId.value = null;
+    return;
+  }
+  const dragMap = idmapping.value.find((x) => x.id === dragId);
+  const targetMap = idmapping.value.find((x) => x.id === targetId);
+  if (!dragMap || !targetMap) {
+    dragFormId.value = null;
+    return;
+  }
   if (dragMap.source !== targetMap.source) {
     if (!formMeta.value[dragId]) formMeta.value[dragId] = {};
     formMeta.value[dragId].source = targetMap.source;
@@ -2582,7 +3481,7 @@ function onDropOnForm(targetId, event) {
   const key = dragMap.source ?? '__base__';
   let order = formOrderMap.value[key];
   if (!order) {
-    order = formnames(dragMap.source).map(f => f.id);
+    order = formnames(dragMap.source).map((f) => f.id);
   } else {
     order = [...order];
   }
@@ -2678,7 +3577,7 @@ function doRenameFile() {
 function uniqueFormName(baseName, taken = []) {
   let name = `${baseName} (copy)`;
   let counter = 2;
-  while (idmapping.value.some(x => x.name === name) || taken.includes(name)) {
+  while (idmapping.value.some((x) => x.name === name) || taken.includes(name)) {
     name = `${baseName} (copy ${counter++})`;
   }
   return name;
@@ -2727,11 +3626,14 @@ function ctxDuplicateForm() {
 function ctxDuplicateFile() {
   const source = ctxMenu.value.target.source;
   closeContextMenu();
-  if (busyOrTemplated.value) { toast.warning(t('designer.readOnly')); return; }
+  if (busyOrTemplated.value) {
+    toast.warning(t('designer.readOnly'));
+    return;
+  }
   // the base file is not a file on disk (see confirmDeleteFile) : there is
   // nothing to copy it to
   if (!source) return;
-  const formIds = Object.keys(forms.value).filter(id => formMeta.value[id]?.source === source);
+  const formIds = Object.keys(forms.value).filter((id) => formMeta.value[id]?.source === source);
   if (formIds.length === 0) return;
   const newSource = uniqueFileName(source);
   const taken = [];
@@ -2739,7 +3641,10 @@ function ctxDuplicateFile() {
   let firstId = null;
   for (const srcId of formIds) {
     const doc = parseDocOrNull(forms.value[srcId]);
-    if (!doc || !YAML.isMap(doc.contents)) { failed++; continue; }
+    if (!doc || !YAML.isMap(doc.contents)) {
+      failed++;
+      continue;
+    }
     const baseName = doc.get('name');
     const copyName = uniqueFormName(typeof baseName === 'string' && baseName ? baseName : 'Form', taken);
     taken.push(copyName);
@@ -2759,8 +3664,8 @@ function ctxDuplicateFile() {
 
 function ctxMoveToFile() {
   moveFormId.value = ctxMenu.value.target.id;
-  const currentSource = idmapping.value.find(x => x.id === moveFormId.value)?.source;
-  moveTarget.value = files.value.find(f => f !== currentSource) || '';
+  const currentSource = idmapping.value.find((x) => x.id === moveFormId.value)?.source;
+  moveTarget.value = files.value.find((f) => f !== currentSource) || '';
   closeContextMenu();
   showMoveModal.value = true;
 }
@@ -2774,8 +3679,8 @@ function ctxAddFormToFile() {
 function ctxDownloadFile() {
   const source = ctxMenu.value.target.source;
   closeContextMenu();
-  const formIds = Object.keys(forms.value).filter(id => formMeta.value[id]?.source === source);
-  const content = formIds.map(id => forms.value[id]).join('\n---\n');
+  const formIds = Object.keys(forms.value).filter((id) => formMeta.value[id]?.source === source);
+  const content = formIds.map((id) => forms.value[id]).join('\n---\n');
   if (!content) return;
   const blob = new Blob([content], { type: 'text/yaml' });
   const url = URL.createObjectURL(blob);
@@ -2794,16 +3699,22 @@ function confirmDeleteFile(source) {
   // Delete button would do nothing
   if (!source) return;
   fileToDelete.value = source;
-  action.value = "deleteFile";
+  action.value = 'deleteFile';
 }
 
 function doDeleteFile() {
   const source = fileToDelete.value;
   // never leave the modal open on a Delete that can't do anything
-  if (!source) { action.value = null; return; }
-  const formIds = Object.keys(forms.value).filter(id => formMeta.value[id]?.source === source);
+  if (!source) {
+    action.value = null;
+    return;
+  }
+  const formIds = Object.keys(forms.value).filter((id) => formMeta.value[id]?.source === source);
   if (formIds.length) {
-    formIds.forEach(id => { delete forms.value[id]; delete formMeta.value[id]; });
+    formIds.forEach((id) => {
+      delete forms.value[id];
+      delete formMeta.value[id];
+    });
     selectDefaultForm();
   }
   fileToDelete.value = null;
@@ -2822,7 +3733,9 @@ const moveFileTarget = ref('');
 
 const moveFileFolderOptions = computed(() => {
   if (!moveFileSource.value) return [];
-  const currentFolder = moveFileSource.value.includes('/') ? moveFileSource.value.substring(0, moveFileSource.value.lastIndexOf('/')) : '';
+  const currentFolder = moveFileSource.value.includes('/')
+    ? moveFileSource.value.substring(0, moveFileSource.value.lastIndexOf('/'))
+    : '';
   const opts = [{ value: '', label: '/ (root)' }];
   for (const f of folders.value) {
     if (f !== currentFolder) opts.push({ value: f, label: f });
@@ -2837,7 +3750,7 @@ function ctxMoveFileToFolder() {
   if (!source) return;
   moveFileSource.value = source;
   const currentFolder = source.includes('/') ? source.substring(0, source.lastIndexOf('/')) : '';
-  moveFileTarget.value = folders.value.find(f => f !== currentFolder) || '';
+  moveFileTarget.value = folders.value.find((f) => f !== currentFolder) || '';
   showMoveFileModal.value = true;
 }
 
@@ -2846,7 +3759,10 @@ function doMoveFileToFolder() {
   if (source == null) return;
   const fileName = source.includes('/') ? source.substring(source.lastIndexOf('/') + 1) : source;
   const newSource = moveFileTarget.value ? `${moveFileTarget.value}/${fileName}` : fileName;
-  if (newSource === source) { showMoveFileModal.value = false; return; }
+  if (newSource === source) {
+    showMoveFileModal.value = false;
+    return;
+  }
   moveFormOrder(source, newSource);
   for (const id of Object.keys(forms.value)) {
     if (formMeta.value[id]?.source === source) {
@@ -2863,19 +3779,22 @@ function openNewFileInFolder(folder) {
 }
 
 function confirmDeleteFolder(folder) {
-  const sources = files.value.filter(s => s && s.startsWith(folder + '/'));
+  const sources = files.value.filter((s) => s && s.startsWith(folder + '/'));
   if (!sources.length) return;
   fileToDelete.value = folder;
-  action.value = "deleteFolder";
+  action.value = 'deleteFolder';
 }
 
 function doDeleteFolder() {
   const folder = fileToDelete.value;
   if (!folder) return;
-  const sources = files.value.filter(s => s && s.startsWith(folder + '/'));
+  const sources = files.value.filter((s) => s && s.startsWith(folder + '/'));
   for (const source of sources) {
-    const formIds = Object.keys(forms.value).filter(id => formMeta.value[id]?.source === source);
-    formIds.forEach(id => { delete forms.value[id]; delete formMeta.value[id]; });
+    const formIds = Object.keys(forms.value).filter((id) => formMeta.value[id]?.source === source);
+    formIds.forEach((id) => {
+      delete forms.value[id];
+      delete formMeta.value[id];
+    });
   }
   selectDefaultForm();
   fileToDelete.value = null;
@@ -2910,15 +3829,15 @@ function doMoveToFile() {
 
 const moveFileOptions = computed(() => {
   if (!moveFormId.value) return [];
-  const currentSource = idmapping.value.find(x => x.id === moveFormId.value)?.source;
-  return files.value.filter(f => f !== currentSource).map(f => ({ value: f, label: f || t('designer.baseFile') }));
+  const currentSource = idmapping.value.find((x) => x.id === moveFormId.value)?.source;
+  return files.value.filter((f) => f !== currentSource).map((f) => ({ value: f, label: f || t('designer.baseFile') }));
 });
 
 function addForm(file) {
   // add a new form to the forms list
   // check if the form "New Form" already exists
 
-  if (idmapping.value.find((x) => x.name == "New Form")) {
+  if (idmapping.value.find((x) => x.name == 'New Form')) {
     toast.error(t('designer.newFormExists'));
     return false;
   }
@@ -2950,7 +3869,7 @@ function restore() {
   // start from no selection : a leftover pick from a previous open points at a
   // backup that a restore since then may have replaced
   backupToRestore.value = null;
-  action.value = "restore";
+  action.value = 'restore';
 }
 
 // Key-sorted JSON, so two documents can be compared for STRUCTURE regardless of the
@@ -2958,7 +3877,14 @@ function restore() {
 function canonicalJson(value) {
   if (Array.isArray(value)) return '[' + value.map(canonicalJson).join(',') + ']';
   if (value && typeof value === 'object') {
-    return '{' + Object.keys(value).sort().map(k => JSON.stringify(k) + ':' + canonicalJson(value[k])).join(',') + '}';
+    return (
+      '{' +
+      Object.keys(value)
+        .sort()
+        .map((k) => JSON.stringify(k) + ':' + canonicalJson(value[k]))
+        .join(',') +
+      '}'
+    );
   }
   return JSON.stringify(value ?? null);
 }
@@ -3102,14 +4028,15 @@ async function restoreBackup() {
 function onLockToggle(event) {
   const held = !!lock.value?.match;
   if (event?.target) event.target.checked = held;
-  if (held) releaseLock(); else setLock();
+  if (held) releaseLock();
+  else setLock();
 }
 
 async function releaseLock() {
   try {
     // if dirty, we need to ask for confirmation, it means you are releasing the designer with unsaved changes
     if (isDirty.value) {
-      action.value = "dirty";
+      action.value = 'dirty';
       nextAction.value = async (proceed) => {
         resetAction();
         await deleteLock(proceed);
@@ -3144,7 +4071,7 @@ async function deleteLock(proceed = true) {
 }
 
 async function unLock() {
-  action.value = "forceUnlock";
+  action.value = 'forceUnlock';
   nextAction.value = async (proceed) => {
     resetAction();
     await setLock(proceed);
@@ -3154,7 +4081,7 @@ async function unLock() {
 // forms repositories (issue #414) : the forms live in git, the designer
 // saves into the working trees and 'Push to repo' commits & pushes them
 const formsRepos = ref([]);
-const configRepo = ref(""); // the repository that holds config.yaml
+const configRepo = ref(''); // the repository that holds config.yaml
 const stagedForms = ref(false); // new forms saved but not yet pushed to a repo
 const configInDatabase = ref(false); // true when forms_yaml is stored in and served from the database
 
@@ -3179,13 +4106,13 @@ const canRestore = computed(() => formsRepos.value.length === 0 || configInDatab
 const syncing = ref(false);
 const loadingRepos = ref(false);
 const showPushModal = ref(false);
-const pushRepo = ref(""); // "" means all repositories
+const pushRepo = ref(''); // "" means all repositories
 const showLoadModal = ref(false);
-const loadRepo = ref("");
+const loadRepo = ref('');
 
 // unpushed work : a repository with uncommitted/unpushed changes, or new forms
 // still staged. Drives the "you have unpushed changes" indicator on Save (repository).
-const hasUnpushed = computed(() => stagedForms.value || formsRepos.value.some(r => r.dirty));
+const hasUnpushed = computed(() => stagedForms.value || formsRepos.value.some((r) => r.dirty));
 // a push or load is in flight : gate other actions that would race it
 const busy = computed(() => syncing.value || loadingRepos.value);
 // gate for everything that WRITES : the same in-flight guard, plus the ytt
@@ -3196,7 +4123,7 @@ async function loadFormsRepos() {
   try {
     const result = await axios.get(`/api/v2/forms-repos`, TokenStorage.getAuthentication());
     formsRepos.value = result.data?.repositories || [];
-    configRepo.value = result.data?.configRepo || "";
+    configRepo.value = result.data?.configRepo || '';
     stagedForms.value = !!result.data?.staged;
   } catch (err) {
     // a transient failure must not wipe the repo list (it would hide the push
@@ -3243,16 +4170,16 @@ async function loadConfigTemplated() {
 // the default push target : the config-origin repository (config.yaml lives
 // there), falling back to the first forms repository
 function defaultRepo() {
-  return configRepo.value || formsRepos.value[0]?.name || "";
+  return configRepo.value || formsRepos.value[0]?.name || '';
 }
 
 // re-read the forms from disk (working trees + staging) into the designer,
 // discarding any in-memory edits
 async function reloadFromDisk() {
   forms.value = {};
-  categories.value = "";
-  roles.value = "";
-  constants.value = "";
+  categories.value = '';
+  roles.value = '';
+  constants.value = '';
   currentForm.value = null;
   await loadForms(); // sets a fresh baseline => isDirty false
 }
@@ -3260,7 +4187,7 @@ async function reloadFromDisk() {
 // reload helper that warns when there are unsaved edits (they would be lost)
 function withReloadConfirm(run) {
   if (isDirty.value) {
-    action.value = "confirmReload";
+    action.value = 'confirmReload';
     nextAction.value = async (proceed) => {
       resetAction();
       if (proceed) await run();
@@ -3271,7 +4198,7 @@ function withReloadConfirm(run) {
 }
 
 // the load dropdown options : one entry per forms repository
-const loadRepoOptions = computed(() => formsRepos.value.map(r => ({ value: r.name, label: r.name })));
+const loadRepoOptions = computed(() => formsRepos.value.map((r) => ({ value: r.name, label: r.name })));
 
 // Load (repository) : with several repos open a chooser (pick one, or load
 // from all) ; with a single repo pull it directly
@@ -3310,7 +4237,7 @@ function pullAndReload(name) {
 }
 
 // the dropdown options : one entry per forms repository
-const pushRepoOptions = computed(() => formsRepos.value.map(r => ({ value: r.name, label: r.name })));
+const pushRepoOptions = computed(() => formsRepos.value.map((r) => ({ value: r.name, label: r.name })));
 
 function pushToRepo() {
   if (isDirty.value) {
@@ -3348,20 +4275,20 @@ async function syncRepos(name) {
 // so this adds a new form with the given filename as its source. In repository
 // mode the new file is staged and assigned to a repository later, on push.
 const showNewFile = ref(false);
-const newFileName = ref("");
+const newFileName = ref('');
 
 function openNewFile() {
-  newFileName.value = "";
+  newFileName.value = '';
   showNewFile.value = true;
 }
 
 function openNewFolder() {
-  newFileName.value = "new-folder/forms.yaml";
+  newFileName.value = 'new-folder/forms.yaml';
   showNewFile.value = true;
 }
 
 function addFile() {
-  const name = (newFileName.value || "").trim();
+  const name = (newFileName.value || '').trim();
   if (!/^[A-Za-z0-9._/-]+\.(yaml|yml)$/.test(name)) {
     toast.error(t('designer.newFileInvalid'));
     return;
@@ -3380,7 +4307,7 @@ function addFile() {
     }
   }
   showNewFile.value = false;
-  newFileName.value = "";
+  newFileName.value = '';
 }
 
 async function validateForms() {
@@ -3445,7 +4372,7 @@ async function saveForms(close = false) {
     // Restore until the page is reloaded
     if (canRestore.value) await loadBackups();
     if (formsRepos.value.length > 0) await loadFormsRepos(); // saved to a working tree => now unpushed
-    if (close && typeof nextAction.value === "function") {
+    if (close && typeof nextAction.value === 'function') {
       const cb = nextAction.value;
       nextAction.value = false;
       try {
@@ -3501,10 +4428,7 @@ function formnames(file) {
   if (order) {
     return items.sort(byExplicitOrder(order));
   }
-  return items.sort(
-    (a, b) =>
-      ((a.name || "").toLowerCase() > (b.name || "").toLowerCase() && 1) || -1
-  );
+  return items.sort((a, b) => ((a.name || '').toLowerCase() > (b.name || '').toLowerCase() && 1) || -1);
 }
 
 async function loadAll() {
@@ -3531,7 +4455,7 @@ const pendingRoute = ref(null);
 onBeforeRouteLeave((to) => {
   if (!isDirty.value || leaveConfirmed.value) return true;
   pendingRoute.value = to.fullPath;
-  action.value = "dirty";
+  action.value = 'dirty';
   nextAction.value = async (proceed) => {
     resetAction();
     if (!proceed) return;
@@ -3574,7 +4498,6 @@ onBeforeUnmount(() => {
 });
 </script>
 <template>
-
   <AppNav />
   <div class="af-fill-page designer-page">
     <main class="d-flex container-xxl">
@@ -3583,7 +4506,8 @@ onBeforeUnmount(() => {
         <template #title> {{ t('designer.deleteForm') }} {{ currentFormName }} </template>
         <template #default>
           <p class="mt-3 fs-6 user-select-none">
-            {{ t('designer.deleteConfirm') }} <strong>{{ currentFormName }}</strong>?
+            {{ t('designer.deleteConfirm') }} <strong>{{ currentFormName }}</strong
+            >?
           </p>
         </template>
         <template #footer>
@@ -3592,11 +4516,18 @@ onBeforeUnmount(() => {
       </BsModal>
 
       <!-- Modal - delete file verify -->
-      <BsModal v-if="action == 'deleteFile'" @close="resetAction(); fileToDelete = null">
+      <BsModal
+        v-if="action == 'deleteFile'"
+        @close="
+          resetAction();
+          fileToDelete = null;
+        "
+      >
         <template #title> {{ t('designer.deleteFile') }} </template>
         <template #default>
           <p class="mt-3 fs-6 user-select-none">
-            {{ t('designer.deleteFileConfirm') }} <strong>{{ fileToDelete }}</strong>?
+            {{ t('designer.deleteFileConfirm') }} <strong>{{ fileToDelete }}</strong
+            >?
           </p>
         </template>
         <template #footer>
@@ -3605,11 +4536,18 @@ onBeforeUnmount(() => {
       </BsModal>
 
       <!-- Modal - delete folder verify -->
-      <BsModal v-if="action == 'deleteFolder'" @close="resetAction(); fileToDelete = null">
+      <BsModal
+        v-if="action == 'deleteFolder'"
+        @close="
+          resetAction();
+          fileToDelete = null;
+        "
+      >
         <template #title> {{ t('designer.deleteFolder') }} </template>
         <template #default>
           <p class="mt-3 fs-6 user-select-none">
-            {{ t('designer.deleteFolderConfirm') }} <strong>{{ fileToDelete }}</strong>?
+            {{ t('designer.deleteFolderConfirm') }} <strong>{{ fileToDelete }}</strong
+            >?
           </p>
         </template>
         <template #footer>
@@ -3621,7 +4559,15 @@ onBeforeUnmount(() => {
       <BsModal v-if="showNewFile" @close="showNewFile = false">
         <template #title> {{ t('designer.newFileTitle') }} </template>
         <template #default>
-          <BsInput :isFloating="false" v-model="newFileName" :label="t('designer.newFileLabel')" placeholder="my-forms.yaml" icon="file" :help="t('designer.newFileHelp')" @keyup_enter="addFile()" />
+          <BsInput
+            :isFloating="false"
+            v-model="newFileName"
+            :label="t('designer.newFileLabel')"
+            placeholder="my-forms.yaml"
+            icon="file"
+            :help="t('designer.newFileHelp')"
+            @keyup_enter="addFile()"
+          />
         </template>
         <template #footer>
           <BsButton icon="plus" @click="addFile()">{{ t('common.create') }}</BsButton>
@@ -3633,7 +4579,16 @@ onBeforeUnmount(() => {
         <template #title> {{ t('designer.importTitle') }} </template>
         <template #default>
           <p class="text-muted small mb-3">{{ t('designer.importHelp') }}</p>
-          <BsInput :isFloating="false" type="select" icon="file" v-model="importTarget" :values="importFileOptions" name="importTarget" :label="t('designer.targetFile')" class="mb-3" />
+          <BsInput
+            :isFloating="false"
+            type="select"
+            icon="file"
+            v-model="importTarget"
+            :values="importFileOptions"
+            name="importTarget"
+            :label="t('designer.targetFile')"
+            class="mb-3"
+          />
           <div class="d-flex flex-column gap-2">
             <div v-for="(entry, i) in importCandidates" :key="'imp-' + i" class="form-check">
               <input class="form-check-input" type="checkbox" v-model="entry.include" :id="'imp-chk-' + i" />
@@ -3641,11 +4596,15 @@ onBeforeUnmount(() => {
                 <span>{{ entry.finalName }}</span>
                 <!-- a name that is taken is imported under a new one, the form
                      that holds it is never touched -->
-                <span v-if="entry.finalName !== entry.name" class="badge bg-warning-subtle text-warning-emphasis">{{ t('designer.importRenamedBadge', { name: entry.name }) }}</span>
+                <span v-if="entry.finalName !== entry.name" class="badge bg-warning-subtle text-warning-emphasis">{{
+                  t('designer.importRenamedBadge', { name: entry.name })
+                }}</span>
               </label>
             </div>
           </div>
-          <p v-if="importSkipped > 0" class="text-muted small mt-3 mb-0">{{ t('designer.importSkipped', { count: importSkipped }) }}</p>
+          <p v-if="importSkipped > 0" class="text-muted small mt-3 mb-0">
+            {{ t('designer.importSkipped', { count: importSkipped }) }}
+          </p>
         </template>
         <template #footer>
           <BsButton icon="file-import" @click="doImport()">{{ t('designer.import') }}</BsButton>
@@ -3656,7 +4615,15 @@ onBeforeUnmount(() => {
       <BsModal v-if="showPushModal" @close="showPushModal = false">
         <template #title> {{ t('designer.pushChooseTitle') }} </template>
         <template #default>
-          <BsInput :isFloating="false" type="select" icon="code-branch" v-model="pushRepo" :values="pushRepoOptions" name="pushRepo" :label="t('designer.pushRepoLabel')" />
+          <BsInput
+            :isFloating="false"
+            type="select"
+            icon="code-branch"
+            v-model="pushRepo"
+            :values="pushRepoOptions"
+            name="pushRepo"
+            :label="t('designer.pushRepoLabel')"
+          />
         </template>
         <template #footer>
           <!-- symmetric with the load modal : syncRepos() without a name pushes
@@ -3670,7 +4637,15 @@ onBeforeUnmount(() => {
       <BsModal v-if="showLoadModal" @close="showLoadModal = false">
         <template #title> {{ t('designer.loadChooseTitle') }} </template>
         <template #default>
-          <BsInput :isFloating="false" type="select" icon="code-branch" v-model="loadRepo" :values="loadRepoOptions" name="loadRepo" :label="t('designer.pushRepoLabel')" />
+          <BsInput
+            :isFloating="false"
+            type="select"
+            icon="code-branch"
+            v-model="loadRepo"
+            :values="loadRepoOptions"
+            name="loadRepo"
+            :label="t('designer.pushRepoLabel')"
+          />
         </template>
         <template #footer>
           <BsButton icon="cloud-arrow-down" @click="pullAndReload(loadRepo)">{{ t('designer.loadFromRepo') }}</BsButton>
@@ -3730,13 +4705,30 @@ onBeforeUnmount(() => {
           <div v-if="repoConfigMode" class="text-muted mb-2">{{ t('designer.restoreConfigOnly') }}</div>
           <div v-if="backups.length === 0" class="text-muted">{{ t('designer.noBackups') }}</div>
           <template v-else>
-            <BsInput type="select_advanced" v-model="backupToRestore" :values="backups" :required="true" name="backup" :label="t('designer.backup')" :sticky="true" :hasError="!backupToRestore" />
+            <BsInput
+              type="select_advanced"
+              v-model="backupToRestore"
+              :values="backups"
+              :required="true"
+              name="backup"
+              :label="t('designer.backup')"
+              :sticky="true"
+              :hasError="!backupToRestore"
+            />
             <BsInput type="checkbox" v-model="backupBeforeRestore" :label="t('designer.backupBeforeRestore')" />
           </template>
         </template>
         <template #footer>
           <!-- nothing picked : restoring would dereference a null backup -->
-          <BsButton icon="undo" :disabled="!backupToRestore" @click="restoreBackup(); resetAction()">{{ t('designer.restore') }}</BsButton>
+          <BsButton
+            icon="undo"
+            :disabled="!backupToRestore"
+            @click="
+              restoreBackup();
+              resetAction();
+            "
+            >{{ t('designer.restore') }}</BsButton
+          >
         </template>
       </BsModal>
 
@@ -3744,7 +4736,13 @@ onBeforeUnmount(() => {
       <BsModal v-if="showRenameModal" @close="showRenameModal = false">
         <template #title> {{ t('designer.renameFile') }} </template>
         <template #default>
-          <BsInput :isFloating="false" v-model="renameValue" :label="t('designer.newFileLabel')" icon="file" @keyup_enter="doRenameFile()" />
+          <BsInput
+            :isFloating="false"
+            v-model="renameValue"
+            :label="t('designer.newFileLabel')"
+            icon="file"
+            @keyup_enter="doRenameFile()"
+          />
         </template>
         <template #footer>
           <BsButton icon="check" @click="doRenameFile()">{{ t('designer.rename') }}</BsButton>
@@ -3755,7 +4753,14 @@ onBeforeUnmount(() => {
       <BsModal v-if="showMoveModal" @close="showMoveModal = false">
         <template #title> {{ t('designer.moveToFile') }} </template>
         <template #default>
-          <BsInput :isFloating="false" type="select" icon="file" v-model="moveTarget" :values="moveFileOptions" :label="t('designer.targetFile')" />
+          <BsInput
+            :isFloating="false"
+            type="select"
+            icon="file"
+            v-model="moveTarget"
+            :values="moveFileOptions"
+            :label="t('designer.targetFile')"
+          />
         </template>
         <template #footer>
           <BsButton icon="check" @click="doMoveToFile()">{{ t('designer.move') }}</BsButton>
@@ -3767,7 +4772,14 @@ onBeforeUnmount(() => {
         <template #title> {{ t('designer.moveFileToFolder') }} </template>
         <template #default>
           <p class="fs-6 user-select-none mb-3">{{ moveFileSource }}</p>
-          <BsInput :isFloating="false" type="select" icon="folder" v-model="moveFileTarget" :values="moveFileFolderOptions" :label="t('designer.targetFolder')" />
+          <BsInput
+            :isFloating="false"
+            type="select"
+            icon="folder"
+            v-model="moveFileTarget"
+            :values="moveFileFolderOptions"
+            :label="t('designer.targetFolder')"
+          />
         </template>
         <template #footer>
           <BsButton icon="check" @click="doMoveFileToFolder()">{{ t('designer.move') }}</BsButton>
@@ -3796,8 +4808,22 @@ onBeforeUnmount(() => {
           <div class="icon-section-header mb-2">
             <span class="fw-semibold">{{ t('designer.preview') }}</span>
           </div>
-          <div class="d-flex align-items-center justify-content-center py-3 mb-3 rounded" style="background: var(--bs-tertiary-bg);">
-            <FaIcon v-if="iconForm.icon" :icon="iconForm.icon" :size="iconForm.iconSize || '3x'" :color="iconForm.iconColor || undefined" :overlayIcon="iconForm.overlayIcon || undefined" :overlayIconColor="iconForm.overlayIconColor" :overlayIconCircle="iconForm.overlayIconCircle" :overlayIconText="iconForm.overlayIconText || undefined" :overlayIconTextPosition="iconForm.overlayIconTextPosition" :overlayIconTextColor="iconForm.overlayIconTextColor" />
+          <div
+            class="d-flex align-items-center justify-content-center py-3 mb-3 rounded"
+            style="background: var(--bs-tertiary-bg)"
+          >
+            <FaIcon
+              v-if="iconForm.icon"
+              :icon="iconForm.icon"
+              :size="iconForm.iconSize || '3x'"
+              :color="iconForm.iconColor || undefined"
+              :overlayIcon="iconForm.overlayIcon || undefined"
+              :overlayIconColor="iconForm.overlayIconColor"
+              :overlayIconCircle="iconForm.overlayIconCircle"
+              :overlayIconText="iconForm.overlayIconText || undefined"
+              :overlayIconTextPosition="iconForm.overlayIconTextPosition"
+              :overlayIconTextColor="iconForm.overlayIconTextColor"
+            />
             <span v-else class="text-muted">{{ t('designer.noIconSelected') }}</span>
           </div>
 
@@ -3807,14 +4833,30 @@ onBeforeUnmount(() => {
             <span class="fw-semibold">{{ t('designer.chooseIcon') }}</span>
           </div>
           <div v-if="iconSections.icons" class="mb-2">
-            <BsInput :isFloating="false" v-model="iconSearch" :label="t('designer.searchIcons')" icon="magnifying-glass" placeholder="search..." />
+            <BsInput
+              :isFloating="false"
+              v-model="iconSearch"
+              :label="t('designer.searchIcons')"
+              icon="magnifying-glass"
+              placeholder="search..."
+            />
             <div class="icon-grid mt-2">
-              <div v-for="ic in filteredIcons" :key="'icon-' + ic" class="icon-cell" :class="{ 'icon-selected': iconForm.icon === ic }" role="button" :title="ic" @click="pickIcon(ic)">
+              <div
+                v-for="ic in filteredIcons"
+                :key="'icon-' + ic"
+                class="icon-cell"
+                :class="{ 'icon-selected': iconForm.icon === ic }"
+                role="button"
+                :title="ic"
+                @click="pickIcon(ic)"
+              >
                 <FaIcon :icon="ic" size="xl" />
                 <small class="icon-label">{{ ic }}</small>
               </div>
             </div>
-            <div v-if="filteredIcons.length === 0" class="text-muted text-center py-3">{{ t('designer.noIconsFound') }}</div>
+            <div v-if="filteredIcons.length === 0" class="text-muted text-center py-3">
+              {{ t('designer.noIconsFound') }}
+            </div>
           </div>
 
           <!-- Color & Size section -->
@@ -3825,40 +4867,98 @@ onBeforeUnmount(() => {
           <div v-if="iconSections.style" class="mb-2">
             <div class="row g-2">
               <div class="col-6">
-                <BsInput :isFloating="false" type="select" v-model="iconForm.iconColor" :values="iconColorOptions" :label="t('designer.iconColor')" icon="droplet" />
+                <BsInput
+                  :isFloating="false"
+                  type="select"
+                  v-model="iconForm.iconColor"
+                  :values="iconColorOptions"
+                  :label="t('designer.iconColor')"
+                  icon="droplet"
+                />
               </div>
               <div class="col-6">
-                <BsInput :isFloating="false" type="select" v-model="iconForm.iconSize" :values="iconSizeOptions" :label="t('designer.iconSize')" icon="up-right-and-down-left-from-center" />
+                <BsInput
+                  :isFloating="false"
+                  type="select"
+                  v-model="iconForm.iconSize"
+                  :values="iconSizeOptions"
+                  :label="t('designer.iconSize')"
+                  icon="up-right-and-down-left-from-center"
+                />
               </div>
             </div>
           </div>
 
           <!-- Overlay section -->
           <div class="icon-section-header mb-2" role="button" @click="iconSections.overlay = !iconSections.overlay">
-            <FaIcon :icon="iconSections.overlay ? 'chevron-down' : 'chevron-right'" class="me-2 tree-chevron" size="xs" />
+            <FaIcon
+              :icon="iconSections.overlay ? 'chevron-down' : 'chevron-right'"
+              class="me-2 tree-chevron"
+              size="xs"
+            />
             <span class="fw-semibold">{{ t('designer.overlaySettings') }}</span>
           </div>
           <div v-if="iconSections.overlay" class="mb-2">
             <div class="row g-2">
               <div class="col-6">
-                <BsInput :isFloating="false" v-model="iconForm.overlayIcon" :label="t('designer.overlayIcon')" icon="layer-group" placeholder="e.g. check, bolt" />
+                <BsInput
+                  :isFloating="false"
+                  v-model="iconForm.overlayIcon"
+                  :label="t('designer.overlayIcon')"
+                  icon="layer-group"
+                  placeholder="e.g. check, bolt"
+                />
               </div>
               <div class="col-6">
-                <BsInput :isFloating="false" type="select" v-model="iconForm.overlayIconColor" :values="iconColorOptions.filter(o => o.value)" :label="t('designer.overlayColor')" icon="droplet" />
+                <BsInput
+                  :isFloating="false"
+                  type="select"
+                  v-model="iconForm.overlayIconColor"
+                  :values="iconColorOptions.filter((o) => o.value)"
+                  :label="t('designer.overlayColor')"
+                  icon="droplet"
+                />
               </div>
             </div>
             <div class="py-1 mb-2">
-              <BsInput :isFloating="false" :isInline="true" type="checkbox" v-model="iconForm.overlayIconCircle" :isSwitch="true" :label="t('designer.overlayCircle')" />
+              <BsInput
+                :isFloating="false"
+                :isInline="true"
+                type="checkbox"
+                v-model="iconForm.overlayIconCircle"
+                :isSwitch="true"
+                :label="t('designer.overlayCircle')"
+              />
             </div>
             <div class="row g-2">
               <div class="col-4">
-                <BsInput :isFloating="false" v-model="iconForm.overlayIconText" :label="t('designer.overlayText')" icon="font" placeholder="e.g. NEW" />
+                <BsInput
+                  :isFloating="false"
+                  v-model="iconForm.overlayIconText"
+                  :label="t('designer.overlayText')"
+                  icon="font"
+                  placeholder="e.g. NEW"
+                />
               </div>
               <div class="col-4">
-                <BsInput :isFloating="false" type="select" v-model="iconForm.overlayIconTextPosition" :values="overlayPositionOptions" :label="t('designer.overlayPosition')" icon="arrows-up-down-left-right" />
+                <BsInput
+                  :isFloating="false"
+                  type="select"
+                  v-model="iconForm.overlayIconTextPosition"
+                  :values="overlayPositionOptions"
+                  :label="t('designer.overlayPosition')"
+                  icon="arrows-up-down-left-right"
+                />
               </div>
               <div class="col-4">
-                <BsInput :isFloating="false" type="select" v-model="iconForm.overlayIconTextColor" :values="iconColorOptions.filter(o => o.value)" :label="t('designer.overlayTextColor')" icon="droplet" />
+                <BsInput
+                  :isFloating="false"
+                  type="select"
+                  v-model="iconForm.overlayIconTextColor"
+                  :values="iconColorOptions.filter((o) => o.value)"
+                  :label="t('designer.overlayTextColor')"
+                  icon="droplet"
+                />
               </div>
             </div>
           </div>
@@ -3872,21 +4972,56 @@ onBeforeUnmount(() => {
       <BsModal v-if="showAddCategory" @close="showAddCategory = false">
         <template #title> {{ t('designer.addCategory') }} </template>
         <template #default>
-          <BsInput :isFloating="false" v-model="newCatName" :label="t('designer.categoryName')" icon="tag" :placeholder="t('designer.categoryNamePlaceholder')" class="mb-3" />
-          <BsInput v-if="parentCatOptions.length > 1" :isFloating="false" type="select" icon="sitemap" v-model="newCatParent" :values="parentCatOptions" valueKey="value" labelKey="label" :label="t('designer.parentCategory')" class="mb-3" />
+          <BsInput
+            :isFloating="false"
+            v-model="newCatName"
+            :label="t('designer.categoryName')"
+            icon="tag"
+            :placeholder="t('designer.categoryNamePlaceholder')"
+            class="mb-3"
+          />
+          <BsInput
+            v-if="parentCatOptions.length > 1"
+            :isFloating="false"
+            type="select"
+            icon="sitemap"
+            v-model="newCatParent"
+            :values="parentCatOptions"
+            valueKey="value"
+            labelKey="label"
+            :label="t('designer.parentCategory')"
+            class="mb-3"
+          />
           <div class="fw-semibold mb-2">{{ t('designer.chooseIcon') }}</div>
-          <div class="d-flex align-items-center gap-2 mb-3 p-2 rounded" style="background: var(--bs-tertiary-bg);">
+          <div class="d-flex align-items-center gap-2 mb-3 p-2 rounded" style="background: var(--bs-tertiary-bg)">
             <FaIcon :icon="newCatIcon" size="2x" />
             <span class="text-muted">{{ newCatIcon }}</span>
           </div>
-          <BsInput :isFloating="false" v-model="catIconSearch" :label="t('designer.searchIcons')" icon="magnifying-glass" placeholder="search..." class="mb-2" />
+          <BsInput
+            :isFloating="false"
+            v-model="catIconSearch"
+            :label="t('designer.searchIcons')"
+            icon="magnifying-glass"
+            placeholder="search..."
+            class="mb-2"
+          />
           <div class="icon-grid">
-            <div v-for="ic in filteredCatIcons" :key="'caticon-' + ic" class="icon-cell" :class="{ 'icon-selected': newCatIcon === ic }" role="button" :title="ic" @click="newCatIcon = ic">
+            <div
+              v-for="ic in filteredCatIcons"
+              :key="'caticon-' + ic"
+              class="icon-cell"
+              :class="{ 'icon-selected': newCatIcon === ic }"
+              role="button"
+              :title="ic"
+              @click="newCatIcon = ic"
+            >
               <FaIcon :icon="ic" size="xl" />
               <small class="icon-label">{{ ic }}</small>
             </div>
           </div>
-          <div v-if="filteredCatIcons.length === 0" class="text-muted text-center py-3">{{ t('designer.noIconsFound') }}</div>
+          <div v-if="filteredCatIcons.length === 0" class="text-muted text-center py-3">
+            {{ t('designer.noIconsFound') }}
+          </div>
         </template>
         <template #footer>
           <BsButton icon="plus" @click="doAddCategory()">{{ t('designer.addCategory') }}</BsButton>
@@ -3903,59 +5038,150 @@ onBeforeUnmount(() => {
           <div v-if="editCatMovedPaths.length > 0" class="alert alert-warning py-2" role="alert">
             {{ t('settings.settingsPage.categoryPathsChanged', { paths: editCatMovedPaths.join(', ') }) }}
           </div>
-          <div v-for="(row, idx) in flatEditCats" :key="'editcat-' + idx" class="d-flex align-items-end gap-2 mb-2" :style="{ paddingLeft: row.depth * 1 + 'rem' }">
-            <FaIcon v-if="row.depth > 0" icon="level-up-alt" class="text-muted fa-rotate-90 flex-shrink-0" style="font-size: 0.75rem; margin-bottom: 0.75rem;" />
+          <div
+            v-for="(row, idx) in flatEditCats"
+            :key="'editcat-' + idx"
+            class="d-flex align-items-end gap-2 mb-2"
+            :style="{ paddingLeft: row.depth * 1 + 'rem' }"
+          >
+            <FaIcon
+              v-if="row.depth > 0"
+              icon="level-up-alt"
+              class="text-muted fa-rotate-90 flex-shrink-0"
+              style="font-size: 0.75rem; margin-bottom: 0.75rem"
+            />
             <div class="flex-shrink-0">
               <label v-if="idx === 0" class="form-label fw-bold">{{ t('designer.categoryIcon') }}</label>
               <div class="d-flex align-items-center gap-3">
-                <span :role="isDefaultEditCat(row.cat, row.depth) ? undefined : 'button'" class="d-flex align-items-center justify-content-center rounded flex-shrink-0" :class="{ 'border border-primary': editCatIconIdx === idx }" style="width: 2.5rem; height: calc(2.25rem + 2px); background: var(--bs-tertiary-bg);" :title="t('designer.chooseIcon')" @click="editCatPickIcon(idx)">
+                <span
+                  :role="isDefaultEditCat(row.cat, row.depth) ? undefined : 'button'"
+                  class="d-flex align-items-center justify-content-center rounded flex-shrink-0"
+                  :class="{ 'border border-primary': editCatIconIdx === idx }"
+                  style="width: 2.5rem; height: calc(2.25rem + 2px); background: var(--bs-tertiary-bg)"
+                  :title="t('designer.chooseIcon')"
+                  @click="editCatPickIcon(idx)"
+                >
                   <FaIcon :icon="row.cat.icon" size="lg" />
                 </span>
-                <select class="form-select" style="width: 12rem;" v-model="row.cat.icon" :disabled="isDefaultEditCat(row.cat, row.depth)">
+                <select
+                  class="form-select"
+                  style="width: 12rem"
+                  v-model="row.cat.icon"
+                  :disabled="isDefaultEditCat(row.cat, row.depth)"
+                >
                   <option v-for="ic in availableIcons" :key="'selicon-' + idx + '-' + ic" :value="ic">{{ ic }}</option>
                 </select>
               </div>
             </div>
             <div class="flex-grow-1">
               <label v-if="idx === 0" class="form-label fw-bold">{{ t('designer.categoryName') }}</label>
-              <input type="text" class="form-control" v-model="row.cat.name" :disabled="isDefaultEditCat(row.cat, row.depth)" />
+              <input
+                type="text"
+                class="form-control"
+                v-model="row.cat.name"
+                :disabled="isDefaultEditCat(row.cat, row.depth)"
+              />
             </div>
             <!-- the schema pins the Default category : no rename, no restyle, no
                  delete and no subcategories (same rule as the settings page) -->
             <template v-if="!isDefaultEditCat(row.cat, row.depth)">
               <!-- reorganize : indent makes the row above the parent, outdent lifts it
                    back out. Greyed instead of hidden so the row does not reshuffle. -->
-              <span :role="canMoveUp(editCats, row.cat) ? 'button' : undefined" class="d-flex align-items-center justify-content-center flex-shrink-0 rounded border" :class="canMoveUp(editCats, row.cat) ? 'border-secondary' : 'border-secondary-subtle opacity-50'" style="width: 2.5rem; height: calc(2.25rem + 2px);" @click="canMoveUp(editCats, row.cat) && editCatMove(moveCategoryUp, row.cat)" :title="t('designer.moveUp')">
-                <font-awesome-icon icon="chevron-up" style="color: var(--bs-secondary);" />
+              <span
+                :role="canMoveUp(editCats, row.cat) ? 'button' : undefined"
+                class="d-flex align-items-center justify-content-center flex-shrink-0 rounded border"
+                :class="canMoveUp(editCats, row.cat) ? 'border-secondary' : 'border-secondary-subtle opacity-50'"
+                style="width: 2.5rem; height: calc(2.25rem + 2px)"
+                @click="canMoveUp(editCats, row.cat) && editCatMove(moveCategoryUp, row.cat)"
+                :title="t('designer.moveUp')"
+              >
+                <font-awesome-icon icon="chevron-up" style="color: var(--bs-secondary)" />
               </span>
-              <span :role="canMoveDown(editCats, row.cat) ? 'button' : undefined" class="d-flex align-items-center justify-content-center flex-shrink-0 rounded border" :class="canMoveDown(editCats, row.cat) ? 'border-secondary' : 'border-secondary-subtle opacity-50'" style="width: 2.5rem; height: calc(2.25rem + 2px);" @click="canMoveDown(editCats, row.cat) && editCatMove(moveCategoryDown, row.cat)" :title="t('designer.moveDown')">
-                <font-awesome-icon icon="chevron-down" style="color: var(--bs-secondary);" />
+              <span
+                :role="canMoveDown(editCats, row.cat) ? 'button' : undefined"
+                class="d-flex align-items-center justify-content-center flex-shrink-0 rounded border"
+                :class="canMoveDown(editCats, row.cat) ? 'border-secondary' : 'border-secondary-subtle opacity-50'"
+                style="width: 2.5rem; height: calc(2.25rem + 2px)"
+                @click="canMoveDown(editCats, row.cat) && editCatMove(moveCategoryDown, row.cat)"
+                :title="t('designer.moveDown')"
+              >
+                <font-awesome-icon icon="chevron-down" style="color: var(--bs-secondary)" />
               </span>
-              <span :role="canIndent(editCats, row.cat) ? 'button' : undefined" class="d-flex align-items-center justify-content-center flex-shrink-0 rounded border" :class="canIndent(editCats, row.cat) ? 'border-secondary' : 'border-secondary-subtle opacity-50'" style="width: 2.5rem; height: calc(2.25rem + 2px);" @click="canIndent(editCats, row.cat) && editCatMove(indentCategory, row.cat)" :title="t('settings.settingsPage.indentCategory')">
-                <font-awesome-icon icon="indent" style="color: var(--bs-secondary);" />
+              <span
+                :role="canIndent(editCats, row.cat) ? 'button' : undefined"
+                class="d-flex align-items-center justify-content-center flex-shrink-0 rounded border"
+                :class="canIndent(editCats, row.cat) ? 'border-secondary' : 'border-secondary-subtle opacity-50'"
+                style="width: 2.5rem; height: calc(2.25rem + 2px)"
+                @click="canIndent(editCats, row.cat) && editCatMove(indentCategory, row.cat)"
+                :title="t('settings.settingsPage.indentCategory')"
+              >
+                <font-awesome-icon icon="indent" style="color: var(--bs-secondary)" />
               </span>
-              <span :role="canOutdent(editCats, row.cat) ? 'button' : undefined" class="d-flex align-items-center justify-content-center flex-shrink-0 rounded border" :class="canOutdent(editCats, row.cat) ? 'border-secondary' : 'border-secondary-subtle opacity-50'" style="width: 2.5rem; height: calc(2.25rem + 2px);" @click="canOutdent(editCats, row.cat) && editCatMove(outdentCategory, row.cat)" :title="t('settings.settingsPage.outdentCategory')">
-                <font-awesome-icon icon="outdent" style="color: var(--bs-secondary);" />
+              <span
+                :role="canOutdent(editCats, row.cat) ? 'button' : undefined"
+                class="d-flex align-items-center justify-content-center flex-shrink-0 rounded border"
+                :class="canOutdent(editCats, row.cat) ? 'border-secondary' : 'border-secondary-subtle opacity-50'"
+                style="width: 2.5rem; height: calc(2.25rem + 2px)"
+                @click="canOutdent(editCats, row.cat) && editCatMove(outdentCategory, row.cat)"
+                :title="t('settings.settingsPage.outdentCategory')"
+              >
+                <font-awesome-icon icon="outdent" style="color: var(--bs-secondary)" />
               </span>
-              <span role="button" class="d-flex align-items-center justify-content-center flex-shrink-0 rounded border border-secondary" style="width: 2.5rem; height: calc(2.25rem + 2px);" @click="editCatAddSub(row.cat)" :title="t('designer.addSubcategory')">
-                <font-awesome-icon icon="plus" style="color: var(--bs-secondary);" />
+              <span
+                role="button"
+                class="d-flex align-items-center justify-content-center flex-shrink-0 rounded border border-secondary"
+                style="width: 2.5rem; height: calc(2.25rem + 2px)"
+                @click="editCatAddSub(row.cat)"
+                :title="t('designer.addSubcategory')"
+              >
+                <font-awesome-icon icon="plus" style="color: var(--bs-secondary)" />
               </span>
-              <span role="button" class="d-flex align-items-center justify-content-center flex-shrink-0 rounded border border-danger" style="width: 2.5rem; height: calc(2.25rem + 2px);" @click="editCatRemove(row.cat)" :title="t('common.delete')">
-                <font-awesome-icon icon="trash" style="color: var(--bs-danger);" />
+              <span
+                role="button"
+                class="d-flex align-items-center justify-content-center flex-shrink-0 rounded border border-danger"
+                style="width: 2.5rem; height: calc(2.25rem + 2px)"
+                @click="editCatRemove(row.cat)"
+                :title="t('common.delete')"
+              >
+                <font-awesome-icon icon="trash" style="color: var(--bs-danger)" />
               </span>
             </template>
-            <span v-else class="badge bg-secondary-subtle text-muted d-flex align-items-center flex-shrink-0" style="height: calc(2.25rem + 2px);">{{ t('settings.settingsPage.requiredItem') }}</span>
+            <span
+              v-else
+              class="badge bg-secondary-subtle text-muted d-flex align-items-center flex-shrink-0"
+              style="height: calc(2.25rem + 2px)"
+              >{{ t('settings.settingsPage.requiredItem') }}</span
+            >
           </div>
-          <div v-if="editCatIconIdx !== null" class="mt-2 p-3 rounded" style="background: var(--bs-tertiary-bg);">
-            <div class="fw-semibold mb-2">{{ t('designer.chooseIcon') }}: {{ flatEditCats[editCatIconIdx]?.cat?.name || '' }}</div>
-            <BsInput :isFloating="false" v-model="editCatIconSearch" :label="t('designer.searchIcons')" icon="magnifying-glass" placeholder="search..." class="mb-2" />
+          <div v-if="editCatIconIdx !== null" class="mt-2 p-3 rounded" style="background: var(--bs-tertiary-bg)">
+            <div class="fw-semibold mb-2">
+              {{ t('designer.chooseIcon') }}: {{ flatEditCats[editCatIconIdx]?.cat?.name || '' }}
+            </div>
+            <BsInput
+              :isFloating="false"
+              v-model="editCatIconSearch"
+              :label="t('designer.searchIcons')"
+              icon="magnifying-glass"
+              placeholder="search..."
+              class="mb-2"
+            />
             <div class="icon-grid">
-              <div v-for="ic in filteredEditCatIcons" :key="'ecicon-' + ic" class="icon-cell" :class="{ 'icon-selected': flatEditCats[editCatIconIdx]?.cat?.icon === ic }" role="button" :title="ic" @click="editCatSelectIcon(editCatIconIdx, ic)">
+              <div
+                v-for="ic in filteredEditCatIcons"
+                :key="'ecicon-' + ic"
+                class="icon-cell"
+                :class="{ 'icon-selected': flatEditCats[editCatIconIdx]?.cat?.icon === ic }"
+                role="button"
+                :title="ic"
+                @click="editCatSelectIcon(editCatIconIdx, ic)"
+              >
                 <FaIcon :icon="ic" size="xl" />
                 <small class="icon-label">{{ ic }}</small>
               </div>
             </div>
-            <div v-if="filteredEditCatIcons.length === 0" class="text-muted text-center py-3">{{ t('designer.noIconsFound') }}</div>
+            <div v-if="filteredEditCatIcons.length === 0" class="text-muted text-center py-3">
+              {{ t('designer.noIconsFound') }}
+            </div>
           </div>
         </template>
         <template #footer>
@@ -3969,15 +5195,25 @@ onBeforeUnmount(() => {
         <template #default>
           <BsInput :isFloating="false" v-model="newRole.name" :label="t('designer.roleName')" icon="tag" class="mb-3" />
           <label class="form-label fw-bold">{{ t('settings.settingsPage.groups') }}</label>
-          <div v-for="(grp, gIdx) in newRole.groups" :key="'addgrp-' + gIdx" class="d-flex align-items-center gap-2 mb-2">
-            <select class="form-select provider-select" v-model="grp.provider" @change="onRoleProviderChange(grp, 'group')">
+          <div
+            v-for="(grp, gIdx) in newRole.groups"
+            :key="'addgrp-' + gIdx"
+            class="d-flex align-items-center gap-2 mb-2"
+          >
+            <select
+              class="form-select provider-select"
+              v-model="grp.provider"
+              @change="onRoleProviderChange(grp, 'group')"
+            >
               <option v-for="p in authProviders" :key="p" :value="p">{{ p }}</option>
             </select>
             <!-- only 'local' has a directory to pick from ; ldap/azuread/oidc
                  stay free text, and so does local when the list could not be
                  fetched (a designer without user administration rights) -->
             <select v-if="grp.provider === 'local' && sortedLocalGroups.length" class="form-select" v-model="grp.name">
-              <option v-for="g in localGroupOptions(grp.name)" :key="'addgrpopt-' + gIdx + '-' + g" :value="g">{{ g }}</option>
+              <option v-for="g in localGroupOptions(grp.name)" :key="'addgrpopt-' + gIdx + '-' + g" :value="g">
+                {{ g }}
+              </option>
             </select>
             <input v-else class="form-control" v-model="grp.name" placeholder="groupname" />
             <button class="btn btn-sm btn-outline-danger" @click="roleRemoveGroup(newRole, gIdx)">
@@ -3985,15 +5221,27 @@ onBeforeUnmount(() => {
             </button>
           </div>
           <div :class="[newRole.groups.length > 0 ? 'mt-3' : 'mt-1', 'mb-4']">
-            <BsButton icon="plus" colorClass="secondary" @click="roleAddGroup(newRole)">{{ t('settings.settingsPage.addGroup') }}</BsButton>
+            <BsButton icon="plus" colorClass="secondary" @click="roleAddGroup(newRole)">{{
+              t('settings.settingsPage.addGroup')
+            }}</BsButton>
           </div>
           <label class="form-label fw-bold">{{ t('settings.settingsPage.users') }}</label>
-          <div v-for="(usr, uIdx) in newRole.users" :key="'adduser-' + uIdx" class="d-flex align-items-center gap-2 mb-2">
-            <select class="form-select provider-select" v-model="usr.provider" @change="onRoleProviderChange(usr, 'user')">
+          <div
+            v-for="(usr, uIdx) in newRole.users"
+            :key="'adduser-' + uIdx"
+            class="d-flex align-items-center gap-2 mb-2"
+          >
+            <select
+              class="form-select provider-select"
+              v-model="usr.provider"
+              @change="onRoleProviderChange(usr, 'user')"
+            >
               <option v-for="p in authProviders" :key="p" :value="p">{{ p }}</option>
             </select>
             <select v-if="usr.provider === 'local' && sortedLocalUsers.length" class="form-select" v-model="usr.name">
-              <option v-for="u in localUserOptions(usr.name)" :key="'adduseropt-' + uIdx + '-' + u" :value="u">{{ u }}</option>
+              <option v-for="u in localUserOptions(usr.name)" :key="'adduseropt-' + uIdx + '-' + u" :value="u">
+                {{ u }}
+              </option>
             </select>
             <input v-else class="form-control" v-model="usr.name" placeholder="username" />
             <button class="btn btn-sm btn-outline-danger" @click="roleRemoveUser(newRole, uIdx)">
@@ -4001,12 +5249,19 @@ onBeforeUnmount(() => {
             </button>
           </div>
           <div :class="[newRole.users.length > 0 ? 'mt-3' : 'mt-1', 'mb-4']">
-            <BsButton icon="plus" colorClass="secondary" @click="roleAddUser(newRole)">{{ t('settings.settingsPage.addUser') }}</BsButton>
+            <BsButton icon="plus" colorClass="secondary" @click="roleAddUser(newRole)">{{
+              t('settings.settingsPage.addUser')
+            }}</BsButton>
           </div>
           <label class="form-label fw-bold">{{ t('settings.settingsPage.options') }}</label>
           <div class="row row-cols-2 row-cols-md-3 g-0 role-options mb-3">
             <div v-for="optKey in roleOptionKeys" :key="'addopt-' + optKey" class="col">
-              <BsInput type="checkbox" :isSwitch="true" v-model="newRole.options[optKey]" :label="roleOptionLabel(optKey)" />
+              <BsInput
+                type="checkbox"
+                :isSwitch="true"
+                v-model="newRole.options[optKey]"
+                :label="roleOptionLabel(optKey)"
+              />
             </div>
           </div>
         </template>
@@ -4021,62 +5276,117 @@ onBeforeUnmount(() => {
         <template #default>
           <div v-if="editRoles.length === 0" class="text-muted text-center py-3">{{ t('designer.noRoles') }}</div>
           <div v-for="(role, rIdx) in editRoles" :key="'editrole-' + role._uid" class="border rounded mb-2">
-            <div class="d-flex align-items-center justify-content-between px-3 py-2 role-header" @click="toggleEditRole(role._uid)">
+            <div
+              class="d-flex align-items-center justify-content-between px-3 py-2 role-header"
+              @click="toggleEditRole(role._uid)"
+            >
               <div class="d-flex align-items-center gap-2">
                 <FaIcon :icon="expandedEditRoles[role._uid] ? 'chevron-down' : 'chevron-right'" class="text-muted" />
                 <strong>{{ role.name || '(unnamed)' }}</strong>
-                <span v-if="role._required" class="badge bg-secondary-subtle text-muted">{{ t('settings.settingsPage.requiredItem') }}</span>
+                <span v-if="role._required" class="badge bg-secondary-subtle text-muted">{{
+                  t('settings.settingsPage.requiredItem')
+                }}</span>
               </div>
-              <button v-if="!role._required" class="btn btn-sm btn-outline-danger" @click.stop="editRoleRemove(rIdx)" :title="t('common.delete')">
+              <button
+                v-if="!role._required"
+                class="btn btn-sm btn-outline-danger"
+                @click.stop="editRoleRemove(rIdx)"
+                :title="t('common.delete')"
+              >
                 <FaIcon icon="trash" />
               </button>
             </div>
             <div v-show="expandedEditRoles[role._uid]" class="px-3 pb-3">
-            <div class="mb-3">
-              <label class="form-label fw-bold">{{ t('designer.roleName') }}</label>
-              <input type="text" class="form-control" v-model="role.name" :disabled="role._required" />
-            </div>
-            <template v-if="!role._public">
-              <label class="form-label fw-bold">{{ t('settings.settingsPage.groups') }}</label>
-              <div v-for="(grp, gIdx) in role.groups" :key="'egrp-' + rIdx + '-' + gIdx" class="d-flex align-items-center gap-2 mb-2">
-                <select class="form-select provider-select" v-model="grp.provider" @change="onRoleProviderChange(grp, 'group')">
-                  <option v-for="p in authProviders" :key="p" :value="p">{{ p }}</option>
-                </select>
-                <select v-if="grp.provider === 'local' && sortedLocalGroups.length" class="form-select" v-model="grp.name">
-                  <option v-for="g in localGroupOptions(grp.name)" :key="'egrpopt-' + rIdx + '-' + gIdx + '-' + g" :value="g">{{ g }}</option>
-                </select>
-                <input v-else class="form-control" v-model="grp.name" placeholder="groupname" />
-                <button class="btn btn-sm btn-outline-danger" @click="roleRemoveGroup(role, gIdx)">
-                  <FaIcon icon="times" />
-                </button>
+              <div class="mb-3">
+                <label class="form-label fw-bold">{{ t('designer.roleName') }}</label>
+                <input type="text" class="form-control" v-model="role.name" :disabled="role._required" />
               </div>
-              <div :class="[role.groups.length > 0 ? 'mt-3' : 'mt-1', 'mb-4']">
-                <BsButton icon="plus" colorClass="secondary" @click="roleAddGroup(role)">{{ t('settings.settingsPage.addGroup') }}</BsButton>
+              <template v-if="!role._public">
+                <label class="form-label fw-bold">{{ t('settings.settingsPage.groups') }}</label>
+                <div
+                  v-for="(grp, gIdx) in role.groups"
+                  :key="'egrp-' + rIdx + '-' + gIdx"
+                  class="d-flex align-items-center gap-2 mb-2"
+                >
+                  <select
+                    class="form-select provider-select"
+                    v-model="grp.provider"
+                    @change="onRoleProviderChange(grp, 'group')"
+                  >
+                    <option v-for="p in authProviders" :key="p" :value="p">{{ p }}</option>
+                  </select>
+                  <select
+                    v-if="grp.provider === 'local' && sortedLocalGroups.length"
+                    class="form-select"
+                    v-model="grp.name"
+                  >
+                    <option
+                      v-for="g in localGroupOptions(grp.name)"
+                      :key="'egrpopt-' + rIdx + '-' + gIdx + '-' + g"
+                      :value="g"
+                    >
+                      {{ g }}
+                    </option>
+                  </select>
+                  <input v-else class="form-control" v-model="grp.name" placeholder="groupname" />
+                  <button class="btn btn-sm btn-outline-danger" @click="roleRemoveGroup(role, gIdx)">
+                    <FaIcon icon="times" />
+                  </button>
+                </div>
+                <div :class="[role.groups.length > 0 ? 'mt-3' : 'mt-1', 'mb-4']">
+                  <BsButton icon="plus" colorClass="secondary" @click="roleAddGroup(role)">{{
+                    t('settings.settingsPage.addGroup')
+                  }}</BsButton>
+                </div>
+                <label class="form-label fw-bold">{{ t('settings.settingsPage.users') }}</label>
+                <div
+                  v-for="(usr, uIdx) in role.users"
+                  :key="'euser-' + rIdx + '-' + uIdx"
+                  class="d-flex align-items-center gap-2 mb-2"
+                >
+                  <select
+                    class="form-select provider-select"
+                    v-model="usr.provider"
+                    @change="onRoleProviderChange(usr, 'user')"
+                  >
+                    <option v-for="p in authProviders" :key="p" :value="p">{{ p }}</option>
+                  </select>
+                  <select
+                    v-if="usr.provider === 'local' && sortedLocalUsers.length"
+                    class="form-select"
+                    v-model="usr.name"
+                  >
+                    <option
+                      v-for="u in localUserOptions(usr.name)"
+                      :key="'euseropt-' + rIdx + '-' + uIdx + '-' + u"
+                      :value="u"
+                    >
+                      {{ u }}
+                    </option>
+                  </select>
+                  <input v-else class="form-control" v-model="usr.name" placeholder="username" />
+                  <button class="btn btn-sm btn-outline-danger" @click="roleRemoveUser(role, uIdx)">
+                    <FaIcon icon="times" />
+                  </button>
+                </div>
+                <div :class="[role.users.length > 0 ? 'mt-3' : 'mt-1', 'mb-4']">
+                  <BsButton icon="plus" colorClass="secondary" @click="roleAddUser(role)">{{
+                    t('settings.settingsPage.addUser')
+                  }}</BsButton>
+                </div>
+              </template>
+              <p v-else class="text-muted small mt-1 mb-4">{{ t('settings.settingsPage.publicRoleNote') }}</p>
+              <label class="form-label fw-bold">{{ t('settings.settingsPage.options') }}</label>
+              <div class="row row-cols-2 row-cols-md-3 g-0 role-options mb-2">
+                <div v-for="optKey in roleOptionKeys" :key="'eopt-' + rIdx + '-' + optKey" class="col">
+                  <BsInput
+                    type="checkbox"
+                    :isSwitch="true"
+                    v-model="role.options[optKey]"
+                    :label="roleOptionLabel(optKey)"
+                  />
+                </div>
               </div>
-              <label class="form-label fw-bold">{{ t('settings.settingsPage.users') }}</label>
-              <div v-for="(usr, uIdx) in role.users" :key="'euser-' + rIdx + '-' + uIdx" class="d-flex align-items-center gap-2 mb-2">
-                <select class="form-select provider-select" v-model="usr.provider" @change="onRoleProviderChange(usr, 'user')">
-                  <option v-for="p in authProviders" :key="p" :value="p">{{ p }}</option>
-                </select>
-                <select v-if="usr.provider === 'local' && sortedLocalUsers.length" class="form-select" v-model="usr.name">
-                  <option v-for="u in localUserOptions(usr.name)" :key="'euseropt-' + rIdx + '-' + uIdx + '-' + u" :value="u">{{ u }}</option>
-                </select>
-                <input v-else class="form-control" v-model="usr.name" placeholder="username" />
-                <button class="btn btn-sm btn-outline-danger" @click="roleRemoveUser(role, uIdx)">
-                  <FaIcon icon="times" />
-                </button>
-              </div>
-              <div :class="[role.users.length > 0 ? 'mt-3' : 'mt-1', 'mb-4']">
-                <BsButton icon="plus" colorClass="secondary" @click="roleAddUser(role)">{{ t('settings.settingsPage.addUser') }}</BsButton>
-              </div>
-            </template>
-            <p v-else class="text-muted small mt-1 mb-4">{{ t('settings.settingsPage.publicRoleNote') }}</p>
-            <label class="form-label fw-bold">{{ t('settings.settingsPage.options') }}</label>
-            <div class="row row-cols-2 row-cols-md-3 g-0 role-options mb-2">
-              <div v-for="optKey in roleOptionKeys" :key="'eopt-' + rIdx + '-' + optKey" class="col">
-                <BsInput type="checkbox" :isSwitch="true" v-model="role.options[optKey]" :label="roleOptionLabel(optKey)" />
-              </div>
-            </div>
             </div>
           </div>
         </template>
@@ -4093,11 +5403,28 @@ onBeforeUnmount(() => {
             <label class="form-label fw-bold">{{ t('designer.parentConstant') }}</label>
             <select class="form-select" v-model="newConstParent" :disabled="!hasAnyConstants">
               <option value="">{{ t('designer.topLevel') }}</option>
-              <option v-for="(p, idx) in addConstParents" :key="'constparent-' + idx" :value="String(idx)">{{ p.label }}</option>
+              <option v-for="(p, idx) in addConstParents" :key="'constparent-' + idx" :value="String(idx)">
+                {{ p.label }}
+              </option>
             </select>
           </div>
-          <BsInput :isFloating="false" v-model="newConstKey" :label="t('settings.settingsPage.key')" icon="tag" placeholder="CONSTANT_NAME" class="mb-3" />
-          <BsInput :isFloating="false" type="textarea" :rows="3" v-model="newConstValue" :label="t('settings.settingsPage.value')" icon="pen" :placeholder="t('settings.settingsPage.constantValuePlaceholder')" />
+          <BsInput
+            :isFloating="false"
+            v-model="newConstKey"
+            :label="t('settings.settingsPage.key')"
+            icon="tag"
+            placeholder="CONSTANT_NAME"
+            class="mb-3"
+          />
+          <BsInput
+            :isFloating="false"
+            type="textarea"
+            :rows="3"
+            v-model="newConstValue"
+            :label="t('settings.settingsPage.value')"
+            icon="pen"
+            :placeholder="t('settings.settingsPage.constantValuePlaceholder')"
+          />
         </template>
         <template #footer>
           <BsButton icon="plus" @click="doAddConstant()">{{ t('designer.addConstant') }}</BsButton>
@@ -4108,29 +5435,71 @@ onBeforeUnmount(() => {
       <BsModal v-if="showEditConstants" @close="showEditConstants = false">
         <template #title> {{ t('designer.editConstants') }} </template>
         <template #default>
-          <div v-if="editConsts.length === 0" class="text-muted text-center py-3">{{ t('settings.settingsPage.noConstants') }}</div>
-          <div v-for="(entry, idx) in flatEditConsts" :key="'editconst-' + entry.row._uid" class="d-flex align-items-end gap-2 mb-2" :style="{ paddingLeft: entry.depth * 1 + 'rem' }">
-            <FaIcon v-if="entry.depth > 0" icon="level-up-alt" class="text-muted fa-rotate-90 flex-shrink-0" style="font-size: 0.75rem; margin-bottom: 0.75rem;" />
-            <div class="flex-shrink-0" style="width: 14rem;">
-              <label v-if="idx === 0 || flatEditConsts[idx - 1].depth !== entry.depth" class="form-label fw-bold">{{ t('settings.settingsPage.key') }}</label>
+          <div v-if="editConsts.length === 0" class="text-muted text-center py-3">
+            {{ t('settings.settingsPage.noConstants') }}
+          </div>
+          <div
+            v-for="(entry, idx) in flatEditConsts"
+            :key="'editconst-' + entry.row._uid"
+            class="d-flex align-items-end gap-2 mb-2"
+            :style="{ paddingLeft: entry.depth * 1 + 'rem' }"
+          >
+            <FaIcon
+              v-if="entry.depth > 0"
+              icon="level-up-alt"
+              class="text-muted fa-rotate-90 flex-shrink-0"
+              style="font-size: 0.75rem; margin-bottom: 0.75rem"
+            />
+            <div class="flex-shrink-0" style="width: 14rem">
+              <label v-if="idx === 0 || flatEditConsts[idx - 1].depth !== entry.depth" class="form-label fw-bold">{{
+                t('settings.settingsPage.key')
+              }}</label>
               <input type="text" class="form-control" v-model="entry.row.key" />
             </div>
             <div class="flex-grow-1">
               <template v-if="entry.row.children && entry.row.children.length > 0">
-                <label v-if="idx === 0 || flatEditConsts[idx - 1].depth !== entry.depth" class="form-label fw-bold">{{ t('settings.settingsPage.value') }}</label>
-                <div class="form-control bg-body-tertiary text-muted fst-italic" style="cursor: default;">{{ entry.row.children.length }} {{ entry.row.children.length === 1 ? t('settings.settingsPage.subkey') : t('settings.settingsPage.subkeys') }}</div>
+                <label v-if="idx === 0 || flatEditConsts[idx - 1].depth !== entry.depth" class="form-label fw-bold">{{
+                  t('settings.settingsPage.value')
+                }}</label>
+                <div class="form-control bg-body-tertiary text-muted fst-italic" style="cursor: default">
+                  {{ entry.row.children.length }}
+                  {{
+                    entry.row.children.length === 1
+                      ? t('settings.settingsPage.subkey')
+                      : t('settings.settingsPage.subkeys')
+                  }}
+                </div>
               </template>
               <template v-else>
-                <label v-if="idx === 0 || flatEditConsts[idx - 1].depth !== entry.depth" class="form-label fw-bold">{{ t('settings.settingsPage.value') }}</label>
-                <textarea class="form-control" :rows="constantValueRows(entry.row.value)" v-model="entry.row.value" :placeholder="t('settings.settingsPage.constantValuePlaceholder')"></textarea>
+                <label v-if="idx === 0 || flatEditConsts[idx - 1].depth !== entry.depth" class="form-label fw-bold">{{
+                  t('settings.settingsPage.value')
+                }}</label>
+                <textarea
+                  class="form-control"
+                  :rows="constantValueRows(entry.row.value)"
+                  v-model="entry.row.value"
+                  :placeholder="t('settings.settingsPage.constantValuePlaceholder')"
+                ></textarea>
               </template>
             </div>
-            <div class="d-flex gap-2 flex-shrink-0" style="margin-bottom: 1px;">
-              <span role="button" class="d-flex align-items-center justify-content-center rounded border border-secondary" style="width: 2.25rem; height: calc(2.25rem + 2px);" @click="editConstAddSub(entry.row)" :title="t('settings.settingsPage.addSubkey')">
-                <font-awesome-icon icon="plus" style="color: var(--bs-secondary);" />
+            <div class="d-flex gap-2 flex-shrink-0" style="margin-bottom: 1px">
+              <span
+                role="button"
+                class="d-flex align-items-center justify-content-center rounded border border-secondary"
+                style="width: 2.25rem; height: calc(2.25rem + 2px)"
+                @click="editConstAddSub(entry.row)"
+                :title="t('settings.settingsPage.addSubkey')"
+              >
+                <font-awesome-icon icon="plus" style="color: var(--bs-secondary)" />
               </span>
-              <span role="button" class="d-flex align-items-center justify-content-center rounded border border-danger" style="width: 2.25rem; height: calc(2.25rem + 2px);" @click="editConstRemove(entry.row)" :title="t('common.delete')">
-                <font-awesome-icon icon="trash" style="color: var(--bs-danger);" />
+              <span
+                role="button"
+                class="d-flex align-items-center justify-content-center rounded border border-danger"
+                style="width: 2.25rem; height: calc(2.25rem + 2px)"
+                @click="editConstRemove(entry.row)"
+                :title="t('common.delete')"
+              >
+                <font-awesome-icon icon="trash" style="color: var(--bs-danger)" />
               </span>
             </div>
           </div>
@@ -4145,7 +5514,15 @@ onBeforeUnmount(() => {
         <template #title> {{ t('designer.chooseBackground') }} </template>
         <template #default>
           <div class="tile-grid">
-            <div v-for="opt in tileOptions" :key="'tile-' + opt.value" class="tile-cell" :class="{ 'tile-selected': selectedTile === opt.value }" role="button" :title="opt.value" @click="selectedTile = opt.value">
+            <div
+              v-for="opt in tileOptions"
+              :key="'tile-' + opt.value"
+              class="tile-cell"
+              :class="{ 'tile-selected': selectedTile === opt.value }"
+              role="button"
+              :title="opt.value"
+              @click="selectedTile = opt.value"
+            >
               <div class="tile-swatch" :style="{ backgroundColor: opt.color }"></div>
               <small class="tile-label">{{ opt.label }}</small>
             </div>
@@ -4160,9 +5537,19 @@ onBeforeUnmount(() => {
       <BsModal v-if="showImagePicker" @close="showImagePicker = false">
         <template #title> {{ t('designer.chooseImage') }} </template>
         <template #default>
-          <BsInput :isFloating="false" v-model="imageUrl" :label="t('designer.imageUrl')" icon="link" placeholder="https://... or data:image/..." />
-          <div v-if="imageUrl" class="d-flex justify-content-center mt-3 p-3 rounded" style="background: var(--bs-tertiary-bg);">
-            <img :src="imageUrl" style="max-width: 100%; max-height: 200px; object-fit: contain;" />
+          <BsInput
+            :isFloating="false"
+            v-model="imageUrl"
+            :label="t('designer.imageUrl')"
+            icon="link"
+            placeholder="https://... or data:image/..."
+          />
+          <div
+            v-if="imageUrl"
+            class="d-flex justify-content-center mt-3 p-3 rounded"
+            style="background: var(--bs-tertiary-bg)"
+          >
+            <img :src="imageUrl" style="max-width: 100%; max-height: 200px; object-fit: contain" />
           </div>
         </template>
         <template #footer>
@@ -4185,64 +5572,206 @@ onBeforeUnmount(() => {
               </select>
             </div>
             <div class="col-12">
-              <BsInput :isFloating="false" v-model="formSettings.description" :label="t('designer.formDescription')" icon="align-left" />
+              <BsInput
+                :isFloating="false"
+                v-model="formSettings.description"
+                :label="t('designer.formDescription')"
+                icon="align-left"
+              />
             </div>
             <div class="col-md-6" v-if="formSettings.type === 'ansible'">
-              <BsInput :isFloating="false" v-model="formSettings.playbook" :label="t('designer.formPlaybook')" icon="play" />
+              <BsInput
+                :isFloating="false"
+                v-model="formSettings.playbook"
+                :label="t('designer.formPlaybook')"
+                icon="play"
+              />
             </div>
             <div class="col-md-6" v-if="formSettings.type === 'awx'">
-              <BsInput :isFloating="false" v-model="formSettings.template" :label="t('designer.formTemplate')" icon="layer-group" />
+              <BsInput
+                :isFloating="false"
+                v-model="formSettings.template"
+                :label="t('designer.formTemplate')"
+                icon="layer-group"
+              />
             </div>
             <!-- only the keys the selected type allows are editable : the schema
                  forbids the others for that type (see forbiddenFormKeys) -->
             <div class="col-md-6" v-if="formTypeAllows('inventory')">
-              <BsInput :isFloating="false" v-model="formSettings.inventory" :label="t('designer.formInventory')" icon="server" />
+              <BsInput
+                :isFloating="false"
+                v-model="formSettings.inventory"
+                :label="t('designer.formInventory')"
+                icon="server"
+              />
             </div>
             <template v-if="formSettings.type === 'awx'">
               <div class="col-md-4">
-                <BsInput :isFloating="false" v-model="formSettings.scmBranch" :label="t('designer.formScmBranch')" icon="code-branch" />
+                <BsInput
+                  :isFloating="false"
+                  v-model="formSettings.scmBranch"
+                  :label="t('designer.formScmBranch')"
+                  icon="code-branch"
+                />
               </div>
               <div class="col-md-4">
-                <BsInput :isFloating="false" v-model="formSettings.executionEnvironment" :label="t('designer.formExecEnv')" icon="box" />
+                <BsInput
+                  :isFloating="false"
+                  v-model="formSettings.executionEnvironment"
+                  :label="t('designer.formExecEnv')"
+                  icon="box"
+                />
               </div>
               <div class="col-md-4">
-                <BsInput :isFloating="false" v-model="formSettings.instanceGroups" :label="t('designer.formInstanceGroups')" icon="server" />
+                <BsInput
+                  :isFloating="false"
+                  v-model="formSettings.instanceGroups"
+                  :label="t('designer.formInstanceGroups')"
+                  icon="server"
+                />
               </div>
             </template>
             <div class="col-md-6" v-if="formTypeAllows('ansibleCredentials')">
-              <BsInput :isFloating="false" v-model="formSettings.ansibleCredentials" :label="t('designer.formAnsibleCreds')" icon="key" />
+              <BsInput
+                :isFloating="false"
+                v-model="formSettings.ansibleCredentials"
+                :label="t('designer.formAnsibleCreds')"
+                icon="key"
+              />
             </div>
             <div class="col-md-6" v-if="formTypeAllows('vaultCredentials')">
-              <BsInput :isFloating="false" v-model="formSettings.vaultCredentials" :label="t('designer.formVaultCreds')" icon="lock" />
+              <BsInput
+                :isFloating="false"
+                v-model="formSettings.vaultCredentials"
+                :label="t('designer.formVaultCreds')"
+                icon="lock"
+              />
             </div>
             <div class="col-md-4" v-if="formTypeAllows('tags')">
               <BsInput :isFloating="false" v-model="formSettings.tags" :label="t('designer.formTags')" icon="tags" />
             </div>
             <div class="col-md-4" v-if="formTypeAllows('limit')">
-              <BsInput :isFloating="false" v-model="formSettings.limit" :label="t('designer.formLimit')" icon="filter" />
+              <BsInput
+                :isFloating="false"
+                v-model="formSettings.limit"
+                :label="t('designer.formLimit')"
+                icon="filter"
+              />
             </div>
             <div class="col-md-4" v-if="formTypeAllows('order')">
-              <BsInput :isFloating="false" v-model="formSettings.order" :label="t('designer.formOrder')" icon="sort" type="number" />
+              <BsInput
+                :isFloating="false"
+                v-model="formSettings.order"
+                :label="t('designer.formOrder')"
+                icon="sort"
+                type="number"
+              />
             </div>
             <div class="col-md-4" v-if="formTypeAllows('launchValidation') && !formSettings.hasWizard">
-              <BsInput :isFloating="false" type="select" v-model="formSettings.launchValidation" name="launchValidation" :values="launchValidationOptions" :label="t('designer.formLaunchValidation')" :help="t('designer.formLaunchValidationHelp')" icon="shield-halved" />
+              <BsInput
+                :isFloating="false"
+                type="select"
+                v-model="formSettings.launchValidation"
+                name="launchValidation"
+                :values="launchValidationOptions"
+                :label="t('designer.formLaunchValidation')"
+                :help="t('designer.formLaunchValidationHelp')"
+                icon="shield-halved"
+              />
             </div>
             <div class="col-md-4" v-if="formTypeAllows('userExtravars')">
-              <BsInput :isFloating="false" v-model="formSettings.userExtravars" :label="t('designer.formUserExtravars')" :help="t('designer.formUserExtravarsHelp')" icon="user-shield" placeholder="username,email,type" />
+              <BsInput
+                :isFloating="false"
+                v-model="formSettings.userExtravars"
+                :label="t('designer.formUserExtravars')"
+                :help="t('designer.formUserExtravarsHelp')"
+                icon="user-shield"
+                placeholder="username,email,type"
+              />
             </div>
             <div class="col-12">
-              <BsInput :isFloating="false" type="textarea" v-model="formSettings.help" :label="t('designer.helpText')" icon="circle-question" rows="3" />
+              <BsInput
+                :isFloating="false"
+                type="textarea"
+                v-model="formSettings.help"
+                :label="t('designer.helpText')"
+                icon="circle-question"
+                rows="3"
+              />
             </div>
             <div class="col-12" style="margin-top: 0.25rem">
               <div class="d-flex flex-wrap gap-4">
-                <BsInput :isFloating="false" :isInline="true" type="checkbox" v-model="formSettings.showHelp" :isSwitch="true" :label="t('designer.showHelpByDefault')" />
-                <BsInput v-if="formTypeAllows('check')" :isFloating="false" :isInline="true" type="checkbox" v-model="formSettings.check" :isSwitch="true" :label="t('designer.formCheck')" />
-                <BsInput v-if="formTypeAllows('diff')" :isFloating="false" :isInline="true" type="checkbox" v-model="formSettings.diff" :isSwitch="true" :label="t('designer.formDiff')" />
-                <BsInput v-if="formTypeAllows('allowRelaunch')" :isFloating="false" :isInline="true" type="checkbox" v-model="formSettings.allowRelaunch" :isSwitch="true" :label="t('designer.formAllowRelaunch')" />
-                <BsInput v-if="formTypeAllows('abortable')" :isFloating="false" :isInline="true" type="checkbox" v-model="formSettings.abortable" :isSwitch="true" :label="t('designer.formAbortable')" />
-                <BsInput v-if="formTypeAllows('enableForChat') && !formSettings.hasWizard" :isFloating="false" :isInline="true" type="checkbox" v-model="formSettings.enableForChat" :isSwitch="true" :label="t('designer.formChat')" />
-                <BsInput v-if="formTypeAllows('verbose')" :isFloating="false" :isInline="true" type="checkbox" v-model="formSettings.verbose" :isSwitch="true" :label="t('designer.formVerbose')" />
-                <BsInput v-if="formTypeAllows('keepExtravars')" :isFloating="false" :isInline="true" type="checkbox" v-model="formSettings.keepExtravars" :isSwitch="true" :label="t('designer.formKeepExtravars')" />
+                <BsInput
+                  :isFloating="false"
+                  :isInline="true"
+                  type="checkbox"
+                  v-model="formSettings.showHelp"
+                  :isSwitch="true"
+                  :label="t('designer.showHelpByDefault')"
+                />
+                <BsInput
+                  v-if="formTypeAllows('check')"
+                  :isFloating="false"
+                  :isInline="true"
+                  type="checkbox"
+                  v-model="formSettings.check"
+                  :isSwitch="true"
+                  :label="t('designer.formCheck')"
+                />
+                <BsInput
+                  v-if="formTypeAllows('diff')"
+                  :isFloating="false"
+                  :isInline="true"
+                  type="checkbox"
+                  v-model="formSettings.diff"
+                  :isSwitch="true"
+                  :label="t('designer.formDiff')"
+                />
+                <BsInput
+                  v-if="formTypeAllows('allowRelaunch')"
+                  :isFloating="false"
+                  :isInline="true"
+                  type="checkbox"
+                  v-model="formSettings.allowRelaunch"
+                  :isSwitch="true"
+                  :label="t('designer.formAllowRelaunch')"
+                />
+                <BsInput
+                  v-if="formTypeAllows('abortable')"
+                  :isFloating="false"
+                  :isInline="true"
+                  type="checkbox"
+                  v-model="formSettings.abortable"
+                  :isSwitch="true"
+                  :label="t('designer.formAbortable')"
+                />
+                <BsInput
+                  v-if="formTypeAllows('enableForChat') && !formSettings.hasWizard"
+                  :isFloating="false"
+                  :isInline="true"
+                  type="checkbox"
+                  v-model="formSettings.enableForChat"
+                  :isSwitch="true"
+                  :label="t('designer.formChat')"
+                />
+                <BsInput
+                  v-if="formTypeAllows('verbose')"
+                  :isFloating="false"
+                  :isInline="true"
+                  type="checkbox"
+                  v-model="formSettings.verbose"
+                  :isSwitch="true"
+                  :label="t('designer.formVerbose')"
+                />
+                <BsInput
+                  v-if="formTypeAllows('keepExtravars')"
+                  :isFloating="false"
+                  :isInline="true"
+                  type="checkbox"
+                  v-model="formSettings.keepExtravars"
+                  :isSwitch="true"
+                  :label="t('designer.formKeepExtravars')"
+                />
               </div>
             </div>
           </div>
@@ -4262,8 +5791,20 @@ onBeforeUnmount(() => {
                  with `margin-left: -1.5em`. Setting padding-left to the bare indent
                  overrode it, so a depth-0 row got 0 padding and its checkbox hung
                  outside the modal's left edge. -->
-            <div v-for="row in flatCategoriesForPicker" :key="'cat-' + row.path" class="form-check" role="button" @click="toggleCat(row.path)" :style="{ paddingLeft: `calc(1.5em + ${row.depth * 1.25}rem)` }">
-              <input class="form-check-input" type="checkbox" :checked="selectedCats.includes(row.path)" @click.stop="toggleCat(row.path)" />
+            <div
+              v-for="row in flatCategoriesForPicker"
+              :key="'cat-' + row.path"
+              class="form-check"
+              role="button"
+              @click="toggleCat(row.path)"
+              :style="{ paddingLeft: `calc(1.5em + ${row.depth * 1.25}rem)` }"
+            >
+              <input
+                class="form-check-input"
+                type="checkbox"
+                :checked="selectedCats.includes(row.path)"
+                @click.stop="toggleCat(row.path)"
+              />
               <label class="form-check-label d-flex align-items-center gap-2" role="button">
                 <FaIcon :icon="row.icon || 'folder'" />
                 <span>{{ row.name }}</span>
@@ -4283,9 +5824,13 @@ onBeforeUnmount(() => {
         <template #default>
           <p class="text-muted small mb-3">{{ t('designer.insertConstantHelp') }}</p>
           <div v-if="insertableConstants.length" class="list-group">
-            <button v-for="c in insertableConstants" :key="'ins-' + c.path" type="button"
+            <button
+              v-for="c in insertableConstants"
+              :key="'ins-' + c.path"
+              type="button"
               class="list-group-item list-group-item-action d-flex justify-content-between align-items-center gap-3"
-              @click="insertConstant(c.path)">
+              @click="insertConstant(c.path)"
+            >
               <code class="text-nowrap">$({{ c.path }})</code>
               <span class="text-muted small text-truncate">{{ c.value }}</span>
             </button>
@@ -4302,8 +5847,19 @@ onBeforeUnmount(() => {
         <template #title> {{ t('designer.assignRoles') }} </template>
         <template #default>
           <div v-if="rolesObj && rolesObj.length" class="d-flex flex-column gap-2">
-            <div v-for="role in rolesObj" :key="'role-' + role.name" class="form-check" role="button" @click="toggleRole(role.name)">
-              <input class="form-check-input" type="checkbox" :checked="selectedRoles.includes(role.name)" @click.stop="toggleRole(role.name)" />
+            <div
+              v-for="role in rolesObj"
+              :key="'role-' + role.name"
+              class="form-check"
+              role="button"
+              @click="toggleRole(role.name)"
+            >
+              <input
+                class="form-check-input"
+                type="checkbox"
+                :checked="selectedRoles.includes(role.name)"
+                @click.stop="toggleRole(role.name)"
+              />
               <label class="form-check-label" role="button">{{ role.name }}</label>
             </div>
           </div>
@@ -4322,23 +5878,31 @@ onBeforeUnmount(() => {
             <table class="table table-sm table-bordered mb-0 field-editor-table">
               <thead>
                 <tr>
-                  <th style="width:30px"></th>
+                  <th style="width: 30px"></th>
                   <th>{{ t('designer.fieldName') }}</th>
                   <th>{{ t('designer.fieldType') }}</th>
-                  <th class="text-center" style="width:70px">{{ t('designer.fieldValues') }}</th>
+                  <th class="text-center" style="width: 70px">{{ t('designer.fieldValues') }}</th>
                   <th>{{ t('designer.fieldLabel') }}</th>
                   <th>{{ t('designer.fieldHelp') }}</th>
                   <th>{{ t('designer.fieldDefault') }}</th>
-                  <th class="text-center" style="width:60px">{{ t('designer.fieldRequired') }}</th>
-                  <th class="text-center" style="width:60px">{{ t('designer.fieldOutput') }}</th>
-                  <th style="width:50px"></th>
+                  <th class="text-center" style="width: 60px">{{ t('designer.fieldRequired') }}</th>
+                  <th class="text-center" style="width: 60px">{{ t('designer.fieldOutput') }}</th>
+                  <th style="width: 50px"></th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(row, i) in fieldEditorRows" :key="i" draggable="true"
-                    @dragstart="fieldDragStart(i)" @dragover="fieldDragOver($event, i)" @dragend="fieldDragEnd"
-                    :class="{ 'field-drag-over': fieldDragIdx === i }">
-                  <td class="text-center align-middle field-grip" role="button"><FaIcon icon="grip-vertical" class="text-muted" size="sm" /></td>
+                <tr
+                  v-for="(row, i) in fieldEditorRows"
+                  :key="i"
+                  draggable="true"
+                  @dragstart="fieldDragStart(i)"
+                  @dragover="fieldDragOver($event, i)"
+                  @dragend="fieldDragEnd"
+                  :class="{ 'field-drag-over': fieldDragIdx === i }"
+                >
+                  <td class="text-center align-middle field-grip" role="button">
+                    <FaIcon icon="grip-vertical" class="text-muted" size="sm" />
+                  </td>
                   <td><input class="form-control form-control-sm font-monospace" v-model="row.name" /></td>
                   <td>
                     <select class="form-select form-select-sm" v-model="row.type">
@@ -4349,25 +5913,48 @@ onBeforeUnmount(() => {
                        list is the one property that has no cell of its own : it
                        opens in a panel under the table -->
                   <td class="text-center align-middle">
-                    <button v-if="fieldTypeAllows(row.type, 'values')" class="btn btn-sm"
-                            :class="fieldValuesIdx === i ? 'btn-primary' : (row.values.length ? 'btn-outline-primary' : 'btn-outline-secondary')"
-                            @click="toggleFieldValues(i)" :title="t('designer.editValues')">
+                    <button
+                      v-if="fieldTypeAllows(row.type, 'values')"
+                      class="btn btn-sm"
+                      :class="
+                        fieldValuesIdx === i
+                          ? 'btn-primary'
+                          : row.values.length
+                            ? 'btn-outline-primary'
+                            : 'btn-outline-secondary'
+                      "
+                      @click="toggleFieldValues(i)"
+                      :title="t('designer.editValues')"
+                    >
                       <FaIcon icon="list-ul" size="sm" /> {{ row.values.length }}
                     </button>
                   </td>
                   <td><input class="form-control form-control-sm" v-model="row.label" /></td>
                   <!-- an input for a key the type forbids would only write a key
                        the apply has to delete again (html forbids help/required) -->
-                  <td><input v-if="fieldTypeAllows(row.type, 'help')" class="form-control form-control-sm" v-model="row.help" /></td>
+                  <td>
+                    <input
+                      v-if="fieldTypeAllows(row.type, 'help')"
+                      class="form-control form-control-sm"
+                      v-model="row.help"
+                    />
+                  </td>
                   <td><input class="form-control form-control-sm" v-model="row.default" /></td>
                   <td class="text-center align-middle">
-                    <input v-if="fieldTypeAllows(row.type, 'required')" type="checkbox" class="form-check-input" v-model="row.required" />
+                    <input
+                      v-if="fieldTypeAllows(row.type, 'required')"
+                      type="checkbox"
+                      class="form-check-input"
+                      v-model="row.required"
+                    />
                   </td>
                   <td class="text-center align-middle">
                     <input type="checkbox" class="form-check-input" v-model="row.output" />
                   </td>
                   <td class="text-center align-middle">
-                    <button class="btn btn-sm btn-outline-danger" @click="removeFieldRow(i)"><FaIcon icon="trash" size="sm" /></button>
+                    <button class="btn btn-sm btn-outline-danger" @click="removeFieldRow(i)">
+                      <FaIcon icon="trash" size="sm" />
+                    </button>
                   </td>
                 </tr>
               </tbody>
@@ -4375,41 +5962,118 @@ onBeforeUnmount(() => {
           </div>
           <!-- the values of one field : a string entry is plain text, an object
                entry is a list of key/value pairs (the schema takes either) -->
-          <div v-if="fieldValuesIdx !== null && fieldEditorRows[fieldValuesIdx] && fieldTypeAllows(fieldEditorRows[fieldValuesIdx].type, 'values')"
-               class="mt-3 p-3 rounded field-values-panel">
+          <div
+            v-if="
+              fieldValuesIdx !== null &&
+              fieldEditorRows[fieldValuesIdx] &&
+              fieldTypeAllows(fieldEditorRows[fieldValuesIdx].type, 'values')
+            "
+            class="mt-3 p-3 rounded field-values-panel"
+          >
             <div class="d-flex justify-content-between align-items-center mb-2">
-              <span class="fw-semibold">{{ t('designer.fieldValues') }} : {{ fieldEditorRows[fieldValuesIdx].name || fieldEditorRows[fieldValuesIdx].type }}</span>
-              <button class="btn btn-sm btn-outline-secondary" @click="fieldValuesIdx = null" :title="t('common.close')"><FaIcon icon="times" size="sm" /></button>
+              <span class="fw-semibold"
+                >{{ t('designer.fieldValues') }} :
+                {{ fieldEditorRows[fieldValuesIdx].name || fieldEditorRows[fieldValuesIdx].type }}</span
+              >
+              <button
+                class="btn btn-sm btn-outline-secondary"
+                @click="fieldValuesIdx = null"
+                :title="t('common.close')"
+              >
+                <FaIcon icon="times" size="sm" />
+              </button>
             </div>
-            <div v-if="fieldEditorRows[fieldValuesIdx].values.length === 0" class="text-muted small mb-2">{{ t('designer.noFieldValues') }}</div>
-            <div v-for="entry in fieldEditorRows[fieldValuesIdx].values" :key="'fv-' + entry._uid" class="d-flex align-items-start gap-2 mb-2">
+            <div v-if="fieldEditorRows[fieldValuesIdx].values.length === 0" class="text-muted small mb-2">
+              {{ t('designer.noFieldValues') }}
+            </div>
+            <div
+              v-for="entry in fieldEditorRows[fieldValuesIdx].values"
+              :key="'fv-' + entry._uid"
+              class="d-flex align-items-start gap-2 mb-2"
+            >
               <div class="d-flex flex-column gap-1 flex-shrink-0">
-                <button class="btn btn-sm btn-outline-secondary py-0" @click="moveFieldValue(entry, -1)" :title="t('designer.moveUp')"><FaIcon icon="chevron-up" size="xs" /></button>
-                <button class="btn btn-sm btn-outline-secondary py-0" @click="moveFieldValue(entry, 1)" :title="t('designer.moveDown')"><FaIcon icon="chevron-down" size="xs" /></button>
+                <button
+                  class="btn btn-sm btn-outline-secondary py-0"
+                  @click="moveFieldValue(entry, -1)"
+                  :title="t('designer.moveUp')"
+                >
+                  <FaIcon icon="chevron-up" size="xs" />
+                </button>
+                <button
+                  class="btn btn-sm btn-outline-secondary py-0"
+                  @click="moveFieldValue(entry, 1)"
+                  :title="t('designer.moveDown')"
+                >
+                  <FaIcon icon="chevron-down" size="xs" />
+                </button>
               </div>
               <div class="flex-grow-1 min-w-0">
-                <input v-if="entry.kind === 'string'" class="form-control form-control-sm" v-model="entry.text" :placeholder="t('settings.settingsPage.value')" />
+                <input
+                  v-if="entry.kind === 'string'"
+                  class="form-control form-control-sm"
+                  v-model="entry.text"
+                  :placeholder="t('settings.settingsPage.value')"
+                />
                 <template v-else-if="entry.kind === 'object'">
-                  <div v-for="(pair, pi) in entry.pairs" :key="'fvp-' + pair._uid" class="d-flex align-items-center gap-2 mb-1">
-                    <input class="form-control form-control-sm font-monospace" style="max-width: 12rem" v-model="pair.key" :placeholder="t('settings.settingsPage.key')" />
-                    <input class="form-control form-control-sm" v-model="pair.value" :placeholder="t('settings.settingsPage.value')" />
-                    <button class="btn btn-sm btn-outline-danger" @click="removeFieldValuePair(entry, pi)" :title="t('common.delete')"><FaIcon icon="times" size="sm" /></button>
+                  <div
+                    v-for="(pair, pi) in entry.pairs"
+                    :key="'fvp-' + pair._uid"
+                    class="d-flex align-items-center gap-2 mb-1"
+                  >
+                    <input
+                      class="form-control form-control-sm font-monospace"
+                      style="max-width: 12rem"
+                      v-model="pair.key"
+                      :placeholder="t('settings.settingsPage.key')"
+                    />
+                    <input
+                      class="form-control form-control-sm"
+                      v-model="pair.value"
+                      :placeholder="t('settings.settingsPage.value')"
+                    />
+                    <button
+                      class="btn btn-sm btn-outline-danger"
+                      @click="removeFieldValuePair(entry, pi)"
+                      :title="t('common.delete')"
+                    >
+                      <FaIcon icon="times" size="sm" />
+                    </button>
                   </div>
-                  <button class="btn btn-sm btn-outline-secondary" @click="addFieldValuePair(entry)"><FaIcon icon="plus" size="sm" class="me-1" />{{ t('designer.addValueProperty') }}</button>
+                  <button class="btn btn-sm btn-outline-secondary" @click="addFieldValuePair(entry)">
+                    <FaIcon icon="plus" size="sm" class="me-1" />{{ t('designer.addValueProperty') }}
+                  </button>
                 </template>
                 <!-- a nested map/list (or an alias) has no shape here : it is kept
                      as it is, only its position and its removal are editable -->
-                <div v-else class="form-control form-control-sm bg-body-tertiary text-muted fst-italic text-truncate" :title="t('designer.valueNotEditable')">{{ entry.preview || t('designer.valueNotEditable') }}</div>
+                <div
+                  v-else
+                  class="form-control form-control-sm bg-body-tertiary text-muted fst-italic text-truncate"
+                  :title="t('designer.valueNotEditable')"
+                >
+                  {{ entry.preview || t('designer.valueNotEditable') }}
+                </div>
               </div>
-              <button class="btn btn-sm btn-outline-danger flex-shrink-0" @click="removeFieldValue(entry)" :title="t('common.delete')"><FaIcon icon="trash" size="sm" /></button>
+              <button
+                class="btn btn-sm btn-outline-danger flex-shrink-0"
+                @click="removeFieldValue(entry)"
+                :title="t('common.delete')"
+              >
+                <FaIcon icon="trash" size="sm" />
+              </button>
             </div>
             <div class="d-flex gap-2 mt-2">
-              <BsButton icon="plus" colorClass="secondary" @click="addFieldValue('string')">{{ t('designer.addValue') }}</BsButton>
-              <BsButton icon="plus" colorClass="secondary" @click="addFieldValue('object')">{{ t('designer.addValueObject') }}</BsButton>
+              <BsButton icon="plus" colorClass="secondary" @click="addFieldValue('string')">{{
+                t('designer.addValue')
+              }}</BsButton>
+              <BsButton icon="plus" colorClass="secondary" @click="addFieldValue('object')">{{
+                t('designer.addValueObject')
+              }}</BsButton>
             </div>
           </div>
           <div class="d-flex justify-content-end mt-2">
-            <BsButton icon="plus" colorClass="primary" cssClass="btn-sm" @click="addFieldRow()">{{ t('designer.addField') }}</BsButton>
+            <BsButton icon="plus" colorClass="primary" cssClass="btn-sm" @click="addFieldRow()">{{
+              t('designer.addField')
+            }}</BsButton>
           </div>
         </template>
         <template #footer>
@@ -4419,39 +6083,93 @@ onBeforeUnmount(() => {
 
       <!-- Context menu -->
       <Teleport to="body">
-        <div v-if="ctxMenu.show" class="ctx-menu" :style="{ left: ctxMenu.x + 'px', top: ctxMenu.y + 'px' }" @click="closeContextMenu()">
+        <div
+          v-if="ctxMenu.show"
+          class="ctx-menu"
+          :style="{ left: ctxMenu.x + 'px', top: ctxMenu.y + 'px' }"
+          @click="closeContextMenu()"
+        >
           <template v-if="ctxMenu.target?.type === 'file'">
-            <div class="ctx-item" @click="ctxAddFormToFile()"><FaIcon icon="plus" class="me-2" size="sm" />{{ t('designer.addForm') }}</div>
+            <div class="ctx-item" @click="ctxAddFormToFile()">
+              <FaIcon icon="plus" class="me-2" size="sm" />{{ t('designer.addForm') }}
+            </div>
             <hr class="ctx-divider" />
-            <div class="ctx-item" :class="{ 'ctx-item-disabled': !ctxMenu.target?.source }" @click="ctxRenameFile()"><FaIcon icon="pen" class="me-2" size="sm" />{{ t('designer.renameFile') }}</div>
+            <div class="ctx-item" :class="{ 'ctx-item-disabled': !ctxMenu.target?.source }" @click="ctxRenameFile()">
+              <FaIcon icon="pen" class="me-2" size="sm" />{{ t('designer.renameFile') }}
+            </div>
             <!-- the base file is not a file on disk : it can't be duplicated -->
-            <div class="ctx-item" :class="{ 'ctx-item-disabled': !ctxMenu.target?.source }" @click="ctxDuplicateFile()"><FaIcon icon="copy" class="me-2" size="sm" />{{ t('designer.duplicateFile') }}</div>
-            <div class="ctx-item" @click="ctxDownloadFile()"><FaIcon icon="download" class="me-2" size="sm" />{{ t('designer.downloadFile') }}</div>
+            <div class="ctx-item" :class="{ 'ctx-item-disabled': !ctxMenu.target?.source }" @click="ctxDuplicateFile()">
+              <FaIcon icon="copy" class="me-2" size="sm" />{{ t('designer.duplicateFile') }}
+            </div>
+            <div class="ctx-item" @click="ctxDownloadFile()">
+              <FaIcon icon="download" class="me-2" size="sm" />{{ t('designer.downloadFile') }}
+            </div>
             <!-- the base file is not a file on disk : it can't be moved or deleted -->
-            <div class="ctx-item" :class="{ 'ctx-item-disabled': folders.length === 0 || !ctxMenu.target?.source }" @click="ctxMoveFileToFolder()"><FaIcon icon="arrow-right" class="me-2" size="sm" />{{ t('designer.moveFileToFolder') }}</div>
+            <div
+              class="ctx-item"
+              :class="{ 'ctx-item-disabled': folders.length === 0 || !ctxMenu.target?.source }"
+              @click="ctxMoveFileToFolder()"
+            >
+              <FaIcon icon="arrow-right" class="me-2" size="sm" />{{ t('designer.moveFileToFolder') }}
+            </div>
             <hr class="ctx-divider" />
-            <div class="ctx-item ctx-item-danger" :class="{ 'ctx-item-disabled': !ctxMenu.target?.source }" @click="ctxDeleteFile()"><FaIcon icon="trash" class="me-2" size="sm" />{{ t('designer.deleteFile') }}</div>
+            <div
+              class="ctx-item ctx-item-danger"
+              :class="{ 'ctx-item-disabled': !ctxMenu.target?.source }"
+              @click="ctxDeleteFile()"
+            >
+              <FaIcon icon="trash" class="me-2" size="sm" />{{ t('designer.deleteFile') }}
+            </div>
           </template>
           <template v-if="ctxMenu.target?.type === 'folder'">
-            <div class="ctx-item" @click="ctxAddFileToFolder()"><FaIcon icon="plus" class="me-2" size="sm" />{{ t('designer.newFile') }}</div>
+            <div class="ctx-item" @click="ctxAddFileToFolder()">
+              <FaIcon icon="plus" class="me-2" size="sm" />{{ t('designer.newFile') }}
+            </div>
             <hr class="ctx-divider" />
-            <div class="ctx-item ctx-item-danger" @click="ctxDeleteFolder()"><FaIcon icon="trash" class="me-2" size="sm" />{{ t('designer.deleteFolder') }}</div>
+            <div class="ctx-item ctx-item-danger" @click="ctxDeleteFolder()">
+              <FaIcon icon="trash" class="me-2" size="sm" />{{ t('designer.deleteFolder') }}
+            </div>
           </template>
           <template v-if="ctxMenu.target?.type === 'form'">
-            <div class="ctx-item" @click="ctxDuplicateForm()"><FaIcon icon="copy" class="me-2" size="sm" />{{ t('designer.duplicateForm') }}</div>
-            <div class="ctx-item" @click="ctxMoveToFile()"><FaIcon icon="arrow-right" class="me-2" size="sm" />{{ t('designer.moveToFile') }}</div>
+            <div class="ctx-item" @click="ctxDuplicateForm()">
+              <FaIcon icon="copy" class="me-2" size="sm" />{{ t('designer.duplicateForm') }}
+            </div>
+            <div class="ctx-item" @click="ctxMoveToFile()">
+              <FaIcon icon="arrow-right" class="me-2" size="sm" />{{ t('designer.moveToFile') }}
+            </div>
             <hr class="ctx-divider" />
-            <div class="ctx-item ctx-item-danger" @click="ctxDeleteFormFromMenu()"><FaIcon icon="trash" class="me-2" size="sm" />{{ t('designer.deleteForm') }}</div>
+            <div class="ctx-item ctx-item-danger" @click="ctxDeleteFormFromMenu()">
+              <FaIcon icon="trash" class="me-2" size="sm" />{{ t('designer.deleteForm') }}
+            </div>
           </template>
         </div>
-        <div v-if="ctxMenu.show" class="ctx-backdrop" @click="closeContextMenu()" @contextmenu.prevent="closeContextMenu()"></div>
+        <div
+          v-if="ctxMenu.show"
+          class="ctx-backdrop"
+          @click="closeContextMenu()"
+          @contextmenu.prevent="closeContextMenu()"
+        ></div>
       </Teleport>
 
-      <BsOffCanvas v-if="showWarnings" :show="true" icon="triangle-exclamation" :title="t('designer.warnings')" @close="showWarnings = false">
+      <BsOffCanvas
+        v-if="showWarnings"
+        :show="true"
+        icon="triangle-exclamation"
+        :title="t('designer.warnings')"
+        @close="showWarnings = false"
+      >
         <template #default>
           <!-- a warning takes you to what it is about : the form it names, or
                the config tab that holds the section -->
-          <p v-for="(w, i) in warnings" :key="'warning' + i" class="mb-3 warning-entry" role="button" :title="t('designer.warnGoTo')" v-html="w.html" @click="goToWarning(w)"></p>
+          <p
+            v-for="(w, i) in warnings"
+            :key="'warning' + i"
+            class="mb-3 warning-entry"
+            role="button"
+            :title="t('designer.warnGoTo')"
+            v-html="w.html"
+            @click="goToWarning(w)"
+          ></p>
         </template>
       </BsOffCanvas>
       <AppSettings v-if="authenticated" :title="t('designer.title')" icon="pencil">
@@ -4460,7 +6178,12 @@ onBeforeUnmount(() => {
             <popper v-if="lock.lock && !lock.match">
               <div class="form-check form-switch d-inline-flex align-items-center ms-3 mb-0">
                 <input class="form-check-input" type="checkbox" :checked="true" @change="unLock()" role="button" />
-                <label class="form-check-label text-warning" style="margin-left: 0.75rem" role="button" @click="unLock()">
+                <label
+                  class="form-check-label text-warning"
+                  style="margin-left: 0.75rem"
+                  role="button"
+                  @click="unLock()"
+                >
                   <font-awesome-icon icon="lock" size="sm" class="me-1" />{{ lock.lock.username }}
                 </label>
               </div>
@@ -4472,9 +6195,23 @@ onBeforeUnmount(() => {
               </template>
             </popper>
             <div v-else class="form-check form-switch d-inline-flex align-items-center ms-3 mb-0">
-              <input class="form-check-input" type="checkbox" :checked="lock.match" @change="onLockToggle" role="button" />
-              <label class="form-check-label" :class="lock.match ? 'text-success' : ''" style="margin-left: 0.75rem" role="button" @click="onLockToggle">
-                <font-awesome-icon :icon="lock.match ? 'lock' : 'unlock'" size="sm" class="me-1" />{{ lock.match ? t('designer.lockedByMe') : t('designer.startDesigner') }}
+              <input
+                class="form-check-input"
+                type="checkbox"
+                :checked="lock.match"
+                @change="onLockToggle"
+                role="button"
+              />
+              <label
+                class="form-check-label"
+                :class="lock.match ? 'text-success' : ''"
+                style="margin-left: 0.75rem"
+                role="button"
+                @click="onLockToggle"
+              >
+                <font-awesome-icon :icon="lock.match ? 'lock' : 'unlock'" size="sm" class="me-1" />{{
+                  lock.match ? t('designer.lockedByMe') : t('designer.startDesigner')
+                }}
               </label>
             </div>
           </template>
@@ -4484,7 +6221,9 @@ onBeforeUnmount(() => {
                 <span class="me-2">
                   <font-awesome-icon icon="exclamation-triangle" />
                 </span>
-                <span class="mr-1">{{ showWarnings ? t('designer.hideWarnings') : t('designer.hasWarnings') }} {{ t('designer.warnings') }}
+                <span class="mr-1"
+                  >{{ showWarnings ? t('designer.hideWarnings') : t('designer.hasWarnings') }}
+                  {{ t('designer.warnings') }}
                 </span>
               </button>
             </div>
@@ -4493,18 +6232,29 @@ onBeforeUnmount(() => {
         <template #tabs v-if="lock && !lock.free">
           <ul class="nav nav-tabs mb-0">
             <li v-for="tab in tabs" :key="tab.name" class="nav-item">
-              <a class="nav-link" :class="{ active: isCurrentTab(tab.name) }" role="button" @click="selectTab(tab.name)">
+              <a
+                class="nav-link"
+                :class="{ active: isCurrentTab(tab.name) }"
+                role="button"
+                @click="selectTab(tab.name)"
+              >
                 <FaIcon :icon="tab.icon" class="me-1" />{{ tab.name }}
               </a>
             </li>
           </ul>
         </template>
         <template #default>
-          <div v-if="lockLoading || (lock && !lock.free && !loaded)" class="d-flex flex-column align-items-center justify-content-center py-5 text-muted">
+          <div
+            v-if="lockLoading || (lock && !lock.free && !loaded)"
+            class="d-flex flex-column align-items-center justify-content-center py-5 text-muted"
+          >
             <FaIcon icon="spinner" spin style="font-size: 2rem; opacity: 0.5" class="mb-3" />
             <p class="mb-0">{{ t('designer.loading') }}...</p>
           </div>
-          <div v-else-if="lock && lock.free" class="d-flex flex-column align-items-center justify-content-center py-5 text-muted">
+          <div
+            v-else-if="lock && lock.free"
+            class="d-flex flex-column align-items-center justify-content-center py-5 text-muted"
+          >
             <FaIcon icon="unlock" style="font-size: 2.5rem; opacity: 0.3" class="mb-3" />
             <p class="mb-3 fw-semibold" style="font-size: 1.2rem">{{ t('designer.notLocked') }}</p>
             <p class="fs-6 mb-0">{{ t('designer.notLockedHint') }}</p>
@@ -4517,95 +6267,397 @@ onBeforeUnmount(() => {
                  padding is followed by the 8px bottom margin of the empty <label>
                  BsInput always renders. 1.625rem + 8px lands on the same 34px, so
                  the toolbar sits centred between the tab strip and the editor. -->
-            <div class="d-flex align-items-center flex-wrap gap-2" style="padding-top: 0.9rem; padding-bottom: 1.625rem">
-                <small v-if="lockError!==''" class="d-inline-flex px-2 py-1 fw-semibold text-warning-emphasis bg-warning-subtle border border-warning-subtle rounded-2">{{ lockError }}</small>
-                <!-- the stored config is a ytt template : what the designer holds
+            <div
+              class="d-flex align-items-center flex-wrap gap-2"
+              style="padding-top: 0.9rem; padding-bottom: 1.625rem"
+            >
+              <small
+                v-if="lockError !== ''"
+                class="d-inline-flex px-2 py-1 fw-semibold text-warning-emphasis bg-warning-subtle border border-warning-subtle rounded-2"
+                >{{ lockError }}</small
+              >
+              <!-- the stored config is a ytt template : what the designer holds
                      is its expansion, so nothing here may be written back -->
-                <small v-if="configTemplated" class="d-inline-flex px-2 py-1 fw-semibold text-warning-emphasis bg-warning-subtle border border-warning-subtle rounded-2">{{ t('settings.settingsPage.configTemplated') }}</small>
-                <template v-if="lock && lock.match">
-                  <div class="d-flex gap-1 flex-wrap designer-toolbar">
-                    <template v-if="dbOnlyMode && isConfigTab">
-                      <BsButton :colorClass="busy ? 'secondary' : 'primary'" icon="check" :isIconButton="true" @click="validateForms" :disabled="busy" :title="t('designer.validate')" />
-                      <BsButton :colorClass="(!isValid || !isDirty || busyOrTemplated) ? 'secondary' : 'orange'" icon="save" :isIconButton="true" @click="saveForms" :disabled="!isValid || !isDirty || busyOrTemplated" :title="t('designer.save')" />
-                      <BsButton v-if="canRestore" :colorClass="busyOrTemplated ? 'secondary' : 'primary'" icon="trash-arrow-up" :isIconButton="true" @click="restore" :disabled="busyOrTemplated" :title="t('designer.restore')" />
-                    </template>
-                    <template v-else>
-                      <BsButton :colorClass="busyOrTemplated ? 'secondary' : 'primary'" v-if="currentTab == 'Forms'" icon="file-circle-plus" :isIconButton="true" @click="openNewFile()" :disabled="busyOrTemplated" :title="t('designer.newFile')" />
-                      <!-- the counterpart of Download : a local .yaml/.yml is read
+              <small
+                v-if="configTemplated"
+                class="d-inline-flex px-2 py-1 fw-semibold text-warning-emphasis bg-warning-subtle border border-warning-subtle rounded-2"
+                >{{ t('settings.settingsPage.configTemplated') }}</small
+              >
+              <template v-if="lock && lock.match">
+                <div class="d-flex gap-1 flex-wrap designer-toolbar">
+                  <template v-if="dbOnlyMode && isConfigTab">
+                    <BsButton
+                      :colorClass="busy ? 'secondary' : 'primary'"
+                      icon="check"
+                      :isIconButton="true"
+                      @click="validateForms"
+                      :disabled="busy"
+                      :title="t('designer.validate')"
+                    />
+                    <BsButton
+                      :colorClass="!isValid || !isDirty || busyOrTemplated ? 'secondary' : 'orange'"
+                      icon="save"
+                      :isIconButton="true"
+                      @click="saveForms"
+                      :disabled="!isValid || !isDirty || busyOrTemplated"
+                      :title="t('designer.save')"
+                    />
+                    <BsButton
+                      v-if="canRestore"
+                      :colorClass="busyOrTemplated ? 'secondary' : 'primary'"
+                      icon="trash-arrow-up"
+                      :isIconButton="true"
+                      @click="restore"
+                      :disabled="busyOrTemplated"
+                      :title="t('designer.restore')"
+                    />
+                  </template>
+                  <template v-else>
+                    <BsButton
+                      :colorClass="busyOrTemplated ? 'secondary' : 'primary'"
+                      v-if="currentTab == 'Forms'"
+                      icon="file-circle-plus"
+                      :isIconButton="true"
+                      @click="openNewFile()"
+                      :disabled="busyOrTemplated"
+                      :title="t('designer.newFile')"
+                    />
+                    <!-- the counterpart of Download : a local .yaml/.yml is read
                            into the editor buffers, so Save/validate applies to it -->
-                      <BsButton :colorClass="busyOrTemplated ? 'secondary' : 'primary'" v-if="currentTab == 'Forms'" icon="file-import" :isIconButton="true" @click="openImport()" :disabled="busyOrTemplated" :title="t('designer.import')" />
-                      <BsButton :colorClass="busy ? 'secondary' : 'primary'" v-if="formsRepos.length > 0" icon="cloud-arrow-down" :isIconButton="true" @click="loadRepository" :disabled="busy" :title="loadingRepos ? t('designer.loading') : t('designer.loadRepository')" />
-                      <BsButton :colorClass="busy ? 'secondary' : 'primary'" icon="check" :isIconButton="true" @click="validateForms" :disabled="busy" :title="t('designer.validate')" />
-                      <BsButton :colorClass="(!isValid || !isDirty || busyOrTemplated) ? 'secondary' : 'orange'" icon="save" :isIconButton="true" @click="saveForms" :disabled="!isValid || !isDirty || busyOrTemplated" :title="formsRepos.length > 0 ? t('designer.saveLocal') : t('designer.save')" />
-                      <BsButton v-if="formsRepos.length > 0" :colorClass="(isDirty || busyOrTemplated || !hasUnpushed) ? 'secondary' : 'orange'" icon="code-branch" :isIconButton="true" @click="pushToRepo" :disabled="isDirty || busyOrTemplated || !hasUnpushed" :title="syncing ? t('designer.syncing') : t('designer.saveRepository')" />
-                      <BsButton v-if="canRestore" :colorClass="busyOrTemplated ? 'secondary' : 'primary'" icon="trash-arrow-up" :isIconButton="true" @click="restore" :disabled="busyOrTemplated" :title="t('designer.restore')" />
-                    </template>
-                    <BsButton :colorClass="(busy || !editorTarget) ? 'secondary' : 'primary'" icon="rotate-left" :isIconButton="true" @click="editorUndo" :disabled="busy || !editorTarget" :title="t('designer.undo')" />
-                    <BsButton :colorClass="(busy || !editorTarget) ? 'secondary' : 'primary'" icon="rotate-right" :isIconButton="true" @click="editorRedo" :disabled="busy || !editorTarget" :title="t('designer.redo')" />
-                    <BsButton :colorClass="(busy || !editorTarget) ? 'secondary' : 'primary'" icon="scissors" :isIconButton="true" @click="editorCut" :disabled="busy || !editorTarget" :title="t('designer.cut')" />
-                    <BsButton :colorClass="(busy || !editorTarget) ? 'secondary' : 'primary'" icon="copy" :isIconButton="true" @click="editorCopy" :disabled="busy || !editorTarget" :title="t('designer.copy')" />
-                    <BsButton :colorClass="(busy || !editorTarget) ? 'secondary' : 'primary'" icon="paste" :isIconButton="true" @click="editorPaste" :disabled="busy || !editorTarget" :title="t('designer.paste')" />
-                    <BsButton :colorClass="(busy || !editorTarget) ? 'secondary' : 'primary'" icon="indent" :isIconButton="true" @click="editorFormat" :disabled="busy || !editorTarget" :title="t('designer.format')" />
-                    <BsButton :colorClass="(busy || !editorTarget) ? 'secondary' : 'primary'" icon="magnifying-glass" :isIconButton="true" @click="editorFind" :disabled="busy || !editorTarget" :title="t('designer.findReplace')" />
-                    <BsButton :colorClass="(busy || !isDirty || !editorTarget) ? 'secondary' : 'primary'" icon="right-left" :isIconButton="true" @click="editorDiff" :disabled="busy || !isDirty || !editorTarget" :title="t('designer.diff')" />
-                    <template v-if="currentTab === 'Categories'">
-                      <BsButton :colorClass="(busyOrTemplated || !canAddCategories) ? 'secondary' : 'primary'" icon="plus" :isIconButton="true" @click="openAddCategory" :disabled="busyOrTemplated || !canAddCategories" :title="t('designer.addCategory')" />
-                      <BsButton :colorClass="(busyOrTemplated || !hasEditableCategories) ? 'secondary' : 'primary'" icon="pencil" :isIconButton="true" @click="openEditCategories" :disabled="busyOrTemplated || !hasEditableCategories" :title="t('designer.editCategories')" />
-                    </template>
-                    <template v-if="currentTab === 'Roles'">
-                      <BsButton :colorClass="(busyOrTemplated || !canAddRoles) ? 'secondary' : 'primary'" icon="plus" :isIconButton="true" @click="openAddRole" :disabled="busyOrTemplated || !canAddRoles" :title="t('designer.addRole')" />
-                      <BsButton :colorClass="(busyOrTemplated || !hasEditableRoles) ? 'secondary' : 'primary'" icon="pencil" :isIconButton="true" @click="openEditRoles" :disabled="busyOrTemplated || !hasEditableRoles" :title="t('designer.editRoles')" />
-                    </template>
-                    <template v-if="currentTab === 'Constants'">
-                      <BsButton :colorClass="(busyOrTemplated || !canAddConstants) ? 'secondary' : 'primary'" icon="plus" :isIconButton="true" @click="openAddConstant" :disabled="busyOrTemplated || !canAddConstants" :title="t('designer.addConstant')" />
-                      <BsButton :colorClass="(busyOrTemplated || !hasEditableConstants) ? 'secondary' : 'primary'" icon="pencil" :isIconButton="true" @click="openEditConstants" :disabled="busyOrTemplated || !hasEditableConstants" :title="t('designer.editConstants')" />
-                    </template>
-                    <template v-if="currentTab === 'Forms'">
-                      <!-- pencil, not sliders : FA7 aliases `sliders-h` to `sliders`, and the
+                    <BsButton
+                      :colorClass="busyOrTemplated ? 'secondary' : 'primary'"
+                      v-if="currentTab == 'Forms'"
+                      icon="file-import"
+                      :isIconButton="true"
+                      @click="openImport()"
+                      :disabled="busyOrTemplated"
+                      :title="t('designer.import')"
+                    />
+                    <BsButton
+                      :colorClass="busy ? 'secondary' : 'primary'"
+                      v-if="formsRepos.length > 0"
+                      icon="cloud-arrow-down"
+                      :isIconButton="true"
+                      @click="loadRepository"
+                      :disabled="busy"
+                      :title="loadingRepos ? t('designer.loading') : t('designer.loadRepository')"
+                    />
+                    <BsButton
+                      :colorClass="busy ? 'secondary' : 'primary'"
+                      icon="check"
+                      :isIconButton="true"
+                      @click="validateForms"
+                      :disabled="busy"
+                      :title="t('designer.validate')"
+                    />
+                    <BsButton
+                      :colorClass="!isValid || !isDirty || busyOrTemplated ? 'secondary' : 'orange'"
+                      icon="save"
+                      :isIconButton="true"
+                      @click="saveForms"
+                      :disabled="!isValid || !isDirty || busyOrTemplated"
+                      :title="formsRepos.length > 0 ? t('designer.saveLocal') : t('designer.save')"
+                    />
+                    <BsButton
+                      v-if="formsRepos.length > 0"
+                      :colorClass="isDirty || busyOrTemplated || !hasUnpushed ? 'secondary' : 'orange'"
+                      icon="code-branch"
+                      :isIconButton="true"
+                      @click="pushToRepo"
+                      :disabled="isDirty || busyOrTemplated || !hasUnpushed"
+                      :title="syncing ? t('designer.syncing') : t('designer.saveRepository')"
+                    />
+                    <BsButton
+                      v-if="canRestore"
+                      :colorClass="busyOrTemplated ? 'secondary' : 'primary'"
+                      icon="trash-arrow-up"
+                      :isIconButton="true"
+                      @click="restore"
+                      :disabled="busyOrTemplated"
+                      :title="t('designer.restore')"
+                    />
+                  </template>
+                  <BsButton
+                    :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
+                    icon="rotate-left"
+                    :isIconButton="true"
+                    @click="editorUndo"
+                    :disabled="busy || !editorTarget"
+                    :title="t('designer.undo')"
+                  />
+                  <BsButton
+                    :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
+                    icon="rotate-right"
+                    :isIconButton="true"
+                    @click="editorRedo"
+                    :disabled="busy || !editorTarget"
+                    :title="t('designer.redo')"
+                  />
+                  <BsButton
+                    :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
+                    icon="scissors"
+                    :isIconButton="true"
+                    @click="editorCut"
+                    :disabled="busy || !editorTarget"
+                    :title="t('designer.cut')"
+                  />
+                  <BsButton
+                    :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
+                    icon="copy"
+                    :isIconButton="true"
+                    @click="editorCopy"
+                    :disabled="busy || !editorTarget"
+                    :title="t('designer.copy')"
+                  />
+                  <BsButton
+                    :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
+                    icon="paste"
+                    :isIconButton="true"
+                    @click="editorPaste"
+                    :disabled="busy || !editorTarget"
+                    :title="t('designer.paste')"
+                  />
+                  <BsButton
+                    :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
+                    icon="indent"
+                    :isIconButton="true"
+                    @click="editorFormat"
+                    :disabled="busy || !editorTarget"
+                    :title="t('designer.format')"
+                  />
+                  <BsButton
+                    :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
+                    icon="magnifying-glass"
+                    :isIconButton="true"
+                    @click="editorFind"
+                    :disabled="busy || !editorTarget"
+                    :title="t('designer.findReplace')"
+                  />
+                  <BsButton
+                    :colorClass="busy || !isDirty || !editorTarget ? 'secondary' : 'primary'"
+                    icon="right-left"
+                    :isIconButton="true"
+                    @click="editorDiff"
+                    :disabled="busy || !isDirty || !editorTarget"
+                    :title="t('designer.diff')"
+                  />
+                  <template v-if="currentTab === 'Categories'">
+                    <BsButton
+                      :colorClass="busyOrTemplated || !canAddCategories ? 'secondary' : 'primary'"
+                      icon="plus"
+                      :isIconButton="true"
+                      @click="openAddCategory"
+                      :disabled="busyOrTemplated || !canAddCategories"
+                      :title="t('designer.addCategory')"
+                    />
+                    <BsButton
+                      :colorClass="busyOrTemplated || !hasEditableCategories ? 'secondary' : 'primary'"
+                      icon="pencil"
+                      :isIconButton="true"
+                      @click="openEditCategories"
+                      :disabled="busyOrTemplated || !hasEditableCategories"
+                      :title="t('designer.editCategories')"
+                    />
+                  </template>
+                  <template v-if="currentTab === 'Roles'">
+                    <BsButton
+                      :colorClass="busyOrTemplated || !canAddRoles ? 'secondary' : 'primary'"
+                      icon="plus"
+                      :isIconButton="true"
+                      @click="openAddRole"
+                      :disabled="busyOrTemplated || !canAddRoles"
+                      :title="t('designer.addRole')"
+                    />
+                    <BsButton
+                      :colorClass="busyOrTemplated || !hasEditableRoles ? 'secondary' : 'primary'"
+                      icon="pencil"
+                      :isIconButton="true"
+                      @click="openEditRoles"
+                      :disabled="busyOrTemplated || !hasEditableRoles"
+                      :title="t('designer.editRoles')"
+                    />
+                  </template>
+                  <template v-if="currentTab === 'Constants'">
+                    <BsButton
+                      :colorClass="busyOrTemplated || !canAddConstants ? 'secondary' : 'primary'"
+                      icon="plus"
+                      :isIconButton="true"
+                      @click="openAddConstant"
+                      :disabled="busyOrTemplated || !canAddConstants"
+                      :title="t('designer.addConstant')"
+                    />
+                    <BsButton
+                      :colorClass="busyOrTemplated || !hasEditableConstants ? 'secondary' : 'primary'"
+                      icon="pencil"
+                      :isIconButton="true"
+                      @click="openEditConstants"
+                      :disabled="busyOrTemplated || !hasEditableConstants"
+                      :title="t('designer.editConstants')"
+                    />
+                  </template>
+                  <template v-if="currentTab === 'Forms'">
+                    <!-- pencil, not sliders : FA7 aliases `sliders-h` to `sliders`, and the
                            constants button uses the settings-menu's sliders-h icon, so both
                            rendered the same glyph in this toolbar -->
-                      <BsButton :colorClass="(busyOrTemplated || !currentForm) ? 'secondary' : 'primary'" icon="pencil" :isIconButton="true" @click="openFormSettings" :disabled="busyOrTemplated || !currentForm" :title="t('designer.formSettings')" />
-                      <!-- a subform can hold none of these properties (the schema
+                    <BsButton
+                      :colorClass="busyOrTemplated || !currentForm ? 'secondary' : 'primary'"
+                      icon="pencil"
+                      :isIconButton="true"
+                      @click="openFormSettings"
+                      :disabled="busyOrTemplated || !currentForm"
+                      :title="t('designer.formSettings')"
+                    />
+                    <!-- a subform can hold none of these properties (the schema
                            forbids icon/image/tileClass/categories/roles for it) -->
-                      <BsButton :colorClass="(busyOrTemplated || !currentForm || currentFormIsSubform) ? 'secondary' : 'primary'" icon="icons" :isIconButton="true" @click="openIconPicker" :disabled="busyOrTemplated || !currentForm || currentFormIsSubform" :title="currentFormIsSubform ? t('designer.notForSubforms') : t('designer.chooseIcon')" />
-                      <BsButton :colorClass="(busyOrTemplated || !currentForm || currentFormIsSubform) ? 'secondary' : 'primary'" icon="palette" :isIconButton="true" @click="openTilePicker" :disabled="busyOrTemplated || !currentForm || currentFormIsSubform" :title="currentFormIsSubform ? t('designer.notForSubforms') : t('designer.chooseBackground')" />
-                      <BsButton :colorClass="(busyOrTemplated || !currentForm || currentFormIsSubform) ? 'secondary' : 'primary'" icon="image" :isIconButton="true" @click="openImagePicker" :disabled="busyOrTemplated || !currentForm || currentFormIsSubform" :title="currentFormIsSubform ? t('designer.notForSubforms') : t('designer.chooseImage')" />
-                      <BsButton :colorClass="(busyOrTemplated || !currentForm || currentFormIsSubform) ? 'secondary' : 'primary'" icon="th-list" :isIconButton="true" @click="openCatPicker" :disabled="busyOrTemplated || !currentForm || currentFormIsSubform" :title="currentFormIsSubform ? t('designer.notForSubforms') : t('designer.assignCategories')" />
-                      <BsButton :colorClass="(busyOrTemplated || !currentForm || currentFormIsSubform) ? 'secondary' : 'primary'" icon="user-shield" :isIconButton="true" @click="openRolePicker" :disabled="busyOrTemplated || !currentForm || currentFormIsSubform" :title="currentFormIsSubform ? t('designer.notForSubforms') : t('designer.assignRoles')" />
-                      <!-- insert a $(constant) at the cursor, or create one : needs an
+                    <BsButton
+                      :colorClass="busyOrTemplated || !currentForm || currentFormIsSubform ? 'secondary' : 'primary'"
+                      icon="icons"
+                      :isIconButton="true"
+                      @click="openIconPicker"
+                      :disabled="busyOrTemplated || !currentForm || currentFormIsSubform"
+                      :title="currentFormIsSubform ? t('designer.notForSubforms') : t('designer.chooseIcon')"
+                    />
+                    <BsButton
+                      :colorClass="busyOrTemplated || !currentForm || currentFormIsSubform ? 'secondary' : 'primary'"
+                      icon="palette"
+                      :isIconButton="true"
+                      @click="openTilePicker"
+                      :disabled="busyOrTemplated || !currentForm || currentFormIsSubform"
+                      :title="currentFormIsSubform ? t('designer.notForSubforms') : t('designer.chooseBackground')"
+                    />
+                    <BsButton
+                      :colorClass="busyOrTemplated || !currentForm || currentFormIsSubform ? 'secondary' : 'primary'"
+                      icon="image"
+                      :isIconButton="true"
+                      @click="openImagePicker"
+                      :disabled="busyOrTemplated || !currentForm || currentFormIsSubform"
+                      :title="currentFormIsSubform ? t('designer.notForSubforms') : t('designer.chooseImage')"
+                    />
+                    <BsButton
+                      :colorClass="busyOrTemplated || !currentForm || currentFormIsSubform ? 'secondary' : 'primary'"
+                      icon="th-list"
+                      :isIconButton="true"
+                      @click="openCatPicker"
+                      :disabled="busyOrTemplated || !currentForm || currentFormIsSubform"
+                      :title="currentFormIsSubform ? t('designer.notForSubforms') : t('designer.assignCategories')"
+                    />
+                    <BsButton
+                      :colorClass="busyOrTemplated || !currentForm || currentFormIsSubform ? 'secondary' : 'primary'"
+                      icon="user-shield"
+                      :isIconButton="true"
+                      @click="openRolePicker"
+                      :disabled="busyOrTemplated || !currentForm || currentFormIsSubform"
+                      :title="currentFormIsSubform ? t('designer.notForSubforms') : t('designer.assignRoles')"
+                    />
+                    <!-- insert a $(constant) at the cursor, or create one : needs an
                            editor to insert into, hence the editorTarget guard the
                            cut/copy/paste buttons use rather than currentForm -->
-                      <BsButton :colorClass="(busy || !editorTarget) ? 'secondary' : 'primary'" icon="sliders-h" :isIconButton="true" @click="openInsertConstant" :disabled="busy || !editorTarget" :title="t('designer.insertConstant')" />
-                      <BsButton :colorClass="(busyOrTemplated || !currentFormHasFields) ? 'secondary' : 'primary'" icon="list-check" :isIconButton="true" @click="openFieldEditor" :disabled="busyOrTemplated || !currentFormHasFields" :title="t('designer.fieldProperties')" />
-                      <BsButton :colorClass="(busy || !currentForm) ? 'secondary' : 'primary'" icon="eye" :isIconButton="true" @click="previewForm" :disabled="busy || !currentForm" :title="t('designer.previewForm')" />
-                    </template>
-                    <BsButton :colorClass="(busy || !editorTarget) ? 'secondary' : 'primary'" icon="download" :isIconButton="true" @click="downloadYaml" :disabled="busy || !editorTarget" :title="t('designer.download')" />
-                    <BsButton :colorClass="(busy || !isDirty || !editorTarget) ? 'secondary' : 'primary'" icon="clock-rotate-left" :isIconButton="true" @click="editorRevert" :disabled="busy || !isDirty || !editorTarget" :title="t('designer.revert')" />
-                  </div>
-                </template>
-                <small v-if="lock && !lock.match && !lock.free" class="d-inline-flex px-2 py-1 fw-semibold text-warning-emphasis bg-warning-subtle border border-warning-subtle rounded-2">{{ t('designer.readOnly') }}</small>
+                    <BsButton
+                      :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
+                      icon="sliders-h"
+                      :isIconButton="true"
+                      @click="openInsertConstant"
+                      :disabled="busy || !editorTarget"
+                      :title="t('designer.insertConstant')"
+                    />
+                    <BsButton
+                      :colorClass="busyOrTemplated || !currentFormHasFields ? 'secondary' : 'primary'"
+                      icon="list-check"
+                      :isIconButton="true"
+                      @click="openFieldEditor"
+                      :disabled="busyOrTemplated || !currentFormHasFields"
+                      :title="t('designer.fieldProperties')"
+                    />
+                    <BsButton
+                      :colorClass="busy || !currentForm ? 'secondary' : 'primary'"
+                      icon="eye"
+                      :isIconButton="true"
+                      @click="previewForm"
+                      :disabled="busy || !currentForm"
+                      :title="t('designer.previewForm')"
+                    />
+                  </template>
+                  <BsButton
+                    :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
+                    icon="download"
+                    :isIconButton="true"
+                    @click="downloadYaml"
+                    :disabled="busy || !editorTarget"
+                    :title="t('designer.download')"
+                  />
+                  <BsButton
+                    :colorClass="busy || !isDirty || !editorTarget ? 'secondary' : 'primary'"
+                    icon="clock-rotate-left"
+                    :isIconButton="true"
+                    @click="editorRevert"
+                    :disabled="busy || !isDirty || !editorTarget"
+                    :title="t('designer.revert')"
+                  />
+                </div>
+              </template>
+              <small
+                v-if="lock && !lock.match && !lock.free"
+                class="d-inline-flex px-2 py-1 fw-semibold text-warning-emphasis bg-warning-subtle border border-warning-subtle rounded-2"
+                >{{ t('designer.readOnly') }}</small
+              >
             </div>
-            <div class="designer-layout" :style="currentTab == 'Forms' ? { gridTemplateColumns: `1fr 1rem ${treeWidthPct}%` } : undefined">
+            <div
+              class="designer-layout"
+              :style="currentTab == 'Forms' ? { gridTemplateColumns: `1fr 1rem ${treeWidthPct}%` } : undefined"
+            >
               <div class="designer-editor">
-              <div v-if="loaded && currentTab == 'Categories'">
-                <BsInput type="editor" :isFloating="false" v-model="categories" @save="saveForms()" @init="onEditorInit" lang="yaml" :theme="editorTheme" :liveSync="true" :style="editorStyle('100%')" />
-              </div>
-              <div v-if="loaded && currentTab == 'Roles'">
-                <BsInput type="editor" :isFloating="false" v-model="roles" @save="saveForms()" @init="onEditorInit" lang="yaml" :theme="editorTheme" :liveSync="true" :style="editorStyle('100%')" />
-              </div>
-              <div v-if="loaded && currentTab == 'Constants'">
-                <BsInput type="editor" :isFloating="false" v-model="constants" @save="saveForms()" @init="onEditorInit" lang="yaml" :theme="editorTheme" :liveSync="true" :style="editorStyle('100%')" />
-              </div>
-              <div v-if="currentTab == 'Forms'">
-                <template v-if="loaded">
-                  <!-- nothing selected (or the selection was just deleted) : the
+                <div v-if="loaded && currentTab == 'Categories'">
+                  <BsInput
+                    type="editor"
+                    :isFloating="false"
+                    v-model="categories"
+                    @save="saveForms()"
+                    @init="onEditorInit"
+                    lang="yaml"
+                    :theme="editorTheme"
+                    :liveSync="true"
+                    :style="editorStyle('100%')"
+                  />
+                </div>
+                <div v-if="loaded && currentTab == 'Roles'">
+                  <BsInput
+                    type="editor"
+                    :isFloating="false"
+                    v-model="roles"
+                    @save="saveForms()"
+                    @init="onEditorInit"
+                    lang="yaml"
+                    :theme="editorTheme"
+                    :liveSync="true"
+                    :style="editorStyle('100%')"
+                  />
+                </div>
+                <div v-if="loaded && currentTab == 'Constants'">
+                  <BsInput
+                    type="editor"
+                    :isFloating="false"
+                    v-model="constants"
+                    @save="saveForms()"
+                    @init="onEditorInit"
+                    lang="yaml"
+                    :theme="editorTheme"
+                    :liveSync="true"
+                    :style="editorStyle('100%')"
+                  />
+                </div>
+                <div v-if="currentTab == 'Forms'">
+                  <template v-if="loaded">
+                    <!-- nothing selected (or the selection was just deleted) : the
                        pane would be blank, so say what to do with it -->
-                  <div v-if="!editorTarget" class="d-flex flex-column align-items-center justify-content-center py-5 text-muted">
-                    <FaIcon icon="pen-to-square" style="font-size: 2.5rem; opacity: 0.3" class="mb-3" />
-                    <p class="mb-3 fw-semibold" style="font-size: 1.2rem">{{ t('designer.noFormSelected') }}</p>
-                    <p class="fs-6 mb-0">{{ t('designer.noFormSelectedHint') }}</p>
-                  </div>
-                  <!-- ONE editor, keyed by the form it edits. This used to be rendered
+                    <div
+                      v-if="!editorTarget"
+                      class="d-flex flex-column align-items-center justify-content-center py-5 text-muted"
+                    >
+                      <FaIcon icon="pen-to-square" style="font-size: 2.5rem; opacity: 0.3" class="mb-3" />
+                      <p class="mb-3 fw-semibold" style="font-size: 1.2rem">{{ t('designer.noFormSelected') }}</p>
+                      <p class="fs-6 mb-0">{{ t('designer.noFormSelectedHint') }}</p>
+                    </div>
+                    <!-- ONE editor, keyed by the form it edits. This used to be rendered
                        inside v-for="f in files", and `files` is derived from the PARSED
                        yaml : the moment a keystroke left the document invalid the form's
                        source flipped to "Parsing issues", the enclosing v-for key changed
@@ -4615,90 +6667,177 @@ onBeforeUnmount(() => {
                        focus. Keying on currentForm keeps the editor alive while the yaml
                        is broken, and still gives each form its own instance - and its own
                        undo stack - when you switch forms. -->
-                  <div v-if="editorTarget" :key="'formeditor-' + currentForm">
-                    <BsInput type="editor" :isFloating="false" v-model="forms[currentForm]" @save="saveForms()" @init="onEditorInit" lang="yaml" :theme="editorTheme" :liveSync="true" :style="editorStyle('100%')" />
-                  </div>
-                </template>
-              </div>
-              </div>
-            <div v-if="currentTab == 'Forms'" class="designer-resize" @mousedown="startResize"></div>
-            <div v-if="currentTab == 'Forms'" class="designer-tree">
-              <div class="file-tree-panel">
-                <div class="file-tree-header d-flex justify-content-between align-items-center">
-                  <span><FaIcon icon="folder-tree" class="me-2" size="sm" />{{ t('designer.fileExplorer') }}</span>
-                  <span class="d-flex gap-2">
-                    <span role="button" class="tree-add-btn" @click="toggleCollapseAll()" :title="allTreeCollapsed ? t('designer.expandAll') : t('designer.collapseAll')"><FaIcon :icon="allTreeCollapsed ? 'angles-down' : 'angles-up'" /></span>
-                    <span role="button" class="tree-add-btn" @click="toggleTreeSearch()" :title="t('designer.search')"><FaIcon icon="magnifying-glass" /></span>
-                    <span role="button" class="tree-add-btn" @click="openNewFolder()" :title="t('designer.newFolder')"><FaIcon icon="folder" /></span>
-                    <span role="button" class="tree-add-btn" @click="openNewFile()" :title="t('designer.newFile')"><FaIcon icon="file" /></span>
-                  </span>
-                </div>
-                <div v-if="treeSearch" class="tree-search-bar">
-                  <input type="text" class="form-control form-control-sm" v-model="treeFilter" :placeholder="t('designer.search') + '...'" ref="treeSearchInput" />
-                </div>
-                <div class="file-tree-content">
-              <template v-for="(item, idx) in fileTreeFlat" :key="'tree-' + idx">
-                <div v-if="item.type === 'folder'" class="d-flex justify-content-between align-items-center py-1 tree-node" role="button" :style="{ paddingLeft: item.depth * 1.25 + 'rem' }"
-                     @click="toggleCollapse(item.key)"
-                     @contextmenu="openContextMenu($event, { type: 'folder', name: item.name, path: item.path })">
-                  <span class="d-flex align-items-center min-w-0">
-                    <FaIcon :icon="isCollapsed(item.key) ? 'chevron-right' : 'chevron-down'" class="me-1 flex-shrink-0 tree-chevron" size="xs" />
-                    <FaIcon :icon="isCollapsed(item.key) ? 'folder' : 'folder-open'" class="text-warning me-2 flex-shrink-0" />
-                    <span class="fw-bold text-truncate" :title="item.name">{{ item.name }}</span>
-                  </span>
-                  <span class="d-flex gap-2 flex-shrink-0 ms-1">
-                    <span role="button" class="tree-add-btn" @click.stop="openNewFileInFolder(item.path)" :title="t('designer.newFile')"><FaIcon icon="file" /></span>
-                    <span role="button" class="tree-del-btn" @click.stop="confirmDeleteFolder(item.path)" :title="t('designer.deleteFolder')"><FaIcon icon="times" /></span>
-                  </span>
-                </div>
-                <template v-else>
-                  <div class="d-flex justify-content-between align-items-center py-1 tree-node"
-                       :class="{ 'tree-drop-target': dragFormId && dragFormId !== null }"
-                       :style="{ paddingLeft: item.depth * 1.25 + 'rem' }"
-                       @click="toggleCollapse(item.key)"
-                       @contextmenu="openContextMenu($event, { type: 'file', source: item.source, name: item.name })"
-                       @dragover="onDragOver" @drop="onDropOnFile(item.source, $event)"
-                       role="button">
-                    <span class="d-flex align-items-center min-w-0">
-                      <FaIcon :icon="isCollapsed(item.key) ? 'chevron-right' : 'chevron-down'" class="me-1 flex-shrink-0 tree-chevron" size="xs" />
-                      <FaIcon icon="file-code" class="text-secondary me-2 flex-shrink-0" />
-                      <span class="fw-semibold text-truncate" :title="item.name || t('designer.baseFile')">{{ item.name || t('designer.baseFile') }}</span>
-                    </span>
-                    <span class="d-flex gap-2 flex-shrink-0 ms-1">
-                      <span role="button" class="tree-add-btn" @click.stop="addForm(item.source)" :title="t('designer.addForm')">
-                        <FaIcon icon="pen-to-square" />
-                      </span>
-                      <!-- no delete for the base file : it is not a file on disk -->
-                      <span v-if="item.source" role="button" class="tree-del-btn" @click.stop="confirmDeleteFile(item.source)" :title="t('designer.deleteFile')">
-                        <FaIcon icon="times" />
-                      </span>
-                    </span>
-                  </div>
-                  <template v-if="!isCollapsed(item.key) || treeFilter">
-                    <div v-for="n in formnames(item.source).filter(f => !treeFilter || (f.name || '').toLowerCase().includes(treeFilter.toLowerCase()))" :key="n.id"
-                         class="d-flex justify-content-between align-items-center py-1 tree-node tree-form"
-                         :class="{ 'tree-active': isCurrentForm(n.id), 'tree-dirty': isFormDirty(n.id), 'tree-drop-above': dropTargetId === n.id && dragFormId }"
-                         :style="{ paddingLeft: (item.depth + 1) * 1.25 + 'rem' }"
-                         role="button" draggable="true"
-                         @click="selectForm(n.id)"
-                         @contextmenu="openContextMenu($event, { type: 'form', id: n.id, name: n.name })"
-                         @dragstart="onDragStart(n.id, $event)" @dragend="dragFormId = null; dropTargetId = null"
-                         @dragover="onFormDragOver(n.id, $event)" @drop="onDropOnForm(n.id, $event)"
-                         @dragleave="dropTargetId === n.id && (dropTargetId = null)">
-                      <span class="d-flex align-items-center min-w-0">
-                        <FaIcon v-if="n.icon" :icon="n.icon" class="me-2 flex-shrink-0" />
-                        <span class="text-truncate" :title="n.name">{{ n.name }}</span>
-                      </span>
-                      <span role="button" class="tree-del-btn flex-shrink-0 ms-1" @click.stop="deleteForm(n.id)">
-                        <FaIcon icon="times" />
-                      </span>
+                    <div v-if="editorTarget" :key="'formeditor-' + currentForm">
+                      <BsInput
+                        type="editor"
+                        :isFloating="false"
+                        v-model="forms[currentForm]"
+                        @save="saveForms()"
+                        @init="onEditorInit"
+                        lang="yaml"
+                        :theme="editorTheme"
+                        :liveSync="true"
+                        :style="editorStyle('100%')"
+                      />
                     </div>
                   </template>
-                </template>
-              </template>
                 </div>
               </div>
-            </div>
+              <div v-if="currentTab == 'Forms'" class="designer-resize" @mousedown="startResize"></div>
+              <div v-if="currentTab == 'Forms'" class="designer-tree">
+                <div class="file-tree-panel">
+                  <div class="file-tree-header d-flex justify-content-between align-items-center">
+                    <span><FaIcon icon="folder-tree" class="me-2" size="sm" />{{ t('designer.fileExplorer') }}</span>
+                    <span class="d-flex gap-2">
+                      <span
+                        role="button"
+                        class="tree-add-btn"
+                        @click="toggleCollapseAll()"
+                        :title="allTreeCollapsed ? t('designer.expandAll') : t('designer.collapseAll')"
+                        ><FaIcon :icon="allTreeCollapsed ? 'angles-down' : 'angles-up'"
+                      /></span>
+                      <span role="button" class="tree-add-btn" @click="toggleTreeSearch()" :title="t('designer.search')"
+                        ><FaIcon icon="magnifying-glass"
+                      /></span>
+                      <span role="button" class="tree-add-btn" @click="openNewFolder()" :title="t('designer.newFolder')"
+                        ><FaIcon icon="folder"
+                      /></span>
+                      <span role="button" class="tree-add-btn" @click="openNewFile()" :title="t('designer.newFile')"
+                        ><FaIcon icon="file"
+                      /></span>
+                    </span>
+                  </div>
+                  <div v-if="treeSearch" class="tree-search-bar">
+                    <input
+                      type="text"
+                      class="form-control form-control-sm"
+                      v-model="treeFilter"
+                      :placeholder="t('designer.search') + '...'"
+                      ref="treeSearchInput"
+                    />
+                  </div>
+                  <div class="file-tree-content">
+                    <template v-for="(item, idx) in fileTreeFlat" :key="'tree-' + idx">
+                      <div
+                        v-if="item.type === 'folder'"
+                        class="d-flex justify-content-between align-items-center py-1 tree-node"
+                        role="button"
+                        :style="{ paddingLeft: item.depth * 1.25 + 'rem' }"
+                        @click="toggleCollapse(item.key)"
+                        @contextmenu="openContextMenu($event, { type: 'folder', name: item.name, path: item.path })"
+                      >
+                        <span class="d-flex align-items-center min-w-0">
+                          <FaIcon
+                            :icon="isCollapsed(item.key) ? 'chevron-right' : 'chevron-down'"
+                            class="me-1 flex-shrink-0 tree-chevron"
+                            size="xs"
+                          />
+                          <FaIcon
+                            :icon="isCollapsed(item.key) ? 'folder' : 'folder-open'"
+                            class="text-warning me-2 flex-shrink-0"
+                          />
+                          <span class="fw-bold text-truncate" :title="item.name">{{ item.name }}</span>
+                        </span>
+                        <span class="d-flex gap-2 flex-shrink-0 ms-1">
+                          <span
+                            role="button"
+                            class="tree-add-btn"
+                            @click.stop="openNewFileInFolder(item.path)"
+                            :title="t('designer.newFile')"
+                            ><FaIcon icon="file"
+                          /></span>
+                          <span
+                            role="button"
+                            class="tree-del-btn"
+                            @click.stop="confirmDeleteFolder(item.path)"
+                            :title="t('designer.deleteFolder')"
+                            ><FaIcon icon="times"
+                          /></span>
+                        </span>
+                      </div>
+                      <template v-else>
+                        <div
+                          class="d-flex justify-content-between align-items-center py-1 tree-node"
+                          :class="{ 'tree-drop-target': dragFormId && dragFormId !== null }"
+                          :style="{ paddingLeft: item.depth * 1.25 + 'rem' }"
+                          @click="toggleCollapse(item.key)"
+                          @contextmenu="openContextMenu($event, { type: 'file', source: item.source, name: item.name })"
+                          @dragover="onDragOver"
+                          @drop="onDropOnFile(item.source, $event)"
+                          role="button"
+                        >
+                          <span class="d-flex align-items-center min-w-0">
+                            <FaIcon
+                              :icon="isCollapsed(item.key) ? 'chevron-right' : 'chevron-down'"
+                              class="me-1 flex-shrink-0 tree-chevron"
+                              size="xs"
+                            />
+                            <FaIcon icon="file-code" class="text-secondary me-2 flex-shrink-0" />
+                            <span class="fw-semibold text-truncate" :title="item.name || t('designer.baseFile')">{{
+                              item.name || t('designer.baseFile')
+                            }}</span>
+                          </span>
+                          <span class="d-flex gap-2 flex-shrink-0 ms-1">
+                            <span
+                              role="button"
+                              class="tree-add-btn"
+                              @click.stop="addForm(item.source)"
+                              :title="t('designer.addForm')"
+                            >
+                              <FaIcon icon="pen-to-square" />
+                            </span>
+                            <!-- no delete for the base file : it is not a file on disk -->
+                            <span
+                              v-if="item.source"
+                              role="button"
+                              class="tree-del-btn"
+                              @click.stop="confirmDeleteFile(item.source)"
+                              :title="t('designer.deleteFile')"
+                            >
+                              <FaIcon icon="times" />
+                            </span>
+                          </span>
+                        </div>
+                        <template v-if="!isCollapsed(item.key) || treeFilter">
+                          <div
+                            v-for="n in formnames(item.source).filter(
+                              (f) => !treeFilter || (f.name || '').toLowerCase().includes(treeFilter.toLowerCase()),
+                            )"
+                            :key="n.id"
+                            class="d-flex justify-content-between align-items-center py-1 tree-node tree-form"
+                            :class="{
+                              'tree-active': isCurrentForm(n.id),
+                              'tree-dirty': isFormDirty(n.id),
+                              'tree-drop-above': dropTargetId === n.id && dragFormId,
+                            }"
+                            :style="{ paddingLeft: (item.depth + 1) * 1.25 + 'rem' }"
+                            role="button"
+                            draggable="true"
+                            @click="selectForm(n.id)"
+                            @contextmenu="openContextMenu($event, { type: 'form', id: n.id, name: n.name })"
+                            @dragstart="onDragStart(n.id, $event)"
+                            @dragend="
+                              dragFormId = null;
+                              dropTargetId = null;
+                            "
+                            @dragover="onFormDragOver(n.id, $event)"
+                            @drop="onDropOnForm(n.id, $event)"
+                            @dragleave="dropTargetId === n.id && (dropTargetId = null)"
+                          >
+                            <span class="d-flex align-items-center min-w-0">
+                              <FaIcon v-if="n.icon" :icon="n.icon" class="me-2 flex-shrink-0" />
+                              <span class="text-truncate" :title="n.name">{{ n.name }}</span>
+                            </span>
+                            <span role="button" class="tree-del-btn flex-shrink-0 ms-1" @click.stop="deleteForm(n.id)">
+                              <FaIcon icon="times" />
+                            </span>
+                          </div>
+                        </template>
+                      </template>
+                    </template>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </template>
@@ -4798,7 +6937,8 @@ onBeforeUnmount(() => {
   padding: 0.25rem 0.5rem;
   overflow: hidden;
 }
-.tree-add-btn, .tree-del-btn {
+.tree-add-btn,
+.tree-del-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -5051,7 +7191,7 @@ onBeforeUnmount(() => {
   background: var(--bs-body-bg);
   border: 1px solid var(--bs-border-color);
   border-radius: 0.375rem;
-  box-shadow: 0 0.25rem 0.75rem rgba(0,0,0,.15);
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.15);
   padding: 0.25rem 0;
 }
 .ctx-item {

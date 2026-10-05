@@ -32,15 +32,15 @@ import { parseNumberFilter, csvCell } from '@/lib/dataTable';
 const { t } = useI18n();
 
 const props = defineProps({
-  items:       { type: Array,  required: true },
-  columns:     { type: Array,  required: true },
-  pageSize:    { type: Number, default: 25 },
-  name:        { type: String, default: null },
+  items: { type: Array, required: true },
+  columns: { type: Array, required: true },
+  pageSize: { type: Number, default: 25 },
+  name: { type: String, default: null },
   selectedIds: { type: Object, default: () => new Set() }, // Set
-  idKey:       { type: String, default: 'id' },
-  selectable:  { type: Boolean, default: true },
-  activeId:    { type: [String, Number], default: null },
-  exportName:    { type: String, default: null },
+  idKey: { type: String, default: 'id' },
+  selectable: { type: Boolean, default: true },
+  activeId: { type: [String, Number], default: null },
+  exportName: { type: String, default: null },
   initialFilter: { type: String, default: '' },
 });
 
@@ -49,11 +49,12 @@ const emit = defineEmits(['update:selectedIds', 'row-click']);
 // ─── Column visibility ───────────────────────────────────────────────────────
 const hiddenColumns = ref(new Set());
 
-const visibleColumns = computed(() => props.columns.filter(c => !hiddenColumns.value.has(c.key)));
+const visibleColumns = computed(() => props.columns.filter((c) => !hiddenColumns.value.has(c.key)));
 
 function toggleColumn(key) {
   const s = new Set(hiddenColumns.value);
-  if (s.has(key)) s.delete(key); else s.add(key);
+  if (s.has(key)) s.delete(key);
+  else s.add(key);
   hiddenColumns.value = s;
   dropFiltersOfHidden(s);
   if (props.name) persistHiddenColumns(s);
@@ -66,10 +67,10 @@ function toggleColumn(key) {
 // persisted in a cookie and the filters are not, so a reload silently changed the row
 // count too.
 function dropFiltersOfHidden(hiddenSet) {
-  const stale = Object.keys(columnFilters.value).filter(k => hiddenSet.has(k) && columnFilters.value[k]);
+  const stale = Object.keys(columnFilters.value).filter((k) => hiddenSet.has(k) && columnFilters.value[k]);
   if (!stale.length) return;
   const next = { ...columnFilters.value };
-  stale.forEach(k => delete next[k]);
+  stale.forEach((k) => delete next[k]);
   columnFilters.value = next;
 }
 
@@ -79,7 +80,7 @@ function dropFiltersOfHidden(hiddenSet) {
 // would come up visible instead of honouring its own defaultHidden. A legacy cookie (a bare
 // array, no `known`) is read as it is, without hiding anything retroactively.
 function persistHiddenColumns(hiddenSet) {
-  const payload = { hidden: [...hiddenSet], known: props.columns.map(c => c.key) };
+  const payload = { hidden: [...hiddenSet], known: props.columns.map((c) => c.key) };
   Helpers.setCookie(`dt_cols_${props.name}`, JSON.stringify(payload), 365);
 }
 
@@ -96,13 +97,21 @@ function loadPresets() {
   try {
     const raw = localStorage.getItem(`dt_presets_${props.name}`);
     const parsed = raw ? JSON.parse(raw) : [];
-    presets.value = Array.isArray(parsed) ? parsed.filter(p => p && typeof p.name === 'string' && Array.isArray(p.hidden)) : [];
-  } catch (e) { presets.value = []; }
+    presets.value = Array.isArray(parsed)
+      ? parsed.filter((p) => p && typeof p.name === 'string' && Array.isArray(p.hidden))
+      : [];
+  } catch (e) {
+    presets.value = [];
+  }
 }
 
 function savePresetsToStorage() {
   if (!props.name) return;
-  try { localStorage.setItem(`dt_presets_${props.name}`, JSON.stringify(presets.value)); } catch (e) { /* not persisted */ }
+  try {
+    localStorage.setItem(`dt_presets_${props.name}`, JSON.stringify(presets.value));
+  } catch (e) {
+    /* not persisted */
+  }
 }
 
 function applyPreset(preset) {
@@ -116,7 +125,7 @@ function savePreset() {
   const name = presetNameInput.value.trim();
   if (!name) return;
   const hidden = [...hiddenColumns.value];
-  const idx = presets.value.findIndex(p => p.name === name);
+  const idx = presets.value.findIndex((p) => p.name === name);
   if (idx >= 0) presets.value[idx] = { name, hidden };
   else presets.value.push({ name, hidden });
   savePresetsToStorage();
@@ -125,7 +134,7 @@ function savePreset() {
 }
 
 function deletePreset(name) {
-  presets.value = presets.value.filter(p => p.name !== name);
+  presets.value = presets.value.filter((p) => p.name !== name);
   savePresetsToStorage();
 }
 
@@ -137,27 +146,27 @@ onMounted(() => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        const hidden = new Set(Array.isArray(parsed) ? parsed : (parsed.hidden || []));
+        const hidden = new Set(Array.isArray(parsed) ? parsed : parsed.hidden || []);
         // a current column that is not in `known` did not exist when this was saved :
         // it gets its own default rather than "visible because it is not in the list"
         if (!Array.isArray(parsed) && Array.isArray(parsed.known)) {
           const known = new Set(parsed.known);
-          props.columns.filter(c => c.defaultHidden && !known.has(c.key)).forEach(c => hidden.add(c.key));
+          props.columns.filter((c) => c.defaultHidden && !known.has(c.key)).forEach((c) => hidden.add(c.key));
         }
         hiddenColumns.value = hidden;
         return;
-      } catch (e) { /* ignore */ }
+      } catch (e) {
+        /* ignore */
+      }
     }
   }
   // First-visit defaults:
   //  - columns marked `defaultHidden` are hidden out of the box but remain
   //    available in the column picker so the user can opt them in.
   //  - on narrow viewports, additionally hide `mobileHidden` columns.
-  const initial = new Set(
-    props.columns.filter(c => c.defaultHidden).map(c => c.key)
-  );
+  const initial = new Set(props.columns.filter((c) => c.defaultHidden).map((c) => c.key));
   if (typeof window !== 'undefined' && window.matchMedia('(max-width: 767.98px)').matches) {
-    props.columns.filter(c => c.mobileHidden).forEach(c => initial.add(c.key));
+    props.columns.filter((c) => c.mobileHidden).forEach((c) => initial.add(c.key));
   }
   if (initial.size) hiddenColumns.value = initial;
 });
@@ -166,7 +175,7 @@ onMounted(() => {
 const globalFilter = ref(props.initialFilter || '');
 const columnFilters = ref({});
 
-const filterableColumns = computed(() => visibleColumns.value.filter(c => c.filterable));
+const filterableColumns = computed(() => visibleColumns.value.filter((c) => c.filterable));
 
 // ─── Sort state ───────────────────────────────────────────────────────────────
 const sortKey = ref(null);
@@ -187,35 +196,35 @@ const filteredItems = computed(() => {
 
   if (globalFilter.value.trim()) {
     const q = globalFilter.value.trim().toLowerCase();
-    list = list.filter(item =>
-      props.columns.some(col => {
+    list = list.filter((item) =>
+      props.columns.some((col) => {
         const v = cellText(item, col);
         return v.toLowerCase().includes(q);
-      })
+      }),
     );
   }
 
   for (const [key, val] of Object.entries(columnFilters.value)) {
     if (val == null || val === '') continue;
-    const col = props.columns.find(c => c.key === key);
+    const col = props.columns.find((c) => c.key === key);
     if (!col) continue;
     if (col.filterType === 'boolean') {
       const want = val === 'yes';
-      list = list.filter(item => Boolean(item[col.key]) === want);
+      list = list.filter((item) => Boolean(item[col.key]) === want);
     } else if (col.filterType === 'gt0') {
-      list = list.filter(item => Number(item[col.key]) > 0);
+      list = list.filter((item) => Number(item[col.key]) > 0);
     } else if (col.filterType === 'number' && parseNumberFilter(val)) {
       const test = parseNumberFilter(val);
-      list = list.filter(item => test(Number(item[col.key])));
+      list = list.filter((item) => test(Number(item[col.key])));
     } else if (String(val).trim()) {
       const q = String(val).trim().toLowerCase();
-      list = list.filter(item => cellText(item, col).toLowerCase().includes(q));
+      list = list.filter((item) => cellText(item, col).toLowerCase().includes(q));
     }
   }
 
   if (sortKey.value) {
     const key = sortKey.value;
-    const col = props.columns.find(c => c.key === key);
+    const col = props.columns.find((c) => c.key === key);
     const dir = sortDir.value;
     // numerically when both raw values are numbers - a text compare puts "10" before
     // "2" ; a column can bring sortValue(row) when its rendered text does not sort (dates)
@@ -249,10 +258,19 @@ function onPageChange(slice) {
 // Sorting deliberately does not re-key either: the rows move, the page number still means
 // something, and BsPagination's own watcher clamps it if the list shrank.
 const filterVersion = ref(0);
-watch([globalFilter, columnFilters], () => { filterVersion.value++; anchorIndex = null; }, { deep: true });
+watch(
+  [globalFilter, columnFilters],
+  () => {
+    filterVersion.value++;
+    anchorIndex = null;
+  },
+  { deep: true },
+);
 // a data replacement still invalidates the shift-select anchor - the row it pointed at
 // may not be there any more - but it must not move the user's page
-watch(filteredItems, () => { anchorIndex = null; });
+watch(filteredItems, () => {
+  anchorIndex = null;
+});
 
 // ─── Cell rendering ───────────────────────────────────────────────────────────
 // `cellText` returns RAW plain text — used for filtering, sorting, and export.
@@ -275,7 +293,10 @@ function cellHtml(item, col) {
   const raw = item[col.key];
   if (col.render) return String(col.render(raw, item) ?? '');
   if (raw == null) return '';
-  return String(raw).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#x27;'}[c]));
+  return String(raw).replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#x27;' })[c],
+  );
 }
 
 // Plain (unescaped, no HTML) cell value — used for tooltip on truncated cells.
@@ -291,19 +312,21 @@ function cellPlain(item, col) {
   return String(raw);
 }
 
-
 // ─── Selection ────────────────────────────────────────────────────────────────
 // filteredItems.indexOf(item) fails with Vue 3 Proxy wrapping — two proxies of
 // the same object are not === equal. Use id-based lookup instead.
 function filteredIndexOf(item) {
   const id = item[props.idKey];
-  return filteredItems.value.findIndex(r => r[props.idKey] === id);
+  return filteredItems.value.findIndex((r) => r[props.idKey] === id);
 }
 
 let anchorIndex = null;
 
 function onRowClick(event, item) {
-  if (dragJustDone) { dragJustDone = false; return; }
+  if (dragJustDone) {
+    dragJustDone = false;
+    return;
+  }
 
   // Clicks inside the row-actions cell (3-dot menu) must not toggle row
   // selection. We do not use @click.stop on the cell because that would also
@@ -316,15 +339,15 @@ function onRowClick(event, item) {
     return;
   }
 
-  const index  = filteredIndexOf(item);
+  const index = filteredIndexOf(item);
   if (index === -1) return;
 
-  const id     = item[props.idKey];
+  const id = item[props.idKey];
   const newSet = new Set(props.selectedIds);
 
   if (event.shiftKey && anchorIndex !== null) {
     const from = Math.min(anchorIndex, index);
-    const to   = Math.max(anchorIndex, index);
+    const to = Math.max(anchorIndex, index);
     if (event.ctrlKey || event.metaKey) {
       // Ctrl+Shift → toggle the range: add if clicked row is not selected, remove if it is
       const addRange = !props.selectedIds.has(id);
@@ -351,7 +374,10 @@ function onRowClick(event, item) {
   } else {
     // Plain → single select (click same row again = deselect)
     if (newSet.size === 1 && newSet.has(id)) newSet.clear();
-    else { newSet.clear(); newSet.add(id); }
+    else {
+      newSet.clear();
+      newSet.add(id);
+    }
     anchorIndex = index;
   }
 
@@ -363,15 +389,15 @@ function onRowClick(event, item) {
 // Drag becomes active only once the mouse enters a DIFFERENT row, so plain
 // clicks and shift/ctrl-clicks are never intercepted.
 const isDragging = ref(false);
-let dragStart    = null;  // filteredItems index where mousedown fired
-let dragAddMode  = true;
+let dragStart = null; // filteredItems index where mousedown fired
+let dragAddMode = true;
 let dragJustDone = false; // suppress the click event that follows drag-mouseup
 
 function onRowMousedown(event, item) {
   if (event.button !== 0) return;
   const index = filteredIndexOf(item);
   if (index === -1) return;
-  dragStart   = index;
+  dragStart = index;
   dragAddMode = !props.selectedIds.has(item[props.idKey]);
 }
 
@@ -386,7 +412,7 @@ function onRowMouseenter(item) {
 function onTableMouseup() {
   if (isDragging.value) {
     isDragging.value = false;
-    dragJustDone     = true;
+    dragJustDone = true;
   }
   dragStart = null;
 }
@@ -394,7 +420,7 @@ function onTableMouseup() {
 function applyDragSelection(endIndex) {
   if (dragStart === null) return;
   const from = Math.min(dragStart, endIndex);
-  const to   = Math.max(dragStart, endIndex);
+  const to = Math.max(dragStart, endIndex);
   const newSet = new Set(props.selectedIds);
   for (let i = from; i <= to; i++) {
     const id = filteredItems.value[i]?.[props.idKey];
@@ -407,21 +433,21 @@ function applyDragSelection(endIndex) {
 
 const allOnPageSelected = computed(() => {
   if (!pageItems.value.length) return false;
-  return pageItems.value.every(item => props.selectedIds.has(item[props.idKey]));
+  return pageItems.value.every((item) => props.selectedIds.has(item[props.idKey]));
 });
 
 function toggleSelectAll() {
   const newSet = new Set(props.selectedIds);
   if (allOnPageSelected.value) {
-    pageItems.value.forEach(item => newSet.delete(item[props.idKey]));
+    pageItems.value.forEach((item) => newSet.delete(item[props.idKey]));
   } else {
-    pageItems.value.forEach(item => newSet.add(item[props.idKey]));
+    pageItems.value.forEach((item) => newSet.add(item[props.idKey]));
   }
   emit('update:selectedIds', newSet);
 }
 
 function selectAll() {
-  emit('update:selectedIds', new Set(filteredItems.value.map(i => i[props.idKey])));
+  emit('update:selectedIds', new Set(filteredItems.value.map((i) => i[props.idKey])));
 }
 
 function clearSelection() {
@@ -432,9 +458,9 @@ function clearSelection() {
 // The filtered rows, every column, as the plain text the table shows. CSV rather than
 // .xlsx : no library, and Excel opens it. The BOM makes Excel read it as UTF-8.
 function exportCsv() {
-  const lines = [props.columns.map(c => csvCell(c.label)).join(',')];
+  const lines = [props.columns.map((c) => csvCell(c.label)).join(',')];
   for (const item of filteredItems.value) {
-    lines.push(props.columns.map(col => csvCell(cellPlain(item, col))).join(','));
+    lines.push(props.columns.map((col) => csvCell(cellPlain(item, col))).join(','));
   }
   const blob = new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
@@ -449,7 +475,6 @@ function exportCsv() {
 
 <template>
   <div class="bs-data-table">
-
     <!-- Toolbar -->
     <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
       <!-- Global search -->
@@ -457,7 +482,7 @@ function exportCsv() {
         v-model="globalFilter"
         type="search"
         class="form-control form-control-sm"
-        style="max-width:220px"
+        style="max-width: 220px"
         :placeholder="t('common.search')"
       />
 
@@ -482,13 +507,23 @@ function exportCsv() {
       <div class="ms-auto d-flex gap-2">
         <!-- Column picker -->
         <div class="dropdown">
-          <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+          <button
+            class="btn btn-sm btn-outline-secondary dropdown-toggle"
+            type="button"
+            data-bs-toggle="dropdown"
+            data-bs-auto-close="outside"
+          >
             <font-awesome-icon icon="table-columns" class="me-1" />{{ t('dataTable.columns') }}
           </button>
-          <ul class="dropdown-menu dropdown-menu-end" style="min-width:220px">
+          <ul class="dropdown-menu dropdown-menu-end" style="min-width: 220px">
             <li v-for="col in columns" :key="'cp-' + col.key" class="dropdown-item">
-              <label class="form-check mb-0 d-flex align-items-center gap-2" style="cursor:pointer">
-                <input type="checkbox" class="form-check-input" :checked="!hiddenColumns.has(col.key)" @change="toggleColumn(col.key)" />
+              <label class="form-check mb-0 d-flex align-items-center gap-2" style="cursor: pointer">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  :checked="!hiddenColumns.has(col.key)"
+                  @change="toggleColumn(col.key)"
+                />
                 {{ col.label }}
               </label>
             </li>
@@ -496,11 +531,23 @@ function exportCsv() {
             <template v-if="name">
               <li><hr class="dropdown-divider my-1" /></li>
               <li class="px-3 py-1 bs-dt-presets-header">{{ t('dataTable.presets') }}</li>
-              <li v-for="preset in presets" :key="'preset-' + preset.name" class="px-2 py-1 d-flex align-items-center gap-1">
-                <button class="btn btn-sm btn-link text-start p-0 flex-grow-1 text-truncate text-body text-decoration-none" :title="preset.name" @click.stop="applyPreset(preset)">
+              <li
+                v-for="preset in presets"
+                :key="'preset-' + preset.name"
+                class="px-2 py-1 d-flex align-items-center gap-1"
+              >
+                <button
+                  class="btn btn-sm btn-link text-start p-0 flex-grow-1 text-truncate text-body text-decoration-none"
+                  :title="preset.name"
+                  @click.stop="applyPreset(preset)"
+                >
                   <font-awesome-icon icon="table-columns" class="me-1 text-muted" />{{ preset.name }}
                 </button>
-                <button class="btn btn-link p-0 text-danger" :title="t('dataTable.presetDelete')" @click.stop="deletePreset(preset.name)">
+                <button
+                  class="btn btn-link p-0 text-danger"
+                  :title="t('dataTable.presetDelete')"
+                  @click.stop="deletePreset(preset.name)"
+                >
                   <font-awesome-icon icon="times" />
                 </button>
               </li>
@@ -514,7 +561,11 @@ function exportCsv() {
                     @keyup.enter="savePreset"
                     @keyup.escape="showPresetInput = false"
                   />
-                  <button class="btn btn-sm btn-primary px-2" :title="t('dataTable.presetSave')" @click.stop="savePreset">
+                  <button
+                    class="btn btn-sm btn-primary px-2"
+                    :title="t('dataTable.presetSave')"
+                    @click.stop="savePreset"
+                  >
                     <font-awesome-icon icon="check" />
                   </button>
                   <button class="btn btn-sm btn-outline-secondary px-2" @click.stop="showPresetInput = false">
@@ -537,17 +588,13 @@ function exportCsv() {
     </div>
 
     <!-- Table -->
-    <div class="table-responsive" style="overflow: visible;">
-      <table
-        class="table table-sm table-hover mb-0 bs-dt-table"
-        @mouseleave="onTableMouseup"
-        @mouseup="onTableMouseup"
-      >
+    <div class="table-responsive" style="overflow: visible">
+      <table class="table table-sm table-hover mb-0 bs-dt-table" @mouseleave="onTableMouseup" @mouseup="onTableMouseup">
         <thead>
           <!-- Column headers -->
           <tr>
             <!-- Select-all checkbox -->
-            <th v-if="selectable" style="width:2rem" class="text-center">
+            <th v-if="selectable" style="width: 2rem" class="text-center">
               <input
                 type="checkbox"
                 class="form-check-input"
@@ -561,10 +608,10 @@ function exportCsv() {
               :key="col.key"
               :class="{ 'bs-dt-sortable': col.sortable }"
               @click="col.sortable ? toggleSort(col.key) : undefined"
-              style="user-select:none; white-space:nowrap"
+              style="user-select: none; white-space: nowrap"
             >
               {{ col.label }}
-              <span v-if="col.sortable" class="text-muted ms-1" style="font-size:.7em">
+              <span v-if="col.sortable" class="text-muted ms-1" style="font-size: 0.7em">
                 <template v-if="sortKey === col.key">
                   <font-awesome-icon :icon="sortDir === 1 ? 'sort-up' : 'sort-down'" />
                 </template>
@@ -574,7 +621,7 @@ function exportCsv() {
               </span>
             </th>
             <!-- Row actions header -->
-            <th v-if="$slots['row-actions']" style="width:2.5rem"></th>
+            <th v-if="$slots['row-actions']" style="width: 2.5rem"></th>
           </tr>
           <!-- Per-column filter row -->
           <tr v-if="filterableColumns.length" class="bs-dt-filter-row">
@@ -627,11 +674,14 @@ function exportCsv() {
                 type="checkbox"
                 class="form-check-input"
                 :checked="selectedIds.has(item[idKey])"
-                @change.stop="() => {
-                  const s = new Set(selectedIds);
-                  if (s.has(item[idKey])) s.delete(item[idKey]); else s.add(item[idKey]);
-                  emit('update:selectedIds', s);
-                }"
+                @change.stop="
+                  () => {
+                    const s = new Set(selectedIds);
+                    if (s.has(item[idKey])) s.delete(item[idKey]);
+                    else s.add(item[idKey]);
+                    emit('update:selectedIds', s);
+                  }
+                "
               />
             </td>
             <td
@@ -649,7 +699,10 @@ function exportCsv() {
             </td>
           </tr>
           <tr v-if="!pageItems.length">
-            <td :colspan="visibleColumns.length + (selectable ? 1 : 0) + ($slots['row-actions'] ? 1 : 0)" class="text-center text-muted py-3">
+            <td
+              :colspan="visibleColumns.length + (selectable ? 1 : 0) + ($slots['row-actions'] ? 1 : 0)"
+              class="text-center text-muted py-3"
+            >
               {{ t('common.noData') }}
             </td>
           </tr>
@@ -673,10 +726,10 @@ function exportCsv() {
 
 <style scoped>
 .bs-dt-presets-header {
-  font-size: .78em;
+  font-size: 0.78em;
   color: var(--bs-secondary-color);
   text-transform: uppercase;
-  letter-spacing: .05em;
+  letter-spacing: 0.05em;
 }
 .bs-dt-sortable {
   cursor: pointer;
@@ -686,15 +739,16 @@ function exportCsv() {
 }
 .bs-dt-table {
   /* Slightly more breathing room than table-sm provides. */
-  --bs-table-cell-padding-y: .45rem;
-  --bs-table-cell-padding-x: .65rem;
+  --bs-table-cell-padding-y: 0.45rem;
+  --bs-table-cell-padding-x: 0.65rem;
   /* Fixed layout so columns share the container width and never push the
      table beyond the viewport. Combined with the ellipsis rules below this
      truncates any over-long content. */
   table-layout: fixed;
   width: 100%;
 }
-.bs-dt-table td, .bs-dt-table th {
+.bs-dt-table td,
+.bs-dt-table th {
   vertical-align: middle;
   border-color: var(--bs-border-color-translucent);
 }
@@ -731,11 +785,11 @@ function exportCsv() {
   background: var(--bs-tertiary-bg);
   /* Align input visually with body-cell text: shave ~2px off the left/right
      so the input border sits flush with the column's text gutter. */
-  padding: .25rem .2rem;
+  padding: 0.25rem 0.2rem;
 }
 .bs-dt-table thead tr.bs-dt-filter-row .form-control-sm {
-  font-size: .8rem;
-  padding: .15rem .4rem;
+  font-size: 0.8rem;
+  padding: 0.15rem 0.4rem;
   background: var(--bs-body-bg);
   border-color: var(--bs-border-color-translucent);
 }
@@ -760,7 +814,7 @@ function exportCsv() {
   background-color: var(--bs-secondary-bg);
   color: var(--bs-body-color);
 }
-[data-bs-theme="dark"] .bs-dt-table tbody tr.bs-dt-selected > td {
+[data-bs-theme='dark'] .bs-dt-table tbody tr.bs-dt-selected > td {
   --bs-table-bg: #2b3035;
   --bs-table-color: #f8f9fa;
   background-color: #2b3035;
@@ -782,8 +836,8 @@ function exportCsv() {
   background-color: var(--bs-tertiary-bg);
   color: var(--bs-body-color);
 }
-[data-bs-theme="dark"] :deep(.dropdown-menu .dropdown-item:hover),
-[data-bs-theme="dark"] :deep(.dropdown-menu .dropdown-item:focus) {
+[data-bs-theme='dark'] :deep(.dropdown-menu .dropdown-item:hover),
+[data-bs-theme='dark'] :deep(.dropdown-menu .dropdown-item:focus) {
   background-color: #495057;
   color: #f8f9fa;
 }

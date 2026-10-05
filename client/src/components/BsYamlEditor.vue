@@ -1,5 +1,4 @@
 <script setup>
-
 /******************************************************************/
 /*                                                                */
 /*  Bootstrap YAML Editor Component                               */
@@ -30,7 +29,7 @@ const props = defineProps({
   showDownloadButton: { type: Boolean, default: false },
   name: { type: String, default: 'yaml-field' },
   errors: { type: Array, default: () => [] },
-  help: { type: String, default: '' }
+  help: { type: String, default: '' },
 });
 
 const fileInputRef = ref(null);
@@ -50,7 +49,7 @@ const yamlString = computed({
       // Keep as string if invalid (validation will catch it)
       model.value = value;
     }
-  }
+  },
 });
 
 // Trigger file input click
@@ -62,14 +61,14 @@ function triggerFileInput() {
 async function handleFileLoad(event) {
   const file = event.target.files?.[0];
   if (!file) return;
-  
+
   // Check file extension
   const fileName = file.name.toLowerCase();
   if (!fileName.endsWith('.yml') && !fileName.endsWith('.yaml')) {
     toast.error('Please select a .yml or .yaml file');
     return;
   }
-  
+
   try {
     const text = await file.text();
     const parsed = YAML.parse(text);
@@ -79,7 +78,7 @@ async function handleFileLoad(event) {
   } catch (e) {
     toast.error(`Failed to parse ${file.name}: ${e.message}`);
   }
-  
+
   // Reset input so same file can be loaded again
   event.target.value = '';
 }
@@ -103,36 +102,37 @@ function handleDownload() {
     toast.error(`Failed to download: ${e.message}`);
   }
 }
-
 </script>
 
 <template>
   <div class="yaml-editor-wrapper">
     <!-- Action buttons -->
     <div v-if="showLoadButton || showDownloadButton" class="mb-2 d-flex gap-2">
-      <BsButton 
-        v-if="showLoadButton" 
+      <BsButton
+        v-if="showLoadButton"
         cssClass="btn-sm"
         icon="file-import"
         @click="triggerFileInput"
-        :disabled="disabled || readonly">
+        :disabled="disabled || readonly"
+      >
         Load YAML
       </BsButton>
-      
-      <BsButton 
-        v-if="showDownloadButton" 
+
+      <BsButton
+        v-if="showDownloadButton"
         cssClass="btn-sm"
         icon="download"
         @click="handleDownload"
-        :disabled="disabled || !model">
+        :disabled="disabled || !model"
+      >
         Download
       </BsButton>
-      
+
       <!-- Hidden file input -->
-      <input 
+      <input
         v-if="showLoadButton"
         ref="fileInputRef"
-        type="file" 
+        type="file"
         accept=".yml,.yaml"
         @change="handleFileLoad"
         style="display: none"
@@ -143,7 +143,7 @@ function handleDownload() {
     <div v-if="readonly" class="card p-3 yaml-readonly">
       <pre v-highlightjs><code language="yaml" style="border:none;padding:0">{{ yamlString }}</code></pre>
     </div>
-    
+
     <!-- Editable mode -->
     <div v-else :class="{ 'is-invalid': hasError }">
       <div v-if="icon" class="input-group" :class="{ 'is-invalid': hasError }">
@@ -170,14 +170,14 @@ function handleDownload() {
         />
       </div>
     </div>
-    
+
     <!-- Error messages -->
     <div v-if="errors.length > 0" class="invalid-feedback d-block">
       <div v-for="(error, index) in errors" :key="index">
         {{ error.$params?.description || error.$message || error }}
       </div>
     </div>
-    
+
     <!-- Help text -->
     <small v-if="help" class="form-text text-muted">{{ help }}</small>
   </div>
@@ -189,17 +189,17 @@ function handleDownload() {
     margin: 0;
     background: transparent;
   }
-  
+
   .ace-editor-wrapper.is-invalid {
     border: 1px solid #dc3545;
     border-radius: 0.25rem;
   }
-  
+
   .input-group .ace-editor-wrapper.is-invalid {
     border: none;
     border-radius: 0;
   }
-  
+
   .input-group.is-invalid {
     border: 1px solid #dc3545;
     border-radius: 0.25rem;

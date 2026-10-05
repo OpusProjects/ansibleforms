@@ -10,44 +10,46 @@ const { t } = useI18n();
 const settings = computed(() => getSettings(t));
 import TokenStorage from '@/lib/TokenStorage';
 
-
 const authenticated = ref(false);
 const tests = ref({});
 
 async function test_connection(item) {
-    if (item) {
-        if(!tests.value[item.id]){
-            try {
-                tests.value[item.id] = t('admin.testing');
-                const result = await axios.get(`/api/v2/credential/testdb/${item.id}`, TokenStorage.getAuthentication());
-                toast.success(result.data.message);
-            } catch (err) {
-                toast.error(Helpers.parseAxiosResponseError(err, t('admin.connectionFailed')));
-            } finally {
-                delete tests.value[item.id];
-            }
-        }else {
-            toast.warning(t('admin.testInProgress'));
-        }
+  if (item) {
+    if (!tests.value[item.id]) {
+      try {
+        tests.value[item.id] = t('admin.testing');
+        const result = await axios.get(`/api/v2/credential/testdb/${item.id}`, TokenStorage.getAuthentication());
+        toast.success(result.data.message);
+      } catch (err) {
+        toast.error(Helpers.parseAxiosResponseError(err, t('admin.connectionFailed')));
+      } finally {
+        delete tests.value[item.id];
+      }
+    } else {
+      toast.warning(t('admin.testInProgress'));
     }
+  }
 }
 
-
 onMounted(async () => {
-    authenticated.value = !!(await Profile.load());
-    if (!authenticated.value) {
-        return;
-    }
+  authenticated.value = !!(await Profile.load());
+  if (!authenticated.value) {
+    return;
+  }
 });
-
 </script>
 <template>
-    <AppNav />
-    <div class="flex-shrink-0">
-        <main class="d-flex flex-nowrap container-xxl">
-            <AppSidebar />
-            <AppAdminMulti v-if="authenticated" apiVersion="2" :settings="settings.credentials" @test="test_connection" :busyItems="tests" />
-        </main>
-    </div>
-
+  <AppNav />
+  <div class="flex-shrink-0">
+    <main class="d-flex flex-nowrap container-xxl">
+      <AppSidebar />
+      <AppAdminMulti
+        v-if="authenticated"
+        apiVersion="2"
+        :settings="settings.credentials"
+        @test="test_connection"
+        :busyItems="tests"
+      />
+    </main>
+  </div>
 </template>

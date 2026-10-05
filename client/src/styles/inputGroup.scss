@@ -1,12 +1,12 @@
 .input-group:focus-within {
-    color: #212529;
-    background-color: #fff;
-    border-color: #86b7fe;
-    outline: 0;
-    box-shadow: 0 0 0 0.25rem rgb(13 110 253 / 25%);
-    z-index: 3;
-    border-radius: .25rem;
+  color: #212529;
+  background-color: #fff;
+  border-color: #86b7fe;
+  outline: 0;
+  box-shadow: 0 0 0 0.25rem rgb(13 110 253 / 25%);
+  z-index: 3;
+  border-radius: 0.25rem;
 }
 .input-group .form-control:focus {
-    box-shadow: none !important;
+  box-shadow: none !important;
 }

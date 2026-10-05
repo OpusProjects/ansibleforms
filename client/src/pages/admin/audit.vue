@@ -38,8 +38,16 @@ const filterOutcome = ref('');
 // `constructor` and `__proto__` to inherited members, which are truthy - so a row with
 // outcome 'constructor' handed a function to t() and blanked the entire table. And an
 // unrecognised outcome must never be DISPLAYED AS SUCCESS in an audit trail.
-const outcomeBadge = Object.assign(Object.create(null), { success: 'text-bg-success', failure: 'text-bg-danger', denied: 'text-bg-warning' });
-const outcomeLabelKey = Object.assign(Object.create(null), { success: 'audit.outcomeSuccess', failure: 'audit.outcomeFailure', denied: 'audit.outcomeDenied' });
+const outcomeBadge = Object.assign(Object.create(null), {
+  success: 'text-bg-success',
+  failure: 'text-bg-danger',
+  denied: 'text-bg-warning',
+});
+const outcomeLabelKey = Object.assign(Object.create(null), {
+  success: 'audit.outcomeSuccess',
+  failure: 'audit.outcomeFailure',
+  denied: 'audit.outcomeDenied',
+});
 // Actions are stored as machine strings ('settings.config.update') because that is what
 // the filter matches on and what a support conversation quotes. This turns them into a
 // sentence for reading. Every action the routes can produce has an entry ; anything that
@@ -122,7 +130,7 @@ async function load() {
 async function loadFacets() {
   try {
     const res = await axios.get('/api/v2/audit/facets', TokenStorage.getAuthentication());
-    facets.value = res.data?.actions !== undefined ? res.data : (res.data?.result || { actions: [], actors: [] });
+    facets.value = res.data?.actions !== undefined ? res.data : res.data?.result || { actions: [], actors: [] };
   } catch {
     facets.value = { actions: [], actors: [] };
   }
@@ -139,11 +147,15 @@ async function applyFilters() {
   await load();
 }
 
-function toggle(id) { expanded.value[id] = !expanded.value[id]; }
+function toggle(id) {
+  expanded.value[id] = !expanded.value[id];
+}
 
 onMounted(async () => {
   authenticated.value = !!(await Profile.load());
-  if (authenticated.value) { await Promise.all([load(), loadFacets()]); }
+  if (authenticated.value) {
+    await Promise.all([load(), loadFacets()]);
+  }
 });
 </script>
 
@@ -152,22 +164,42 @@ onMounted(async () => {
   <div class="flex-shrink-0">
     <main class="d-flex flex-nowrap container-xxl">
       <AppSidebar />
-      <AppSettings v-if="authenticated" icon="clipboard-list" :title="t('audit.title')" :description="t('audit.description')">
+      <AppSettings
+        v-if="authenticated"
+        icon="clipboard-list"
+        :title="t('audit.title')"
+        :description="t('audit.description')"
+      >
         <template #default>
           <!-- Filters live INSIDE the card, in the exact toolbar shape BsDataTable uses:
                same wrapper classes, and the controls pushed right with ms-auto the way
                it positions its column picker (see BsDataTable's toolbar). -->
           <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
             <div class="ms-auto d-flex gap-2">
-              <select v-model="filterActor" class="form-select form-select-sm" style="width:auto" @change="applyFilters">
+              <select
+                v-model="filterActor"
+                class="form-select form-select-sm"
+                style="width: auto"
+                @change="applyFilters"
+              >
                 <option value="">{{ t('audit.allActors') }}</option>
                 <option v-for="a in facets.actors" :key="'ac-' + a" :value="a">{{ a }}</option>
               </select>
-              <select v-model="filterAction" class="form-select form-select-sm" style="width:auto" @change="applyFilters">
+              <select
+                v-model="filterAction"
+                class="form-select form-select-sm"
+                style="width: auto"
+                @change="applyFilters"
+              >
                 <option value="">{{ t('audit.allActions') }}</option>
                 <option v-for="a in facets.actions" :key="'an-' + a" :value="a">{{ actionLabel(a) }}</option>
               </select>
-              <select v-model="filterOutcome" class="form-select form-select-sm" style="width:auto" @change="applyFilters">
+              <select
+                v-model="filterOutcome"
+                class="form-select form-select-sm"
+                style="width: auto"
+                @change="applyFilters"
+              >
                 <option value="">{{ t('audit.allOutcomes') }}</option>
                 <option value="success">{{ t('audit.outcomeSuccess') }}</option>
                 <option value="failure">{{ t('audit.outcomeFailure') }}</option>
@@ -190,44 +222,52 @@ onMounted(async () => {
                  table reads as one of the app's tables. Its .bs-dt-table rules are
                  scoped to that component, so the metrics are repeated below rather
                  than borrowed - a scoped class cannot cross a component boundary. -->
-            <div class="table-responsive" style="overflow: visible;">
-            <table class="table table-sm table-hover mb-0 audit-table">
-              <thead>
-                <tr>
-                  <th style="width:12rem">{{ t('audit.time') }}</th>
-                  <th style="width:10rem">{{ t('audit.actor') }}</th>
-                  <th>{{ t('audit.action') }}</th>
-                  <th style="width:18rem">{{ t('audit.target') }}</th>
-                  <th style="width:7rem">{{ t('audit.outcome') }}</th>
-                  <th style="width:10rem">{{ t('audit.ip') }}</th>
-                  <th style="width:3rem"></th>
-                </tr>
-              </thead>
-              <tbody>
-                <template v-for="r in records" :key="r.id">
-                  <tr class="audit-row">
-                    <td class="font-monospace">{{ Helpers.formatServerDate(r.created_at) }}</td>
-                    <td>
-                      <span v-if="r.actor">{{ r.actor }}</span>
-                      <span v-else class="text-muted fst-italic">{{ t('audit.system') }}</span>
-                    </td>
-                    <td>{{ actionLabel(r.action) }}</td>
-                    <td>{{ r.target }}</td>
-                    <td><span class="badge" :class="badgeClass(r.outcome)">{{ outcomeText(r.outcome) }}</span></td>
-                    <td class="font-monospace small text-muted">{{ r.ip }}</td>
-                    <td class="text-end">
-                      <BsButton v-if="r.detail" :isIconButton="true" colorClass="secondary" cssClass="btn-sm"
-                        :icon="expanded[r.id] ? 'chevron-up' : 'chevron-down'" @click="toggle(r.id)" />
-                    </td>
+            <div class="table-responsive" style="overflow: visible">
+              <table class="table table-sm table-hover mb-0 audit-table">
+                <thead>
+                  <tr>
+                    <th style="width: 12rem">{{ t('audit.time') }}</th>
+                    <th style="width: 10rem">{{ t('audit.actor') }}</th>
+                    <th>{{ t('audit.action') }}</th>
+                    <th style="width: 18rem">{{ t('audit.target') }}</th>
+                    <th style="width: 7rem">{{ t('audit.outcome') }}</th>
+                    <th style="width: 10rem">{{ t('audit.ip') }}</th>
+                    <th style="width: 3rem"></th>
                   </tr>
-                  <tr v-if="expanded[r.id] && r.detail">
-                    <td colspan="7" class="bg-body-tertiary">
-                      <pre class="mb-0 font-monospace fs-6 audit-detail">{{ JSON.stringify(r.detail, null, 2) }}</pre>
-                    </td>
-                  </tr>
-                </template>
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  <template v-for="r in records" :key="r.id">
+                    <tr class="audit-row">
+                      <td class="font-monospace">{{ Helpers.formatServerDate(r.created_at) }}</td>
+                      <td>
+                        <span v-if="r.actor">{{ r.actor }}</span>
+                        <span v-else class="text-muted fst-italic">{{ t('audit.system') }}</span>
+                      </td>
+                      <td>{{ actionLabel(r.action) }}</td>
+                      <td>{{ r.target }}</td>
+                      <td>
+                        <span class="badge" :class="badgeClass(r.outcome)">{{ outcomeText(r.outcome) }}</span>
+                      </td>
+                      <td class="font-monospace small text-muted">{{ r.ip }}</td>
+                      <td class="text-end">
+                        <BsButton
+                          v-if="r.detail"
+                          :isIconButton="true"
+                          colorClass="secondary"
+                          cssClass="btn-sm"
+                          :icon="expanded[r.id] ? 'chevron-up' : 'chevron-down'"
+                          @click="toggle(r.id)"
+                        />
+                      </td>
+                    </tr>
+                    <tr v-if="expanded[r.id] && r.detail">
+                      <td colspan="7" class="bg-body-tertiary">
+                        <pre class="mb-0 font-monospace fs-6 audit-detail">{{ JSON.stringify(r.detail, null, 2) }}</pre>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
             </div>
             <div class="mt-2">
               <BsPagination
@@ -242,7 +282,9 @@ onMounted(async () => {
           </template>
         </template>
         <template #actions>
-          <BsButton cssClass="ms-3" :icon="loading ? 'spinner' : 'refresh'" @click="load()">{{ t('audit.refresh') }}</BsButton>
+          <BsButton cssClass="ms-3" :icon="loading ? 'spinner' : 'refresh'" @click="load()">{{
+            t('audit.refresh')
+          }}</BsButton>
         </template>
       </AppSettings>
     </main>
@@ -254,8 +296,8 @@ onMounted(async () => {
    scoped block, so they cannot reach this markup - repeating them here is what keeps
    the two tables looking identical. */
 .audit-table {
-  --bs-table-cell-padding-y: .45rem;
-  --bs-table-cell-padding-x: .65rem;
+  --bs-table-cell-padding-y: 0.45rem;
+  --bs-table-cell-padding-x: 0.65rem;
 }
 .audit-table td,
 .audit-table th {

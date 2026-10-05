@@ -14,7 +14,7 @@
             <p>The REST API is <strong>v2</strong> (API v1 was removed in 7.0.0).</p>
             <div class="bg-light p-3 rounded border mb-3">
               <div class="mb-2">API Docs Endpoint:</div>
-              <pre class="mb-0" style="font-family: 'Fira Mono', 'Consolas', monospace; background: none; border: none;">
+              <pre class="mb-0" style="font-family: 'Fira Mono', 'Consolas', monospace; background: none; border: none">
 <a href="api/v2/docs">/api/v2/docs</a>
               </pre>
             </div>

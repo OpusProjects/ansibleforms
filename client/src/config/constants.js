@@ -40,7 +40,9 @@ export function coerceConstantValue(raw) {
     try {
       const parsed = YAML.parse(trimmed);
       if (parsed !== null && typeof parsed === 'object') return parsed;
-    } catch { /* unparsable : keep the text, and see constantValueError */ }
+    } catch {
+      /* unparsable : keep the text, and see constantValueError */
+    }
     return v;
   }
   if (trimmed === 'true') return true;
