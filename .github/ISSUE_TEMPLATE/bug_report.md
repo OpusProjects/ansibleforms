@@ -29,7 +29,7 @@ ansibleforms vx.x.x
 **Deployment**
 Deployed ansibleforms with :
 - dockerbuild
-- using ansibleforms-dockercompose
+- docker compose (ansibleforms/docker)
 - kubernetes
 - nodejs native
 
