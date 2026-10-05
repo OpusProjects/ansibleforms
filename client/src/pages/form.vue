@@ -1355,6 +1355,8 @@ function handleSubformAction(entry, { action, value }) {
 
 // trigger a job abort
 async function abortJob(id) {
+  // no id yet : the job is still being created
+  if (!id) return;
   toast.warning('Aborting job ' + id);
   try {
     const result = await axios.post(`/api/v2/job/${id}/abort`, {}, TokenStorage.getAuthentication());
@@ -1470,6 +1472,10 @@ async function getJob(id, final) {
 async function launchForm(postdata) {
   message.value = 'Connecting with job api ';
   status.value = '';
+  // the previous job is done with : until the server answers with the new id, the abort
+  // button must not point at it (an abort clicked during the launch went to the old job)
+  jobId.value = undefined;
+  abortTriggered.value = false;
   try {
     status.value = 'running';
     const result = await axios.post(`/api/v2/job/`, postdata, TokenStorage.getAuthentication());
@@ -2083,7 +2089,7 @@ onBeforeUnmount(() => {
               </button>
             </div>
           </div>
-          <div class="col" v-if="formStatus.abort && !abortTriggered && (currentForm.abortable || true)">
+          <div class="col" v-if="formStatus.abort && jobId && !abortTriggered && (currentForm.abortable || true)">
             <div class="d-grid">
               <button type="button" class="btn btn-danger text-white" @click="abortJob(jobId)">
                 <FaIcon icon="stop"></FaIcon><span class="ms-3">{{ t('form.abort') }}</span>
