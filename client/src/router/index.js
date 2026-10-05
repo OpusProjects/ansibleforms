@@ -4,42 +4,44 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import BaseUrl from '@/lib/BaseUrl'
 
-import designer from "@/pages/designer.vue"
-import index from "@/pages/index.vue"
-import form from "@/pages/form.vue"
-import login from "@/pages/login.vue"
-import logout from "@/pages/logout.vue"
-import logs from "@/pages/logs.vue"
-import jobs from "@/pages/jobs.vue"
-import apidocs from "@/pages/api-docs.vue"
-import unknown from "@/pages/unknown.vue"
-import changePassword from "@/pages/change-password.vue"  
-import schema from "@/pages/schema.vue"
-import error from "@/pages/error.vue"
+// Pages load on first visit rather than up front: each becomes its own chunk, so the first
+// page view downloads the app shell and that page instead of the whole application.
+const designer = () => import("@/pages/designer.vue")
+const index = () => import("@/pages/index.vue")
+const form = () => import("@/pages/form.vue")
+const login = () => import("@/pages/login.vue")
+const logout = () => import("@/pages/logout.vue")
+const logs = () => import("@/pages/logs.vue")
+const jobs = () => import("@/pages/jobs.vue")
+const apidocs = () => import("@/pages/api-docs.vue")
+const unknown = () => import("@/pages/unknown.vue")
+const changePassword = () => import("@/pages/change-password.vue")
+const schema = () => import("@/pages/schema.vue")
+const error = () => import("@/pages/error.vue")
 
 // admin
-import aap from "@/pages/admin/aap.vue"
-import credentials from "@/pages/admin/credentials.vue"
-import oauth2 from "@/pages/admin/oauth2.vue"
-import groups from "@/pages/admin/groups.vue"
-import knownHosts from "@/pages/admin/knownHosts.vue"
-import ldap from "@/pages/admin/ldap.vue"
-import chatSettings from "@/pages/admin/chat.vue"
-import mailSettings from "@/pages/admin/mailSettings.vue"
-import logo from "@/pages/admin/logo.vue"
-import repositories from "@/pages/admin/repositories.vue"
-import schedules from "@/pages/admin/schedules.vue"
-import storedJobs from "@/pages/admin/stored-jobs.vue"
-import settings from "@/pages/admin/settings.vue"
-import status from "@/pages/admin/status.vue"
-import secretStores from "@/pages/admin/secretStores.vue"
-import audit from "@/pages/admin/audit.vue"
-import categories from "@/pages/admin/categories.vue"
-import roles from "@/pages/admin/roles.vue"
-import constants from "@/pages/admin/constants.vue"
-import ssh from "@/pages/admin/ssh.vue"
-import users from "@/pages/admin/users.vue"
-import backups from "@/pages/admin/backups.vue"
+const aap = () => import("@/pages/admin/aap.vue")
+const credentials = () => import("@/pages/admin/credentials.vue")
+const oauth2 = () => import("@/pages/admin/oauth2.vue")
+const groups = () => import("@/pages/admin/groups.vue")
+const knownHosts = () => import("@/pages/admin/knownHosts.vue")
+const ldap = () => import("@/pages/admin/ldap.vue")
+const chatSettings = () => import("@/pages/admin/chat.vue")
+const mailSettings = () => import("@/pages/admin/mailSettings.vue")
+const logo = () => import("@/pages/admin/logo.vue")
+const repositories = () => import("@/pages/admin/repositories.vue")
+const schedules = () => import("@/pages/admin/schedules.vue")
+const storedJobs = () => import("@/pages/admin/stored-jobs.vue")
+const settings = () => import("@/pages/admin/settings.vue")
+const status = () => import("@/pages/admin/status.vue")
+const secretStores = () => import("@/pages/admin/secretStores.vue")
+const audit = () => import("@/pages/admin/audit.vue")
+const categories = () => import("@/pages/admin/categories.vue")
+const roles = () => import("@/pages/admin/roles.vue")
+const constants = () => import("@/pages/admin/constants.vue")
+const ssh = () => import("@/pages/admin/ssh.vue")
+const users = () => import("@/pages/admin/users.vue")
+const backups = () => import("@/pages/admin/backups.vue")
 
 import TokenStorage from '@/lib/TokenStorage.js'
 
