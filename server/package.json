@@ -92,5 +92,13 @@
     }
   },
   "author": "ansibleguy",
-  "license": "GPL"
+  "license": "GPL",
+  "allowScripts": {
+    "bcrypt": true,
+    "node-jq": true,
+    "oracledb": true,
+    "unix-dgram": true,
+    "@scarf/scarf": false,
+    "core-js": false
+  }
 }
