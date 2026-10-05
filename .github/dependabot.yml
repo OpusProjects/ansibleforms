@@ -51,8 +51,7 @@ updates:
       actions:
         patterns: ['*']
 
-  # Moves the digest pin on ansibleforms-base in Dockerfile when .github/workflows/base.yml
-  # publishes a new base image. Dockerfile.base (node) is watched too - within its major.
+  # Watches the digest pin on the base image in Dockerfile.
   - package-ecosystem: docker
     directory: /
     schedule:

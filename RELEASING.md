@@ -83,16 +83,14 @@ refuses when `server/package.json` at that tag names another version.
 
 ## The base image
 
-`ghcr.io/ansibleforms/ansibleforms-base` holds node, python, ansible and the os packages. It is
-versioned by date (`2026.10.01`, plus `latest`), independent of the application.
+The 6.x line builds on `ansibleguy/ansibleforms-base` from Docker Hub, pinned by digest in
+`Dockerfile` (the 2026.09.25-3 build). That image is frozen: nothing publishes to Docker Hub
+any more, and the base is no longer built from this branch.
 
-- **Build it:** Actions → **Base image** → Run workflow. It also runs by itself when a
-  change to `Dockerfile.base` (a new python or ansible version) is merged into main. Nothing
-  else rebuilds it.
-- **Use it:** the application `Dockerfile` pins the base by digest, so a new base changes
-  nothing until the pin moves. Dependabot opens a `build(deps): bump ansibleforms-base`
-  pull request for that. Build a release candidate of it to test the app on the new base, then
-  merge it. Retitle it `fix(base): ...` if the update should appear in the changelog.
+The base of current versions is `ghcr.io/ansibleforms/base-server`, built in
+[ansibleforms/base-images](https://github.com/ansibleforms/base-images). To move 6.x onto it,
+point the `FROM` lines in `Dockerfile` at a `base-server` digest and build a release
+candidate to test it.
 
 ## A patch release of 6.x
 
