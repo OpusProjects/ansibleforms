@@ -1,45 +1,55 @@
-# Intro
-Ansible forms is a lightweight node.js webapplication to generate userfriendly and pretty forms to kickoff ansible playbooks or awx (ansible tower) templates.
+# AnsibleForms
 
-# Changed recently 
+[![CI](https://img.shields.io/github/actions/workflow/status/ansibleforms/ansibleforms/ci.yml?branch=main&label=CI)](https://github.com/ansibleforms/ansibleforms/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/ansibleforms/ansibleforms?label=release)](https://github.com/ansibleforms/ansibleforms/releases/latest)
+[![Image](https://img.shields.io/badge/image-ghcr.io-blue)](https://github.com/ansibleforms/ansibleforms/pkgs/container/ansibleforms)
+[![License](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
+[![Docs](https://img.shields.io/badge/docs-ansibleforms.com-informational)](https://ansibleforms.com)
 
-## Vite vs webpack
-We took the path to Vite (instead of webpack & babel).  This means that the code is now ESM only.  This means that you can not use "require" anymore, but you can use "import" and "export default".  Custom functions must be rewritten to use the new ESM syntax. (/functions/custom.js is an example where this could break).
+AnsibleForms is a self-hosted web application that turns Ansible playbooks and AWX/AAP templates
+into self-service forms: users fill in a form, AnsibleForms builds the extravars and launches the job.
+Everything about installing, configuring and writing forms is documented at [ansibleforms.com](https://ansibleforms.com).
 
-## Latest packages
+## Features
 
-A whole bunch of packages are updated, so there might be some breaking changes in the packages.  I have tested the most important ones, but please report if you find any issues.  In the backend, ALL packages are latest now.  Using Node 20.  In the frontend, all packages are update as far as Vue 2 supports it.  This means that the frontend is still Vue 2, but the packages are updated to latest versions.
+- Cascaded dropdowns fed by databases, REST APIs, files and JavaScript or jq expressions
+- Field dependencies, validation, multi-step forms, approvals and email notifications
+- Role-based access per form category, with local, LDAP, Azure AD and OIDC logins
+- Job history and output, abort and relaunch, plus one-off and recurring schedules
+- Forms kept in Git repositories, edited in the built-in designer
+- A REST API with interactive docs, an MCP server and an optional chat assistant
 
-## Bootstrap 5.3
+## Installation
 
-Bootstrap is now used (instead of Bulma) and themes are now added (docs will follow)
+AnsibleForms ships as one container image, `ghcr.io/ansibleforms/ansibleforms`, next to a MySQL database.
+The [installation guide](https://ansibleforms.com/installation) covers every option; the two ready-made setups are:
 
-## Forms live in their own files (7.0.0)
+| Setup | Repository |
+|---|---|
+| Docker Compose | [ansibleforms/docker](https://github.com/ansibleforms/docker) |
+| Kubernetes (Helm) | [ansibleforms/helm-charts](https://github.com/ansibleforms/helm-charts) |
 
-The base config (`config.yaml`, or the database) holds the categories, roles and constants only. Every form is a file of its own in the forms folder (`FORMS_FOLDER_PATH`) or in a forms repository. The old single `forms.yaml` and forms inside the base config are no longer read since 7.0.0 - see the upgrade guide.
+## Release lines
 
-## The REST API
+Two major versions are maintained, each on its own branch with its own changelog and image tags.
+Coming from 6? Read [Upgrading to 7](https://ansibleforms.com/upgrade-7) before you move over.
 
-The REST API is `/api/v2/` (interactive docs at `/api/v2/docs`). API v1 was removed in 7.0.0.
+| Branch | Version | Status |
+|---|---|---|
+| `main` | 7.x | new features and fixes |
+| `release/6.x` | 6.x | fixes only |
 
-## Introducing helm charts
+## Deployment topology
 
-A new helm chart repo is added
+AnsibleForms runs as a single instance: schema migrations, the scheduler and the job runner all
+assume they are the only writer, so replicas behind a load balancer are not supported. For high
+availability, run one instance with restart-on-failure and back up the database and the persistent volume.
 
-# Deployment topology
+## Contributing
 
-AnsibleForms is designed to run as a **single instance**. There is no support today for running multiple replicas behind a load balancer: schema migrations, the scheduler/cron loop, and the job runner all assume they are the only writer. Running more than one instance against the same database can cause migration races, duplicated scheduled jobs and corrupted job state. If you need HA, run a single active instance with restart-on-failure and back up the database + persistent volume.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the development setup and the pull request rules, and
+[RELEASING.md](RELEASING.md) for how releases are cut. Report security issues as [SECURITY.md](SECURITY.md) describes.
 
-# Configuration / documentation
-[Go to the documentation website](https://ansibleforms.com)
+## License
 
-# Future plans
-
-## ORM
-The backend is now using mysql server and plain sql statements.  There are plans to move to SqlAlchemy, but this is not yet implemented.  Moving to SqlAlchemy will allow to use other databases like postgresql, sqlite, etc.  This is a long term plan.
-
-## Kubernetes
-More focus to Kubernetes will folow.
-
-## Multi person development
-Senior node.js developers would be welcome, up till now this is still a one person project that started as POC one day like "How hard can it be to make a webapplication to kickoff ansible playbooks?".  
+[GPL-3.0](LICENSE).
