@@ -1,6 +1,6 @@
 name: Base image
 
-# ansibleguy/ansibleforms-base holds what the application runs ON - node, python, ansible,
+# ghcr.io/ansibleforms/ansibleforms-base holds what the application runs ON - node, python, ansible,
 # the os packages - and is versioned independently of the application : by build date,
 # never by the app's semver.
 #
@@ -24,6 +24,8 @@ on:
     paths:
       - 'Dockerfile.base'
 
+# GHCR only. The Docker Hub copy (ansibleguy/ansibleforms-base) is no longer published to.
+
 permissions:
   contents: read
   packages: write
@@ -36,21 +38,8 @@ jobs:
   publish:
     name: Build and push
     runs-on: ubuntu-latest
-    environment: dockerhub
     steps:
       - uses: actions/checkout@v7
-
-      - name: Is Docker Hub configured?
-        id: hub
-        env:
-          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-        run: |
-          if [ -n "$DOCKERHUB_TOKEN" ]; then
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::DOCKERHUB_TOKEN is not set - publishing to GHCR only"
-          fi
 
       - uses: docker/setup-buildx-action@v4
 
@@ -61,18 +50,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Log in to Docker Hub
-        if: steps.hub.outputs.enabled == 'true'
-        uses: docker/login-action@v4
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
       - name: Work out the tags
         id: tags
         run: |
           ghcr="ghcr.io/${{ github.repository }}-base"
-          hub="${{ vars.DOCKERHUB_BASE_REPOSITORY || 'ansibleguy/ansibleforms-base' }}"
           date=$(date -u +%Y.%m.%d)
           # immutable per build : a same-day rebuild must not overwrite the earlier one.
           # Runs after the logins, so a private package is found as well.
@@ -80,9 +61,6 @@ jobs:
             date="$date-${{ github.run_number }}"
           fi
           tags="$ghcr:$date,$ghcr:latest"
-          if [ "${{ steps.hub.outputs.enabled }}" = "true" ]; then
-            tags="$tags,$hub:$date,$hub:latest"
-          fi
           echo "date=$date" >> "$GITHUB_OUTPUT"
           echo "list=$tags" >> "$GITHUB_OUTPUT"
           echo "$tags" | tr ',' '\n'

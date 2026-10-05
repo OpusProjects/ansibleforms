@@ -8,10 +8,8 @@ name: Publish
 #   pre-release 7.0.0-beta.2 -> 7.0.0-beta.2, 7-beta, next (never latest)
 #   rc 6.5.3-rc.551.1  -> 6.5.3-rc.551.1, 6-rc, latest-rc
 #
-# It pushes to GHCR always and to Docker Hub when the secret is there. Docker Hub stays
-# the canonical channel - docs/installation.md tells people to pull ansibleguy/ansibleforms
-# and every deployment in the wild points at it - so GHCR is a mirror beside it, not a
-# replacement. To drop Docker Hub one day, delete its login step and its tags.
+# Images go to GHCR only. Docker Hub (ansibleguy/ansibleforms) is no longer published to:
+# it keeps the releases it already has and gets no new version, of either line.
 #
 # It does not commit anything. CI fails a pull request whose server/schema/public is stale,
 # so by the time something is published that copy is correct.
@@ -46,7 +44,6 @@ jobs:
   publish:
     name: Build and push
     runs-on: ubuntu-latest
-    environment: dockerhub
     # one publish per version at a time ; a newer rc run for the same pull request waits
     concurrency:
       group: publish-${{ inputs.version || inputs.tag }}
@@ -83,26 +80,11 @@ jobs:
           fi
           echo "manifest and release agree on $VERSION"
 
-      # Docker Hub is optional, GHCR is not. When the secret is absent the Docker Hub
-      # login and its tags are left out rather than failing the job.
-      - name: Is Docker Hub configured?
-        id: hub
-        env:
-          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-        run: |
-          if [ -n "$DOCKERHUB_TOKEN" ]; then
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::DOCKERHUB_TOKEN is not set - publishing to GHCR only"
-          fi
-
       - name: Work out the tags
         id: tags
         run: |
           # github.repository is already lowercase here ; GHCR rejects anything else
           ghcr="ghcr.io/${{ github.repository }}"
-          hub="${{ vars.DOCKERHUB_REPOSITORY || 'ansibleguy/ansibleforms' }}"
           major="${VERSION%%.*}"
           minor="$major.$(echo "$VERSION" | cut -d. -f2)"
 
@@ -124,7 +106,6 @@ jobs:
           tags=""
           for n in $names; do
             tags="$tags,$ghcr:$n"
-            if [ "${{ steps.hub.outputs.enabled }}" = "true" ]; then tags="$tags,$hub:$n"; fi
           done
           tags="${tags#,}"
           echo "list=$tags" >> "$GITHUB_OUTPUT"
@@ -138,13 +119,6 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Log in to Docker Hub
-        if: steps.hub.outputs.enabled == 'true'
-        uses: docker/login-action@v4
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       # VERSION is baked into build-info.json, which /api/v2/version prefers over
       # server/package.json - that is how a release candidate shows its own version

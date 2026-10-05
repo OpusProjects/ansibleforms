@@ -15,7 +15,7 @@ name: Release candidate
 # on any other pull request it is the last release, bumped by the type in the PR title.
 #
 # Only pull requests from a branch of THIS repository. A fork's code never runs with the
-# Docker Hub secret.
+# registry credentials.
 
 on:
   workflow_dispatch:
@@ -120,7 +120,6 @@ jobs:
             ### Release candidate `${{ needs.version.outputs.rc }}`
 
             ```
-            docker pull ansibleguy/ansibleforms:${{ needs.version.outputs.rc }}
             docker pull ghcr.io/${{ github.repository }}:${{ needs.version.outputs.rc }}
             ```
 
