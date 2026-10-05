@@ -36,11 +36,11 @@ jobs:
       release_created: ${{ steps.rp.outputs.release_created }}
       tag_name: ${{ steps.rp.outputs.tag_name }}
     steps:
-      # RELEASE_APP_ID and RELEASE_APP_PRIVATE_KEY - see RELEASING.md
+      # RELEASE_APP_CLIENT_ID and RELEASE_APP_PRIVATE_KEY - see RELEASING.md
       - uses: actions/create-github-app-token@v3
         id: app
         with:
-          app-id: ${{ vars.RELEASE_APP_ID }}
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
 
       - uses: googleapis/release-please-action@v5
@@ -93,7 +93,7 @@ jobs:
       - uses: actions/create-github-app-token@v3
         id: app
         with:
-          app-id: ${{ vars.RELEASE_APP_ID }}
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: website
@@ -121,7 +121,7 @@ jobs:
       - uses: actions/create-github-app-token@v3
         id: app
         with:
-          app-id: ${{ vars.RELEASE_APP_ID }}
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: helm-charts

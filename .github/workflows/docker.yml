@@ -39,6 +39,9 @@ jobs:
         with:
           context: .
           push: false
+          # Built to prove it builds, never published: say so, or buildx warns that the result
+          # goes nowhere.
+          outputs: type=cacheonly
           build-args: |
             GIT_SHA=${{ github.sha }}
           cache-from: type=gha

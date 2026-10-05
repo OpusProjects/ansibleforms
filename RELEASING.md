@@ -118,7 +118,7 @@ A test server does not need an image copied to it: it can pull `latest-rc`.
 | What | Where | Used by |
 |---|---|---|
 | GitHub App `ansibleforms-release` (contents and pull requests: read and write) | installed on this repository, on `ansibleforms/website` (the release rebuilds the site) and on `ansibleforms/helm-charts` (the release moves the chart's default image) | release.yml |
-| `RELEASE_APP_ID` | repository variable | release.yml |
+| `RELEASE_APP_CLIENT_ID` | repository variable: the App's client ID | release.yml |
 | `RELEASE_APP_PRIVATE_KEY` | repository secret | release.yml |
 | ruleset on `main` and `release/*` | pull request required, squash only, required checks, no force push | everything |
 
