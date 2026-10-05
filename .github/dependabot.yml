@@ -43,8 +43,8 @@ updates:
       - dependency-name: '*'
         update-types: ['version-update:semver-major']
 
-  # Moves the digest pin on ansibleforms-base in Dockerfile when .github/workflows/base.yml
-  # publishes a new base image. Dockerfile.base (node) is watched too - within its major.
+  # Moves the digest pin on base-server in Dockerfile when ansibleforms/base-images
+  # publishes a new base image.
   - package-ecosystem: docker
     directory: /
     schedule:
