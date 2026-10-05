@@ -23,12 +23,21 @@ vi.mock("../src/models/db.model.js", () => ({
   default: { do: async (sql, vars) => { queries.push(sql); return await dbHandler(sql, vars); } },
 }));
 let storeState = { stores: [], info: null, error: null };
+let runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000" }], error: null };
+  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000" }], error: null };
 let ldapRow = null;
 // a fully patched schema by default, matching the mocked manifest above
 let schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
 // the secret stores : rows from the model, the connection test from the provider registry
 vi.mock("../src/models/secretStore.model.js", () => ({
   default: { findAll: async () => storeState.stores },
+}));
+// the runners : one reachable RTE by default, the healthy case since 8.0
+vi.mock("../src/models/runner.model.js", () => ({
+  default: {
+    findAll: async () => runnerState.runners,
+    check: async (runner) => { if (runnerState.error) throw new Error(runnerState.error); return { version: "8.0.0", name: runner.name }; },
+  },
 }));
 vi.mock("../src/secrets/providers/index.js", () => ({
   checkStore: async () => { if (storeState.error) throw new Error(storeState.error); return storeState.info; },
@@ -100,6 +109,7 @@ beforeEach(async () => {
   await fs.mkdir(appConfig.repoPath, { recursive: true });
   await fs.mkdir(appConfig.backupPath, { recursive: true });
   storeState = { stores: [], info: null, error: null };
+  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000" }], error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {
@@ -222,6 +232,7 @@ describe("health reports problems, not just ok", () => {
 
   test("a failed repository is an error and healthy ones are counted", async () => {
     storeState = { stores: [], info: null, error: null };
+  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000" }], error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {
@@ -302,6 +313,7 @@ describe("health reports problems, not just ok", () => {
 
   test("a database failure becomes that row's error, not a broken page", async () => {
     storeState = { stores: [], info: null, error: null };
+  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000" }], error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {
@@ -310,8 +322,23 @@ describe("health reports problems, not just ok", () => {
     };
     const r = await Health.check();
     assert.equal(statusOf(r, "database"), "error");
-    // every other check still reported (14 since the secrets check was removed)
-    assert.equal(r.checks.length, 15);
+    // every other check still reported (16 : runners joined in 8.0)
+    assert.equal(r.checks.length, 16);
+  });
+
+  // Since 8.0 jobs run on runners : none at all means no form can run a job
+  test("runners : none is a warning that says what to add", async () => {
+    runnerState = { runners: [], error: null };
+    const r = await Health.check();
+    assert.equal(statusOf(r, "runners"), "warning");
+    assert.match(checkOf(r, "runners").detail.reason, /Connections > Runners/);
+  });
+
+  test("runners : an unreachable one is an error naming it", async () => {
+    runnerState = { runners: [{ name: "rte-1", type: "rte" }, { name: "aap", type: "awx" }], error: "the RTE at http://rte:8000 is unreachable : ECONNREFUSED" };
+    const r = await Health.check();
+    assert.equal(statusOf(r, "runners"), "error");
+    assert.match(checkOf(r, "runners").value, /2 of 2 runner\(s\) need attention : rte-1, aap/);
   });
 
   // Since 8.0 the app runs no playbook itself (an RTE does), so it never asks for an ansible
@@ -468,7 +495,7 @@ describe("health reports problems, not just ok", () => {
     // runtime moved to `info` because they have no failing value.
     assert.deepEqual(keys, [
       "backupTooling", "configSeed", "database", "designerLock", "disk", "expressions",
-      "jobs", "lastBackup", "ldap", "repositories", "scheduler", "schema", "secretStores", "storage", "writable",
+      "jobs", "lastBackup", "ldap", "repositories", "runners", "scheduler", "schema", "secretStores", "storage", "writable",
     ]);
     // and every info entry is status-free by construction
     assert.ok(r.info.length > 0);
@@ -479,6 +506,7 @@ describe("health reports problems, not just ok", () => {
 describe("the database check names the engine, not just a version number", () => {
   test("MySQL is identified from @@version_comment", async () => {
     storeState = { stores: [], info: null, error: null };
+  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000" }], error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {
@@ -494,6 +522,7 @@ describe("the database check names the engine, not just a version number", () =>
 
   test("MariaDB is identified, and the suffix is not repeated", async () => {
     storeState = { stores: [], info: null, error: null };
+  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000" }], error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {
@@ -550,6 +579,7 @@ describe("the checks added after the first release round", () => {
 
   test("a job stuck in running is a warning", async () => {
     storeState = { stores: [], info: null, error: null };
+  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000" }], error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {

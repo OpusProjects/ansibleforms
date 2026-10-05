@@ -41,26 +41,47 @@ export async function approvalGate({ jobId, jobType, extravars, approval }) {
   return true;
 }
 
+// What a job of each form type needs from its runner, and whose default it falls back to
+const NEEDS = {
+  ansible: { capability: "playbook", defaultType: "rte" },
+  awx: { capability: "template", defaultType: "awx" },
+};
+
+// `awx: <name>` on a form is the 7.x way of naming the AWX connection : an alias of
+// `runner: <name>` since 8.0, removed in 9. Said once per name, not on every job.
+const warnedAwxAlias = new Set();
+function warnAwxAlias(name) {
+  if (warnedAwxAlias.has(name)) return;
+  warnedAwxAlias.add(name);
+  logger.warning(`Form property awx: '${name}' is deprecated since 8.0 and removed in 9 : use runner: '${name}'`);
+}
+
 /**
- * Where a job runs. A playbook form names a runner with `runner: <name>` (extravar
- * __runner__) ; without one, the default runner of type rte. Without that the job fails :
- * since 8.0 the app runs no playbook itself. An AWX form runs on AWX.
+ * Where a job runs. A form names a runner with `runner: <name>` (extravar __runner__ ;
+ * `awx: <name>` is a deprecated alias) ; without one, the default runner of the type the
+ * job needs : rte for a playbook, awx for a template. Without that the job fails : since
+ * 8.0 the app runs nothing itself.
  * Returns { impl, row } : the runner implementation and its row.
  */
 export async function resolveRunner({ jobType, extravars }) {
-  if (jobType === "awx") return { impl: getRunner("awx"), row: null };
-  if (jobType !== "ansible") throw new Errors.BadRequestError(`No runner for jobs of type '${jobType}'`);
-  const name = extravars?.__runner__;
+  const needs = NEEDS[jobType];
+  if (!needs) throw new Errors.BadRequestError(`No runner for jobs of type '${jobType}'`);
+  const what = needs.capability;
+  let name = extravars?.__runner__;
+  if (!name && extravars?.__awx__) {
+    name = extravars.__awx__;
+    warnAwxAlias(name);
+  }
   if (name) {
     const row = await Runner.findByName(name);
     if (!row) throw new Errors.NotFoundError(`No runner named '${name}' - add it under Connections > Runners`);
     const impl = getRunner(row.type);
-    if (!impl.capabilities.playbook) throw new Errors.BadRequestError(`Runner '${name}' (${row.type}) cannot run a playbook`);
+    if (!impl.capabilities[what]) throw new Errors.BadRequestError(`Runner '${name}' (${row.type}) cannot run a ${what}`);
     return { impl, row };
   }
-  const row = await Runner.findDefault("rte");
+  const row = await Runner.findDefault(needs.defaultType);
   if (row) return { impl: getRunner(row.type), row };
-  throw new Errors.NotFoundError("No runner to run this playbook : add one of type rte under Connections > Runners and mark it as default, or name it on the form with runner: <name>");
+  throw new Errors.NotFoundError(`No runner to run this ${what} : add one of type ${needs.defaultType} under Connections > Runners and mark it as default, or name it on the form with runner: <name>`);
 }
 
 /**

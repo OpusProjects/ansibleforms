@@ -19,7 +19,6 @@
     { "name": "repository", "description": "Git repository management" },
     { "name": "query", "description": "Database query execution" },
     { "name": "expression", "description": "JavaScript expression evaluation" },
-    { "name": "awx", "description": "AWX configuration and management" },
     { "name": "job", "description": "Job management and operations" },
     { "name": "backup", "description": "Backup and restore operations" },
     { "name": "credential", "description": "Credential management and database connection testing" },
@@ -1307,57 +1306,6 @@
         "responses": { "200": { "description": "Mount list" } }
       }
     },
-    "/awx": {
-      "get": {
-        "security": [ { "bearerAuth": [] } ],
-        "tags": ["awx"],
-        "summary": "List all AWX or filter by name",
-        "parameters": [ { "name": "name", "in": "query", "schema": { "type": "string" }, "required": false } ],
-        "responses": { "200": { "description": "AWX list or single AWX" } }
-      },
-      "post": {
-        "security": [ { "bearerAuth": [] } ],
-        "tags": ["awx"],
-        "summary": "Create a new AWX",
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Awx" } } } },
-        "responses": { "201": { "description": "AWX created" } }
-      }
-    },
-    "/awx/{id}": {
-      "get": {
-        "security": [ { "bearerAuth": [] } ],
-        "tags": ["awx"],
-        "summary": "Get AWX by ID",
-        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
-        "responses": { "200": { "description": "AWX object" }, "404": { "description": "Not found" } }
-      },
-      "put": {
-        "security": [ { "bearerAuth": [] } ],
-        "tags": ["awx"],
-        "summary": "Update AWX by ID",
-        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Awx" } } } },
-        "responses": { "200": { "description": "AWX updated" }, "404": { "description": "Not found" } }
-      },
-      "delete": {
-        "security": [ { "bearerAuth": [] } ],
-        "tags": ["awx"],
-        "summary": "Delete AWX by ID",
-        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
-        "responses": { "200": { "description": "AWX deleted" }, "404": { "description": "Not found" } }
-      }
-    },
-    "/awx/check/{id}": {
-    },
-    "/awx/{id}/check": {
-      "post": {
-        "security": [ { "bearerAuth": [] } ],
-        "tags": ["awx"],
-        "summary": "Check AWX connection by ID",
-        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
-        "responses": { "200": { "description": "Check result" }, "404": { "description": "Not found" } }
-      }
-    },
     "/job": {
       "get": {
         "security": [ { "bearerAuth": [] } ],
@@ -2593,14 +2541,17 @@
     "schemas": {
       "Runner": {
         "type": "object",
-        "description": "Where a playbook runs. type rte : a runtime environment container started with AF_ROLE=rte.",
+        "description": "Where a job runs. type rte : a runtime environment container (AF_ROLE=rte) for playbooks. type awx : AWX / Ansible Automation Platform / Ascender for templates.",
         "required": ["name", "type", "uri"],
         "properties": {
           "name": { "type": "string", "example": "rte-vmware" },
-          "type": { "type": "string", "enum": ["rte"] },
+          "type": { "type": "string", "enum": ["rte", "awx"] },
           "description": { "type": "string" },
           "uri": { "type": "string", "example": "https://rte-vmware:8000" },
-          "token": { "type": "string", "description": "The RTE's RTE_TOKEN" },
+          "token": { "type": "string", "description": "rte : its RTE_TOKEN. awx : an API token (or use_credentials)" },
+          "use_credentials": { "type": "boolean", "description": "awx : sign in with username and password instead of a token" },
+          "username": { "type": "string" },
+          "password": { "type": "string", "description": "Stored encrypted ; shown masked" },
           "ignore_certs": { "type": "boolean" },
           "ca_bundle": { "type": "string" },
           "is_default": { "type": "boolean", "description": "Used by playbook forms that name no runner" }
@@ -2627,27 +2578,6 @@
           "cache_ttl_seconds": { "type": "integer", "minimum": 0, "default": 60, "description": "0 reads the secret on every use" },
           "extra": { "type": "string", "description": "JSON object with options of the store type" }
         }
-      },
-      "Awx": {
-        "type": "object",
-        "description": "AWX configuration object.",
-        "properties": {
-          "id": { "type": "integer", "description": "Unique identifier for the AWX config.", "example": 1 },
-          "name": { "type": "string", "description": "Name of the AWX instance.", "example": "awx-main" },
-          "description": { "type": "string", "description": "Description of the AWX instance.", "example": "Main AWX server for production" },
-          "is_default": { "type": "boolean", "description": "Whether this AWX is the default.", "example": true },
-          "uri": { "type": "string", "description": "Base URL of the AWX instance.", "example": "https://awx.example.com" },
-          "use_credentials": { "type": "boolean", "description": "Use username/password instead of token.", "example": false },
-          "username": { "type": "string", "description": "Username for AWX (if use_credentials is true).", "example": "admin" },
-          "password": { "type": "string", "description": "Password for AWX (if use_credentials is true).", "example": "secret" },
-          "token": { "type": "string", "description": "API token for AWX (if use_credentials is false).", "example": "awxapitoken123" },
-          "ignore_certs": { "type": "boolean", "description": "Ignore SSL certificate errors.", "example": false },
-          "ca_bundle": { "type": "string", "description": "CA bundle for SSL verification.", "example": "-----BEGIN CERTIFICATE-----..." }
-        },
-        "security": [
-          { "bearerAuth": [] }
-        ],
-        "required": ["name", "uri"]
       },
       "Credential": {
         "type": "object",

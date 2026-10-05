@@ -5,11 +5,13 @@ import Errors from "../../lib/errors.js";
 import i18n from "../../lib/i18n.js";
 import { RUNNER_TYPES, getRunner } from "../../runners/index.js";
 
-// the token is stored encrypted and decrypted on read, so it never leaves here unmasked
+// the token and password are stored encrypted and decrypted on read, so they never leave
+// here unmasked
 function maskSecrets(runner) {
   if (!runner) return runner;
   const copy = { ...runner };
   if (copy.token) copy.token = SECRET_MASK;
+  if (copy.password) copy.password = SECRET_MASK;
   return copy;
 }
 

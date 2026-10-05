@@ -7,6 +7,7 @@ import cronService from '../services/cron.service.js';
 import appConfig from '../../config/app.config.js';
 import logConfig from '../../config/log.config.js';
 import SecretStore from './secretStore.model.js';
+import Runner from './runner.model.js';
 import { checkStore } from '../secrets/providers/index.js';
 import { getSeedState } from '../lib/seed.js';
 import { getExpressionMode } from '../lib/expressionMode.js';
@@ -454,6 +455,35 @@ async function secretStoresCheck() {
   return check('secretStores', worst, value, { ...(reason ? { reason } : {}), stores: results });
 }
 
+// Runners : where jobs run (RTEs for playbooks, AWX/AAP for templates). Since 8.0 the app
+// runs nothing itself, so with no runner no form can run a job - a warning, not an error :
+// a fresh instance has none yet. Each runner is asked for its health (an RTE also proves it
+// runs this release), in parallel, like the secret stores.
+async function runnersCheck() {
+  const runners = await Runner.findAll() || [];
+  if (!runners.length) {
+    return check('runners', WARNING, 'none configured', { reason: 'Since 8.0 jobs run on runners : add one under Connections > Runners (an RTE for playbooks, AWX/AAP for templates)' });
+  }
+  const results = await Promise.all(runners.map(async (runner) => {
+    const base = { name: runner.name, type: runner.type, uri: runner.uri, isDefault: !!runner.is_default };
+    try {
+      const info = await Runner.check(runner);
+      return { ...base, status: OK, value: 'reachable', ...info };
+    } catch (e) {
+      return { ...base, status: ERROR, value: 'unreachable', reason: e.message || String(e) };
+    }
+  }));
+  const worst = results.reduce((w, r) => (SEVERITY[r.status] > SEVERITY[w] ? r.status : w), OK);
+  const failing = results.filter((r) => r.status !== OK);
+  const value = !failing.length
+    ? `${results.length} runner(s) reachable`
+    : failing.length === 1 && results.length === 1
+      ? failing[0].value
+      : `${failing.length} of ${results.length} runner(s) need attention : ${failing.map((r) => r.name).join(', ')}`;
+  const reason = failing.length === 1 ? failing[0].reason : undefined;
+  return check('runners', worst, value, { ...(reason ? { reason } : {}), runners: results });
+}
+
 // LDAP, WITHOUT binding.
 //
 // The page's rule is that nothing here may bind to ldap, and that is not squeamishness: a
@@ -720,7 +750,7 @@ async function configSeedCheck() {
 // How many records the seed currently owns, per table. A fact, not a verdict : it is
 // the quickest way to tell whether the file everybody edits is actually in force.
 async function seedManagedFacts() {
-  const tables = ['awx', 'credentials', 'secret_stores', 'oauth2_providers', 'repositories', 'ldap', 'settings'];
+  const tables = ['runners', 'credentials', 'secret_stores', 'oauth2_providers', 'repositories', 'ldap', 'settings'];
   const counts = {};
   let total = 0;
   for (const table of tables) {
@@ -746,6 +776,7 @@ Health.check = async function () {
     // next to repositories : both are about configuration arriving from outside the app
     safely('configSeed', configSeedCheck),
     safely('secretStores', secretStoresCheck),
+    safely('runners', runnersCheck),
     safely('expressions', expressionsCheck),
     safely('ldap', ldapCheck),
     safely('storage', storageCheck),

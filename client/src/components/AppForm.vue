@@ -1040,6 +1040,7 @@ function findVariableDependencies() {
   const safeDoubleUnderscoreNames = [
     '__template__',
     '__awx__',
+    '__runner__',
     '__playbook__',
     '__tags__',
     '__limit__',

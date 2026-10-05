@@ -267,8 +267,25 @@ describe("which runner runs a playbook job", () => {
     }
   });
 
-  test("an awx job runs on awx, whatever the runners table holds", async () => {
+  test("a template job runs on the default awx runner, never on an rte", async () => {
+    runnerRows = [{ name: "rte-default", type: "rte", is_default: 1 }, { name: "aap", type: "awx", is_default: 1 }];
+    const picked = await resolveRunner({ jobType: "awx", extravars: {} });
+    assert.equal(picked.impl.type, "awx");
+    assert.equal(picked.row.name, "aap");
     runnerRows = [{ name: "rte-default", type: "rte", is_default: 1 }];
-    assert.equal((await resolveRunner({ jobType: "awx", extravars: {} })).impl.type, "awx");
+    await assert.rejects(resolveRunner({ jobType: "awx", extravars: {} }), /No runner to run this template : add one of type awx/);
+  });
+
+  test("runner: on a template form names the awx runner ; an rte cannot run a template", async () => {
+    runnerRows = [{ name: "aap-prod", type: "awx" }, { name: "rte-vmware", type: "rte" }];
+    assert.equal((await resolveRunner({ jobType: "awx", extravars: { __runner__: "aap-prod" } })).row.name, "aap-prod");
+    await assert.rejects(resolveRunner({ jobType: "awx", extravars: { __runner__: "rte-vmware" } }), /cannot run a template/);
+    await assert.rejects(resolveRunner({ jobType: "ansible", extravars: { __runner__: "aap-prod" } }), /cannot run a playbook/);
+  });
+
+  test("awx: is an alias of runner:, and runner: wins when both are there", async () => {
+    runnerRows = [{ name: "aap-old", type: "awx" }, { name: "aap-new", type: "awx" }];
+    assert.equal((await resolveRunner({ jobType: "awx", extravars: { __awx__: "aap-old" } })).row.name, "aap-old");
+    assert.equal((await resolveRunner({ jobType: "awx", extravars: { __awx__: "aap-old", __runner__: "aap-new" } })).row.name, "aap-new");
   });
 });

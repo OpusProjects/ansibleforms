@@ -1069,7 +1069,7 @@
     short: The prefix for the AWX API
     default: /api/v2
     description: |
-      Ansible Forms can connect to an AWX instance.  This is the prefix of the API, which is typically `/api/v2`.
+      The prefix of the AWX / AAP API on the runners of type awx, typically `/api/v2`.
   - name: NAV_HOME_LABEL
     type: string
     version: 5.1.0
@@ -1683,7 +1683,8 @@
         choices:
         - name: ansible
           description: | 
-            Targets an Ansible Core playbook.  
+            Targets an Ansible playbook, run on a runner of type rte (Connections > Runners),
+            named with `runner:` or the default one. Since 8.0 AnsibleForms runs no playbook itself.
           examples:
           - name: Ansible Core Form
             code: |
@@ -1721,8 +1722,8 @@
                     type: text
         - name: awx
           description: |
-            Targets an Awx Template.  
-            The AWX Connection token must be set in the settings.
+            Targets a job or workflow template on AWX / Ansible Automation Platform / Ascender :
+            a runner of type awx (Connections > Runners), named with `runner:` or the default one.
           examples:
           - name: Awx Form
             code: |
@@ -2109,16 +2110,18 @@
           **Note** : If you use multistep and you want to dynamically set every step, use the `key` property and `model` property to create separate extravars per step.
       - name: runner
         type: string
-        with_types: ansible
+        with_types: ansible, awx
         group: workflow
-        version: 7.2.0
+        version: 8.0.0
         allowed: the name of a runner (Connections > Runners)
-        short: Where the playbook runs
+        short: Where the job runs
         description: |
-          Runs the playbook on a runner - a runtime environment (RTE) container - instead of
-          in the AnsibleForms container itself. Runners are added under Connections > Runners.
-          Without this property the playbook runs on the runner marked as default, or in the
-          AnsibleForms container when there is none.
+          The runner that runs this form's job : a runner of type rte (a runtime environment
+          container) for a playbook, a runner of type awx (AWX / Ansible Automation Platform /
+          Ascender) for a template. Runners are added under Connections > Runners.
+          Without this property the default runner of the matching type is used ; without a
+          default the job fails and says how to add one. Since 8.0 AnsibleForms runs no
+          playbook itself.
         examples:
         - name: Run on the vmware runtime
           code: |
@@ -2126,16 +2129,23 @@
               type: ansible
               playbook: create_vm.yaml
               runner: rte-vmware
+        - name: Run a template on a named AAP
+          code: |
+            - name: Deploy
+              type: awx
+              template: deploy
+              runner: aap-prod
       - name: awx
         type: string
         with_types: awx
         group: workflow
         version: 6.0.0
-        allowed: name of awx instance
-        short: Add awx instance to your template
+        allowed: name of a runner of type awx
+        short: Deprecated alias of runner
         description: |
-          From now on you can have multiple AWX instances.
-          The database will be updated during upgrade but you will need to set your current AWX instance to default.
+          **Deprecated since 8.0, removed in 9.** Use `runner`. AWX/AAP connections are runners
+          of type awx since 8.0 (Connections > Runners) ; the upgrade moves the existing ones
+          there. `awx: <name>` still names that runner, with a warning in the log.
        
           
           **Note** : you can also set these dynamically by using a field called `__awx__`.   It must be sent as extravar.  If this extravar is found it will overwrite the static awx.  
@@ -2593,11 +2603,10 @@
             choices:
             - name: ansible
               description: | 
-                Targets an Ansible Core playbook.  
+                Targets an Ansible playbook, run on a runner of type rte (Connections > Runners).
             - name: awx
               description: |
-                Targets an Awx Template.  
-                The AWX Connection token must be set in the settings.
+                Targets a job or workflow template on a runner of type awx (Connections > Runners).
             short: Step type
             description: | 
               Every step can be an ansible-playbook or an awx-template

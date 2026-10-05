@@ -722,7 +722,7 @@ const escapeHtml = (s) =>
 /**
  * The in-progress label for a row, from the `busyItems` prop.
  *
- * That prop was declared and documented, and credentials.vue and aap.vue both pass a
+ * That prop was declared and documented, and credentials.vue and runners.vue both pass a
  * map of "testing..." strings into it - but nothing in this component ever read it,
  * so pressing Test gave no per-row feedback at all and a second click fired another
  * request. The parents key that map by the record id.

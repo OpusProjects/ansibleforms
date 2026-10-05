@@ -58,7 +58,6 @@
         },
         "vaultCredentials": {"not":{}},
         "playbook": {"not":{}},
-        "runner": {"not":{}},
         "ansibleCredentials": {"not":{}},
         "steps": {"not":{}},
         "expression": {"not":{}},
@@ -374,7 +373,6 @@
                   "enum": ["awx"]
                 },
                 "playbook": {"not":{}},
-                "runner": {"not":{}},
                 "vaultCredentials": {"not":{}},
                 "ansibleCredentials": {"not":{}},
                 "steps": {"not":{}}

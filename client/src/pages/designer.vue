@@ -2702,7 +2702,7 @@ const forbiddenFormKeys = {
     'instanceGroups',
     'expression',
   ],
-  awx: ['playbook', 'playbookSubPath', 'runner', 'ansibleCredentials', 'vaultCredentials', 'steps', 'expression'],
+  awx: ['playbook', 'playbookSubPath', 'ansibleCredentials', 'vaultCredentials', 'steps', 'expression'],
   multistep: [
     'playbook',
     'playbookSubPath',
@@ -5652,7 +5652,7 @@ onBeforeUnmount(() => {
                 icon="play"
               />
             </div>
-            <div class="col-md-6" v-if="formSettings.type === 'ansible'">
+            <div class="col-md-6" v-if="formSettings.type === 'ansible' || formSettings.type === 'awx'">
               <BsInput
                 :isFloating="false"
                 v-model="formSettings.runner"

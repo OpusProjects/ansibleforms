@@ -23,7 +23,7 @@ class OAuth2 extends CrudModel {
             }
             logger.info('Unsetting enable on all other OAuth2 records');
             // the seed clears every row of this provider type ; an API caller only the
-            // unmanaged ones (see the matching note in awx.model.js)
+            // unmanaged ones (see the matching note in runner.model.js)
             await mysql.do('UPDATE AnsibleForms.`oauth2_providers` SET enable = 0 WHERE provider = ?'
               + (opts.fromSeed ? '' : ' AND managed = 0'), [data.provider]);
         }

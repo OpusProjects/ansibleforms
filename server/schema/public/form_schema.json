@@ -123,9 +123,6 @@
             "playbook": {
               "not": {}
             },
-            "runner": {
-              "not": {}
-            },
             "ansibleCredentials": {
               "not": {}
             },
@@ -1338,9 +1335,6 @@
                     ]
                   },
                   "playbook": {
-                    "not": {}
-                  },
-                  "runner": {
                     "not": {}
                   },
                   "vaultCredentials": {
@@ -4343,9 +4337,6 @@
               "playbook": {
                 "not": {}
               },
-              "runner": {
-                "not": {}
-              },
               "ansibleCredentials": {
                 "not": {}
               },
@@ -5558,9 +5549,6 @@
                       ]
                     },
                     "playbook": {
-                      "not": {}
-                    },
-                    "runner": {
                       "not": {}
                     },
                     "vaultCredentials": {
