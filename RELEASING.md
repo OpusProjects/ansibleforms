@@ -30,7 +30,7 @@ feature PR ──squash──▶ main ──▶ release-please updates the open 
    release contains.
 4. **Merging it is the release.** The same workflow then creates the tag `x.y.z` (no `v`, like
    the tags before it), the GitHub release with the changelog section as notes, and calls
-   **Publish**, which pushes the image to Docker Hub and GHCR.
+   **Publish**, which pushes the image to GHCR (Docker Hub is no longer published to).
 
 ### The image tags
 
@@ -72,8 +72,7 @@ enter the pull request number. That publishes:
 - `ghcr.io/ansibleforms/ansibleforms:<next>-rc.<pr>.<run>`, for example `6.4.0-rc.512.7`
 - `ghcr.io/ansibleforms/ansibleforms:latest-rc`
 
-plus the same tags on the Docker Hub mirror `ansibleguy/ansibleforms`. A comment on the
-pull request lists the tags. The UI and the Status page of that image
+A comment on the pull request lists the tags. The UI and the Status page of that image
 show the rc version.
 
 `<next>` is the version the pull request would release. On the release pull request it is
@@ -90,7 +89,7 @@ refuses when `server/package.json` at that tag names another version.
 
 ## The base image
 
-`ansibleguy/ansibleforms-base` holds node, python, ansible and the os packages. It is
+`ghcr.io/ansibleforms/ansibleforms-base` holds node, python, ansible and the os packages. It is
 versioned by date (`2026.10.01`, plus `latest`), independent of the application.
 
 - **Build it:** Actions → **Base image** → Run workflow. It also runs by itself when a
@@ -121,9 +120,6 @@ A test server does not need an image copied to it: it can pull `latest-rc`.
 | GitHub App `ansibleforms-release` (contents and pull requests: read and write) | installed on this repository, on `ansibleforms/website` (the release rebuilds the site) and on `ansibleforms/helm-charts` (the release moves the chart's default image) | release.yml |
 | `RELEASE_APP_ID` | repository variable | release.yml |
 | `RELEASE_APP_PRIVATE_KEY` | repository secret | release.yml |
-| `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` | secrets of the `dockerhub` environment ; the token needs read, write and delete scope for the description | publish.yml, base.yml, dockerhub-description.yml |
-| `DOCKERHUB_REPOSITORY`, `DOCKERHUB_BASE_REPOSITORY` | optional repository variables | publish.yml, base.yml |
-| `dockerhub` environment | must allow `main`, `release/*` and pull request refs | publish.yml (rc runs on a pull request) |
 | ruleset on `main` and `release/*` | pull request required, squash only, required checks, no force push | everything |
 
 The App token is needed because a pull request opened with the default `GITHUB_TOKEN`

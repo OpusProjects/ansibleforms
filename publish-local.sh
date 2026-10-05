@@ -51,10 +51,10 @@ docker build \
     -t ansibleforms .
 
 # Step 5: Tag locally (no push)
-docker tag ansibleforms ansibleguy/ansibleforms
-docker tag ansibleforms ansibleguy/ansibleforms:$version
+docker tag ansibleforms ghcr.io/ansibleforms/ansibleforms
+docker tag ansibleforms ghcr.io/ansibleforms/ansibleforms:$version
 
 # Cleanup
 docker rmi $(docker images -f "dangling=true" -q) 2>/dev/null || true
 
-echo "✅ Built locally: ansibleguy/ansibleforms:$version (SHA: $GIT_SHA)"
+echo "✅ Built locally: ghcr.io/ansibleforms/ansibleforms:$version (SHA: $GIT_SHA)"
