@@ -4516,14 +4516,15 @@
             When you want to send an email on job-event<br>
             <br>
             **Email Templates**<br>
-            Notification emails use HTML templates located in `server/src/templates/`:<br>
+            Notification emails use HTML templates located in `server/templates/email/`:<br>
             - `approval.html` - Approval request notifications<br>
             - `jobstatus.html` - Job outcome notifications (success, failed, aborted, warning)<br>
             - `jobevent.html` - Job lifecycle event notifications (launch, relaunch, delete, approve, reject)<br>
             <br>
             These templates can be customized by replacing them with your own versions.<br>
-            In Docker or Kubernetes deployments, mount your custom templates to `/app/dist/src/templates/` to override the defaults.<br>
-            Example Docker mount: `-v /path/to/custom/templates:/app/dist/src/templates/`
+            In Docker or Kubernetes deployments, mount your custom templates to `/app/dist/templates/email/` to override the defaults.<br>
+            Example Docker mount: `-v /path/to/custom/templates:/app/dist/templates/email/`<br>
+            A mount at the former location, `/app/dist/src/templates/`, keeps working and takes precedence.
           items:
           - name: recipients
             type: array
