@@ -64,7 +64,7 @@ jobs:
         run: |
           case "$CHANNEL" in release|rc) ;; *) echo "::error::unknown channel '$CHANNEL'"; exit 1 ;; esac
           echo "build_time=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
-          # short, not the full sha : generate-build-info.sh writes GIT_SHA verbatim into
+          # short, not the full sha : scripts/generate-build-info.sh writes GIT_SHA verbatim into
           # build-info.json and the About dialog has always shown the short form
           echo "sha_short=$(git rev-parse --short=7 HEAD)" >> "$GITHUB_OUTPUT"
           echo "Publishing $VERSION ($CHANNEL) from $(git rev-parse HEAD)"

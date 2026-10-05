@@ -14,7 +14,7 @@ on:
       - 'client/package-lock.json'
       - 'server/package.json'
       - 'server/package-lock.json'
-      - 'generate-build-info.sh'
+      - 'scripts/generate-build-info.sh'
       - '.github/workflows/docker.yml'
   workflow_dispatch:
 

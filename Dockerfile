@@ -42,7 +42,7 @@ COPY ./client ./
 COPY ./server/src/lib/formEngine /app/server/src/lib/formEngine
 
 # Copy build info generator script
-COPY ./generate-build-info.sh /tmp/generate-build-info.sh
+COPY ./scripts/generate-build-info.sh /tmp/generate-build-info.sh
 RUN chmod +x /tmp/generate-build-info.sh
 
 # build client
