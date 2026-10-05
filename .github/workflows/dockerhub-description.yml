@@ -1,0 +1,36 @@
+name: Docker Hub description
+
+# Publishes .github/dockerhub/README.md as the description of the Docker Hub mirror
+# (ansibleguy/ansibleforms), so people who land there learn that ghcr.io is the canonical
+# registry. Runs when that file changes on main, or by hand ("Run workflow").
+#
+# It uses the Docker Hub secrets of the dockerhub environment, like publish.yml. Updating a
+# description needs a token with read, write and delete scope ; a push-only token fails this
+# workflow and nothing else - releases never depend on it.
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - '.github/dockerhub/README.md'
+      - '.github/workflows/dockerhub-description.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  description:
+    name: Update the description
+    runs-on: ubuntu-latest
+    environment: dockerhub
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: peter-evans/dockerhub-description@v5
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ vars.DOCKERHUB_REPOSITORY || 'ansibleguy/ansibleforms' }}
+          short-description: 'Mirror of ghcr.io/ansibleforms/ansibleforms - forms that run Ansible playbooks'
+          readme-filepath: ./.github/dockerhub/README.md
