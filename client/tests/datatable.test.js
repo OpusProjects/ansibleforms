@@ -1,6 +1,6 @@
-// The pure parts of BsDataTable : the number filter and the CSV export cells.
+// The pure parts of BsDataTable : the number filter, the HTML-to-text helper and the CSV cells.
 import { describe, it, expect } from 'vitest';
-import { parseNumberFilter, csvCell } from '../src/lib/dataTable.js';
+import { parseNumberFilter, csvCell, htmlToText } from '../src/lib/dataTable.js';
 
 describe('the number filter', () => {
   const pass = (expr, v) => parseNumberFilter(expr)(v);
@@ -56,5 +56,21 @@ describe('a CSV cell', () => {
     expect(csvCell('-5')).toBe('-5');
     expect(csvCell('-5.25')).toBe('-5.25');
     expect(csvCell('-cmd')).toBe("'-cmd");
+  });
+});
+
+describe('the plain text of rendered HTML', () => {
+  it('keeps the text and drops the tags', () => {
+    expect(htmlToText('<span class="badge">ok</span>')).toBe('ok');
+    expect(htmlToText('a &amp; b')).toBe('a & b');
+  });
+
+  it('leaves no tag behind when tags are nested to dodge a strip', () => {
+    expect(htmlToText('<scr<script>ipt>alert(1)</script>')).not.toContain('<script');
+  });
+
+  it('passes plain text and empty values through', () => {
+    expect(htmlToText('plain')).toBe('plain');
+    expect(htmlToText(null)).toBe('');
   });
 });

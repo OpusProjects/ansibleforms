@@ -27,7 +27,7 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Helpers from '@/lib/Helpers';
 import BsPagination from './BsPagination.vue';
-import { parseNumberFilter, csvCell } from '@/lib/dataTable';
+import { parseNumberFilter, csvCell, htmlToText } from '@/lib/dataTable';
 
 const { t } = useI18n();
 
@@ -281,8 +281,7 @@ function cellText(item, col) {
   const raw = item[col.key];
   if (col.render) {
     // render() may return HTML; for filtering/sorting strip tags to plain text.
-    const rendered = String(col.render(raw, item) ?? '');
-    return rendered.replace(/<[^>]*>/g, '');
+    return htmlToText(col.render(raw, item));
   }
   if (raw == null) return '';
   return String(raw);
@@ -304,9 +303,8 @@ function cellPlain(item, col) {
   if (!col) return '';
   const raw = item[col.key];
   if (col.render) {
-    const rendered = String(col.render(raw, item) ?? '');
     // Strip any HTML tags the renderer produced.
-    return rendered.replace(/<[^>]*>/g, '');
+    return htmlToText(col.render(raw, item));
   }
   if (raw == null) return '';
   return String(raw);
