@@ -138,18 +138,64 @@ All calls need `Authorization: Bearer <RTE_TOKEN>`.
 Prefix `/rte/v1`, not `/api/v1`: the app's API v1 was removed in 7.0, and the RTE API is
 versioned on its own.
 
+## Using a runner, step by step
+
+1. **Start an RTE.** The AnsibleForms server started with `AF_ROLE=rte`: on a dev machine
+   `npm run dev`, in production the `Dockerfile.rte` image (see [Running it](#running-it)).
+   Give it the app's database settings, the app's `ENCRYPTION_SECRET`, a name (`RTE_ID`)
+   and a token (`RTE_TOKEN`).
+2. **Add it to the app**: Connections > Runners > add - a name, type *RTE*, its address
+   and the same token. *Test connection* shows its version and ansible version, and
+   refuses an RTE of another release.
+3. **Point a form at it**: `runner: <name>` on a `type: ansible` form (or a playbook step),
+   also in the designer's form settings. Or tick *Default* on the runner: every playbook
+   form without a `runner:` then runs there.
+4. **Nothing else changes.** A form without `runner:` and no default runner runs in the
+   app's own container, exactly as before. AWX forms keep using the AAP page.
+
+What decides where a job runs (`resolveRunner`, in this order):
+
+| The form says | A runner is ticked *Default* | The job runs |
+|---|---|---|
+| `runner: rte-vmware` | (ignored) | on `rte-vmware`; a name nobody added fails the job with "No runner named ..." |
+| nothing | yes | on the default runner |
+| nothing | no | in the app's container (the built-in `local` runner) |
+
+## Where the token lives
+
+The token proves to an RTE that the call comes from its app. It lives in two places, and
+both must hold the same value:
+
+| Side | Where | How |
+|---|---|---|
+| RTE | the environment variable `RTE_TOKEN` of the RTE container | `-e RTE_TOKEN=...`, a compose `environment:` entry or a Kubernetes secret. The RTE refuses to start without one of at least 16 characters. |
+| App | the `token` of the runner row | typed on the Runners page, or `token: ${SOME_ENV}` in the config seed. Stored encrypted with `ENCRYPTION_SECRET`; the API only ever shows `********`. |
+
+It is **not** an environment variable of the app: every runner row has its own token, so
+every RTE can have a different one. On each call the app sends
+`Authorization: Bearer <the runner's token>`; the RTE compares it with its `RTE_TOKEN`
+(constant-time) and answers 401 when they differ - the job then fails with
+"the RTE ... refused the token".
+
+To change it: set the new value on the RTE, restart it, and change the token on the runner
+row (Runners page, *change password* action).
+
+In dev the `dev:rte` script sets `RTE_TOKEN=dev-rte-token-not-a-secret`; type that same
+value on the runner row. Never use it outside a dev machine.
+
 ## Configuration
 
 | Variable | Where | Meaning |
 |---|---|---|
-| `AF_ROLE` | both | `app` (default) or `rte` |
-| `RTE_TOKEN` | both | the shared bearer token (at least 16 characters); the RTE refuses to start without it |
-| `RTE_ID` | RTE | its name in `jobs.host`; default `rte-<hostname>` |
-| `DB_*`, `ENCRYPTION_SECRET` | RTE | the app's own values - the RTE resolves credentials with them |
+| `AF_ROLE` | RTE | `app` (default) or `rte` |
+| `RTE_TOKEN` | RTE | the token every call must carry (at least 16 characters); the app holds the same value on the runner row |
+| `RTE_ID` | RTE | its name in `jobs.host`; default `rte-<hostname>`. Give every RTE its own |
+| `DB_*`, `ENCRYPTION_SECRET` | RTE | the app's own values - the RTE reads jobs and resolves credentials with them |
 | `PORT`, `HTTPS`, `HTTPS_CERT`, `HTTPS_KEY` | RTE | as for the app |
+| `ANSIBLE_PATH`, `REPO_PATH`, `HOME_PATH`, `UPLOAD_PATH` | RTE | as for the app; for now the RTE needs the same playbooks, SSH key and uploads (mounted, or the same machine) |
 
 All are documented in `server/help.yaml`. They are kept off the app's settings page on
-purpose: they describe the process, not a setting.
+purpose: they describe the process, not a setting. The app itself needs no new variable.
 
 ## Running it
 
@@ -192,8 +238,7 @@ Customers make it their own by forking `Dockerfile.rte` and adding
 | Part | State |
 |---|---|
 | (a) Abort through the database; `ansible-playbook` without a shell, in its own process group | merged (#578) |
-| (b) `ansible-core.js`, runner interface, orchestrator | this branch, PR to follow |
-| The RTE: role, API, adapter, `Dockerfile.rte`; `runners` table, Runners page, form property `runner:`, default runner | this branch, being tested |
+| (b) `ansible-core.js`, runner interface, orchestrator; the RTE: role, API, adapter, `Dockerfile.rte`; `runners` table, Runners page, form property `runner:`, default runner | branch `feat/rte-runners`, being tested |
 | (d) SSH key and known_hosts in the database; the `.joblogs` file stored on the job | planned - until then an RTE container needs the app's `.ssh` mounted |
 | (c') AWX behind the Runners page too (`awx:` as alias of `runner:`), AWX tracking that survives an app restart | planned |
 | (e) The RTE for real: own clone of the playbooks repository, uploads check, version and `ENCRYPTION_SECRET` check on connect, image published as `ansibleforms-rte` | planned |
@@ -203,6 +248,8 @@ Customers make it their own by forking `Dockerfile.rte` and adding
 
 - The RTE uses its own disk for playbooks, repositories, the SSH key and uploads: mount the
   app's folders, or run it on the same machine.
+- A form's `playbookSubPath` must exist on the RTE too; a missing folder shows as
+  `ENOENT ... extravars_<id>.json` (a clearer message is planned).
 - A different `ENCRYPTION_SECRET` on the RTE is not detected yet: credentials would decrypt
   to garbage (aes-256-ctr has no integrity check). Use the app's value.
 - A multistep job whose app restarts mid-run is abandoned (the step loop lives in the app);
@@ -211,7 +258,7 @@ Customers make it their own by forking `Dockerfile.rte` and adding
 ## Security
 
 - Only the app talks to an RTE: every call carries `Authorization: Bearer <RTE_TOKEN>`,
-  anything else is 401. The token is stored encrypted on the runner row. The RTE has no
+  anything else is 401 (see [Where the token lives](#where-the-token-lives)). The RTE has no
   users, no login and no web pages; `HTTPS=1` works as for the app. Keep it off the public
   network.
 - Even with the token the API can only start a job that already exists and is `running`,
@@ -227,6 +274,9 @@ Customers make it their own by forking `Dockerfile.rte` and adding
   vault password on stdin, the output limit.
 - `tests/runner-local.test.mjs` - a job run from its row (credentials, hidden credentials,
   vault, sub path, failure lines, output order), the ansible arguments, the approval gate.
+- `tests/runner-local.test.mjs` also covers which runner runs a job: the form's `runner:`,
+  the default, local, a name nobody added, and `jobs.runner` kept for the abort.
+- `tests/config-seed.test.mjs` - the `runners` seed section.
 - `tests/awx-workflow.test.mjs` - unchanged; AWX tracking still passes through `Awx.*`.
 
 `ansible-playbook` is replaced by a fake process in these tests; the real thing was run by
