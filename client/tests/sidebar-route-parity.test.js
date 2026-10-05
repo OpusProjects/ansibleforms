@@ -21,7 +21,7 @@ const routerSrc = read('src/router/index.js');
 /** link -> permission, from the sidebar's item declarations. */
 function sidebarPermissions() {
   const out = {};
-  for (const m of sidebarSrc.matchAll(/link:\s*"([^"]+)"([^}]*)\}/g)) {
+  for (const m of sidebarSrc.matchAll(/link:\s*['"]([^'"]+)['"]([^}]*)\}/g)) {
     const [, link, rest] = m;
     const perm = /permission:\s*'([^']+)'/.exec(rest);
     // documented default: a missing permission is treated as showSettings, the strictest
