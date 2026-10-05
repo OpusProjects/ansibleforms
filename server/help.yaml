@@ -281,7 +281,7 @@
       removes entries older than this.
       Set to 0 to keep everything.
   - name: AF_ROLE
-    version: 7.2.0
+    version: 8.0.0
     type: string
     allowed: app, rte
     short: What this process runs
@@ -293,7 +293,7 @@
       `ENCRYPTION_SECRET`, and `RTE_TOKEN`. The app reaches it through a runner added under
       Connections > Runners.
   - name: RTE_TOKEN
-    version: 7.2.0
+    version: 8.0.0
     type: string
     allowed: at least 16 characters
     short: The token between an app and its RTE
@@ -301,7 +301,7 @@
       On an RTE (`AF_ROLE=rte`) : the bearer token every call must carry ; the RTE refuses to
       start without one. The app stores the same token on the runner (Connections > Runners).
   - name: RTE_ID
-    version: 7.2.0
+    version: 8.0.0
     type: string
     short: The name of an RTE
     default: rte-<hostname>

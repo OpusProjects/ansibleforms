@@ -7,7 +7,8 @@
 [![Docs](https://img.shields.io/badge/docs-ansibleforms.com-informational)](https://ansibleforms.com)
 
 AnsibleForms is a self-hosted web application that turns Ansible playbooks and AWX/AAP/Ascender templates
-into self-service forms: users fill in a form, AnsibleForms builds the extravars and launches the job.
+into self-service forms: users fill in a form, AnsibleForms builds the extravars and launches the job on a
+runner - a runtime environment container (RTE) for playbooks, or AWX/AAP/Ascender for templates.
 Everything about installing, configuring and writing forms is documented at [ansibleforms.com](https://ansibleforms.com).
 
 ## Features
@@ -21,7 +22,9 @@ Everything about installing, configuring and writing forms is documented at [ans
 
 ## Installation
 
-AnsibleForms ships as one container image, `ghcr.io/ansibleforms/ansibleforms`, next to a MySQL database.
+AnsibleForms ships as two container images next to a MySQL database: `ghcr.io/ansibleforms/ansibleforms`, the
+application, and `ghcr.io/ansibleforms/ansibleforms-rte`, the runtime environment that runs its playbooks
+(fork its `Dockerfile.rte` to add your own collections and python packages).
 The [installation guide](https://ansibleforms.com/installation) covers every option; the two ready-made setups are:
 
 | Setup | Repository |
@@ -32,17 +35,17 @@ The [installation guide](https://ansibleforms.com/installation) covers every opt
 ## Release lines
 
 Two major versions are maintained, each on its own branch with its own changelog and image tags.
-Coming from 6? Read [Upgrading to 7](https://ansibleforms.com/upgrade-7) before you move over.
+Coming from 7? 8.0 runs playbooks on runners: read [DEPRECATED.md](DEPRECATED.md) before you move over.
 
 | Branch | Version | Status |
 |---|---|---|
-| `main` | 7.x | new features and fixes |
-| `release/6.x` | 6.x | fixes only |
+| `main` | 8.x | new features and fixes |
+| `release/7.x` | 7.x | fixes only |
 
 ## Deployment topology
 
-AnsibleForms runs as a single instance: schema migrations, the scheduler and the job runner all
-assume they are the only writer, so replicas behind a load balancer are not supported. For high
+AnsibleForms runs as a single instance (playbooks run on any number of RTEs): schema migrations and the
+scheduler assume they are the only writer, so replicas behind a load balancer are not supported. For high
 availability, run one instance with restart-on-failure and back up the database and the persistent volume.
 
 ## Contributing
