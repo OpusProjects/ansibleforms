@@ -1,4 +1,14 @@
-import hljs from 'highlight.js'
+import hljs from 'highlight.js/lib/core'
+import yaml from 'highlight.js/lib/languages/yaml'
+import javascript from 'highlight.js/lib/languages/javascript'
+import json from 'highlight.js/lib/languages/json'
+
+// Only the languages the app highlights: YAML (extravars, job output, form data),
+// JavaScript (expressions) and JSON. The full highlight.js bundle carries about 190
+// languages and was most of a megabyte of the client; auto-detection now picks among these.
+hljs.registerLanguage('yaml', yaml)
+hljs.registerLanguage('javascript', javascript)
+hljs.registerLanguage('json', json)
 
 // v-highlightjs: highlights every <code> inside the element with highlight.js
 //
