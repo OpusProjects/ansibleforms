@@ -41,7 +41,7 @@
     "lodash": "4.18.1",
     "luxon": "3.7.2",
     "moment": "~2.31.0",
-    "moment-timezone": "0.6.4",
+    "moment-timezone": "0.6.5",
     "mongodb": "~7.7.0",
     "mssql": "~12.7.2",
     "multer": "~2.4.0",
