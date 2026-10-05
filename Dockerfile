@@ -83,6 +83,19 @@ RUN cp -r ../client/dist/. ./views
 
 FROM nodebase AS final
 
+# OCI image labels. image.source is what links the image on ghcr.io to this repository
+# (and what Dependabot and Renovate read to find release notes); the rest shows on the
+# registry pages. The version label comes from the same VERSION build argument the
+# builder stage uses, empty for a local build.
+ARG VERSION=
+LABEL org.opencontainers.image.source="https://github.com/ansibleforms/ansibleforms" \
+      org.opencontainers.image.url="https://ansibleforms.com" \
+      org.opencontainers.image.documentation="https://ansibleforms.com" \
+      org.opencontainers.image.title="AnsibleForms" \
+      org.opencontainers.image.description="Self-service forms that run Ansible playbooks and AWX/AAP templates" \
+      org.opencontainers.image.licenses="GPL-3.0" \
+      org.opencontainers.image.version="${VERSION}"
+
 # for now we still run the app under dist..
 WORKDIR /app/dist
 
