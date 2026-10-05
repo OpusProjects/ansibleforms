@@ -52,7 +52,7 @@ function diffMembers(before, after) {
   const b = memberList(after);
   // JSON.stringify rather than join(sep) : no separator can collide with a name,
   // and an accidental control character in a separator turns this whole file into
-  // something grep classifies as binary and silently skips (see CLAUDE.md)
+  // something grep classifies as binary and silently skips (see tests/api-surface.test.mjs)
   if (JSON.stringify(a) === JSON.stringify(b)) return null;
   return { from: a.slice(0, MAX_MEMBERS), to: b.slice(0, MAX_MEMBERS) };
 }

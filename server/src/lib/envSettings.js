@@ -89,8 +89,7 @@ const LIVE = {
   // outranks them anyway, so this is only the fallback.
   ENABLE_CONFIG_IN_DATABASE: { key: 'enableConfigInDatabase', parse: v => v == 1 },
   ENABLE_FORMS_YAML_IN_DATABASE: { key: 'enableFormsYamlInDatabase', parse: v => v == 1 },
-  // form.model builds the ytt command from these on every render (line 141-162 - reachable
-  // only with `grep -a`, that file holds a NUL byte)
+  // form.model builds the ytt command from these on every render
   YTT_VARS_PREFIX: { key: 'yttVarsPrefix', parse: v => v },
   YTT_ALLOW_SYMLINK_DESTINATIONS: { key: 'yttAllowSymlinkDestinations', parse: v => v },
   YTT_DANGEROUS_ALLOW_ALL_SYMLINK_DESTINATIONS: { key: 'yttDangerousAllowAllSymlinkDestinations', parse: v => v == 1 },
