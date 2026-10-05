@@ -47,8 +47,11 @@ availability, run one instance with restart-on-failure and back up the database 
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the development setup and the pull request rules, and
-[RELEASING.md](RELEASING.md) for how releases are cut. Report security issues as [SECURITY.md](SECURITY.md) describes.
+Contributions are welcome. Start with these files:
+
+- [CONTRIBUTING.md](CONTRIBUTING.md): the development setup and the pull request rules
+- [RELEASING.md](RELEASING.md): how releases are cut
+- [SECURITY.md](SECURITY.md): how to report a security issue
 
 ## License
 
