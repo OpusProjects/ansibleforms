@@ -30,7 +30,7 @@ without you choosing it.
 
 - **Docker Compose:** [ansibleforms/docker](https://github.com/ansibleforms/docker) starts
   AnsibleForms with its MySQL database (`main` for 7, the `v6` branch for 6).
-- **Kubernetes:** the [helm chart](https://github.com/ansibleforms/ansibleforms-helm).
+- **Kubernetes:** the [helm chart](https://github.com/ansibleforms/helm-charts).
 - **Documentation:** [ansibleforms.com](https://ansibleforms.com), including the
   [installation guide](https://ansibleforms.com/installation) and
   [Upgrading to 7](https://ansibleforms.com/upgrade-7).
