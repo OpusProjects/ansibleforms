@@ -104,6 +104,10 @@ jobs:
       # executing it. A MySQL service here would slow every run and invite tests that
       # depend on one ; if integration coverage is ever wanted, give it its own workflow.
       - name: Test
+        # The server warns at startup when it has to make up a JWT secret. A fixed, throwaway
+        # one keeps that warning out of the test output.
+        env:
+          ACCESS_TOKEN_SECRET: ci-not-a-real-secret
         run: npm run test -- --coverage --coverage.reporter=text --coverage.reporter=json-summary
 
       # see the note on the client's copy of this step - reported, never enforced

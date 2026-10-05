@@ -118,9 +118,9 @@ A test server does not need an image copied to it: it can pull `latest-rc`.
 | What | Where | Used by |
 |---|---|---|
 | GitHub App `ansibleforms-release` (contents and pull requests: read and write) | installed on this repository only | release.yml |
-| `RELEASE_APP_ID` | repository variable | release.yml |
+| `RELEASE_APP_CLIENT_ID` | repository variable: the App's client ID | release.yml |
 | `RELEASE_APP_PRIVATE_KEY` | repository secret | release.yml |
-| `PAT_TOKEN` | repository secret, used by release.yml until `RELEASE_APP_ID` is set | release.yml |
+| `PAT_TOKEN` | repository secret, used by release.yml until `RELEASE_APP_CLIENT_ID` is set | release.yml |
 | `github-pages` environment | deployment branch `main` (it also builds the frozen `release/6.x` docs under `/v6/`) | pages.yml |
 | ruleset on `main` and `release/*` | pull request required, squash only, required checks, no force push | everything |
 
