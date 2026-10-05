@@ -5340,11 +5340,11 @@
     description: |
       AnsibleForms can display a **job-specific log file** alongside the Ansible output, making it easy to track the progress of long-running custom modules that would otherwise produce no visible feedback during execution.
 
-      > **Note:** This feature only works for direct Ansible jobs. AWX / Ansible Tower jobs are not supported.
+      > **Note:** This feature works for playbooks run on a runner of type rte. AWX / AAP templates are not supported.
 
       **How it works:**
-      - During a job run, AnsibleForms watches for a log file at a well-known path inside the playbook folder
-      - When the job is retrieved (or polled), the contents of the log file are read and returned alongside the normal output
+      - During a job run, the RTE watches for a log file at a well-known path inside the playbook folder
+      - Every 2 seconds, when the file changed, and once more when the playbook ends, the RTE stores its contents on the job ; the file is then removed (since 8.0)
       - The log file is displayed in a separate **Logfile** panel below the main Ansible output, with full ANSI colour support
 
       **Log file path convention:**
@@ -5361,7 +5361,7 @@
       **Responsibilities of the playbook / module developer:**
       - **Create** the log file (and its `.joblogs/` directory) at the start of the operation
       - **Write** meaningful progress messages as the operation proceeds
-      - **Delete** the file when it is no longer needed (e.g. at the start of a new run to avoid stale data)
+      - Deleting it is not needed : the RTE removes it once the playbook ended (it is kept on the job)
 
       **ANSI colour coding is supported.**  
       You can use standard ANSI escape codes (e.g. `\033[92m` for green, `\033[91m` for red) in your log messages and they will be rendered as colours in the UI. This is ideal for distinguishing success, warning, and error states at a glance.

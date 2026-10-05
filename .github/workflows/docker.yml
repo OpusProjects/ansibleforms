@@ -1,6 +1,6 @@
 name: Docker
 
-# Builds the image without pushing it, so "does the image still assemble" is answered at
+# Builds the two images (the app and the RTE) without pushing them, so "does the image still assemble" is answered at
 # review time instead of by hand during publish.sh. Path-filtered because it is the slow
 # one - it runs npm ci and a vite build inside the image - and for that reason it is not
 # a check worth requiring in branch protection.
@@ -10,6 +10,8 @@ on:
     branches: [main, 'release/**']
     paths:
       - 'Dockerfile'
+      - 'Dockerfile.rte'
+      - 'server/ansible.cfg'
       - 'client/package.json'
       - 'client/package-lock.json'
       - 'server/package.json'
@@ -44,5 +46,17 @@ jobs:
           outputs: type=cacheonly
           build-args: |
             GIT_SHA=${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=app
+          cache-to: type=gha,mode=max,scope=app
+
+      - name: Build the RTE (no push)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile.rte
+          push: false
+          outputs: type=cacheonly
+          build-args: |
+            GIT_SHA=${{ github.sha }}
+          cache-from: type=gha,scope=rte
+          cache-to: type=gha,mode=max,scope=rte

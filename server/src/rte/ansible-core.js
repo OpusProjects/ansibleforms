@@ -210,6 +210,7 @@ export function executeCommand(cmd, jobid, counter) {
   // - this host or another - notices it here and stops the playbook itself
   let killed = false;
   let abortPoll = null;
+  let syncJobLog = async () => {};
 
   // execute the procces
   return new Promise((resolve, reject) => {
@@ -266,11 +267,32 @@ export function executeCommand(cmd, jobid, counter) {
         outputBytes[stream] += Buffer.byteLength(data);
         if (outputBytes[stream] > appConfig.processMaxBuffer) stopProcess(`Output passed PROCESS_MAX_BUFFER (${appConfig.processMaxBuffer} bytes)`);
       };
+      // A playbook may write a log file of its own, .joblogs/job_log_<id>.log next to it,
+      // which the job's Logfile panel shows. The app has no playbook folder, so the file is
+      // stored on the job (jobs.job_log) : while the playbook runs, when it changed, and once
+      // more at the end, after which the file goes.
+      const jobLogPath = path.join(directory, ".joblogs", `job_log_${jobid}.log`);
+      let jobLogSeen = null;
+      syncJobLog = async (final = false) => {
+        try {
+          const st = await fs.promises.stat(jobLogPath);
+          const seen = `${st.size}:${st.mtimeMs}`;
+          if (seen !== jobLogSeen) {
+            jobLogSeen = seen;
+            const content = await fs.promises.readFile(jobLogPath, "utf8");
+            await mysql.do("UPDATE AnsibleForms.`jobs` SET job_log=? WHERE id=?", [content, jobid]);
+          }
+          if (final) await fs.promises.unlink(jobLogPath);
+        } catch (e) {
+          if (e.code !== "ENOENT") logger.debug(`[Job ${jobid}] Job log sync failed : ${e.message}`);
+        }
+      };
       // a quiet playbook writes no output for minutes, so the flag is also polled
       abortPoll = setInterval(() => {
         Job.isAbortRequested(jobid)
           .then(stopIfAborted)
           .catch((e) => logger.debug(`[Job ${jobid}] Abort check failed : ${e.message}`));
+        syncJobLog();
       }, 2000);
 
       // Store the process ID and host identifier in the database for job control
@@ -329,6 +351,8 @@ export function executeCommand(cmd, jobid, counter) {
       // add exit eventlistener to the process to handle status update
       child.on("exit", async function (data) {
         clearInterval(abortPoll);
+        // the log as the playbook left it, before the job ends
+        await syncJobLog(true);
         // Clear the PID and host from the database as the process has ended
         logger.debug(`[Job ${jobid}] Process with PID ${child.pid} has exited`);
         await mysql.do("UPDATE AnsibleForms.`jobs` SET pid=NULL, host=NULL WHERE id=?", [jobid])
@@ -394,6 +418,7 @@ export function executeCommand(cmd, jobid, counter) {
       // add error eventlistener to the process; set failed
       child.on("error", async function (data) {
         clearInterval(abortPoll);
+        await syncJobLog(true);
         // Clear the PID and host from the database as the process has errored
         logger.debug(`[Job ${jobid}] Process with PID ${child.pid} encountered an error`);
         await mysql.do("UPDATE AnsibleForms.`jobs` SET pid=NULL, host=NULL WHERE id=?", [jobid])

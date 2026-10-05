@@ -87,6 +87,7 @@ mysql.do = async function (sql, params) {
   }
   if (sql.includes("SELECT abort_requested")) return [{ abort_requested: 0 }];
   if (sql.includes("SET runner=?")) { jobRow.runner = params[0]; return { changedRows: 1 }; }
+  if (sql.includes("SET job_log=?")) { jobRow.job_log = params[0]; return { changedRows: 1 }; }
   if (sql.includes("SELECT id FROM AnsibleForms.`jobs`")) return [{ id: params[0] }];
   return { changedRows: 1 };
 };
@@ -184,6 +185,37 @@ describe("a playbook job runs from its jobs row", () => {
     await runToEnd(() => core.runAnsibleJob({ jobId: 11 }));
     const after = outputs.slice(1).map((o) => o.order);
     assert.ok(after.every((n) => n > 4), "every new line comes after the existing ones");
+  });
+});
+
+describe("the job log a playbook writes", () => {
+  test("is stored on the job while it runs and at the end, then the file goes", async () => {
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+    try {
+      row({ __playbook__: "site.yml" });
+      fs.mkdirSync(path.join(dir, ".joblogs"));
+      const logFile = path.join(dir, ".joblogs", "job_log_11.log");
+      const done = core.runAnsibleJob({ jobId: 11 });
+      await new Promise((r) => setTimeout(r, 20));
+      fs.writeFileSync(logFile, "step 1 of 2\n");
+      await vi.advanceTimersByTimeAsync(2000);
+      await new Promise((r) => setTimeout(r, 20));
+      assert.equal(jobRow.job_log, "step 1 of 2\n", "visible while the playbook runs");
+      fs.appendFileSync(logFile, "step 2 of 2\n");
+      child.emit("exit", 0);
+      await done;
+      assert.equal(jobRow.job_log, "step 1 of 2\nstep 2 of 2\n", "the final content");
+      assert.equal(fs.existsSync(logFile), false, "the file is removed");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("no log file is no job log, and no error", async () => {
+    row({ __playbook__: "site.yml" });
+    await runToEnd(() => core.runAnsibleJob({ jobId: 11 }));
+    assert.equal(jobRow.job_log, undefined);
+    assert.equal(jobRow.status, "success");
   });
 });
 

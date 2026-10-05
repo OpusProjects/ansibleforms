@@ -43,8 +43,10 @@ updates:
       - dependency-name: '*'
         update-types: ['version-update:semver-major']
 
-  # Moves the digest pin on base-server in Dockerfile when ansibleforms/base-images
-  # publishes a new base image.
+  # Moves the digest pin on base-server in Dockerfile and Dockerfile.rte (the docker
+  # updater reads every file named *Dockerfile* in the directory) when
+  # ansibleforms/base-images publishes a new base image. The two pins must stay equal : the
+  # app and its RTE run the same release.
   - package-ecosystem: docker
     directory: /
     schedule:
