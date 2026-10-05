@@ -67,14 +67,37 @@ return {
       '.vue',
     ],
   },
+  // Vite's own minifier. terser used to be configured here only to keep a few local names
+  // unmangled for the direct eval in lib/Helpers.js; that code no longer uses a direct eval,
+  // so nothing depends on local names surviving minification.
   build:{
-    minify: 'terser',
-    terserOptions: {
-      mangle: {
-        reserved: ["fnToTable", "fnArray", "fnGetNumberedName", "evalSandbox"]
-      }
+    // FontAwesome's solid icon set is about 950 kB minified and cannot shrink: forms name their
+    // icons in YAML, so every icon has to be available. It is the largest chunk by design;
+    // anything bigger than this limit is a real regression worth the warning.
+    chunkSizeWarningLimit: 1000,
+    rolldownOptions: {
+      // The plugin timings notice reports that JavaScript plugins (Vite's own CSS and Sass
+      // handling) take most of the build. That is normal for a Vite build, not a problem to
+      // fix, and it printed on almost every run.
+      checks: { pluginTimings: false },
+      output: {
+        // Libraries in chunks of their own: they change far less often than the app, so a
+        // browser keeps them cached across AnsibleForms upgrades, and the code editor is only
+        // downloaded by the pages that use it.
+        codeSplitting: {
+          groups: [
+            { name: 'vue', test: /node_modules[\\/](@vue|vue|vue-router|pinia)[\\/]/, priority: 60 },
+            { name: 'fa-solid', test: /node_modules[\\/]@fortawesome[\\/]free-solid-svg-icons/, priority: 50 },
+            { name: 'fa-brands', test: /node_modules[\\/]@fortawesome[\\/]free-brands-svg-icons/, priority: 50 },
+            { name: 'fontawesome', test: /node_modules[\\/]@fortawesome/, priority: 40 },
+            { name: 'ace', test: /node_modules[\\/]ace-builds/, priority: 30 },
+            { name: 'vendor', test: /node_modules/, priority: 10 },
+          ],
+        },
+      },
     },
   },
+
   optimizeDeps: {
     include: ['vue3-ace-editor', 'ace-builds']
   },
