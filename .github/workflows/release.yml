@@ -105,3 +105,31 @@ jobs:
         run: |
           gh api repos/ansibleforms/website/dispatches -f event_type=app-release -f "client_payload[tag]=$TAG"
           echo "ansibleforms/website rebuilds for $TAG"
+
+  # Tells ansibleforms/helm-charts about the release, so the chart's default image follows
+  # it: its "Follow app release" workflow opens a pull request on the chart line of this
+  # major that moves the image, and merges it once the chart's CI passed. It waits for
+  # publish because that CI installs the new image. The token comes from the same GitHub
+  # App, asked for that one repository. Should this job fail, run "Follow app release" in
+  # helm-charts by hand with the version.
+  helm-charts:
+    name: Tell the Helm chart
+    needs: [release-please, publish]
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/create-github-app-token@v3
+        id: app
+        with:
+          app-id: ${{ vars.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: helm-charts
+
+      - name: Send app-release to ansibleforms/helm-charts
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          TAG: ${{ needs.release-please.outputs.tag_name }}
+        run: |
+          gh api repos/ansibleforms/helm-charts/dispatches -f event_type=app-release -f "client_payload[tag]=$TAG"
+          echo "ansibleforms/helm-charts follows $TAG"
