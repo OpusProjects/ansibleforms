@@ -184,7 +184,9 @@ function envHelp(e) {
 // served index.html has the base path baked into it, so every page already open would break.
 // Showing it on a page of editable settings would only offer an edit that cannot work; it is
 // reported as a fact on the Status page instead.
-const OWNED_ELSEWHERE = /^VAULT_|^BASE_URL$/;
+// AF_ROLE and RTE_* describe which process this is and where its RTE lives : set in the
+// environment of the container, not edited from inside the app.
+const OWNED_ELSEWHERE = /^VAULT_|^BASE_URL$|^AF_ROLE$|^RTE_/;
 
 const envGroups = computed(() => {
   if (!env.value || !Array.isArray(env.value)) return [];

@@ -5,8 +5,9 @@
 // business : runners/orchestrator.js passes a job on only once it may run.
 import local from "./local.js";
 import awx from "./awx.js";
+import rte from "./rte.js";
 
-export const RUNNERS = { local, awx };
+export const RUNNERS = { local, awx, rte };
 export const RUNNER_TYPES = Object.keys(RUNNERS);
 
 export function getRunner(type) {

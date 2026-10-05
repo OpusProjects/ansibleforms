@@ -5,6 +5,7 @@ import logger from "../lib/logger.js";
 import Job from "../models/job.model.js";
 import { getRunner } from "./index.js";
 import { lastOrder } from "./ansible-core.js";
+import { rteConfigured } from "./rte.js";
 
 function getTimestamp() {
   return moment.utc(Date.now()).format("YYYY-MM-DD HH:mm:ss");
@@ -39,9 +40,12 @@ export async function approvalGate({ jobId, jobType, extravars, approval }) {
   return true;
 }
 
-/** the runner for a job ; a form cannot choose one yet, so this follows the form type */
+/**
+ * The runner for a job ; a form cannot choose one yet, so this follows the form type.
+ * PREVIEW : with RTE_URL set, every playbook job runs on that RTE.
+ */
 export function resolveRunner({ jobType }) {
-  if (jobType === "ansible") return getRunner("local");
+  if (jobType === "ansible") return getRunner(rteConfigured() ? "rte" : "local");
   if (jobType === "awx") return getRunner("awx");
   throw new Error(`No runner for jobs of type '${jobType}'`);
 }

@@ -21,8 +21,13 @@ import mysql from "../models/db.model.js";
 // only used when a playbook runs, long after both modules have loaded
 import Job from "../models/job.model.js";
 
-/** who runs the process, stored in jobs.host */
+/**
+ * Who runs the process, stored in jobs.host while it runs. An RTE has its own name
+ * (RTE_ID, default rte-<hostname>), so an RTE on the same machine as the app is never
+ * taken for it - each only abandons its own jobs when it restarts.
+ */
 export function runnerIdentity() {
+  if (process.env.AF_ROLE === "rte") return process.env.RTE_ID || `rte-${os.hostname()}`;
   return os.hostname();
 }
 

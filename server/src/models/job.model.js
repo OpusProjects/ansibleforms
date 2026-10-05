@@ -28,6 +28,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import i18n from "../lib/i18n.js";
 import { dispatch } from "../runners/orchestrator.js";
+import RtRunner, { rteConfigured } from "../runners/rte.js";
 import { stripTrailingSlashes } from "../lib/url.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -223,12 +224,14 @@ Job.create = async function (record) {
 Job.abandon = async function (all = false) {
   // abandon jobs
   logger.notice(`Abandoning jobs`);
+  // Only this instance's jobs : one running on an RTE (jobs.host = its RTE_ID) carries on
+  // when the app restarts, and that RTE cleans up its own jobs when it restarts.
   var sql =
-    "UPDATE AnsibleForms.`jobs` set status='abandoned',abort_requested=0 where (status='running' or abort_requested) "; // remove all jobs
+    "UPDATE AnsibleForms.`jobs` set status='abandoned',abort_requested=0 where (status='running' or abort_requested) and (host IS NULL or host=?) ";
   if (!all) {
     sql = sql + "and (start < (NOW() - INTERVAL 1 DAY))"; // remove jobs that are 1 day old
   }
-  const res = await mysql.do(sql);
+  const res = await mysql.do(sql, [os.hostname()]);
   return res.changedRows;
 };
 Job.resetAbortRequested = async function (id) {
@@ -400,6 +403,8 @@ Job.requestAbort = async function (id) {
         }
       } else {
         logger.warning(`[Job ${id}] Process is running on different host (job on '${jobHost}', current '${currentHost}'). Abort flag set, that instance stops it within a few seconds.`);
+        // an RTE also takes a direct cancel, which stops it at once
+        if (rteConfigured()) RtRunner.cancel({ jobId: id });
       }
     } else if (!pid && !jobHost) {
       logger.warning(`[Job ${id}] No PID/host found for job, abort flag set but cannot kill process directly`);

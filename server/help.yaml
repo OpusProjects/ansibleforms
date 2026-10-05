@@ -346,6 +346,50 @@
       The trail is append-only, so without a sweep it grows for ever; a daily task at 3:30 AM
       removes entries older than this.
       Set to 0 to keep everything.
+  - name: AF_ROLE
+    version: 7.2.0
+    type: string
+    allowed: app, rte
+    short: What this process runs
+    default: app
+    description: |
+      `app` (the default) is AnsibleForms itself. `rte` starts the same image as a runtime
+      environment : a small API that runs playbooks for an app, with no web interface,
+      scheduler or seed. An RTE needs the app's database settings (`DB_*`), the same
+      `ENCRYPTION_SECRET`, and `RTE_TOKEN`. Preview in 7.2.
+  - name: RTE_TOKEN
+    version: 7.2.0
+    type: string
+    allowed: at least 16 characters
+    short: The token between an app and its RTE
+    description: |
+      On an RTE (`AF_ROLE=rte`) : the bearer token every call must carry ; the RTE refuses to
+      start without one. On the app : the token it sends to the RTE at `RTE_URL`. Use the same
+      value on both sides.
+  - name: RTE_ID
+    version: 7.2.0
+    type: string
+    short: The name of an RTE
+    default: rte-<hostname>
+    description: |
+      On an RTE : the name stored on the jobs it runs. When it restarts it abandons only the
+      jobs carrying its own name, so give every RTE a different one.
+  - name: RTE_URL
+    version: 7.2.0
+    type: string
+    allowed: a url, e.g. https://rte:8000
+    short: The RTE that runs playbooks (preview)
+    description: |
+      On the app : when set, every playbook job runs on the RTE at this address instead of in
+      the app's own container. Preview in 7.2 ; a Runners page replaces it.
+  - name: RTE_IGNORE_CERTS
+    version: 7.2.0
+    type: number
+    allowed: 0, 1
+    short: Accept the RTE's self-signed certificate (preview)
+    default: "0"
+    description: |
+      On the app : 1 accepts any certificate from the RTE at `RTE_URL`.
   - name: JOB_RETENTION_DAYS
     version: 6.3.0
     type: number

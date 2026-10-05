@@ -132,11 +132,21 @@ async function start(){
 // Node's default action for SIGHUP is to TERMINATE, so installing this changes what closing
 // the terminal does to a foreground process. That is the trade every daemon makes, and the
 // alternative here is a signal that kills an instance which may be running playbooks.
+// the config seed is the app's business, not an RTE's
+if (process.env.AF_ROLE !== 'rte') {
 process.on('SIGHUP', () => {
   // never awaited : a signal handler that blocks would hold the event loop while the seed
   // clones a repository, and reloadConfigSeed reports its own outcome to the log either way
   reloadConfigSeed({ force: true, trigger: 'SIGHUP' })
     .catch((err) => logger.error('SIGHUP config seed reload failed : ' + (err.message || err)));
 });
+}
 
-start()
+// AF_ROLE=rte : this process is a runtime environment that runs playbooks for an app
+// (src/rte/server.js), not the app itself
+if (process.env.AF_ROLE === 'rte') {
+  const { startRte } = await import('./src/rte/server.js');
+  startRte();
+} else {
+  start()
+}
