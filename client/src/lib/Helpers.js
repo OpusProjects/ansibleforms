@@ -439,12 +439,16 @@ const Helpers = {
   getFieldValue(field, column, keepArray) {
     return engineGetFieldValue(field, column, keepArray);
   },
-  // eslint-disable-next-line no-unused-vars -- `object` is referenced by name from the expression built below and run through eval
   replacePlaceholders(match,object){
     if(match.match(/^[a-zA-Z0-9_\-\[\]\.]*$/)){ /* eslint-disable-line */
-      var to_eval="object"+match.replaceAll("[",".").replaceAll("]",".").split(".").filter(x=>!(x==="")).map(x=>{return "["+((/^-?\d+$/.test(x))?x:"'"+x+"'")+"]"}).join("")
-      // console.log(to_eval)
-      return eval(to_eval)
+      // Walk the path, a.b[0].c, one key at a time. This used to build "object['a']['b'][0]"
+      // and eval it; a missing step still throws the same TypeError, which callers catch.
+      const keys=match.replaceAll("[",".").replaceAll("]",".").split(".").filter(x=>!(x===""))
+      let value=object
+      for(const key of keys){
+        value=value[/^-?\d+$/.test(key)?Number(key):key]
+      }
+      return value
     } else{
       return `$(${match})` // return original
     }
@@ -767,8 +771,18 @@ const Helpers = {
     fnArray.from([]) // to make it available
     fnGetNumberedName([], "###", "") // to make it available
     fnToTable([]) // to make it available
-    if(expression) 
-    return eval(expression)          
+    // The expression runs with the helpers above in scope, as it always has. It is evaluated
+    // inside a Function built from a string rather than by a direct eval here: that keeps
+    // eval's semantics (the value of the last statement, var declarations, `this`) while the
+    // bundler no longer sees a direct eval in this module, which it warns about because it
+    // forces every local in scope to be kept unminified.
+    if(expression)
+    return new Function(
+      "fnArray", "fnGetNumberedName", "fnToTable", "matchRuleShort",
+      "compareProps", "comparePropsRegex", "dynamicSort", "dynamicSortMultiple",
+      "__expression__", "return eval(__expression__)"
+    ).call(this, fnArray, fnGetNumberedName, fnToTable, matchRuleShort,
+      compareProps, comparePropsRegex, dynamicSort, dynamicSortMultiple, expression)
   },
 
   /**
