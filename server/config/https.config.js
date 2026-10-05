@@ -19,8 +19,8 @@ if(process.env.HTTPS=="1"){
   // check if httpsConfig.httpsKey and httpsConfig.httpsCert exist
   if(!fs.existsSync(certificatePath) || !fs.existsSync(privatekeyPath)){
     logger.warning("httpsKey or httpsCert not found, copying from templates")
-    var certificateTemplatePath = path.join(__dirname,"/../templates/cert.pem.template")
-    var privatekeyTemplatePath = path.join(__dirname,"/../templates/key.pem.template")
+    var certificateTemplatePath = path.join(__dirname,"/../templates/seed/cert.pem.template")
+    var privatekeyTemplatePath = path.join(__dirname,"/../templates/seed/key.pem.template")
     var certificateDirPath = path.dirname(certificatePath)
     // logger.info("Using https certificate template : " + certificateTemplatePath)
     // logger.info("Using https private key template : " + privatekeyTemplatePath)

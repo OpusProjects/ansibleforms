@@ -1593,8 +1593,11 @@ Job._buildAndSendEmail = async function ({
       return false;
     }
 
-    // Read template
-    var buffer = fs.readFileSync(`${__dirname}/../templates/${templatePath}`);
+    // Read template : the bundled ones live in templates/email, but a copy mounted
+    // where they used to be (src/templates, documented up to 7.1) still overrides it
+    var legacyTemplate = `${__dirname}/../templates/${templatePath}`;
+    var templateFile = fs.existsSync(legacyTemplate) ? legacyTemplate : `${__dirname}/../../templates/email/${templatePath}`;
+    var buffer = fs.readFileSync(templateFile);
     var message = buffer.toString();
     
     // Default replacements

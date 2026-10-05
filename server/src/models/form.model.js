@@ -258,7 +258,7 @@ function listYamlFiles(dir, base = dir) {
 function copyConfigTemplate(to) {
   try{
     logger.warning("No config found in database or config.yaml... creating empty one from template")
-    var configTemplatePath = path.join(__dirname,"../../templates/config.yaml.template")
+    var configTemplatePath = path.join(__dirname,"../../templates/seed/config.yaml.template")
     fs.copyFileSync(configTemplatePath, to)
     logger.warning("Config file copied from template")
   } catch (e) {
@@ -271,7 +271,7 @@ function copyFormsDirectoryTemplate(toDir) {
   // declared outside the try : the catch reports the path, and a const inside the
   // try block is not in scope there (a ReferenceError would then replace the real
   // copy error with a confusing one)
-  const formsDirTemplatePath = path.join(__dirname, "../../templates/forms.template");
+  const formsDirTemplatePath = path.join(__dirname, "../../templates/seed/forms.template");
   try {
     logger.warning("No forms directory found... creating empty one from template");
     fse.copySync(formsDirTemplatePath, toDir, { overwrite: false, errorOnExist: false });
