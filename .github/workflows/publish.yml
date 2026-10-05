@@ -10,10 +10,12 @@ name: Publish
 #                        on latest-rc is never behind latest
 #   rc 6.5.3-rc.551.1 -> 6.5.3-rc.551.1 and latest-rc
 #
-# It pushes to GHCR always and to Docker Hub when the secret is there. Docker Hub stays
-# the canonical channel - the site's installation page tells people to pull ansibleguy/ansibleforms
-# and every deployment in the wild points at it - so GHCR is a mirror beside it, not a
-# replacement. To drop Docker Hub one day, delete its login step and its tags.
+# It pushes to GHCR always and to Docker Hub when the secret is there. GHCR is the
+# canonical channel - the org owns it, it is linked to this repository and it does not
+# rate-limit anonymous pulls - and the site, the docker-compose project and the helm chart
+# all point new installs at ghcr.io/ansibleforms/ansibleforms. Docker Hub stays a mirror
+# that gets every release, because existing installs still pull ansibleguy/ansibleforms.
+# To drop Docker Hub one day, delete its login step and its tags.
 #
 # It does not commit anything. CI fails a pull request whose server/schema/public is stale,
 # so by the time something is published that copy is correct.
