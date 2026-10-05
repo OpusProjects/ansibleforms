@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.1.6](https://github.com/ansibleforms/ansibleforms/compare/7.1.5...7.1.6) (2026-10-05)
+
+
+### Fixed
+
+* **client:** strip the table cell HTML without a regex ([#656](https://github.com/ansibleforms/ansibleforms/issues/656)) ([a418c18](https://github.com/ansibleforms/ansibleforms/commit/a418c18b7397c8b74ec0e2ce3ab97f79eb197609))
+
 ## [7.1.5](https://github.com/ansibleforms/ansibleforms/compare/7.1.4...7.1.5) (2026-10-05)
 
 
