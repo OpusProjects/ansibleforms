@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.1.4](https://github.com/ansibleforms/ansibleforms/compare/7.1.3...7.1.4) (2026-10-05)
+
+
+### Fixed
+
+* **client:** build without warnings ([#629](https://github.com/ansibleforms/ansibleforms/issues/629)) ([ca68c2b](https://github.com/ansibleforms/ansibleforms/commit/ca68c2b279d654cb2f09725969353484d88d2b8b))
+* **client:** turn off the plugin timings notice ([#633](https://github.com/ansibleforms/ansibleforms/issues/633)) ([6484d4f](https://github.com/ansibleforms/ansibleforms/commit/6484d4fce80c6d5d859cb8c76691346ab5afea86))
+
 ## [7.1.3](https://github.com/ansibleforms/ansibleforms/compare/7.1.2...7.1.3) (2026-10-05)
 
 
