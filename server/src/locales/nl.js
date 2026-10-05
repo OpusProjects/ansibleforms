@@ -46,6 +46,8 @@ export default {
     failedGetBackups: "Kan backups niet ophalen",
     failedGetEnvVars: "Kan omgevingsvariabelen niet ophalen",
     failedSaveEnvVars: "Omgevingsinstellingen konden niet worden opgeslagen",
+    failedVaultCheck: "Vault-verbindingstest mislukt",
+    failedVaultMounts: "Vault-mounts konden niet worden opgehaald",
     noEnvVarsGiven: "Geen omgevingsvariabelen opgegeven",
     envVarsSaved: "Omgevingsinstellingen opgeslagen",
     envVarsNotFound: "Omgevingsvariabelen sectie niet gevonden in help.yaml",

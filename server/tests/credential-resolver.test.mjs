@@ -125,7 +125,7 @@ describe("resolveCredential", () => {
   });
 
   test("user and password of a vault-backed row are read from vault on every call", async () => {
-    rows = [dbRow({ secret_store: "vault", secret_ref: "secret/db1", password: null })];
+    rows = [dbRow({ vault_path: "secret/db1", password: null })];
     vault.payload = { username: "vaultuser", password: "vaultpw" };
     const c = await Credential.resolveCredential("db1");
     assert.equal(c.user, "vaultuser");
@@ -135,15 +135,7 @@ describe("resolveCredential", () => {
     assert.equal((await Credential.resolveCredential("db1")).password, "rotated");
     assert.equal(vault.reads, 2);
     assert.equal(lookups, 1);
-    assert.deepEqual(vault.last, { store: "vault", ref: "secret/db1" });
-  });
-
-  test("vault_path is not read any more (8.0) : the 7.1 upgrade moved it to secret_store", async () => {
-    rows = [dbRow({ vault_path: "secret/db1" })];
-    const c = await Credential.resolveCredential("db1");
-    assert.equal(vault.reads, 0, "no store is asked");
-    assert.equal(c.password, "s3cret", "the row's own password");
-    assert.equal("vault_path" in c, false);
+    assert.deepEqual(vault.last, { store: "vault", ref: "secret/db1" }, "vault_path reads the store named vault");
   });
 
   test("a row naming a secret store reads from it, and empty row fields are filled from the secret", async () => {

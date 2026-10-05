@@ -11,7 +11,9 @@ import { LEASE_SECONDS, leaseCacheSeconds } from "../lease.js";
 const PROVIDERS = { vault, cyberark_ccp };
 export const SECRET_STORE_TYPES = Object.keys(PROVIDERS);
 
-// The store the inline "vault:<path>" prefix reads from : a secret store named `vault`.
+// The store that a credential's deprecated vault_path and the inline "vault:" prefix read
+// from. Upgrading from 7.0 imports the VAULT_* environment variables under this name
+// (secrets/importVaultEnv.js).
 export const VAULT_STORE_NAME = "vault";
 
 const DEFAULT_CACHE_TTL_SECONDS = 60;

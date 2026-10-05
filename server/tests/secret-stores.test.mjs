@@ -55,6 +55,7 @@ afterAll(() => server.close());
 const Registry = await import("../src/secrets/providers/index.js");
 const { buildApiPath, isDynamicPath } = await import("../src/secrets/providers/vault.js");
 const SecretStore = (await import("../src/models/secretStore.model.js")).default;
+const Import = await import("../src/secrets/importVaultEnv.js");
 
 const vaultRow = (over = {}) => ({ id: 1, name: "vault", type: "vault", url, token: "hvs.test", namespace: null, kv_version: 2, default_mount: "secret", cache_ttl_seconds: 60, ...over });
 
@@ -181,6 +182,77 @@ describe("inline secrets", () => {
     assert.equal(c.host, "h");
     assert.equal(c.db_name, "d");
     assert.equal("host" in Registry.mapPayloadToCredential({ password: "p" }), false);
+  });
+});
+
+describe("the first start with VAULT_* imports them once", () => {
+  const env = () => ({ VAULT_ADDR: url, VAULT_TOKEN: "hvs.env", VAULT_NAMESPACE: "ops", VAULT_KV_VERSION: "1", VAULT_DEFAULT_MOUNT: "kv", VAULT_SKIP_VERIFY: "true", VAULT_CACHE_TTL_MS: "300" });
+  // the marker in settings, in memory
+  const fakeMarker = (at = null) => ({ at, read: async function () { return this.at; }, write: async function () { this.at = new Date(); } });
+
+  test("the variables become the store named vault, and the import is recorded", async () => {
+    const created = [];
+    const spy = vi.spyOn(SecretStore, "create").mockImplementation(async (d) => { created.push(d); return d; });
+    const marker = fakeMarker();
+    try {
+      assert.equal(await Import.importVaultFromEnvOnce({ env: env(), marker }), "imported");
+      assert.ok(marker.at, "recorded");
+      assert.equal(created.length, 1);
+      const s = created[0];
+      assert.equal(s.name, "vault");
+      assert.equal(s.type, "vault");
+      assert.equal(s.url, url);
+      assert.equal(s.token, "hvs.env");
+      assert.equal(s.namespace, "ops");
+      assert.equal(s.kv_version, 1);
+      assert.equal(s.default_mount, "kv");
+      assert.equal(s.ignore_certs, true);
+      assert.equal(s.cache_ttl_seconds, 1, "300ms clamps to one second, not to 'no cache'");
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  test("imported before : nothing is created, even when the store was deleted since", async () => {
+    const spy = vi.spyOn(SecretStore, "create");
+    try {
+      assert.equal(await Import.importVaultFromEnvOnce({ env: env(), marker: fakeMarker(new Date()) }), "ignored");
+      assert.equal(spy.mock.calls.length, 0);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  test("a store already named vault is kept, and the decision is recorded", async () => {
+    storeRows.vault = vaultRow({ token: "hvs.row" });
+    const spy = vi.spyOn(SecretStore, "create");
+    const marker = fakeMarker();
+    try {
+      assert.equal(await Import.importVaultFromEnvOnce({ env: env(), marker }), "kept");
+      assert.equal(spy.mock.calls.length, 0);
+      assert.ok(marker.at);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  test("nothing to do without address and token, and nothing recorded", async () => {
+    const marker = fakeMarker();
+    assert.equal(await Import.importVaultFromEnvOnce({ env: { VAULT_ADDR: url }, marker }), "none");
+    assert.equal(marker.at, null);
+  });
+
+  test("the variables are not read at runtime : no store row, no secret", async () => {
+    process.env.VAULT_ADDR = url;
+    process.env.VAULT_TOKEN = "hvs.env";
+    await assert.rejects(Registry.readSecret("vault", "secret/app"), /No secret store named 'vault'/);
+  });
+
+  test("cache ttl conversion", () => {
+    assert.equal(Import.resolveCacheTtlSeconds("60000"), 60);
+    assert.equal(Import.resolveCacheTtlSeconds("0"), 0);
+    assert.equal(Import.resolveCacheTtlSeconds("abc"), 60, "unparseable falls back to the default");
+    assert.equal(Import.resolveCacheTtlSeconds(undefined), 60);
   });
 });
 

@@ -59,6 +59,8 @@ const credentialItem = {
     // carrying them here at all : the store's name and the place in it
     secret_store: str,
     secret_ref: str,
+    // deprecated since 7.1, removed in 8 : the same as secret_store 'vault' + secret_ref
+    vault_path: str,
   },
 };
 

@@ -304,7 +304,7 @@ Settings.find = function () {
           res[0].mail_password=""
         }
         res[0].enableConfigInDatabase = appConfig.enableConfigInDatabase
-        // internal bookkeeping of the 7.x VAULT_* import, not a setting
+        // internal bookkeeping (secrets/importVaultEnv.js), not a setting
         delete res[0].vault_env_imported_at
         return res[0]
       }else{

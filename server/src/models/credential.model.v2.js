@@ -3,19 +3,34 @@ import Errors from '../lib/errors.js';
 import logger from '../lib/logger.js';
 import mysql from './db.model.js';
 import crypto from '../lib/crypto.js';
-import { readSecret, mapPayloadToCredential, parseInlineSecret } from '../secrets/providers/index.js';
+import { readSecret, mapPayloadToCredential, parseInlineSecret, VAULT_STORE_NAME } from '../secrets/providers/index.js';
 import dbConfig from '../../config/db.config.js';
 
 class CredentialModel extends CrudModel {
   static modelName = 'credential';
 
+  // vault_path is deprecated : a credential names its store and the place in it. A write
+  // that still uses vault_path is pointed at the store named `vault`, and a write that
+  // names a store clears vault_path, so the two can never disagree.
+  static mirrorVaultPath(data) {
+    if (data.secret_store === '') data.secret_store = null;
+    if (data.vault_path && !data.secret_store) {
+      logger.warning(`Credential '${data.name || ''}' : vault_path is deprecated since 7.1 and removed in 8 - use secret_store and secret_ref`);
+      data.secret_store = VAULT_STORE_NAME;
+      data.secret_ref = data.vault_path;
+    } else if (data.secret_store !== undefined) {
+      data.vault_path = null;
+    }
+    return data;
+  }
+
   // opts carries { fromSeed:true } for the declarative config seed only
   static async create(data, opts = {}) {
-    return super.create(this.modelName, data, opts);
+    return super.create(this.modelName, this.mirrorVaultPath(data), opts);
   }
 
   static async update(data, id, opts = {}) {
-    return super.update(this.modelName, data, id, opts);
+    return super.update(this.modelName, this.mirrorVaultPath(data), id, opts);
   }
 
   static async delete(id, opts = {}) {
@@ -117,7 +132,7 @@ class CredentialModel extends CrudModel {
   }
 }
 
-const ROW_SQL = "SELECT host,port,db_name,name,user,password,secure,db_type,is_database,secret_store,secret_ref FROM AnsibleForms.`credentials` WHERE name REGEXP ?";
+const ROW_SQL = "SELECT host,port,db_name,name,user,password,secure,db_type,is_database,vault_path,secret_store,secret_ref FROM AnsibleForms.`credentials` WHERE name REGEXP ?";
 
 async function lookupRow(nameOrRegex, fallbackName) {
   let res = await mysql.do(ROW_SQL, nameOrRegex);
@@ -128,10 +143,11 @@ async function lookupRow(nameOrRegex, fallbackName) {
   return res[0];
 }
 
-// Where the row's user and password live : the store it names. (A 7.0 row's vault_path was
-// copied into secret_store / secret_ref by the 7.1 upgrade ; 8.0 no longer reads it.)
+// Where the row's user and password live : the store it names, or - for a row written
+// before secret stores existed - the store named `vault` at its vault_path.
 function secretSource(row) {
   if (row.secret_store) return { store: row.secret_store, ref: row.secret_ref || "" };
+  if (row.vault_path) return { store: VAULT_STORE_NAME, ref: row.vault_path };
   return null;
 }
 

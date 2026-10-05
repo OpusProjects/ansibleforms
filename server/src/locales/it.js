@@ -46,6 +46,8 @@ export default {
     failedGetBackups: "Impossibile ottenere i backup",
     failedGetEnvVars: "Impossibile ottenere le variabili d'ambiente",
     failedSaveEnvVars: "Salvataggio delle impostazioni ambiente non riuscito",
+    failedVaultCheck: "Test di connessione Vault non riuscito",
+    failedVaultMounts: "Impossibile elencare i mount di Vault",
     noEnvVarsGiven: "Nessuna variabile di ambiente fornita",
     envVarsSaved: "Impostazioni ambiente salvate",
     envVarsNotFound: "Sezione variabili d'ambiente non trovata in help.yaml",

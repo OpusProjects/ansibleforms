@@ -8,7 +8,8 @@ const Helpers = {
   // is a short enum. 'true, false' and '1, 2' become dropdowns ; 'a valid Vault token' and
   // 'a url subpath, for example /ansibleforms' stay free text.
   //
-  // This matters beyond tidiness: the server tests a boolean against the literals it knows, so 'yes' or 'on' silently do nothing. A
+  // This matters beyond tidiness: the server tests a boolean like VAULT_SKIP_VERIFY against
+  // the literals it knows, so 'yes' or 'on' silently do nothing. A
   // dropdown that can only emit the documented literals removes that whole class of typo.
   envAllowedOptions(allowed) {
     if (!allowed) return null;
@@ -21,8 +22,8 @@ const Helpers = {
     if (!parts.every((p) => /^[\w.:-]{1,12}$/.test(p))) return null;
     // A documented `0, 1` enum is a boolean: show it as such and keep submitting 0/1,
     // because the code tests these with `== 1` (SHOW_DESIGNER, USE_YTT, ENABLE_*). Only an
-    // exact 0/1 pair is treated this way - an enum of two other numbers (versions, say) is not
-    // a truth value.
+    // exact 0/1 pair is treated this way - VAULT_KV_VERSION is also two numbers, but 1 and
+    // 2 are versions, not a truth value.
     const isBoolean = parts.length === 2 && parts[0] === '0' && parts[1] === '1';
     return parts.map((p) => ({ value: p, label: isBoolean ? (p === '1' ? 'true' : 'false') : p }));
   },
