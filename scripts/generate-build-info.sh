@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Generate build-info.json with git SHA and dirty status
-# Usage: ./generate-build-info.sh <output-path> [git-sha] [build-time] [version]
+# Usage: ./scripts/generate-build-info.sh <output-path> [git-sha] [build-time] [version]
 #
 # Arguments:
 #   output-path: Where to write build-info.json (e.g., ./server or ./client/dist)
