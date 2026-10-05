@@ -12,7 +12,6 @@ import mysql from "../models/db.model.js";
 import Errors from "../lib/errors.js";
 import { stripTrailingSlashes } from "../lib/url.js";
 import Job from "../models/job.model.js";
-import { lastOrder } from "./ansible-core.js";
 
 const POLL_MS = 1000;
 // how often the RTE itself is asked about the job, in polls
@@ -54,7 +53,7 @@ function describe(err, url) {
 }
 
 async function failJob(jobId, message) {
-  await Job.endJobStatus(jobId, (await lastOrder(jobId)) + 1, "stderr", "failed", `[ERROR]: ${message}`);
+  await Job.endJobStatus(jobId, (await Job.lastOrder(jobId)) + 1, "stderr", "failed", `[ERROR]: ${message}`);
   return false;
 }
 
@@ -112,7 +111,7 @@ export default {
     const { jobId, runner } = ctx;
     const rte = { ...client(runner), name: runner.name };
     // written before the hand-over, never after : from then on the RTE writes the output
-    await Job.printJobOutput(`ok: [Running on RTE ${runner.name} (${rte.url})]`, "stdout", jobId, (await lastOrder(jobId)) + 1);
+    await Job.printJobOutput(`ok: [Running on RTE ${runner.name} (${rte.url})]`, "stdout", jobId, (await Job.lastOrder(jobId)) + 1);
     try {
       await rte.http.post("/jobs", { jobId });
     } catch (err) {

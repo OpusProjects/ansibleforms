@@ -3,7 +3,7 @@
 //
 // It shares the app's database and ENCRYPTION_SECRET, so it reads the job, resolves the
 // credentials and writes the output and the final status itself, with the same code the
-// app's local runner uses (runners/ansible-core.js). The app only says "run job N".
+// only code that runs a playbook (ansible-core.js). The app only says "run job N".
 //
 //   GET  /rte/v1/health             version, ansible, id, running job ids
 //   POST /rte/v1/jobs {jobId}       202 : accepted, runs in the background
@@ -23,7 +23,7 @@ import logger from "../lib/logger.js";
 import mysql from "../models/db.model.js";
 import httpsConfig from "../../config/https.config.js";
 import appConfig from "../../config/app.config.js";
-import { runAnsibleJob, runnerIdentity } from "../runners/ansible-core.js";
+import { runAnsibleJob, runnerIdentity } from "./ansible-core.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const version = (() => {

@@ -312,7 +312,6 @@ export default {
     sectionInfo: 'Informations',
     infoVersion: "Version d'AnsibleForms",
     infoBaseUrl: 'Servi sous',
-    infoAnsible: "Version d'Ansible",
     infoDatabase: 'Base de données',
     infoDatabaseHost: 'Hôte de la base de données',
     infoConfigSource: 'Source de configuration',

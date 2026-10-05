@@ -3,17 +3,13 @@ import axios from "axios";
 import fs from "fs";
 import yaml from "yaml";
 import moment from "moment";
-import os from "os";
 import Helpers from "../lib/common.js";
 import Errors from "../lib/errors.js";
 import Settings from "./settings.model.js";
 import logger from "../lib/logger.js";
-import Cmd from "../lib/cmd.js";
 import { safeParse } from "../lib/safejson.js";
-import ansibleConfig from "../../config/ansible.config.js";
 import loggerConfig from "../../config/log.config.js";
 import appConfig from "../../config/app.config.js";
-import Repository from "./repository.model.js";
 import mysql from "./db.model.js";
 import Form from "./form.model.js";
 import Expression from "./expression.model.js";
@@ -226,14 +222,15 @@ Job.create = async function (record) {
 Job.abandon = async function (all = false) {
   // abandon jobs
   logger.notice(`Abandoning jobs`);
-  // Only this instance's jobs : one running on an RTE (jobs.host = its RTE_ID) carries on
-  // when the app restarts, and that RTE cleans up its own jobs when it restarts.
+  // Only jobs no runner claimed : one running on an RTE (jobs.host = its RTE_ID) carries
+  // on when the app restarts, and that RTE cleans up its own jobs when it restarts. The
+  // app runs no playbook itself, so it never claims one.
   var sql =
-    "UPDATE AnsibleForms.`jobs` set status='abandoned',abort_requested=0 where (status='running' or abort_requested) and (host IS NULL or host=?) ";
+    "UPDATE AnsibleForms.`jobs` set status='abandoned',abort_requested=0 where (status='running' or abort_requested) and host IS NULL ";
   if (!all) {
     sql = sql + "and (start < (NOW() - INTERVAL 1 DAY))"; // remove jobs that are 1 day old
   }
-  const res = await mysql.do(sql, [os.hostname()]);
+  const res = await mysql.do(sql);
   return res.changedRows;
 };
 Job.resetAbortRequested = async function (id) {
@@ -293,6 +290,12 @@ Job.printJobOutput = async (data, type, jobid, counter, incrementIssue) => {
     job_id: jobid,
     order: counter,
   });
+};
+// the last output line written for a job ; the next one is this + 1. Every writer (the
+// app, an RTE) continues from the database, so two of them never collide.
+Job.lastOrder = async function (jobId) {
+  const res = await mysql.do("SELECT COALESCE(MAX(`order`),0) AS last FROM AnsibleForms.`job_output` WHERE job_id=?", [jobId]);
+  return Number(res?.[0]?.last) || 0;
 };
 Job.isAbortRequested = async function (id) {
   const res = await mysql.do(
@@ -375,44 +378,9 @@ Job.requestAbort = async function (id) {
   );
   
   if (res.changedRows == 1) {
-    // Get the PID and host from the database
-    const pidResult = await mysql.do(
-      "SELECT pid, host FROM AnsibleForms.`jobs` WHERE id=?",
-      [id]
-    );
-    
-    const pid = pidResult[0]?.pid;
-    const jobHost = pidResult[0]?.host;
-    const currentHost = os.hostname();
-    
-    if (pid && jobHost) {
-      // Only attempt to kill if this is the correct host
-      if (jobHost === currentHost) {
-        logger.info(`[Job ${id}] Killing process with PID ${pid} on host ${currentHost}`);
-        try {
-          // the playbook runs in its own process group (runners/ansible-core.js), so one
-          // signal stops the whole pipeline ; walking the tree needs `ps`, which the
-          // image does not ship, so it is only the fallback
-          try {
-            process.kill(-pid, "SIGTERM");
-          } catch {
-            await Cmd.killChildren(pid);
-          }
-          logger.info(`[Job ${id}] Successfully sent kill signal to PID ${pid}`);
-        } catch (err) {
-          logger.error(`[Job ${id}] Failed to kill PID ${pid}: ${err.message}`);
-          // Don't throw - the abort flag is set, so the process will still abort on next output
-        }
-      } else {
-        logger.warning(`[Job ${id}] Process is running on different host (job on '${jobHost}', current '${currentHost}'). Abort flag set, that instance stops it within a few seconds.`);
-        // a configured runner (an RTE) also takes a direct cancel, which stops it at once
-        cancelOnRunner(id).catch((e) => logger.debug(`[Job ${id}] cancel on the runner failed : ${e.message}`));
-      }
-    } else if (!pid && !jobHost) {
-      logger.warning(`[Job ${id}] No PID/host found for job, abort flag set but cannot kill process directly`);
-    } else {
-      logger.warning(`[Job ${id}] Incomplete PID info (pid: ${pid}, host: ${jobHost}), abort flag set`);
-    }
+    // The runner running the job sees the flag within seconds and stops it ; a direct
+    // cancel on the runner (an RTE, AWX) stops it at once.
+    cancelOnRunner(id).catch((e) => logger.debug(`[Job ${id}] cancel on the runner failed : ${e.message}`));
   }
   return res;
 };
@@ -664,31 +632,8 @@ Job.findById = async function (user, id, asText, logSafe = false) {
       true
     );
 
-    // Try to read job_log_<jobid>.log if it exists
-    // The log is written by the playbook to: <playbook_dir>/.joblogs/job_log_<id>.log
-    // playbook_dir = ansible base path + optional playbookSubPath (from extravars)
-    let jobLogContent = null;
-    try {
-      const ansibleBasePath = (await Repository.getAnsiblePath()) || ansibleConfig.path;
-      let playbookSubPath = "";
-      const ev = safeParse(job.extravars, {}, `job.extravars id=${id}`);
-      playbookSubPath = ev.__playbookSubPath__ || "";
-      const playbookDir = playbookSubPath
-        ? path.join(ansibleBasePath, playbookSubPath)
-        : ansibleBasePath;
-      const logPath = path.join(playbookDir, ".joblogs", `job_log_${id}.log`);
-      if (fs.existsSync(logPath)) {
-        jobLogContent = fs.readFileSync(logPath, "utf-8");
-      }
-    } catch (e) {
-      // logger.warning, not .warn : this logger is built with winston.config.syslog.levels,
-      // which has no `warn`. The TypeError thrown here escaped to the outer catch, which
-      // returns [] - so a job whose extravars made the try block throw became permanently
-      // unviewable (200 with an empty body) and the AccessDeniedError path never fired.
-      logger.warning(`Could not read job_log_${id}.log: ${e.message}`);
-    }
-
-    return { ...job, ...{ output: Helpers.formatOutput(res, asText), job_log: jobLogContent } };
+    // the job log file a playbook writes is stored on the job by the runner (jobs.job_log)
+    return { ...job, ...{ output: Helpers.formatOutput(res, asText), job_log: job.job_log ?? null } };
   } catch (err) {
     // Rethrow. This used to `return []`, which swallowed the AccessDeniedError thrown a
     // few lines up - the comment above already described the symptom while the cause was

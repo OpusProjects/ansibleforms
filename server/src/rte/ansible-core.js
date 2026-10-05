@@ -1,9 +1,10 @@
-// The one place a playbook is run : the local runner (in the app) and, later, the RTE call
+// The one place a playbook runs : the RTE (AF_ROLE=rte, src/rte/server.js) calls
 // runAnsibleJob with nothing but a job id. Everything it needs is in the jobs row and the
-// database (credentials, secret stores), so where it runs makes no difference to the result.
+// database (credentials, secret stores). The app never imports this module : since 8.0 it
+// runs no playbook itself.
 //
-// The approval gate is NOT here : a job reaches this module only once it may run
-// (runners/orchestrator.js).
+// The approval gate is NOT here : a job reaches an RTE only once it may run
+// (runners/orchestrator.js, in the app).
 import fs from "fs";
 import os from "os";
 import path from "path";
@@ -17,24 +18,11 @@ import appConfig from "../../config/app.config.js";
 import Repository from "../models/repository.model.js";
 import Credential from "../models/credential.model.v2.js";
 import mysql from "../models/db.model.js";
-// a cycle (job.model imports the orchestrator, which reaches this module) ; harmless, Job is
-// only used when a playbook runs, long after both modules have loaded
 import Job from "../models/job.model.js";
 
-/**
- * Who runs the process, stored in jobs.host while it runs. An RTE has its own name
- * (RTE_ID, default rte-<hostname>), so an RTE on the same machine as the app is never
- * taken for it - each only abandons its own jobs when it restarts.
- */
+/** this RTE's name, stored in jobs.host on the jobs it claims (RTE_ID, default rte-<hostname>) */
 export function runnerIdentity() {
-  if (process.env.AF_ROLE === "rte") return process.env.RTE_ID || `rte-${os.hostname()}`;
-  return os.hostname();
-}
-
-/** the last output line written for a job ; the next one is this + 1 */
-export async function lastOrder(jobId) {
-  const res = await mysql.do("SELECT COALESCE(MAX(`order`),0) AS last FROM AnsibleForms.`job_output` WHERE job_id=?", [jobId]);
-  return Number(res?.[0]?.last) || 0;
+  return process.env.RTE_ID || `rte-${os.hostname()}`;
 }
 
 /** the folder the playbook runs from : the playbooks repository, else ANSIBLE_PATH, plus the sub path */
@@ -117,7 +105,7 @@ export async function runAnsibleJob({ jobId }) {
   extravars.__jobid__ = jobId;
   // credentials passed through extravars have precedence over the others
   const credentials = await Credential.resolveCredentialMap(extravars.__credentials__ || creds || {});
-  return launchPlaybook(extravars, credentials, jobId, await lastOrder(jobId));
+  return launchPlaybook(extravars, credentials, jobId, await Job.lastOrder(jobId));
 }
 
 async function launchPlaybook(ev, credentials, jobid, counter) {

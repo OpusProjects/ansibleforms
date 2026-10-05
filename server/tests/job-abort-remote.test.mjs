@@ -36,7 +36,7 @@ vi.mock("child_process", async (importOriginal) => {
 });
 
 const { default: Job } = await import("../src/models/job.model.js");
-const Exec = await import("../src/runners/ansible-core.js");
+const Exec = await import("../src/rte/ansible-core.js");
 const { default: mysql } = await import("../src/models/db.model.js");
 
 // the jobs row and its output, in memory
@@ -129,7 +129,7 @@ describe("a playbook stops when its abort flag is set", () => {
     child.emit("exit", 0);
     assert.equal(await result, "resolved");
     const { readFileSync } = await import("fs");
-    const src = readFileSync(new URL("../src/runners/ansible-core.js", import.meta.url), "utf8");
+    const src = readFileSync(new URL("../src/rte/ansible-core.js", import.meta.url), "utf8");
     // a list inventory, tags or limit must not reach spawn as an array : spawn refuses it
     for (const v of ["item", "tags", "limit", "extravars\\?\\.__playbook__"]) assert.match(src, new RegExp(`arg\\(${v}\\)`));
   });

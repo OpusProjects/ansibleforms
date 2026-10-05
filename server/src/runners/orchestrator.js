@@ -7,7 +7,6 @@ import mysql from "../models/db.model.js";
 import Job from "../models/job.model.js";
 import Runner from "../models/runner.model.js";
 import { getRunner } from "./index.js";
-import { lastOrder } from "./ansible-core.js";
 
 function getTimestamp() {
   return moment.utc(Date.now()).format("YYYY-MM-DD HH:mm:ss");
@@ -29,7 +28,7 @@ export async function approvalGate({ jobId, jobType, extravars, approval }) {
     `APPROVE [${label}] ${"*".repeat(69 - label.length)}`,
     "stdout",
     jobId,
-    (await lastOrder(jobId)) + 1
+    (await Job.lastOrder(jobId)) + 1
   );
   await Job.update(
     {
@@ -44,9 +43,9 @@ export async function approvalGate({ jobId, jobType, extravars, approval }) {
 
 /**
  * Where a job runs. A playbook form names a runner with `runner: <name>` (extravar
- * __runner__) ; without one, the default runner ; without that, the app itself. An AWX
- * form runs on AWX.
- * Returns { impl, row } : the runner implementation and, for a configured one, its row.
+ * __runner__) ; without one, the default runner of type rte. Without that the job fails :
+ * since 8.0 the app runs no playbook itself. An AWX form runs on AWX.
+ * Returns { impl, row } : the runner implementation and its row.
  */
 export async function resolveRunner({ jobType, extravars }) {
   if (jobType === "awx") return { impl: getRunner("awx"), row: null };
@@ -59,9 +58,9 @@ export async function resolveRunner({ jobType, extravars }) {
     if (!impl.capabilities.playbook) throw new Errors.BadRequestError(`Runner '${name}' (${row.type}) cannot run a playbook`);
     return { impl, row };
   }
-  const row = await Runner.findDefault();
+  const row = await Runner.findDefault("rte");
   if (row) return { impl: getRunner(row.type), row };
-  return { impl: getRunner("local"), row: null };
+  throw new Errors.NotFoundError("No runner to run this playbook : add one of type rte under Connections > Runners and mark it as default, or name it on the form with runner: <name>");
 }
 
 /**
@@ -77,7 +76,7 @@ export async function dispatch({ jobId, jobType, extravars, credentialMap, appro
   try {
     runner = await resolveRunner({ jobType, extravars });
   } catch (err) {
-    await Job.endJobStatus(jobId, (await lastOrder(jobId)) + 1, "stderr", "failed", `[ERROR]: ${err.message}`);
+    await Job.endJobStatus(jobId, (await Job.lastOrder(jobId)) + 1, "stderr", "failed", `[ERROR]: ${err.message}`);
     return false;
   }
   // remembered on the job : an abort knows where to send the cancel

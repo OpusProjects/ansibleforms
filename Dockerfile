@@ -95,7 +95,7 @@ LABEL org.opencontainers.image.source="https://github.com/ansibleforms/ansiblefo
       org.opencontainers.image.url="https://ansibleforms.com" \
       org.opencontainers.image.documentation="https://ansibleforms.com" \
       org.opencontainers.image.title="AnsibleForms" \
-      org.opencontainers.image.description="Self-service forms that run Ansible playbooks and AWX/AAP templates" \
+      org.opencontainers.image.description="Self-service forms that run Ansible playbooks on runtime environments (ansibleforms-rte) and AWX/AAP/Ascender templates" \
       org.opencontainers.image.licenses="GPL-3.0" \
       org.opencontainers.image.version="${VERSION}"
 
@@ -105,8 +105,6 @@ WORKDIR /app/dist
 # copy the server code, no more compiling needed sing ESM
 COPY --from=tmp_builder /app/server/. ./
 
-# Copy the ansible.cfg file to /etc/ansible/ directory
-COPY ./server/ansible.cfg /etc/ansible/ansible.cfg
 
 # Use js files to run the application
 ENTRYPOINT ["node", "./index.js"]

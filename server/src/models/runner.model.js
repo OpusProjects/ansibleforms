@@ -1,5 +1,5 @@
-// Runners : where a playbook runs. One row per RTE (runtime environment container) ; a form
-// names one with `runner: <name>`, or runs on the default one, or in the app itself.
+// Runners : where a job runs. One row per RTE (runtime environment container) ; a form
+// names one with `runner: <name>`, or runs on the default one of its type.
 import CrudModel from './crud.model.js';
 import Errors from '../lib/errors.js';
 import logger from '../lib/logger.js';
@@ -76,10 +76,10 @@ class Runner extends CrudModel {
     return super.findByName(this.modelName, name);
   }
 
-  /** the runner marked default, or null */
-  static async findDefault() {
+  /** the runner of this type marked default, or null */
+  static async findDefault(type) {
     const all = await this.findAll();
-    return (all || []).find((r) => r.is_default) || null;
+    return (all || []).find((r) => r.is_default && r.type === type) || null;
   }
 
   /** proves the runner answers and accepts us ; what it reports is up to the runner type */

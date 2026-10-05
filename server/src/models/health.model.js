@@ -176,30 +176,6 @@ try {
   buildInfo = JSON.parse(readFileSync(path.resolve(__dirname_h, '../../build-info.json'), 'utf8'));
 } catch { /* absent in dev, which is normal */ }
 
-// Which ansible will actually run a playbook. The app shells out to 'ansible-playbook'
-// by name, so what answers depends on PATH, the venv and the container image - and
-// nothing else in the UI says which one won. Deliberately INFORMATION, not a check :
-// an instance driving AWX/AAP only has no local ansible and that is not a fault.
-async function ansibleVersion() {
-  try {
-    // 'ansible-playbook [core 2.16.3]' is the first line ; the rest is config paths
-    const out = await Cmd.executeSilentCommand({
-      command: 'ansible-playbook --version',
-      directory: process.cwd(),
-      description: 'Reading ansible version'
-    }, true, true, 10);
-    const first = String(out || '').split(/\r?\n/)[0].trim();
-    if (!first) return null;
-    // 'ansible-playbook [core 2.21.1]' since ansible 2.10, 'ansible-playbook 2.9.27'
-    // before it - report the number either way, and keep the raw line in the detail
-    const m = /\[core\s+([^\]]+)\]/.exec(first) || /(\d+\.\d+[\w.]*)/.exec(first);
-    return { version: m ? m[1].trim() : first, raw: first };
-  } catch {
-    // not installed, or not on PATH for the user this process runs as
-    return null;
-  }
-}
-
 // Which sign-in routes are open. 'why can this user not log in' starts here, and the
 // answer is otherwise spread over two admin pages.
 async function authenticationFacts() {
@@ -801,11 +777,6 @@ Health.check = async function () {
       ? 'Set with BASE_URL, for hosting behind a reverse proxy under a subpath'
       : 'Served from the root ; set BASE_URL to host it under a subpath',
   });
-  const ansible = await ansibleVersion();
-  add('ansible', ansible?.version ?? null, ansible ? {
-    raw: ansible.raw,
-    note: 'Local playbook runs need this ; AWX/AAP templates do not',
-  } : null);
   try {
     const db = await databaseFacts();
     add('database', `${db.product} ${db.number}`.trim(), { version: db.version, comment: db.comment || null });

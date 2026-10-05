@@ -314,18 +314,19 @@ describe("health reports problems, not just ok", () => {
     assert.equal(r.checks.length, 15);
   });
 
-  // An AWX/AAP-only instance has no local ansible and does not need one, so the row is
-  // omitted rather than reading 'not installed' for ever.
-  test("the ansible row is absent when there is no local ansible", async () => {
+  // Since 8.0 the app runs no playbook itself (an RTE does), so it never asks for an ansible
+  // version - even where one happens to be installed.
+  test("there is no ansible row : the app does not run ansible-playbook", async () => {
     const saved = Cmd.executeSilentCommand;
+    const asked = [];
     Cmd.executeSilentCommand = async (cmd) => {
-      if (String(cmd?.command || '').startsWith('ansible-playbook')) throw new Error('command not found');
-      return 'mock-output';
+      asked.push(String(cmd?.command || ''));
+      return 'ansible-playbook [core 2.17.9]';
     };
     try {
       const r = await Health.check();
-      assert.equal(infoOf(r, "ansible"), undefined, "no ansible row when the tool is missing");
-      // and the rest of the block is unaffected
+      assert.equal(infoOf(r, "ansible"), undefined);
+      assert.equal(asked.some((c) => c.startsWith('ansible-playbook')), false, "ansible is never called");
       assert.ok(infoOf(r, "version"), "other info rows still present");
     } finally {
       Cmd.executeSilentCommand = saved;
@@ -514,8 +515,7 @@ describe("the database check names the engine, not just a version number", () =>
     const r = await Health.check();
     // version is the first row : it is what every support conversation opens with
     assert.equal(r.info[0].key, "version");
-    // 'ansible' is not listed : the global Cmd mock returns an empty version, which is
-    // the no-local-ansible case, and that row is omitted (covered by its own test)
+    // no 'ansible' : the app runs no playbook since 8.0 (covered by its own test)
     for (const key of ["version", "baseUrl", "authentication", "retention", "mail", "logs", "uptime", "timezone", "node", "platform"]) {
       assert.ok(infoOf(r, key), `expected an info entry for ${key}`);
     }

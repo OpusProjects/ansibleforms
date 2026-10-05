@@ -307,7 +307,6 @@ export default {
     sectionInfo: 'Information',
     infoVersion: 'AnsibleForms version',
     infoBaseUrl: 'Served under',
-    infoAnsible: 'Ansible version',
     infoDatabase: 'Database',
     infoDatabaseHost: 'Database host',
     infoConfigSource: 'Configuration source',

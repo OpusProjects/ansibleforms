@@ -1,6 +1,7 @@
-// The local runner and the approval gate (server/src/runners). A playbook job runs from its
-// jobs row alone - the same input the RTE will have - so these tests drive it through the
-// row, with ansible-playbook replaced by a fake process.
+// The RTE's playbook run (server/src/rte/ansible-core.js), the approval gate and which
+// runner a job goes to (server/src/runners/orchestrator.js). A playbook job runs from its
+// jobs row alone, so these tests drive it through the row, with ansible-playbook replaced
+// by a fake process.
 import { test, describe, beforeEach, afterEach, vi } from "vitest";
 import assert from "node:assert/strict";
 import { EventEmitter } from "events";
@@ -60,14 +61,14 @@ let runnerRows = [];
 vi.mock("../src/models/runner.model.js", () => ({
   default: {
     findByName: async (name) => runnerRows.find((r) => r.name === name) || undefined,
-    findDefault: async () => runnerRows.find((r) => r.is_default) || null,
+    findDefault: async (type) => runnerRows.find((r) => r.is_default && r.type === type) || null,
   },
 }));
 
 const { default: Job } = await import("../src/models/job.model.js");
 const { default: mysql } = await import("../src/models/db.model.js");
 const { default: Repository } = await import("../src/models/repository.model.js");
-const core = await import("../src/runners/ansible-core.js");
+const core = await import("../src/rte/ansible-core.js");
 const { dispatch, resolveRunner } = await import("../src/runners/orchestrator.js");
 const { RUNNERS } = await import("../src/runners/index.js");
 
@@ -199,11 +200,17 @@ describe("the approval gate", () => {
     assert.equal(approvalMails.length, 1);
   });
 
-  test("an approved job runs", async () => {
-    row({ __playbook__: "site.yml" });
-    await runToEnd(() => dispatch({ jobId: 11, jobType: "ansible", extravars: {}, approval: { roles: [] }, approved: true }));
-    assert.equal(spawned.length, 1);
-    assert.equal(jobRow.status, "success");
+  test("an approved job goes to its runner", async () => {
+    runnerRows = [{ name: "rte-default", type: "rte", is_default: 1 }];
+    const launch = vi.spyOn(RUNNERS.rte, "launch").mockResolvedValue(true);
+    try {
+      row({ __playbook__: "site.yml" });
+      await dispatch({ jobId: 11, jobType: "ansible", extravars: {}, approval: { roles: [] }, approved: true });
+      assert.equal(launch.mock.calls.length, 1);
+      assert.equal(launch.mock.calls[0][0].runner.name, "rte-default");
+    } finally {
+      launch.mockRestore();
+    }
   });
 
   test("an awx job is labelled with its template", async () => {
@@ -213,14 +220,19 @@ describe("the approval gate", () => {
 });
 
 describe("which runner runs a playbook job", () => {
-  test("no runner named and none default : the app itself, remembered as such on the job", async () => {
+  test("no runner named and no default : the job fails with a line that says what to do", async () => {
     row({ __playbook__: "site.yml" });
-    const { impl, row: r } = await resolveRunner({ jobType: "ansible", extravars: {} });
-    assert.equal(impl.type, "local");
-    assert.equal(r, null);
-    await runToEnd(() => dispatch({ jobId: 11, jobType: "ansible", extravars: {}, approval: null }));
-    assert.equal(jobRow.runner, null);
-    assert.equal(spawned.length, 1);
+    await assert.rejects(resolveRunner({ jobType: "ansible", extravars: {} }), /No runner to run this playbook/);
+    const ok = await dispatch({ jobId: 11, jobType: "ansible", extravars: {}, approval: null });
+    assert.equal(ok, false);
+    assert.equal(spawned.length, 0, "the app runs no playbook itself");
+    assert.equal(jobRow.status, "failed");
+    assert.ok(outputs.some((o) => /No runner to run this playbook : add one of type rte/.test(o.output)));
+  });
+
+  test("a default of another type is not a playbook runner's default", async () => {
+    runnerRows = [{ name: "aap", type: "awx", is_default: 1 }];
+    await assert.rejects(resolveRunner({ jobType: "ansible", extravars: {} }), /No runner to run this playbook/);
   });
 
   test("the form's runner: name wins over the default", async () => {

@@ -741,10 +741,13 @@
   - name: PROCESS_MAX_BUFFER
     type: number
     allowed: a valid number
-    short: Maximum buffer size
+    short: Maximum playbook output per stream (RTE)
     default: 1024 * 1024
     description: |
-      The maximum buffer size for the process execution.  If you have large output, you might want to increase this value.
+      Read by an RTE (`AF_ROLE=rte`) : a playbook whose output on one stream passes this many
+      bytes is stopped. If you have large output, raise it. Since 8.0 the app runs no playbook
+      itself, so set this in the RTE container's environment ; it is not editable on the
+      Settings page.
     version: 5.0.8
   - name: LOG_LEVEL
     type: string
@@ -1009,10 +1012,12 @@
   - name: ANSIBLE_PATH
     type: string
     allowed: a valid path
-    short: The path of the ansible playbooks (local instance)
+    short: Where an RTE finds the playbooks
     default: "%PERSISTENT_FOLDER%/playbooks"
     description: |
-      Ansible Forms can have a local ansible instance.  This path says where the playbooks are.
+      Read by an RTE (`AF_ROLE=rte`) : the folder its playbooks run from when no repository is
+      marked for playbooks. Since 8.0 the app runs no playbook itself, so set this in the RTE
+      container's environment ; it is not editable on the Settings page.
   - name: REGEX_FILTER_JOB_OUTPUT
     type: string
     allowed: an escaped regular expression

@@ -3,11 +3,10 @@
 // launch(ctx) resolves when the job has ended (a multistep waits for its steps on it) ;
 // ctx = { jobId, extravars, credentialMap, ... }. The approval gate is not a runner's
 // business : runners/orchestrator.js passes a job on only once it may run.
-import local from "./local.js";
 import awx from "./awx.js";
 import rte from "./rte.js";
 
-export const RUNNERS = { local, awx, rte };
+export const RUNNERS = { awx, rte };
 export const RUNNER_TYPES = Object.keys(RUNNERS);
 
 export function getRunner(type) {

@@ -28,7 +28,7 @@ const find = async (req, res) => {
 // the types a runner can have, with what each can run
 const types = async (req, res) => {
   try {
-    return res.json(RestResult.list(RUNNER_TYPES.filter((t) => t !== "local").map((type) => ({ type, ...getRunner(type).capabilities }))));
+    return res.json(RestResult.list(RUNNER_TYPES.map((type) => ({ type, ...getRunner(type).capabilities }))));
   } catch (err) {
     Errors.ReturnError(res, err);
   }
