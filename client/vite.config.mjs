@@ -76,6 +76,10 @@ return {
     // anything bigger than this limit is a real regression worth the warning.
     chunkSizeWarningLimit: 1000,
     rolldownOptions: {
+      // The plugin timings notice reports that JavaScript plugins (Vite's own CSS and Sass
+      // handling) take most of the build. That is normal for a Vite build, not a problem to
+      // fix, and it printed on almost every run.
+      checks: { pluginTimings: false },
       output: {
         // Libraries in chunks of their own: they change far less often than the app, so a
         // browser keeps them cached across AnsibleForms upgrades, and the code editor is only
