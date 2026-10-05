@@ -154,20 +154,19 @@ purpose: they describe the process, not a setting.
 
 ## Running it
 
-**On a dev machine** (same filesystem as the dev server, so playbooks and the SSH key are
-shared automatically):
+**On a dev machine:** `npm run dev` (in the repository root) starts the client, the app and
+an RTE next to it (`rte-dev` on port 8010), and points the app at that RTE - every playbook
+job runs there. Both use `server/.env.development`, so they share the database and the
+folders (playbooks, SSH key). `npm run dev:local` is the old setup, without an RTE.
 
-```bash
-# terminal 1 : the RTE
-cd server
-NODE_ENV=development AF_ROLE=rte RTE_TOKEN=preview-token-1234567890 PORT=8010 HTTPS=0 node index.js
+| Script (root) | Starts |
+|---|---|
+| `npm run dev` | client + app (with `RTE_URL=http://127.0.0.1:8010`) + RTE on 8010 |
+| `npm run dev:local` | client + app, playbooks run in the app |
+| `npm run dev:rte` | the RTE alone |
 
-# server/.env.development : send playbook jobs to it, then restart the dev server
-RTE_URL=http://127.0.0.1:8010
-RTE_TOKEN=preview-token-1234567890
-```
-
-A job's output then starts with `ok: [Running on RTE http://127.0.0.1:8010]`.
+The dev token in these scripts (`dev-rte-token-not-a-secret`) is for a dev machine only.
+A job's output starts with `ok: [Running on RTE http://127.0.0.1:8010]` when the RTE ran it.
 
 **As a container:**
 
