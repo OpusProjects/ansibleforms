@@ -14,7 +14,7 @@ name: Release
 # opened with GITHUB_TOKEN starts no workflows, so the release pull request would never get
 # its required checks and could never be merged. See RELEASING.md for the App setup.
 #
-# A release also rebuilds ansibleforms.com : the site (ansibleforms/website) pulls
+# A release also rebuilds ansibleforms.com : the site (ansibleforms/ansibleforms.github.io) pulls
 # CHANGELOG.md and server/help.yaml from here when it is built.
 
 on:
@@ -79,9 +79,9 @@ jobs:
       channel: release
     secrets: inherit
 
-  # Tells ansibleforms/website to rebuild, so its changelog page shows this release.
+  # Tells ansibleforms/ansibleforms.github.io to rebuild, so its changelog page shows this release.
   # GITHUB_TOKEN cannot start a workflow in another repository, so the token comes from the
-  # same GitHub App as above, which is installed on ansibleforms/website too. It is asked for
+  # same GitHub App as above, which is installed on ansibleforms/ansibleforms.github.io too. It is asked for
   # that one repository only. Should this job fail, the site still catches up on its nightly
   # run - the release itself is already done.
   website:
@@ -96,12 +96,12 @@ jobs:
           app-id: ${{ vars.RELEASE_APP_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
-          repositories: website
+          repositories: ansibleforms.github.io
 
-      - name: Send app-release to ansibleforms/website
+      - name: Send app-release to ansibleforms/ansibleforms.github.io
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
           TAG: ${{ needs.release-please.outputs.tag_name }}
         run: |
-          gh api repos/ansibleforms/website/dispatches -f event_type=app-release -f "client_payload[tag]=$TAG"
-          echo "ansibleforms/website rebuilds for $TAG"
+          gh api repos/ansibleforms/ansibleforms.github.io/dispatches -f event_type=app-release -f "client_payload[tag]=$TAG"
+          echo "ansibleforms/ansibleforms.github.io rebuilds for $TAG"

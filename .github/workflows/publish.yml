@@ -3,7 +3,7 @@ name: Publish
 # Builds and pushes the application image. Called by release.yml when a release is created
 # and by rc.yml for a release candidate. "Run workflow" re-publishes an existing release tag,
 # for when a push failed half way. The tags are the list in installation.md (Image
-# tags) of ansibleforms/website - change that list and this together, never one of them :
+# tags) of ansibleforms/ansibleforms.github.io - change that list and this together, never one of them :
 #   release 6.5.3     -> 6.5.3, 6.5, 6 and latest - each only while it is the highest of
 #                        its kind, so a patch on an older line never moves them backwards ;
 #                        a release that takes latest takes latest-rc too, so a test server

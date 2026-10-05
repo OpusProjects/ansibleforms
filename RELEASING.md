@@ -36,7 +36,7 @@ feature PR ──squash──▶ main ──▶ release-please updates the open 
 
 The tags and what they point to are listed once, for users, under
 [Image tags](https://ansibleforms.com/installation#image-tags) (`installation.md` in
-[ansibleforms/website](https://github.com/ansibleforms/website)). Do not repeat or change them elsewhere.
+[ansibleforms/ansibleforms.github.io](https://github.com/ansibleforms/ansibleforms.github.io)). Do not repeat or change them elsewhere.
 publish.yml implements that list: `latest`, `<major>` and `<major>.<minor>` only move when
 the release is the highest of its kind, so a patch on an older line never moves them
 backwards. The release workflow also keeps GitHub's "Latest release" badge on the highest
@@ -118,7 +118,7 @@ A test server does not need an image copied to it: it can pull `latest-rc`.
 
 | What | Where | Used by |
 |---|---|---|
-| GitHub App `ansibleforms-release` (contents and pull requests: read and write) | installed on this repository and on `ansibleforms/website` (the release rebuilds the site) | release.yml |
+| GitHub App `ansibleforms-release` (contents and pull requests: read and write) | installed on this repository and on `ansibleforms/ansibleforms.github.io` (the release rebuilds the site) | release.yml |
 | `RELEASE_APP_ID` | repository variable | release.yml |
 | `RELEASE_APP_PRIVATE_KEY` | repository secret | release.yml |
 | `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` | secrets of the `dockerhub` environment ; the token needs read, write and delete scope for the description | publish.yml, base.yml, dockerhub-description.yml |
