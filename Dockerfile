@@ -3,17 +3,17 @@
 # application build starts from - with no commit here to show for it. Updating the pin
 # is a deliberate, reviewable act : Dependabot proposes it as a pull request.
 #
-#   docker pull ansibleguy/ansibleforms-base:latest
-#   docker inspect --format='{{index .RepoDigests 0}}' ansibleguy/ansibleforms-base:latest
+#   docker pull ghcr.io/ansibleforms/ansibleforms-base:latest
+#   docker inspect --format='{{index .RepoDigests 0}}' ghcr.io/ansibleforms/ansibleforms-base:latest
 #
-FROM ansibleguy/ansibleforms-base:latest@sha256:8a1ea5dd0a80be59ce78b4520893e0d42dc0d1231c0af02064a48bce5aad4b23 AS nodebase
+FROM ghcr.io/ansibleforms/ansibleforms-base:latest@sha256:f8f39504d26ff4fd954c201f77d89dc347c6ae85e490fe196abaa74523281f7d AS nodebase
 
 ##################################################
 # builder stage
 # intermediate build to compile the client application with vite
 # can run in parallel with base stage
 
-FROM ansibleguy/ansibleforms-base:latest@sha256:8a1ea5dd0a80be59ce78b4520893e0d42dc0d1231c0af02064a48bce5aad4b23 AS tmp_builder
+FROM ghcr.io/ansibleforms/ansibleforms-base:latest@sha256:f8f39504d26ff4fd954c201f77d89dc347c6ae85e490fe196abaa74523281f7d AS tmp_builder
 
 # Build arguments for git SHA, build time and version. VERSION is empty for a local build,
 # which leaves server/package.json as the version shown ; CI passes the release or
