@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.1.5](https://github.com/ansibleforms/ansibleforms/compare/7.1.4...7.1.5) (2026-10-05)
+
+
+### Changed
+
+* **server:** group the templates into seed and email folders ([#646](https://github.com/ansibleforms/ansibleforms/issues/646)) ([9f17826](https://github.com/ansibleforms/ansibleforms/commit/9f178266bd62504bd435832d5038fc04069deb93))
+* **server:** write the key separators as \0 escapes ([#649](https://github.com/ansibleforms/ansibleforms/issues/649)) ([cb69ef5](https://github.com/ansibleforms/ansibleforms/commit/cb69ef5a6cf82f4dea9dde0a21c0c7148214ebed))
+
 ## [7.1.4](https://github.com/ansibleforms/ansibleforms/compare/7.1.3...7.1.4) (2026-10-05)
 
 
