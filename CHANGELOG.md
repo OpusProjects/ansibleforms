@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.5.4](https://github.com/ansibleforms/ansibleforms/compare/6.5.3...6.5.4) (2026-10-05)
+
+
+### Changed
+
+* **server:** write the key separators as \0 escapes ([#650](https://github.com/ansibleforms/ansibleforms/issues/650)) ([41a8015](https://github.com/ansibleforms/ansibleforms/commit/41a8015e93053c82bd7306b999e5cbe570d10788))
+
 ## [6.5.3](https://github.com/ansibleforms/ansibleforms/compare/6.5.2...6.5.3) (2026-10-05)
 
 
