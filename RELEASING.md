@@ -69,10 +69,11 @@ release on its own, whatever it says.
 To test a pull request before it is merged: Actions → **Release candidate** → Run workflow →
 enter the pull request number. That publishes:
 
-- `ansibleguy/ansibleforms:<next>-rc.<pr>.<run>`, for example `6.4.0-rc.512.7`
-- `ansibleguy/ansibleforms:latest-rc`
+- `ghcr.io/ansibleforms/ansibleforms:<next>-rc.<pr>.<run>`, for example `6.4.0-rc.512.7`
+- `ghcr.io/ansibleforms/ansibleforms:latest-rc`
 
-and a comment on the pull request lists the tags. The UI and the Status page of that image
+plus the same tags on the Docker Hub mirror `ansibleguy/ansibleforms`. A comment on the
+pull request lists the tags. The UI and the Status page of that image
 show the rc version.
 
 `<next>` is the version the pull request would release. On the release pull request it is

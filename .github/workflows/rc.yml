@@ -123,8 +123,8 @@ jobs:
             ### Release candidate `${{ needs.version.outputs.rc }}`
 
             ```
-            docker pull ansibleguy/ansibleforms:${{ needs.version.outputs.rc }}
             docker pull ${{ needs.version.outputs.ghcr }}:${{ needs.version.outputs.rc }}
+            docker pull ansibleguy/ansibleforms:${{ needs.version.outputs.rc }}
             ```
 
             Also tagged `latest-rc`. Built from ${{ needs.version.outputs.sha }}.
