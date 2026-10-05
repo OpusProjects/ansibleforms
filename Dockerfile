@@ -7,14 +7,14 @@
 #   docker pull ghcr.io/ansibleforms/base-server:latest
 #   docker inspect --format='{{index .RepoDigests 0}}' ghcr.io/ansibleforms/base-server:latest
 #
-FROM ghcr.io/ansibleforms/base-server:latest@sha256:1525de71c23031acfae90cec3bae5ded9341c4c61c04f2a0453b577aec05a3ac AS nodebase
+FROM ghcr.io/ansibleforms/base-server:latest@sha256:e7b859d2c855c0ca9841d7cba68aaeefabf570347482fc8f756fac89454e3406 AS nodebase
 
 ##################################################
 # builder stage
 # intermediate build to compile the client application with vite
 # can run in parallel with base stage
 
-FROM ghcr.io/ansibleforms/base-server:latest@sha256:1525de71c23031acfae90cec3bae5ded9341c4c61c04f2a0453b577aec05a3ac AS tmp_builder
+FROM ghcr.io/ansibleforms/base-server:latest@sha256:e7b859d2c855c0ca9841d7cba68aaeefabf570347482fc8f756fac89454e3406 AS tmp_builder
 
 # Build arguments for git SHA, build time and version. VERSION is empty for a local build,
 # which leaves server/package.json as the version shown ; CI passes the release or
