@@ -23,6 +23,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SRC_DIR="$SCRIPT_DIR"
 DST_DIR="$SCRIPT_DIR/public"
 FILES=("form_schema.json")
+# public/forms_schema.json is not generated any more: it describes the forms.yaml layout
+# that 7 removed. It stays in public/ because editors were pointed at its raw GitHub URL,
+# and removing it would turn their schema validation into a 404.
 
 if ! command -v jq >/dev/null 2>&1; then
   echo "[public-schema] ERROR: jq is required but not installed." >&2

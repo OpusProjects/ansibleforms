@@ -1,0 +1,4962 @@
+{
+  "type": "object",
+  "required": [
+    "categories",
+    "roles",
+    "forms"
+  ],
+  "properties": {
+    "categories": {
+      "type": "array",
+      "contains": {
+        "const": {
+          "name": "Default",
+          "icon": "bars"
+        }
+      },
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "icon"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[^/]{3,25}$"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "icon"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^[^/]{3,25}$"
+                },
+                "icon": {
+                  "type": "string"
+                },
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "icon"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "pattern": "^[^/]{3,25}$"
+                      },
+                      "icon": {
+                        "type": "string"
+                      },
+                      "items": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "name",
+                            "icon"
+                          ],
+                          "properties": {
+                            "name": {
+                              "type": "string",
+                              "pattern": "^[^/]{3,25}$"
+                            },
+                            "icon": {
+                              "type": "string"
+                            },
+                            "items": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "name",
+                                  "icon"
+                                ],
+                                "properties": {
+                                  "name": {
+                                    "type": "string",
+                                    "pattern": "^[^/]{3,25}$"
+                                  },
+                                  "icon": {
+                                    "type": "string"
+                                  },
+                                  "items": {
+                                    "type": "array",
+                                    "items": {
+                                      "$ref": "/category"
+                                    }
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "roles": {
+      "type": "array",
+      "contains": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "const": "public"
+          },
+          "groups": {
+            "const": []
+          },
+          "options": {
+            "type": "object",
+            "properties": {
+              "showDesigner": {
+                "type": "boolean"
+              },
+              "showLogs": {
+                "type": "boolean"
+              },
+              "showDebugButtons": {
+                "type": "boolean"
+              },
+              "showSettings": {
+                "type": "boolean"
+              },
+              "showExtravars": {
+                "type": "boolean"
+              },
+              "extendedTokenExpiration": {
+                "type": "boolean"
+              },
+              "showAllJobLogs": {
+                "type": "boolean"
+              },
+              "allowBackupOps": {
+                "type": "boolean"
+              },
+              "allowVerboseMode": {
+                "type": "boolean"
+              },
+              "allowScheduledJobs": {
+                "type": "boolean"
+              },
+              "allowStoredJobs": {
+                "type": "boolean"
+              },
+              "allowPlannedJobs": {
+                "type": "boolean"
+              },
+              "allowLogin": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "items": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "anyOf": [
+          {
+            "required": [
+              "groups"
+            ]
+          },
+          {
+            "required": [
+              "users"
+            ]
+          }
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "options": {
+            "type": "object",
+            "properties": {
+              "showDesigner": {
+                "type": "boolean"
+              },
+              "showLogs": {
+                "type": "boolean"
+              },
+              "showDebugButtons": {
+                "type": "boolean"
+              },
+              "showSettings": {
+                "type": "boolean"
+              },
+              "showExtravars": {
+                "type": "boolean"
+              },
+              "extendedTokenExpiration": {
+                "type": "boolean"
+              },
+              "showAllJobLogs": {
+                "type": "boolean"
+              },
+              "allowBackupOps": {
+                "type": "boolean"
+              },
+              "allowVerboseMode": {
+                "type": "boolean"
+              },
+              "allowScheduledJobs": {
+                "type": "boolean"
+              },
+              "allowStoredJobs": {
+                "type": "boolean"
+              },
+              "allowPlannedJobs": {
+                "type": "boolean"
+              },
+              "allowLogin": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": true
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "default": "",
+              "pattern": "(\\blocal\\b|\\bldap\\b|\\bazuread\\b|\\boidc\\b)\\/.+"
+            }
+          },
+          "users": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "default": "",
+              "pattern": "(\\blocal\\b|\\bldap\\b|\\bazuread\\b|\\boidc\\b)\\/.+"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "constants": {
+      "type": "object"
+    },
+    "forms": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "roles",
+          "type",
+          "fields"
+        ],
+        "oneOf": [
+          {
+            "properties": {
+              "type": {
+                "enum": [
+                  "ansible"
+                ]
+              },
+              "template": {
+                "not": {}
+              },
+              "awx": {
+                "not": {}
+              },
+              "steps": {
+                "not": {}
+              },
+              "awxCredentials": {
+                "not": {}
+              },
+              "executionEnvironment": {
+                "not": {}
+              },
+              "scm_branch": {
+                "not": {}
+              },
+              "instanceGroups": {
+                "not": {}
+              },
+              "expression": {
+                "not": {}
+              }
+            },
+            "required": [
+              "playbook"
+            ]
+          },
+          {
+            "properties": {
+              "type": {
+                "enum": [
+                  "awx"
+                ]
+              },
+              "vaultCredentials": {
+                "not": {}
+              },
+              "playbook": {
+                "not": {}
+              },
+              "ansibleCredentials": {
+                "not": {}
+              },
+              "steps": {
+                "not": {}
+              },
+              "expression": {
+                "not": {}
+              },
+              "playbookSubPath": {
+                "not": {}
+              }
+            },
+            "required": [
+              "template"
+            ]
+          },
+          {
+            "properties": {
+              "type": {
+                "enum": [
+                  "expression"
+                ]
+              },
+              "vaultCredentials": {
+                "not": {}
+              },
+              "playbook": {
+                "not": {}
+              },
+              "ansibleCredentials": {
+                "not": {}
+              },
+              "template": {
+                "not": {}
+              },
+              "awx": {
+                "not": {}
+              },
+              "steps": {
+                "not": {}
+              },
+              "inventory": {
+                "not": {}
+              },
+              "awxCredentials": {
+                "not": {}
+              },
+              "tags": {
+                "not": {}
+              },
+              "check": {
+                "not": {}
+              },
+              "limit": {
+                "not": {}
+              },
+              "scm_branch": {
+                "not": {}
+              },
+              "diff": {
+                "not": {}
+              },
+              "key": {
+                "not": {}
+              },
+              "executionEnvironment": {
+                "not": {}
+              },
+              "instanceGroups": {
+                "not": {}
+              },
+              "playbookSubPath": {
+                "not": {}
+              }
+            },
+            "required": [
+              "expression"
+            ]
+          },
+          {
+            "properties": {
+              "type": {
+                "enum": [
+                  "multistep"
+                ]
+              },
+              "playbook": {
+                "not": {}
+              },
+              "vaultCredentials": {
+                "not": {}
+              },
+              "template": {
+                "not": {}
+              },
+              "awx": {
+                "not": {}
+              },
+              "inventory": {
+                "not": {}
+              },
+              "awxCredentials": {
+                "not": {}
+              },
+              "ansibleCredentials": {
+                "not": {}
+              },
+              "tags": {
+                "not": {}
+              },
+              "check": {
+                "not": {}
+              },
+              "limit": {
+                "not": {}
+              },
+              "scm_branch": {
+                "not": {}
+              },
+              "diff": {
+                "not": {}
+              },
+              "key": {
+                "not": {}
+              },
+              "executionEnvironment": {
+                "not": {}
+              },
+              "instanceGroups": {
+                "not": {}
+              },
+              "expression": {
+                "not": {}
+              },
+              "playbookSubPath": {
+                "not": {}
+              }
+            },
+            "required": [
+              "steps"
+            ]
+          }
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "order": {
+            "type": "number"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string"
+          },
+          "onSubmit": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "properties": {
+                    "clear": {
+                      "not": {}
+                    },
+                    "reload": {
+                      "not": {}
+                    },
+                    "home": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "show": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "load"
+                  ]
+                },
+                {
+                  "properties": {
+                    "load": {
+                      "not": {}
+                    },
+                    "reload": {
+                      "not": {}
+                    },
+                    "home": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "show": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "clear"
+                  ]
+                },
+                {
+                  "properties": {
+                    "load": {
+                      "not": {}
+                    },
+                    "clear": {
+                      "not": {}
+                    },
+                    "home": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "show": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "reload"
+                  ]
+                },
+                {
+                  "properties": {
+                    "load": {
+                      "not": {}
+                    },
+                    "clear": {
+                      "not": {}
+                    },
+                    "reload": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "show": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "home"
+                  ]
+                },
+                {
+                  "properties": {
+                    "load": {
+                      "not": {}
+                    },
+                    "clear": {
+                      "not": {}
+                    },
+                    "home": {
+                      "not": {}
+                    },
+                    "reload": {
+                      "not": {}
+                    },
+                    "show": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "hide"
+                  ]
+                },
+                {
+                  "properties": {
+                    "load": {
+                      "not": {}
+                    },
+                    "clear": {
+                      "not": {}
+                    },
+                    "home": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "reload": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "show"
+                  ]
+                }
+              ],
+              "properties": {
+                "load": {
+                  "type": "string"
+                },
+                "clear": {
+                  "type": "number"
+                },
+                "home": {
+                  "type": "number"
+                },
+                "reload": {
+                  "type": "number"
+                },
+                "hide": {
+                  "type": "number"
+                },
+                "show": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "onSuccess": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "properties": {
+                    "clear": {
+                      "not": {}
+                    },
+                    "reload": {
+                      "not": {}
+                    },
+                    "home": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "show": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "load"
+                  ]
+                },
+                {
+                  "properties": {
+                    "load": {
+                      "not": {}
+                    },
+                    "reload": {
+                      "not": {}
+                    },
+                    "home": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "show": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "clear"
+                  ]
+                },
+                {
+                  "properties": {
+                    "load": {
+                      "not": {}
+                    },
+                    "clear": {
+                      "not": {}
+                    },
+                    "home": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "show": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "reload"
+                  ]
+                },
+                {
+                  "properties": {
+                    "load": {
+                      "not": {}
+                    },
+                    "clear": {
+                      "not": {}
+                    },
+                    "reload": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "show": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "home"
+                  ]
+                },
+                {
+                  "properties": {
+                    "load": {
+                      "not": {}
+                    },
+                    "clear": {
+                      "not": {}
+                    },
+                    "home": {
+                      "not": {}
+                    },
+                    "reload": {
+                      "not": {}
+                    },
+                    "show": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "hide"
+                  ]
+                },
+                {
+                  "properties": {
+                    "load": {
+                      "not": {}
+                    },
+                    "clear": {
+                      "not": {}
+                    },
+                    "home": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "reload": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "show"
+                  ]
+                }
+              ],
+              "properties": {
+                "load": {
+                  "type": "string"
+                },
+                "clear": {
+                  "type": "number"
+                },
+                "home": {
+                  "type": "number"
+                },
+                "reload": {
+                  "type": "number"
+                },
+                "hide": {
+                  "type": "number"
+                },
+                "show": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "onFailure": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "properties": {
+                    "clear": {
+                      "not": {}
+                    },
+                    "reload": {
+                      "not": {}
+                    },
+                    "home": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "show": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "load"
+                  ]
+                },
+                {
+                  "properties": {
+                    "load": {
+                      "not": {}
+                    },
+                    "reload": {
+                      "not": {}
+                    },
+                    "home": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "show": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "clear"
+                  ]
+                },
+                {
+                  "properties": {
+                    "load": {
+                      "not": {}
+                    },
+                    "clear": {
+                      "not": {}
+                    },
+                    "home": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "show": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "reload"
+                  ]
+                },
+                {
+                  "properties": {
+                    "load": {
+                      "not": {}
+                    },
+                    "clear": {
+                      "not": {}
+                    },
+                    "reload": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "show": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "home"
+                  ]
+                },
+                {
+                  "properties": {
+                    "load": {
+                      "not": {}
+                    },
+                    "clear": {
+                      "not": {}
+                    },
+                    "home": {
+                      "not": {}
+                    },
+                    "reload": {
+                      "not": {}
+                    },
+                    "show": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "hide"
+                  ]
+                },
+                {
+                  "properties": {
+                    "load": {
+                      "not": {}
+                    },
+                    "clear": {
+                      "not": {}
+                    },
+                    "home": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "reload": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "show"
+                  ]
+                }
+              ],
+              "properties": {
+                "load": {
+                  "type": "string"
+                },
+                "clear": {
+                  "type": "number"
+                },
+                "home": {
+                  "type": "number"
+                },
+                "reload": {
+                  "type": "number"
+                },
+                "hide": {
+                  "type": "number"
+                },
+                "show": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "onAbort": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "properties": {
+                    "clear": {
+                      "not": {}
+                    },
+                    "reload": {
+                      "not": {}
+                    },
+                    "home": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "show": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "load"
+                  ]
+                },
+                {
+                  "properties": {
+                    "load": {
+                      "not": {}
+                    },
+                    "reload": {
+                      "not": {}
+                    },
+                    "home": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "show": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "clear"
+                  ]
+                },
+                {
+                  "properties": {
+                    "load": {
+                      "not": {}
+                    },
+                    "clear": {
+                      "not": {}
+                    },
+                    "home": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "show": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "reload"
+                  ]
+                },
+                {
+                  "properties": {
+                    "load": {
+                      "not": {}
+                    },
+                    "clear": {
+                      "not": {}
+                    },
+                    "reload": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "show": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "home"
+                  ]
+                },
+                {
+                  "properties": {
+                    "load": {
+                      "not": {}
+                    },
+                    "clear": {
+                      "not": {}
+                    },
+                    "home": {
+                      "not": {}
+                    },
+                    "reload": {
+                      "not": {}
+                    },
+                    "show": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "hide"
+                  ]
+                },
+                {
+                  "properties": {
+                    "load": {
+                      "not": {}
+                    },
+                    "clear": {
+                      "not": {}
+                    },
+                    "home": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "reload": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "show"
+                  ]
+                }
+              ],
+              "properties": {
+                "load": {
+                  "type": "string"
+                },
+                "clear": {
+                  "type": "number"
+                },
+                "home": {
+                  "type": "number"
+                },
+                "reload": {
+                  "type": "number"
+                },
+                "hide": {
+                  "type": "number"
+                },
+                "show": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "onFinish": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "properties": {
+                    "clear": {
+                      "not": {}
+                    },
+                    "reload": {
+                      "not": {}
+                    },
+                    "home": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "show": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "load"
+                  ]
+                },
+                {
+                  "properties": {
+                    "load": {
+                      "not": {}
+                    },
+                    "reload": {
+                      "not": {}
+                    },
+                    "home": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "show": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "clear"
+                  ]
+                },
+                {
+                  "properties": {
+                    "load": {
+                      "not": {}
+                    },
+                    "clear": {
+                      "not": {}
+                    },
+                    "home": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "show": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "reload"
+                  ]
+                },
+                {
+                  "properties": {
+                    "load": {
+                      "not": {}
+                    },
+                    "clear": {
+                      "not": {}
+                    },
+                    "reload": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "show": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "home"
+                  ]
+                },
+                {
+                  "properties": {
+                    "load": {
+                      "not": {}
+                    },
+                    "clear": {
+                      "not": {}
+                    },
+                    "home": {
+                      "not": {}
+                    },
+                    "reload": {
+                      "not": {}
+                    },
+                    "show": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "hide"
+                  ]
+                },
+                {
+                  "properties": {
+                    "load": {
+                      "not": {}
+                    },
+                    "clear": {
+                      "not": {}
+                    },
+                    "home": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "reload": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "show"
+                  ]
+                }
+              ],
+              "properties": {
+                "load": {
+                  "type": "string"
+                },
+                "clear": {
+                  "type": "number"
+                },
+                "home": {
+                  "type": "number"
+                },
+                "reload": {
+                  "type": "number"
+                },
+                "hide": {
+                  "type": "number"
+                },
+                "show": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "icon": {
+            "type": "string"
+          },
+          "iconColor": {
+            "type": "string"
+          },
+          "iconSize": {
+            "type": "string"
+          },
+          "overlayIcon": {
+            "type": "string"
+          },
+          "overlayIconTransform": {
+            "type": "string"
+          },
+          "overlayIconColor": {
+            "type": "string"
+          },
+          "overlayIconCircle": {
+            "type": "boolean"
+          },
+          "overlayIconText": {
+            "type": "string"
+          },
+          "overlayIconTextPosition": {
+            "type": "string"
+          },
+          "overlayIconTextColor": {
+            "type": "string"
+          },
+          "tileClass": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^has-background-.+"
+              },
+              {
+                "type": "string",
+                "pattern": "^bg-.+"
+              }
+            ]
+          },
+          "verbose": {
+            "type": "boolean"
+          },
+          "keepExtravars": {
+            "type": "boolean"
+          },
+          "notifications": {
+            "type": "object",
+            "properties": {
+              "onStatus": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "any",
+                    "success",
+                    "failed",
+                    "aborted",
+                    "warning"
+                  ]
+                }
+              },
+              "onEvent": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "any",
+                    "launch",
+                    "relaunch",
+                    "delete",
+                    "approve",
+                    "reject"
+                  ]
+                }
+              },
+              "recipients": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "default": "",
+                  "pattern": "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
+                }
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "recipients"
+            ]
+          },
+          "categories": {
+            "type": "array",
+            "default": [
+              "Default"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "type",
+                "name"
+              ],
+              "oneOf": [
+                {
+                  "properties": {
+                    "type": {
+                      "enum": [
+                        "ansible"
+                      ]
+                    },
+                    "template": {
+                      "not": {}
+                    },
+                    "awx": {
+                      "not": {}
+                    },
+                    "steps": {
+                      "not": {}
+                    },
+                    "awxCredentials": {
+                      "not": {}
+                    },
+                    "executionEnvironment": {
+                      "not": {}
+                    },
+                    "instanceGroups": {
+                      "not": {}
+                    },
+                    "scm_branch": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "playbook"
+                  ]
+                },
+                {
+                  "properties": {
+                    "type": {
+                      "enum": [
+                        "awx"
+                      ]
+                    },
+                    "playbook": {
+                      "not": {}
+                    },
+                    "vaultCredentials": {
+                      "not": {}
+                    },
+                    "ansibleCredentials": {
+                      "not": {}
+                    },
+                    "steps": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "template"
+                  ]
+                }
+              ],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "ansible",
+                    "awx"
+                  ]
+                },
+                "name": {
+                  "type": "string"
+                },
+                "playbook": {
+                  "type": "string"
+                },
+                "playbookSubPath": {
+                  "type": "string"
+                },
+                "key": {
+                  "type": "string"
+                },
+                "ifExtraVar": {
+                  "type": "string",
+                  "pattern": "[A-Za-z0-9_\\-]+"
+                },
+                "template": {
+                  "type": "string"
+                },
+                "varsFiles": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "awx": {
+                  "type": "string"
+                },
+                "abortable": {
+                  "type": "boolean"
+                },
+                "awxCredentials": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "default": ""
+                  }
+                },
+                "credentials": {
+                  "type": "object",
+                  "patternProperties": {
+                    "^.*$": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "ansibleCredentials": {
+                  "type": "string"
+                },
+                "vaultCredentials": {
+                  "type": "string"
+                },
+                "inventory": {
+                  "type": "string"
+                },
+                "tags": {
+                  "type": "string"
+                },
+                "check": {
+                  "type": "boolean"
+                },
+                "verbose": {
+                  "type": "boolean"
+                },
+                "limit": {
+                  "type": "string"
+                },
+                "diff": {
+                  "type": "boolean"
+                },
+                "continue": {
+                  "type": "boolean"
+                },
+                "always": {
+                  "type": "boolean"
+                },
+                "notifications": {
+                  "type": "object",
+                  "properties": {
+                    "on": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "default": ""
+                      }
+                    },
+                    "onStatus": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "default": ""
+                      }
+                    },
+                    "recipients": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "default": "",
+                        "pattern": "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
+                      }
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "recipients"
+                  ]
+                },
+                "hasApproval": {
+                  "type": "boolean"
+                },
+                "approval": {
+                  "type": "object",
+                  "required": [
+                    "message",
+                    "roles"
+                  ],
+                  "properties": {
+                    "title": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "roles": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "notifications": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "ansible",
+              "awx",
+              "multistep"
+            ]
+          },
+          "hasApproval": {
+            "type": "boolean"
+          },
+          "approval": {
+            "type": "object",
+            "required": [
+              "message",
+              "roles"
+            ],
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "roles": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "notifications": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          "playbook": {
+            "type": "string"
+          },
+          "playbookSubPath": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "abortable": {
+            "type": "boolean"
+          },
+          "template": {
+            "type": "string"
+          },
+          "varsFiles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "awx": {
+            "type": "string"
+          },
+          "credentials": {
+            "type": "object",
+            "patternProperties": {
+              "^.*$": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          "awxCredentials": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "default": ""
+            }
+          },
+          "ansibleCredentials": {
+            "type": "string"
+          },
+          "vaultCredentials": {
+            "type": "string"
+          },
+          "inventory": {
+            "type": "string"
+          },
+          "executionEnvironment": {
+            "type": "string"
+          },
+          "instanceGroups": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "tags": {
+            "type": "string"
+          },
+          "check": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": "string"
+          },
+          "scm_branch": {
+            "type": "string"
+          },
+          "diff": {
+            "type": "boolean"
+          },
+          "help": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "showHelp": {
+            "type": "boolean"
+          },
+          "disableRelaunch": {
+            "type": "boolean"
+          },
+          "fieldGroupClasses": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "type",
+                "name"
+              ],
+              "oneOf": [
+                {
+                  "properties": {
+                    "type": {
+                      "enum": [
+                        "text",
+                        "password"
+                      ]
+                    },
+                    "dateType": {
+                      "not": {}
+                    },
+                    "convertToUtc": {
+                      "not": {}
+                    },
+                    "query": {
+                      "not": {}
+                    },
+                    "jq": {
+                      "not": {}
+                    },
+                    "minValue": {
+                      "not": {}
+                    },
+                    "maxValue": {
+                      "not": {}
+                    },
+                    "minSize": {
+                      "not": {}
+                    },
+                    "maxSize": {
+                      "not": {}
+                    },
+                    "expression": {
+                      "not": {}
+                    },
+                    "runLocal": {
+                      "not": {}
+                    },
+                    "dbConfig": {
+                      "not": {}
+                    },
+                    "sticky": {
+                      "not": {}
+                    },
+                    "horizontal": {
+                      "not": {}
+                    },
+                    "tableTitleAdd": {
+                      "not": {}
+                    },
+                    "tableTitleEdit": {
+                      "not": {}
+                    },
+                    "editable": {
+                      "not": {}
+                    },
+                    "pctColumns": {
+                      "not": {}
+                    },
+                    "filterColumns": {
+                      "not": {}
+                    },
+                    "allowDelete": {
+                      "not": {}
+                    },
+                    "allowInsert": {
+                      "not": {}
+                    },
+                    "deleteMarker": {
+                      "not": {}
+                    },
+                    "insertMarker": {
+                      "not": {}
+                    },
+                    "updateMarker": {
+                      "not": {}
+                    },
+                    "refresh": {
+                      "not": {}
+                    },
+                    "switch": {
+                      "not": {}
+                    },
+                    "readonlyColumns": {
+                      "not": {}
+                    },
+                    "values": {
+                      "not": {}
+                    },
+                    "isHtml": {
+                      "not": {}
+                    },
+                    "accept": {
+                      "not": {}
+                    },
+                    "multiple": {
+                      "not": {}
+                    },
+                    "outputObject": {
+                      "not": {}
+                    },
+                    "showLoadButton": {
+                      "not": {}
+                    },
+                    "showDownloadButton": {
+                      "not": {}
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "type": {
+                      "enum": [
+                        "textarea"
+                      ]
+                    },
+                    "dateType": {
+                      "not": {}
+                    },
+                    "convertToUtc": {
+                      "not": {}
+                    },
+                    "query": {
+                      "not": {}
+                    },
+                    "jq": {
+                      "not": {}
+                    },
+                    "minValue": {
+                      "not": {}
+                    },
+                    "maxValue": {
+                      "not": {}
+                    },
+                    "minSize": {
+                      "not": {}
+                    },
+                    "maxSize": {
+                      "not": {}
+                    },
+                    "expression": {
+                      "not": {}
+                    },
+                    "runLocal": {
+                      "not": {}
+                    },
+                    "dbConfig": {
+                      "not": {}
+                    },
+                    "sticky": {
+                      "not": {}
+                    },
+                    "horizontal": {
+                      "not": {}
+                    },
+                    "tableTitleAdd": {
+                      "not": {}
+                    },
+                    "tableTitleEdit": {
+                      "not": {}
+                    },
+                    "editable": {
+                      "not": {}
+                    },
+                    "pctColumns": {
+                      "not": {}
+                    },
+                    "filterColumns": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "accept": {
+                      "not": {}
+                    },
+                    "allowDelete": {
+                      "not": {}
+                    },
+                    "allowInsert": {
+                      "not": {}
+                    },
+                    "deleteMarker": {
+                      "not": {}
+                    },
+                    "insertMarker": {
+                      "not": {}
+                    },
+                    "updateMarker": {
+                      "not": {}
+                    },
+                    "minLength": {
+                      "not": {}
+                    },
+                    "maxLength": {
+                      "not": {}
+                    },
+                    "regex": {
+                      "not": {}
+                    },
+                    "icon": {
+                      "not": {}
+                    },
+                    "notIn": {
+                      "not": {}
+                    },
+                    "in": {
+                      "not": {}
+                    },
+                    "sameAs": {
+                      "not": {}
+                    },
+                    "asCredential": {
+                      "not": {}
+                    },
+                    "keydown": {
+                      "not": {}
+                    },
+                    "refresh": {
+                      "not": {}
+                    },
+                    "switch": {
+                      "not": {}
+                    },
+                    "readonlyColumns": {
+                      "not": {}
+                    },
+                    "values": {
+                      "not": {}
+                    },
+                    "isHtml": {
+                      "not": {}
+                    },
+                    "multiple": {
+                      "not": {}
+                    },
+                    "outputObject": {
+                      "not": {}
+                    },
+                    "showLoadButton": {
+                      "not": {}
+                    },
+                    "showDownloadButton": {
+                      "not": {}
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "type": {
+                      "enum": [
+                        "number"
+                      ]
+                    },
+                    "dateType": {
+                      "not": {}
+                    },
+                    "convertToUtc": {
+                      "not": {}
+                    },
+                    "query": {
+                      "not": {}
+                    },
+                    "jq": {
+                      "not": {}
+                    },
+                    "minLength": {
+                      "not": {}
+                    },
+                    "maxLength": {
+                      "not": {}
+                    },
+                    "minSize": {
+                      "not": {}
+                    },
+                    "maxSize": {
+                      "not": {}
+                    },
+                    "expression": {
+                      "not": {}
+                    },
+                    "sticky": {
+                      "not": {}
+                    },
+                    "horizontal": {
+                      "not": {}
+                    },
+                    "tableTitleAdd": {
+                      "not": {}
+                    },
+                    "tableTitleEdit": {
+                      "not": {}
+                    },
+                    "editable": {
+                      "not": {}
+                    },
+                    "pctColumns": {
+                      "not": {}
+                    },
+                    "filterColumns": {
+                      "not": {}
+                    },
+                    "runLocal": {
+                      "not": {}
+                    },
+                    "dbConfig": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "values": {
+                      "not": {}
+                    },
+                    "multiple": {
+                      "not": {}
+                    },
+                    "refresh": {
+                      "not": {}
+                    },
+                    "switch": {
+                      "not": {}
+                    },
+                    "accept": {
+                      "not": {}
+                    },
+                    "allowDelete": {
+                      "not": {}
+                    },
+                    "allowInsert": {
+                      "not": {}
+                    },
+                    "deleteMarker": {
+                      "not": {}
+                    },
+                    "insertMarker": {
+                      "not": {}
+                    },
+                    "updateMarker": {
+                      "not": {}
+                    },
+                    "readonlyColumns": {
+                      "not": {}
+                    },
+                    "isHtml": {
+                      "not": {}
+                    },
+                    "asCredential": {
+                      "not": {}
+                    },
+                    "outputObject": {
+                      "not": {}
+                    },
+                    "showLoadButton": {
+                      "not": {}
+                    },
+                    "showDownloadButton": {
+                      "not": {}
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "type": {
+                      "enum": [
+                        "radio"
+                      ]
+                    },
+                    "dateType": {
+                      "not": {}
+                    },
+                    "convertToUtc": {
+                      "not": {}
+                    },
+                    "query": {
+                      "not": {}
+                    },
+                    "jq": {
+                      "not": {}
+                    },
+                    "regex": {
+                      "not": {}
+                    },
+                    "minValue": {
+                      "not": {}
+                    },
+                    "maxValue": {
+                      "not": {}
+                    },
+                    "minSize": {
+                      "not": {}
+                    },
+                    "maxSize": {
+                      "not": {}
+                    },
+                    "minLength": {
+                      "not": {}
+                    },
+                    "maxLength": {
+                      "not": {}
+                    },
+                    "sticky": {
+                      "not": {}
+                    },
+                    "horizontal": {
+                      "not": {}
+                    },
+                    "tableTitleAdd": {
+                      "not": {}
+                    },
+                    "icon": {
+                      "not": {}
+                    },
+                    "tableTitleEdit": {
+                      "not": {}
+                    },
+                    "editable": {
+                      "not": {}
+                    },
+                    "pctColumns": {
+                      "not": {}
+                    },
+                    "filterColumns": {
+                      "not": {}
+                    },
+                    "expression": {
+                      "not": {}
+                    },
+                    "runLocal": {
+                      "not": {}
+                    },
+                    "keydown": {
+                      "not": {}
+                    },
+                    "refresh": {
+                      "not": {}
+                    },
+                    "isHtml": {
+                      "not": {}
+                    },
+                    "dbConfig": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "accept": {
+                      "not": {}
+                    },
+                    "allowDelete": {
+                      "not": {}
+                    },
+                    "allowInsert": {
+                      "not": {}
+                    },
+                    "deleteMarker": {
+                      "not": {}
+                    },
+                    "insertMarker": {
+                      "not": {}
+                    },
+                    "updateMarker": {
+                      "not": {}
+                    },
+                    "readonlyColumns": {
+                      "not": {}
+                    },
+                    "multiple": {
+                      "not": {}
+                    },
+                    "asCredential": {
+                      "not": {}
+                    },
+                    "switch": {
+                      "not": {}
+                    },
+                    "outputObject": {
+                      "not": {}
+                    },
+                    "showLoadButton": {
+                      "not": {}
+                    },
+                    "showDownloadButton": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "values"
+                  ]
+                },
+                {
+                  "properties": {
+                    "type": {
+                      "enum": [
+                        "checkbox"
+                      ]
+                    },
+                    "dateType": {
+                      "not": {}
+                    },
+                    "convertToUtc": {
+                      "not": {}
+                    },
+                    "query": {
+                      "not": {}
+                    },
+                    "jq": {
+                      "not": {}
+                    },
+                    "regex": {
+                      "not": {}
+                    },
+                    "minValue": {
+                      "not": {}
+                    },
+                    "maxValue": {
+                      "not": {}
+                    },
+                    "minSize": {
+                      "not": {}
+                    },
+                    "maxSize": {
+                      "not": {}
+                    },
+                    "minLength": {
+                      "not": {}
+                    },
+                    "maxLength": {
+                      "not": {}
+                    },
+                    "expression": {
+                      "not": {}
+                    },
+                    "sticky": {
+                      "not": {}
+                    },
+                    "horizontal": {
+                      "not": {}
+                    },
+                    "tableTitleAdd": {
+                      "not": {}
+                    },
+                    "tableTitleEdit": {
+                      "not": {}
+                    },
+                    "editable": {
+                      "not": {}
+                    },
+                    "pctColumns": {
+                      "not": {}
+                    },
+                    "filterColumns": {
+                      "not": {}
+                    },
+                    "runLocal": {
+                      "not": {}
+                    },
+                    "keydown": {
+                      "not": {}
+                    },
+                    "isHtml": {
+                      "not": {}
+                    },
+                    "dbConfig": {
+                      "not": {}
+                    },
+                    "refresh": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "accept": {
+                      "not": {}
+                    },
+                    "values": {
+                      "not": {}
+                    },
+                    "allowDelete": {
+                      "not": {}
+                    },
+                    "allowInsert": {
+                      "not": {}
+                    },
+                    "deleteMarker": {
+                      "not": {}
+                    },
+                    "insertMarker": {
+                      "not": {}
+                    },
+                    "updateMarker": {
+                      "not": {}
+                    },
+                    "readonlyColumns": {
+                      "not": {}
+                    },
+                    "multiple": {
+                      "not": {}
+                    },
+                    "asCredential": {
+                      "not": {}
+                    },
+                    "outputObject": {
+                      "not": {}
+                    },
+                    "showLoadButton": {
+                      "not": {}
+                    },
+                    "showDownloadButton": {
+                      "not": {}
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "type": {
+                      "enum": [
+                        "enum"
+                      ]
+                    },
+                    "dateType": {
+                      "not": {}
+                    },
+                    "convertToUtc": {
+                      "not": {}
+                    },
+                    "query": {
+                      "not": {}
+                    },
+                    "jq": {
+                      "not": {}
+                    },
+                    "regex": {
+                      "not": {}
+                    },
+                    "minValue": {
+                      "not": {}
+                    },
+                    "maxValue": {
+                      "not": {}
+                    },
+                    "minSize": {
+                      "not": {}
+                    },
+                    "maxSize": {
+                      "not": {}
+                    },
+                    "minLength": {
+                      "not": {}
+                    },
+                    "maxLength": {
+                      "not": {}
+                    },
+                    "editable": {
+                      "not": {}
+                    },
+                    "expression": {
+                      "not": {}
+                    },
+                    "tableTitleAdd": {
+                      "not": {}
+                    },
+                    "tableTitleEdit": {
+                      "not": {}
+                    },
+                    "runLocal": {
+                      "not": {}
+                    },
+                    "keydown": {
+                      "not": {}
+                    },
+                    "refresh": {
+                      "not": {}
+                    },
+                    "accept": {
+                      "not": {}
+                    },
+                    "allowDelete": {
+                      "not": {}
+                    },
+                    "allowInsert": {
+                      "not": {}
+                    },
+                    "deleteMarker": {
+                      "not": {}
+                    },
+                    "insertMarker": {
+                      "not": {}
+                    },
+                    "updateMarker": {
+                      "not": {}
+                    },
+                    "readonlyColumns": {
+                      "not": {}
+                    },
+                    "isHtml": {
+                      "not": {}
+                    },
+                    "dbConfig": {
+                      "not": {}
+                    },
+                    "switch": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "showLoadButton": {
+                      "not": {}
+                    },
+                    "showDownloadButton": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "values"
+                  ]
+                },
+                {
+                  "properties": {
+                    "type": {
+                      "enum": [
+                        "enum"
+                      ]
+                    },
+                    "dateType": {
+                      "not": {}
+                    },
+                    "convertToUtc": {
+                      "not": {}
+                    },
+                    "values": {
+                      "not": {}
+                    },
+                    "regex": {
+                      "not": {}
+                    },
+                    "minValue": {
+                      "not": {}
+                    },
+                    "maxValue": {
+                      "not": {}
+                    },
+                    "minSize": {
+                      "not": {}
+                    },
+                    "maxSize": {
+                      "not": {}
+                    },
+                    "minLength": {
+                      "not": {}
+                    },
+                    "maxLength": {
+                      "not": {}
+                    },
+                    "editable": {
+                      "not": {}
+                    },
+                    "tableTitleAdd": {
+                      "not": {}
+                    },
+                    "tableTitleEdit": {
+                      "not": {}
+                    },
+                    "expression": {
+                      "not": {}
+                    },
+                    "keydown": {
+                      "not": {}
+                    },
+                    "allowDelete": {
+                      "not": {}
+                    },
+                    "allowInsert": {
+                      "not": {}
+                    },
+                    "deleteMarker": {
+                      "not": {}
+                    },
+                    "insertMarker": {
+                      "not": {}
+                    },
+                    "updateMarker": {
+                      "not": {}
+                    },
+                    "readonlyColumns": {
+                      "not": {}
+                    },
+                    "isHtml": {
+                      "not": {}
+                    },
+                    "runLocal": {
+                      "not": {}
+                    },
+                    "switch": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "showLoadButton": {
+                      "not": {}
+                    },
+                    "showDownloadButton": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "query",
+                    "dbConfig"
+                  ]
+                },
+                {
+                  "properties": {
+                    "type": {
+                      "enum": [
+                        "enum"
+                      ]
+                    },
+                    "dateType": {
+                      "not": {}
+                    },
+                    "convertToUtc": {
+                      "not": {}
+                    },
+                    "values": {
+                      "not": {}
+                    },
+                    "regex": {
+                      "not": {}
+                    },
+                    "editable": {
+                      "not": {}
+                    },
+                    "minValue": {
+                      "not": {}
+                    },
+                    "maxValue": {
+                      "not": {}
+                    },
+                    "minSize": {
+                      "not": {}
+                    },
+                    "maxSize": {
+                      "not": {}
+                    },
+                    "minLength": {
+                      "not": {}
+                    },
+                    "maxLength": {
+                      "not": {}
+                    },
+                    "tableTitleAdd": {
+                      "not": {}
+                    },
+                    "tableTitleEdit": {
+                      "not": {}
+                    },
+                    "query": {
+                      "not": {}
+                    },
+                    "jq": {
+                      "not": {}
+                    },
+                    "keydown": {
+                      "not": {}
+                    },
+                    "accept": {
+                      "not": {}
+                    },
+                    "allowDelete": {
+                      "not": {}
+                    },
+                    "allowInsert": {
+                      "not": {}
+                    },
+                    "deleteMarker": {
+                      "not": {}
+                    },
+                    "insertMarker": {
+                      "not": {}
+                    },
+                    "updateMarker": {
+                      "not": {}
+                    },
+                    "readonlyColumns": {
+                      "not": {}
+                    },
+                    "isHtml": {
+                      "not": {}
+                    },
+                    "dbConfig": {
+                      "not": {}
+                    },
+                    "switch": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "showLoadButton": {
+                      "not": {}
+                    },
+                    "showDownloadButton": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "expression"
+                  ]
+                },
+                {
+                  "properties": {
+                    "type": {
+                      "enum": [
+                        "expression",
+                        "local",
+                        "local_out",
+                        "credential"
+                      ]
+                    },
+                    "dateType": {
+                      "not": {}
+                    },
+                    "convertToUtc": {
+                      "not": {}
+                    },
+                    "values": {
+                      "not": {}
+                    },
+                    "minValue": {
+                      "not": {}
+                    },
+                    "maxValue": {
+                      "not": {}
+                    },
+                    "minSize": {
+                      "not": {}
+                    },
+                    "maxSize": {
+                      "not": {}
+                    },
+                    "sticky": {
+                      "not": {}
+                    },
+                    "horizontal": {
+                      "not": {}
+                    },
+                    "tableTitleAdd": {
+                      "not": {}
+                    },
+                    "tableTitleEdit": {
+                      "not": {}
+                    },
+                    "pctColumns": {
+                      "not": {}
+                    },
+                    "filterColumns": {
+                      "not": {}
+                    },
+                    "dbConfig": {
+                      "not": {}
+                    },
+                    "query": {
+                      "not": {}
+                    },
+                    "jq": {
+                      "not": {}
+                    },
+                    "multiple": {
+                      "not": {}
+                    },
+                    "accept": {
+                      "not": {}
+                    },
+                    "allowDelete": {
+                      "not": {}
+                    },
+                    "allowInsert": {
+                      "not": {}
+                    },
+                    "deleteMarker": {
+                      "not": {}
+                    },
+                    "insertMarker": {
+                      "not": {}
+                    },
+                    "updateMarker": {
+                      "not": {}
+                    },
+                    "readonlyColumns": {
+                      "not": {}
+                    },
+                    "keydown": {
+                      "not": {}
+                    },
+                    "switch": {
+                      "not": {}
+                    },
+                    "outputObject": {
+                      "not": {}
+                    },
+                    "showLoadButton": {
+                      "not": {}
+                    },
+                    "showDownloadButton": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "expression"
+                  ]
+                },
+                {
+                  "properties": {
+                    "type": {
+                      "enum": [
+                        "expression",
+                        "local",
+                        "local_out"
+                      ]
+                    },
+                    "dateType": {
+                      "not": {}
+                    },
+                    "convertToUtc": {
+                      "not": {}
+                    },
+                    "minValue": {
+                      "not": {}
+                    },
+                    "maxValue": {
+                      "not": {}
+                    },
+                    "minSize": {
+                      "not": {}
+                    },
+                    "maxSize": {
+                      "not": {}
+                    },
+                    "sticky": {
+                      "not": {}
+                    },
+                    "horizontal": {
+                      "not": {}
+                    },
+                    "tableTitleAdd": {
+                      "not": {}
+                    },
+                    "tableTitleEdit": {
+                      "not": {}
+                    },
+                    "pctColumns": {
+                      "not": {}
+                    },
+                    "filterColumns": {
+                      "not": {}
+                    },
+                    "dbConfig": {
+                      "not": {}
+                    },
+                    "multiple": {
+                      "not": {}
+                    },
+                    "accept": {
+                      "not": {}
+                    },
+                    "allowDelete": {
+                      "not": {}
+                    },
+                    "allowInsert": {
+                      "not": {}
+                    },
+                    "deleteMarker": {
+                      "not": {}
+                    },
+                    "insertMarker": {
+                      "not": {}
+                    },
+                    "updateMarker": {
+                      "not": {}
+                    },
+                    "readonlyColumns": {
+                      "not": {}
+                    },
+                    "keydown": {
+                      "not": {}
+                    },
+                    "expression": {
+                      "not": {}
+                    },
+                    "switch": {
+                      "not": {}
+                    },
+                    "outputObject": {
+                      "not": {}
+                    },
+                    "showLoadButton": {
+                      "not": {}
+                    },
+                    "showDownloadButton": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "value"
+                  ]
+                },
+                {
+                  "properties": {
+                    "type": {
+                      "enum": [
+                        "expression"
+                      ]
+                    },
+                    "dateType": {
+                      "not": {}
+                    },
+                    "convertToUtc": {
+                      "not": {}
+                    },
+                    "values": {
+                      "not": {}
+                    },
+                    "minValue": {
+                      "not": {}
+                    },
+                    "maxValue": {
+                      "not": {}
+                    },
+                    "minSize": {
+                      "not": {}
+                    },
+                    "maxSize": {
+                      "not": {}
+                    },
+                    "expression": {
+                      "not": {}
+                    },
+                    "sticky": {
+                      "not": {}
+                    },
+                    "horizontal": {
+                      "not": {}
+                    },
+                    "tableTitleAdd": {
+                      "not": {}
+                    },
+                    "tableTitleEdit": {
+                      "not": {}
+                    },
+                    "pctColumns": {
+                      "not": {}
+                    },
+                    "filterColumns": {
+                      "not": {}
+                    },
+                    "multiple": {
+                      "not": {}
+                    },
+                    "runLocal": {
+                      "not": {}
+                    },
+                    "accept": {
+                      "not": {}
+                    },
+                    "allowDelete": {
+                      "not": {}
+                    },
+                    "allowInsert": {
+                      "not": {}
+                    },
+                    "deleteMarker": {
+                      "not": {}
+                    },
+                    "insertMarker": {
+                      "not": {}
+                    },
+                    "updateMarker": {
+                      "not": {}
+                    },
+                    "readonlyColumns": {
+                      "not": {}
+                    },
+                    "keydown": {
+                      "not": {}
+                    },
+                    "switch": {
+                      "not": {}
+                    },
+                    "outputObject": {
+                      "not": {}
+                    },
+                    "showLoadButton": {
+                      "not": {}
+                    },
+                    "showDownloadButton": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "query",
+                    "dbConfig"
+                  ]
+                },
+                {
+                  "properties": {
+                    "type": {
+                      "enum": [
+                        "html"
+                      ]
+                    },
+                    "placeholder": {
+                      "not": {}
+                    },
+                    "dateType": {
+                      "not": {}
+                    },
+                    "convertToUtc": {
+                      "not": {}
+                    },
+                    "asCredential": {
+                      "not": {}
+                    },
+                    "required": {
+                      "not": {}
+                    },
+                    "sameAs": {
+                      "not": {}
+                    },
+                    "validIf": {
+                      "not": {}
+                    },
+                    "validIfNot": {
+                      "not": {}
+                    },
+                    "regex": {
+                      "not": {}
+                    },
+                    "notIn": {
+                      "not": {}
+                    },
+                    "in": {
+                      "not": {}
+                    },
+                    "minValue": {
+                      "not": {}
+                    },
+                    "maxValue": {
+                      "not": {}
+                    },
+                    "tableTitleAdd": {
+                      "not": {}
+                    },
+                    "tableTitleEdit": {
+                      "not": {}
+                    },
+                    "accept": {
+                      "not": {}
+                    },
+                    "minSize": {
+                      "not": {}
+                    },
+                    "maxSize": {
+                      "not": {}
+                    },
+                    "minLength": {
+                      "not": {}
+                    },
+                    "maxLength": {
+                      "not": {}
+                    },
+                    "keydown": {
+                      "not": {}
+                    },
+                    "refresh": {
+                      "not": {}
+                    },
+                    "isHtml": {
+                      "not": {}
+                    },
+                    "query": {
+                      "not": {}
+                    },
+                    "jq": {
+                      "not": {}
+                    },
+                    "outputObject": {
+                      "not": {}
+                    },
+                    "columns": {
+                      "not": {}
+                    },
+                    "pctColumns": {
+                      "not": {}
+                    },
+                    "filterColumns": {
+                      "not": {}
+                    },
+                    "allowDelete": {
+                      "not": {}
+                    },
+                    "allowInsert": {
+                      "not": {}
+                    },
+                    "deleteMarker": {
+                      "not": {}
+                    },
+                    "insertMarker": {
+                      "not": {}
+                    },
+                    "updateMarker": {
+                      "not": {}
+                    },
+                    "readonlyColumns": {
+                      "not": {}
+                    },
+                    "insertColumns": {
+                      "not": {}
+                    },
+                    "sticky": {
+                      "not": {}
+                    },
+                    "horizontal": {
+                      "not": {}
+                    },
+                    "editable": {
+                      "not": {}
+                    },
+                    "valueColumn": {
+                      "not": {}
+                    },
+                    "previewColumn": {
+                      "not": {}
+                    },
+                    "placeholderColumn": {
+                      "not": {}
+                    },
+                    "dbConfig": {
+                      "not": {}
+                    },
+                    "model": {
+                      "not": {}
+                    },
+                    "help": {
+                      "not": {}
+                    },
+                    "values": {
+                      "not": {}
+                    },
+                    "multiple": {
+                      "not": {}
+                    },
+                    "size": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "icon": {
+                      "not": {}
+                    },
+                    "switch": {
+                      "not": {}
+                    },
+                    "tableFields": {
+                      "not": {}
+                    },
+                    "showLoadButton": {
+                      "not": {}
+                    },
+                    "showDownloadButton": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "expression"
+                  ]
+                },
+                {
+                  "properties": {
+                    "type": {
+                      "enum": [
+                        "file"
+                      ]
+                    },
+                    "dateType": {
+                      "not": {}
+                    },
+                    "convertToUtc": {
+                      "not": {}
+                    },
+                    "asCredential": {
+                      "not": {}
+                    },
+                    "sameAs": {
+                      "not": {}
+                    },
+                    "validIf": {
+                      "not": {}
+                    },
+                    "validIfNot": {
+                      "not": {}
+                    },
+                    "notIn": {
+                      "not": {}
+                    },
+                    "in": {
+                      "not": {}
+                    },
+                    "tableTitleAdd": {
+                      "not": {}
+                    },
+                    "tableTitleEdit": {
+                      "not": {}
+                    },
+                    "minValue": {
+                      "not": {}
+                    },
+                    "maxValue": {
+                      "not": {}
+                    },
+                    "minLength": {
+                      "not": {}
+                    },
+                    "maxLength": {
+                      "not": {}
+                    },
+                    "keydown": {
+                      "not": {}
+                    },
+                    "refresh": {
+                      "not": {}
+                    },
+                    "isHtml": {
+                      "not": {}
+                    },
+                    "runLocal": {
+                      "not": {}
+                    },
+                    "query": {
+                      "not": {}
+                    },
+                    "jq": {
+                      "not": {}
+                    },
+                    "outputObject": {
+                      "not": {}
+                    },
+                    "columns": {
+                      "not": {}
+                    },
+                    "pctColumns": {
+                      "not": {}
+                    },
+                    "filterColumns": {
+                      "not": {}
+                    },
+                    "allowDelete": {
+                      "not": {}
+                    },
+                    "allowInsert": {
+                      "not": {}
+                    },
+                    "deleteMarker": {
+                      "not": {}
+                    },
+                    "insertMarker": {
+                      "not": {}
+                    },
+                    "updateMarker": {
+                      "not": {}
+                    },
+                    "readonlyColumns": {
+                      "not": {}
+                    },
+                    "insertColumns": {
+                      "not": {}
+                    },
+                    "sticky": {
+                      "not": {}
+                    },
+                    "horizontal": {
+                      "not": {}
+                    },
+                    "editable": {
+                      "not": {}
+                    },
+                    "valueColumn": {
+                      "not": {}
+                    },
+                    "previewColumn": {
+                      "not": {}
+                    },
+                    "placeholderColumn": {
+                      "not": {}
+                    },
+                    "dbConfig": {
+                      "not": {}
+                    },
+                    "values": {
+                      "not": {}
+                    },
+                    "multiple": {
+                      "not": {}
+                    },
+                    "size": {
+                      "not": {}
+                    },
+                    "hide": {
+                      "not": {}
+                    },
+                    "switch": {
+                      "not": {}
+                    },
+                    "tableFields": {
+                      "not": {}
+                    },
+                    "showLoadButton": {
+                      "not": {}
+                    },
+                    "showDownloadButton": {
+                      "not": {}
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "type": {
+                      "enum": [
+                        "datetime"
+                      ]
+                    },
+                    "minValue": {
+                      "not": {}
+                    },
+                    "maxValue": {
+                      "not": {}
+                    },
+                    "minSize": {
+                      "not": {}
+                    },
+                    "maxSize": {
+                      "not": {}
+                    },
+                    "minLength": {
+                      "not": {}
+                    },
+                    "maxLength": {
+                      "not": {}
+                    },
+                    "tableTitleAdd": {
+                      "not": {}
+                    },
+                    "tableTitleEdit": {
+                      "not": {}
+                    },
+                    "values": {
+                      "not": {}
+                    },
+                    "from": {
+                      "not": {}
+                    },
+                    "accept": {
+                      "not": {}
+                    },
+                    "outputObject": {
+                      "not": {}
+                    },
+                    "columns": {
+                      "not": {}
+                    },
+                    "pctColumns": {
+                      "not": {}
+                    },
+                    "filterColumns": {
+                      "not": {}
+                    },
+                    "previewColumn": {
+                      "not": {}
+                    },
+                    "switch": {
+                      "not": {}
+                    },
+                    "valueColumn": {
+                      "not": {}
+                    },
+                    "showLoadButton": {
+                      "not": {}
+                    },
+                    "showDownloadButton": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "dateType"
+                  ]
+                },
+                {
+                  "properties": {
+                    "type": {
+                      "enum": [
+                        "table"
+                      ]
+                    },
+                    "dateType": {
+                      "not": {}
+                    },
+                    "convertToUtc": {
+                      "not": {}
+                    },
+                    "values": {
+                      "not": {}
+                    },
+                    "regex": {
+                      "not": {}
+                    },
+                    "minValue": {
+                      "not": {}
+                    },
+                    "maxValue": {
+                      "not": {}
+                    },
+                    "minSize": {
+                      "not": {}
+                    },
+                    "maxSize": {
+                      "not": {}
+                    },
+                    "minLength": {
+                      "not": {}
+                    },
+                    "sticky": {
+                      "not": {}
+                    },
+                    "horizontal": {
+                      "not": {}
+                    },
+                    "editable": {
+                      "not": {}
+                    },
+                    "pctColumns": {
+                      "not": {}
+                    },
+                    "filterColumns": {
+                      "not": {}
+                    },
+                    "maxLength": {
+                      "not": {}
+                    },
+                    "multiple": {
+                      "not": {}
+                    },
+                    "accept": {
+                      "not": {}
+                    },
+                    "refresh": {
+                      "not": {}
+                    },
+                    "outputObject": {
+                      "not": {}
+                    },
+                    "keydown": {
+                      "not": {}
+                    },
+                    "isHtml": {
+                      "not": {}
+                    },
+                    "icon": {
+                      "not": {}
+                    },
+                    "switch": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "tableFields"
+                  ]
+                },
+                {
+                  "properties": {
+                    "type": {
+                      "enum": [
+                        "yaml"
+                      ]
+                    },
+                    "dateType": {
+                      "not": {}
+                    },
+                    "convertToUtc": {
+                      "not": {}
+                    },
+                    "values": {
+                      "not": {}
+                    },
+                    "regex": {
+                      "not": {}
+                    },
+                    "minValue": {
+                      "not": {}
+                    },
+                    "maxValue": {
+                      "not": {}
+                    },
+                    "minLength": {
+                      "not": {}
+                    },
+                    "maxLength": {
+                      "not": {}
+                    },
+                    "minSize": {
+                      "not": {}
+                    },
+                    "maxSize": {
+                      "not": {}
+                    },
+                    "sticky": {
+                      "not": {}
+                    },
+                    "horizontal": {
+                      "not": {}
+                    },
+                    "tableTitleAdd": {
+                      "not": {}
+                    },
+                    "tableTitleEdit": {
+                      "not": {}
+                    },
+                    "pctColumns": {
+                      "not": {}
+                    },
+                    "filterColumns": {
+                      "not": {}
+                    },
+                    "allowDelete": {
+                      "not": {}
+                    },
+                    "allowInsert": {
+                      "not": {}
+                    },
+                    "deleteMarker": {
+                      "not": {}
+                    },
+                    "insertMarker": {
+                      "not": {}
+                    },
+                    "updateMarker": {
+                      "not": {}
+                    },
+                    "readonlyColumns": {
+                      "not": {}
+                    },
+                    "isHtml": {
+                      "not": {}
+                    },
+                    "keydown": {
+                      "not": {}
+                    },
+                    "accept": {
+                      "not": {}
+                    },
+                    "multiple": {
+                      "not": {}
+                    },
+                    "switch": {
+                      "not": {}
+                    },
+                    "tableFields": {
+                      "not": {}
+                    },
+                    "sameAs": {
+                      "not": {}
+                    },
+                    "in": {
+                      "not": {}
+                    },
+                    "notIn": {
+                      "not": {}
+                    },
+                    "asCredential": {
+                      "not": {}
+                    },
+                    "outputObject": {
+                      "not": {}
+                    },
+                    "query": {
+                      "not": {}
+                    },
+                    "jq": {
+                      "not": {}
+                    },
+                    "dbConfig": {
+                      "not": {}
+                    },
+                    "editable": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "expression"
+                  ]
+                },
+                {
+                  "properties": {
+                    "type": {
+                      "enum": [
+                        "yaml"
+                      ]
+                    },
+                    "dateType": {
+                      "not": {}
+                    },
+                    "convertToUtc": {
+                      "not": {}
+                    },
+                    "values": {
+                      "not": {}
+                    },
+                    "regex": {
+                      "not": {}
+                    },
+                    "minValue": {
+                      "not": {}
+                    },
+                    "maxValue": {
+                      "not": {}
+                    },
+                    "minLength": {
+                      "not": {}
+                    },
+                    "maxLength": {
+                      "not": {}
+                    },
+                    "minSize": {
+                      "not": {}
+                    },
+                    "maxSize": {
+                      "not": {}
+                    },
+                    "sticky": {
+                      "not": {}
+                    },
+                    "horizontal": {
+                      "not": {}
+                    },
+                    "tableTitleAdd": {
+                      "not": {}
+                    },
+                    "tableTitleEdit": {
+                      "not": {}
+                    },
+                    "pctColumns": {
+                      "not": {}
+                    },
+                    "filterColumns": {
+                      "not": {}
+                    },
+                    "allowDelete": {
+                      "not": {}
+                    },
+                    "allowInsert": {
+                      "not": {}
+                    },
+                    "deleteMarker": {
+                      "not": {}
+                    },
+                    "insertMarker": {
+                      "not": {}
+                    },
+                    "updateMarker": {
+                      "not": {}
+                    },
+                    "readonlyColumns": {
+                      "not": {}
+                    },
+                    "isHtml": {
+                      "not": {}
+                    },
+                    "keydown": {
+                      "not": {}
+                    },
+                    "accept": {
+                      "not": {}
+                    },
+                    "multiple": {
+                      "not": {}
+                    },
+                    "switch": {
+                      "not": {}
+                    },
+                    "tableFields": {
+                      "not": {}
+                    },
+                    "sameAs": {
+                      "not": {}
+                    },
+                    "in": {
+                      "not": {}
+                    },
+                    "notIn": {
+                      "not": {}
+                    },
+                    "asCredential": {
+                      "not": {}
+                    },
+                    "outputObject": {
+                      "not": {}
+                    },
+                    "expression": {
+                      "not": {}
+                    },
+                    "runLocal": {
+                      "not": {}
+                    },
+                    "editable": {
+                      "not": {}
+                    }
+                  },
+                  "required": [
+                    "query",
+                    "dbConfig"
+                  ]
+                },
+                {
+                  "properties": {
+                    "type": {
+                      "enum": [
+                        "yaml"
+                      ]
+                    },
+                    "dateType": {
+                      "not": {}
+                    },
+                    "convertToUtc": {
+                      "not": {}
+                    },
+                    "values": {
+                      "not": {}
+                    },
+                    "regex": {
+                      "not": {}
+                    },
+                    "minValue": {
+                      "not": {}
+                    },
+                    "maxValue": {
+                      "not": {}
+                    },
+                    "minLength": {
+                      "not": {}
+                    },
+                    "maxLength": {
+                      "not": {}
+                    },
+                    "minSize": {
+                      "not": {}
+                    },
+                    "maxSize": {
+                      "not": {}
+                    },
+                    "sticky": {
+                      "not": {}
+                    },
+                    "horizontal": {
+                      "not": {}
+                    },
+                    "tableTitleAdd": {
+                      "not": {}
+                    },
+                    "tableTitleEdit": {
+                      "not": {}
+                    },
+                    "pctColumns": {
+                      "not": {}
+                    },
+                    "filterColumns": {
+                      "not": {}
+                    },
+                    "allowDelete": {
+                      "not": {}
+                    },
+                    "allowInsert": {
+                      "not": {}
+                    },
+                    "deleteMarker": {
+                      "not": {}
+                    },
+                    "insertMarker": {
+                      "not": {}
+                    },
+                    "updateMarker": {
+                      "not": {}
+                    },
+                    "readonlyColumns": {
+                      "not": {}
+                    },
+                    "isHtml": {
+                      "not": {}
+                    },
+                    "keydown": {
+                      "not": {}
+                    },
+                    "accept": {
+                      "not": {}
+                    },
+                    "multiple": {
+                      "not": {}
+                    },
+                    "switch": {
+                      "not": {}
+                    },
+                    "tableFields": {
+                      "not": {}
+                    },
+                    "sameAs": {
+                      "not": {}
+                    },
+                    "in": {
+                      "not": {}
+                    },
+                    "notIn": {
+                      "not": {}
+                    },
+                    "asCredential": {
+                      "not": {}
+                    },
+                    "outputObject": {
+                      "not": {}
+                    },
+                    "expression": {
+                      "not": {}
+                    },
+                    "query": {
+                      "not": {}
+                    },
+                    "jq": {
+                      "not": {}
+                    },
+                    "runLocal": {
+                      "not": {}
+                    },
+                    "dbConfig": {
+                      "not": {}
+                    },
+                    "editable": {
+                      "not": {}
+                    }
+                  }
+                }
+              ],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "text",
+                    "textarea",
+                    "password",
+                    "checkbox",
+                    "enum",
+                    "number",
+                    "radio",
+                    "expression",
+                    "local",
+                    "local_out",
+                    "credential",
+                    "table",
+                    "datetime",
+                    "html",
+                    "file",
+                    "yaml"
+                  ]
+                },
+                "name": {
+                  "type": "string",
+                  "pattern": "[A-Za-z0-9_\\-]+"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "placeholder": {
+                  "type": "string"
+                },
+                "group": {
+                  "type": "string"
+                },
+                "default": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "array"
+                    },
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "object"
+                    }
+                  ]
+                },
+                "accept": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "evalDefault": {
+                  "type": "boolean"
+                },
+                "dateType": {
+                  "type": "string",
+                  "enum": [
+                    "date",
+                    "datetime",
+                    "year",
+                    "month",
+                    "time",
+                    "week"
+                  ]
+                },
+                "convertToUtc": {
+                  "type": "boolean",
+                  "default": false
+                },
+                "noOutput": {
+                  "type": "boolean"
+                },
+                "asCredential": {
+                  "type": "boolean"
+                },
+                "line": {
+                  "type": "string"
+                },
+                "width": {
+                  "type": "string"
+                },
+                "required": {
+                  "type": "boolean",
+                  "default": false
+                },
+                "sameAs": {
+                  "type": "string",
+                  "pattern": "[A-Za-z0-9_\\-]+"
+                },
+                "validIf": {
+                  "type": "object",
+                  "required": [
+                    "field",
+                    "description"
+                  ],
+                  "properties": {
+                    "field": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "validIfNot": {
+                  "type": "object",
+                  "required": [
+                    "field",
+                    "description"
+                  ],
+                  "properties": {
+                    "field": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "regex": {
+                  "type": "object",
+                  "required": [
+                    "expression",
+                    "description"
+                  ],
+                  "properties": {
+                    "expression": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "notIn": {
+                  "type": "object",
+                  "required": [
+                    "field",
+                    "description"
+                  ],
+                  "properties": {
+                    "field": {
+                      "type": "string",
+                      "pattern": "[A-Za-z0-9_\\-]+"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "in": {
+                  "type": "object",
+                  "required": [
+                    "field",
+                    "description"
+                  ],
+                  "properties": {
+                    "field": {
+                      "type": "string",
+                      "pattern": "[A-Za-z0-9_\\-]+"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "minValue": {
+                  "type": [
+                    "string",
+                    "integer"
+                  ]
+                },
+                "maxValue": {
+                  "type": [
+                    "string",
+                    "integer"
+                  ]
+                },
+                "minSize": {
+                  "type": [
+                    "string",
+                    "integer"
+                  ]
+                },
+                "maxSize": {
+                  "type": [
+                    "string",
+                    "integer"
+                  ]
+                },
+                "minLength": {
+                  "type": [
+                    "string",
+                    "integer"
+                  ]
+                },
+                "maxLength": {
+                  "type": [
+                    "string",
+                    "integer"
+                  ]
+                },
+                "expression": {
+                  "type": "string"
+                },
+                "ignoreIncomplete": {
+                  "type": "boolean"
+                },
+                "noLog": {
+                  "type": "boolean"
+                },
+                "keydown": {
+                  "type": "boolean"
+                },
+                "refresh": {
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "isHtml": {
+                  "type": "boolean"
+                },
+                "runLocal": {
+                  "type": "boolean"
+                },
+                "query": {
+                  "type": "string"
+                },
+                "jq": {
+                  "type": "string"
+                },
+                "outputObject": {
+                  "type": "boolean"
+                },
+                "tableTitleAdd": {
+                  "type": "string"
+                },
+                "tableTitleEdit": {
+                  "type": "string"
+                },
+                "switch": {
+                  "type": "boolean"
+                },
+                "showLoadButton": {
+                  "type": "boolean"
+                },
+                "showDownloadButton": {
+                  "type": "boolean"
+                },
+                "yamlError": {
+                  "type": "object",
+                  "required": [
+                    "description"
+                  ],
+                  "properties": {
+                    "description": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "columns": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "pctColumns": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "filterColumns": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "allowDelete": {
+                  "type": "boolean"
+                },
+                "allowInsert": {
+                  "type": "boolean"
+                },
+                "deleteMarker": {
+                  "type": "string"
+                },
+                "insertMarker": {
+                  "type": "string"
+                },
+                "updateMarker": {
+                  "type": "string"
+                },
+                "readonlyColumns": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "insertColumns": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "sticky": {
+                  "type": "boolean"
+                },
+                "horizontal": {
+                  "type": "boolean"
+                },
+                "editable": {
+                  "type": "boolean"
+                },
+                "readonly": {
+                  "type": "boolean"
+                },
+                "valueColumn": {
+                  "type": "string"
+                },
+                "previewColumn": {
+                  "type": "string"
+                },
+                "placeholderColumn": {
+                  "type": "string"
+                },
+                "dbConfig": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "name",
+                        "type"
+                      ],
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "mysql",
+                            "mssql",
+                            "postgres",
+                            "mongodb",
+                            "oracle"
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  ]
+                },
+                "model": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "array"
+                    }
+                  ]
+                },
+                "help": {
+                  "type": "string"
+                },
+                "values": {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "object"
+                      }
+                    ]
+                  }
+                },
+                "value": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "array"
+                    },
+                    {
+                      "type": "object"
+                    },
+                    {
+                      "type": "integer"
+                    }
+                  ]
+                },
+                "multiple": {
+                  "type": "boolean",
+                  "default": false
+                },
+                "size": {
+                  "type": "integer"
+                },
+                "dependencyFn": {
+                  "type": "string",
+                  "enum": [
+                    "and",
+                    "or",
+                    "nand",
+                    "nor"
+                  ]
+                },
+                "dependencies": {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "pattern": "^!{0,1}[A-Za-z0-9_\\-.]+$"
+                          },
+                          "values": {
+                            "type": "array",
+                            "items": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "integer"
+                                },
+                                {
+                                  "type": "boolean"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "values"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "pattern": "^!{0,1}[A-Za-z0-9_\\-.]+$"
+                          },
+                          "isValid": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "isValid"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  }
+                },
+                "hide": {
+                  "type": "boolean"
+                },
+                "icon": {
+                  "type": "string"
+                },
+                "iconColor": {
+                  "type": "string"
+                },
+                "iconSize": {
+                  "type": "string"
+                },
+                "overlayIcon": {
+                  "type": "string"
+                },
+                "overlayIconTransform": {
+                  "type": "string"
+                },
+                "overlayIconColor": {
+                  "type": "string"
+                },
+                "overlayIconCircle": {
+                  "type": "boolean"
+                },
+                "overlayIconText": {
+                  "type": "string"
+                },
+                "overlayIconTextPosition": {
+                  "type": "string"
+                },
+                "overlayIconTextColor": {
+                  "type": "string"
+                },
+                "tableFields": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "type",
+                      "name"
+                    ],
+                    "oneOf": [
+                      {
+                        "properties": {
+                          "type": {
+                            "enum": [
+                              "text",
+                              "password"
+                            ]
+                          },
+                          "dateType": {
+                            "not": {}
+                          },
+                          "convertToUtc": {
+                            "not": {}
+                          },
+                          "minValue": {
+                            "not": {}
+                          },
+                          "maxValue": {
+                            "not": {}
+                          },
+                          "values": {
+                            "not": {}
+                          },
+                          "from": {
+                            "not": {}
+                          },
+                          "sticky": {
+                            "not": {}
+                          },
+                          "horizontal": {
+                            "not": {}
+                          },
+                          "multiple": {
+                            "not": {}
+                          },
+                          "outputObject": {
+                            "not": {}
+                          },
+                          "columns": {
+                            "not": {}
+                          },
+                          "pctColumns": {
+                            "not": {}
+                          },
+                          "filterColumns": {
+                            "not": {}
+                          },
+                          "previewColumn": {
+                            "not": {}
+                          },
+                          "switch": {
+                            "not": {}
+                          },
+                          "valueColumn": {
+                            "not": {}
+                          }
+                        }
+                      },
+                      {
+                        "properties": {
+                          "type": {
+                            "enum": [
+                              "textarea"
+                            ]
+                          },
+                          "dateType": {
+                            "not": {}
+                          },
+                          "convertToUtc": {
+                            "not": {}
+                          },
+                          "minValue": {
+                            "not": {}
+                          },
+                          "maxValue": {
+                            "not": {}
+                          },
+                          "minLength": {
+                            "not": {}
+                          },
+                          "maxLength": {
+                            "not": {}
+                          },
+                          "regex": {
+                            "not": {}
+                          },
+                          "values": {
+                            "not": {}
+                          },
+                          "multiple": {
+                            "not": {}
+                          },
+                          "from": {
+                            "not": {}
+                          },
+                          "sticky": {
+                            "not": {}
+                          },
+                          "horizontal": {
+                            "not": {}
+                          },
+                          "outputObject": {
+                            "not": {}
+                          },
+                          "columns": {
+                            "not": {}
+                          },
+                          "icon": {
+                            "not": {}
+                          },
+                          "notIn": {
+                            "not": {}
+                          },
+                          "in": {
+                            "not": {}
+                          },
+                          "pctColumns": {
+                            "not": {}
+                          },
+                          "filterColumns": {
+                            "not": {}
+                          },
+                          "previewColumn": {
+                            "not": {}
+                          },
+                          "switch": {
+                            "not": {}
+                          },
+                          "valueColumn": {
+                            "not": {}
+                          }
+                        }
+                      },
+                      {
+                        "properties": {
+                          "type": {
+                            "enum": [
+                              "datetime"
+                            ]
+                          },
+                          "minValue": {
+                            "not": {}
+                          },
+                          "maxValue": {
+                            "not": {}
+                          },
+                          "minLength": {
+                            "not": {}
+                          },
+                          "maxLength": {
+                            "not": {}
+                          },
+                          "values": {
+                            "not": {}
+                          },
+                          "from": {
+                            "not": {}
+                          },
+                          "sticky": {
+                            "not": {}
+                          },
+                          "multiple": {
+                            "not": {}
+                          },
+                          "horizontal": {
+                            "not": {}
+                          },
+                          "outputObject": {
+                            "not": {}
+                          },
+                          "columns": {
+                            "not": {}
+                          },
+                          "pctColumns": {
+                            "not": {}
+                          },
+                          "filterColumns": {
+                            "not": {}
+                          },
+                          "previewColumn": {
+                            "not": {}
+                          },
+                          "switch": {
+                            "not": {}
+                          },
+                          "valueColumn": {
+                            "not": {}
+                          }
+                        },
+                        "required": [
+                          "dateType"
+                        ]
+                      },
+                      {
+                        "properties": {
+                          "type": {
+                            "enum": [
+                              "number"
+                            ]
+                          },
+                          "dateType": {
+                            "not": {}
+                          },
+                          "convertToUtc": {
+                            "not": {}
+                          },
+                          "minLength": {
+                            "not": {}
+                          },
+                          "maxLength": {
+                            "not": {}
+                          },
+                          "values": {
+                            "not": {}
+                          },
+                          "from": {
+                            "not": {}
+                          },
+                          "outputObject": {
+                            "not": {}
+                          },
+                          "columns": {
+                            "not": {}
+                          },
+                          "sticky": {
+                            "not": {}
+                          },
+                          "multiple": {
+                            "not": {}
+                          },
+                          "horizontal": {
+                            "not": {}
+                          },
+                          "pctColumns": {
+                            "not": {}
+                          },
+                          "filterColumns": {
+                            "not": {}
+                          },
+                          "previewColumn": {
+                            "not": {}
+                          },
+                          "switch": {
+                            "not": {}
+                          },
+                          "valueColumn": {
+                            "not": {}
+                          }
+                        }
+                      },
+                      {
+                        "properties": {
+                          "type": {
+                            "enum": [
+                              "checkbox"
+                            ]
+                          },
+                          "dateType": {
+                            "not": {}
+                          },
+                          "convertToUtc": {
+                            "not": {}
+                          },
+                          "regex": {
+                            "not": {}
+                          },
+                          "minValue": {
+                            "not": {}
+                          },
+                          "maxValue": {
+                            "not": {}
+                          },
+                          "minLength": {
+                            "not": {}
+                          },
+                          "maxLength": {
+                            "not": {}
+                          },
+                          "values": {
+                            "not": {}
+                          },
+                          "from": {
+                            "not": {}
+                          },
+                          "sticky": {
+                            "not": {}
+                          },
+                          "multiple": {
+                            "not": {}
+                          },
+                          "horizontal": {
+                            "not": {}
+                          },
+                          "outputObject": {
+                            "not": {}
+                          },
+                          "columns": {
+                            "not": {}
+                          },
+                          "pctColumns": {
+                            "not": {}
+                          },
+                          "filterColumns": {
+                            "not": {}
+                          },
+                          "previewColumn": {
+                            "not": {}
+                          },
+                          "valueColumn": {
+                            "not": {}
+                          }
+                        }
+                      },
+                      {
+                        "properties": {
+                          "type": {
+                            "enum": [
+                              "enum"
+                            ]
+                          },
+                          "dateType": {
+                            "not": {}
+                          },
+                          "convertToUtc": {
+                            "not": {}
+                          },
+                          "regex": {
+                            "not": {}
+                          },
+                          "minValue": {
+                            "not": {}
+                          },
+                          "maxValue": {
+                            "not": {}
+                          },
+                          "minLength": {
+                            "not": {}
+                          },
+                          "maxLength": {
+                            "not": {}
+                          },
+                          "from": {
+                            "not": {}
+                          },
+                          "outputObject": {
+                            "not": {}
+                          },
+                          "columns": {
+                            "not": {}
+                          },
+                          "pctColumns": {
+                            "not": {}
+                          },
+                          "filterColumns": {
+                            "not": {}
+                          },
+                          "previewColumn": {
+                            "not": {}
+                          },
+                          "switch": {
+                            "not": {}
+                          },
+                          "valueColumn": {
+                            "not": {}
+                          }
+                        },
+                        "required": [
+                          "values"
+                        ]
+                      },
+                      {
+                        "properties": {
+                          "type": {
+                            "enum": [
+                              "enum"
+                            ]
+                          },
+                          "dateType": {
+                            "not": {}
+                          },
+                          "convertToUtc": {
+                            "not": {}
+                          },
+                          "regex": {
+                            "not": {}
+                          },
+                          "minValue": {
+                            "not": {}
+                          },
+                          "maxValue": {
+                            "not": {}
+                          },
+                          "minLength": {
+                            "not": {}
+                          },
+                          "maxLength": {
+                            "not": {}
+                          },
+                          "values": {
+                            "not": {}
+                          }
+                        },
+                        "required": [
+                          "from"
+                        ]
+                      }
+                    ],
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "text",
+                          "textarea",
+                          "password",
+                          "checkbox",
+                          "enum",
+                          "number",
+                          "datetime",
+                          "html"
+                        ]
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "label": {
+                        "type": "string"
+                      },
+                      "help": {
+                        "type": "string"
+                      },
+                      "placeholder": {
+                        "type": "string"
+                      },
+                      "from": {
+                        "type": "string"
+                      },
+                      "multiple": {
+                        "type": "boolean"
+                      },
+                      "sticky": {
+                        "type": "boolean"
+                      },
+                      "horizontal": {
+                        "type": "boolean"
+                      },
+                      "switch": {
+                        "type": "boolean"
+                      },
+                      "default": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "boolean"
+                          },
+                          {
+                            "type": "array"
+                          },
+                          {
+                            "type": "integer"
+                          }
+                        ]
+                      },
+                      "required": {
+                        "type": "boolean",
+                        "default": false
+                      },
+                      "regex": {
+                        "type": "object",
+                        "required": [
+                          "expression",
+                          "description"
+                        ],
+                        "properties": {
+                          "expression": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "dateType": {
+                        "type": "string",
+                        "enum": [
+                          "date",
+                          "datetime",
+                          "year",
+                          "month",
+                          "time",
+                          "week"
+                        ]
+                      },
+                      "convertToUtc": {
+                        "type": "boolean",
+                        "default": false
+                      },
+                      "minValue": {
+                        "type": [
+                          "string",
+                          "integer"
+                        ]
+                      },
+                      "maxValue": {
+                        "type": "integer"
+                      },
+                      "minLength": {
+                        "type": "integer"
+                      },
+                      "maxLength": {
+                        "type": "integer"
+                      },
+                      "notIn": {
+                        "type": "object",
+                        "required": [
+                          "field",
+                          "description"
+                        ],
+                        "properties": {
+                          "field": {
+                            "type": "string",
+                            "pattern": "[A-Za-z0-9_\\-]+"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "when": {
+                            "type": "string",
+                            "enum": [
+                              "add",
+                              "edit"
+                            ]
+                          }
+                        }
+                      },
+                      "in": {
+                        "type": "object",
+                        "required": [
+                          "field",
+                          "description"
+                        ],
+                        "properties": {
+                          "field": {
+                            "type": "string",
+                            "pattern": "[A-Za-z0-9_\\-]+"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "when": {
+                            "type": "string",
+                            "enum": [
+                              "add",
+                              "edit"
+                            ]
+                          }
+                        }
+                      },
+                      "values": {
+                        "type": "array",
+                        "items": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "integer"
+                            },
+                            {
+                              "type": "boolean"
+                            }
+                          ]
+                        }
+                      },
+                      "icon": {
+                        "type": "string"
+                      },
+                      "columns": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "pctColumns": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "filterColumns": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "valueColumn": {
+                        "type": "string"
+                      },
+                      "previewColumn": {
+                        "type": "string"
+                      },
+                      "outputObject": {
+                        "type": "boolean",
+                        "default": false
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
