@@ -79,6 +79,8 @@ show the rc version.
 exactly the upcoming version, so a candidate of that pull request tests the whole release.
 Run the workflow again after new pushes to get a newer candidate.
 
+A test server does not need an image copied to it: it can pull `latest-rc`.
+
 Only pull requests from branches of this repository publish. A fork's code never runs with
 the registry credentials.
 
@@ -106,12 +108,6 @@ Open the fix against `release/6.x` (see CONTRIBUTING.md: fix on main first, then
 cherry-pick). release-please keeps a "chore: release 6.5.x" pull request open on that
 branch; merging it releases and publishes, exactly like on main. Its config bumps the patch
 only, so a stray `feat:` cannot make a 6.6.0.
-
-## Local scripts
-
-- `publish-local.sh` builds the application image on your machine, without pushing.
-
-A test server does not need an image copied to it: it can pull `latest-rc`.
 
 ## Setup this depends on
 
