@@ -33,6 +33,7 @@ import Awx from "../models/awx.model.js";
 import OAuth2 from "../models/oauth2.model.js";
 import Credential from "../models/credential.model.v2.js";
 import SecretStore from "../models/secretStore.model.js";
+import Runner from "../models/runner.model.js";
 import Repository from "../models/repository.model.js";
 import Ldap from "../models/ldap.model.js";
 import Settings from "../models/settings.model.js";
@@ -66,6 +67,15 @@ const listSections = [
     create: (d) => SecretStore.create(d, seedOpts),
     update: (d, row) => SecretStore.update(d, row.id, seedOpts),
     remove: (row) => SecretStore.delete(row.id, seedOpts),
+  },
+  {
+    key: "runners",
+    modelName: "runner",
+    label: "runner",
+    defaults: { description: "" },
+    create: (d) => Runner.create(d, seedOpts),
+    update: (d, row) => Runner.update(d, row.id, seedOpts),
+    remove: (row) => Runner.delete(row.id, seedOpts),
   },
   {
     key: "credentials",

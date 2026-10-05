@@ -35,6 +35,11 @@ export const CHAT_PROVIDERS = [
 ];
 
 // The secret store types (server/src/secrets/providers/index.js has the same list)
+// The runner types (server/src/runners/index.js has the same list, minus the built-in local)
+export const RUNNER_TYPES = [
+    { value: "rte", label: "Runtime environment (RTE)" },
+];
+
 export const SECRET_STORE_TYPES = [
   { value: 'vault', label: 'HashiCorp Vault' },
   { value: 'cyberark_ccp', label: 'CyberArk Central Credential Provider' },
@@ -1013,6 +1018,31 @@ export default function getSettings(t) {
     },
     // External secret managers. The types mirror SECRET_STORE_TYPES in
     // server/src/secrets/providers/index.js ; which fields a type shows follows its provider.
+    // Where a playbook runs : an RTE container, started from this image with AF_ROLE=rte
+    runners: {
+      type: 'runner',
+      label: t('settings.runners.label'),
+      description: t('settings.runners.description'),
+      icon: 'rocket',
+      selectable: false,
+      actions: [
+        { name: 'edit', title: t('settings.runners.editRunner'), icon: 'pencil', color: 'edit' },
+        { name: 'delete', title: t('settings.runners.deleteRunner'), icon: 'trash', color: 'delete' },
+        { name: 'change_password', title: t('settings.common.changePassword'), icon: 'lock', color: 'change' },
+        { name: 'test', title: t('settings.common.testConnection'), icon: 'plug', color: 'test' },
+      ],
+      fields: [
+        { key: 'id', label: t('settings.fields.id'), sortable: false, required: false, filterable: false, noInput: true, hidden: true, icon: 'key' },
+        { key: 'is_default', label: t('settings.runners.isDefault'), help: t('settings.runners.isDefaultHelp'), type: 'checkbox' },
+        { key: 'name', icon: 'heading', line: 0, label: t('settings.fields.name'), required: true, filterable: true, help: t('settings.runners.nameHelp') },
+        { key: 'type', icon: 'rocket', line: 0, label: t('settings.runners.type'), required: true, filterable: true, type: 'select', parent: 'runnerTypes', values: RUNNER_TYPES, valueKey: 'value', labelKey: 'label' },
+        { key: 'description', icon: 'info-circle', line: 0, label: t('settings.fields.description'), required: false, hidden: true },
+        { key: 'uri', icon: 'globe', line: 1, label: t('settings.fields.uri'), required: true, placeholder: 'https://rte-vmware:8000', help: t('settings.runners.uriHelp') },
+        { key: 'token', icon: 'lock', line: 1, label: t('settings.fields.token'), type: 'password', required: true, hidden: true, help: t('settings.runners.tokenHelp') },
+        { key: 'ignore_certs', line: 2, type: 'checkbox', label: t('settings.ldap.ignoreCerts'), hidden: true },
+        { key: 'ca_bundle', icon: 'certificate', type: 'textarea', line: 3, label: t('settings.fields.caBundle'), required: false, dependency: 'ignore_certs', negateDependency: true, placeholder: '-----BEGIN CERTIFICATE-----', hidden: true },
+      ],
+    },
     secretStores: {
       // the page title is the menu entry's label (AppSidebar), so the two always match
       pageTitle: t('sidebar.secretStores'),

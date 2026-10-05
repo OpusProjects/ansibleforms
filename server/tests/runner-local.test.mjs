@@ -55,11 +55,21 @@ vi.mock("../src/models/credential.model.v2.js", () => ({
   },
 }));
 
+// the runners table : by name, and the one marked default
+let runnerRows = [];
+vi.mock("../src/models/runner.model.js", () => ({
+  default: {
+    findByName: async (name) => runnerRows.find((r) => r.name === name) || undefined,
+    findDefault: async () => runnerRows.find((r) => r.is_default) || null,
+  },
+}));
+
 const { default: Job } = await import("../src/models/job.model.js");
 const { default: mysql } = await import("../src/models/db.model.js");
 const { default: Repository } = await import("../src/models/repository.model.js");
 const core = await import("../src/runners/ansible-core.js");
-const { dispatch } = await import("../src/runners/orchestrator.js");
+const { dispatch, resolveRunner } = await import("../src/runners/orchestrator.js");
+const { RUNNERS } = await import("../src/runners/index.js");
 
 let jobRow;
 let outputs;
@@ -75,6 +85,7 @@ mysql.do = async function (sql, params) {
     return { changedRows: 1 };
   }
   if (sql.includes("SELECT abort_requested")) return [{ abort_requested: 0 }];
+  if (sql.includes("SET runner=?")) { jobRow.runner = params[0]; return { changedRows: 1 }; }
   if (sql.includes("SELECT id FROM AnsibleForms.`jobs`")) return [{ id: params[0] }];
   return { changedRows: 1 };
 };
@@ -89,6 +100,7 @@ beforeEach(() => {
   outputs = [];
   spawned.length = 0;
   approvalMails.length = 0;
+  runnerRows = [];
 });
 afterEach(() => {
   vi.restoreAllMocks();
@@ -197,5 +209,54 @@ describe("the approval gate", () => {
   test("an awx job is labelled with its template", async () => {
     await dispatch({ jobId: 11, jobType: "awx", extravars: { __template__: "Deploy" }, approval: { roles: [] } });
     assert.equal(outputs[0].output, `APPROVE [Deploy] ${"*".repeat(69 - "Deploy".length)}`);
+  });
+});
+
+describe("which runner runs a playbook job", () => {
+  test("no runner named and none default : the app itself, remembered as such on the job", async () => {
+    row({ __playbook__: "site.yml" });
+    const { impl, row: r } = await resolveRunner({ jobType: "ansible", extravars: {} });
+    assert.equal(impl.type, "local");
+    assert.equal(r, null);
+    await runToEnd(() => dispatch({ jobId: 11, jobType: "ansible", extravars: {}, approval: null }));
+    assert.equal(jobRow.runner, null);
+    assert.equal(spawned.length, 1);
+  });
+
+  test("the form's runner: name wins over the default", async () => {
+    runnerRows = [{ name: "rte-default", type: "rte", is_default: 1 }, { name: "rte-vmware", type: "rte" }];
+    const picked = await resolveRunner({ jobType: "ansible", extravars: { __runner__: "rte-vmware" } });
+    assert.equal(picked.impl.type, "rte");
+    assert.equal(picked.row.name, "rte-vmware");
+    const byDefault = await resolveRunner({ jobType: "ansible", extravars: {} });
+    assert.equal(byDefault.row.name, "rte-default");
+  });
+
+  test("a runner the form names but nobody added fails the job with a line that says so", async () => {
+    row({ __playbook__: "site.yml", __runner__: "rte-nope" });
+    const ok = await dispatch({ jobId: 11, jobType: "ansible", extravars: { __runner__: "rte-nope" } });
+    assert.equal(ok, false);
+    assert.equal(spawned.length, 0);
+    assert.equal(jobRow.status, "failed");
+    assert.ok(outputs.some((o) => /No runner named 'rte-nope'/.test(o.output)));
+  });
+
+  test("a named rte is handed the job, and the job remembers it for the abort", async () => {
+    runnerRows = [{ name: "rte-vmware", type: "rte", uri: "http://rte:8000", token: "t" }];
+    const launch = vi.spyOn(RUNNERS.rte, "launch").mockResolvedValue(true);
+    try {
+      row({ __playbook__: "site.yml", __runner__: "rte-vmware" });
+      await dispatch({ jobId: 11, jobType: "ansible", extravars: { __runner__: "rte-vmware" } });
+      assert.equal(launch.mock.calls.length, 1);
+      assert.equal(launch.mock.calls[0][0].runner.name, "rte-vmware");
+      assert.equal(jobRow.runner, "rte-vmware");
+    } finally {
+      launch.mockRestore();
+    }
+  });
+
+  test("an awx job runs on awx, whatever the runners table holds", async () => {
+    runnerRows = [{ name: "rte-default", type: "rte", is_default: 1 }];
+    assert.equal((await resolveRunner({ jobType: "awx", extravars: {} })).impl.type, "awx");
   });
 });

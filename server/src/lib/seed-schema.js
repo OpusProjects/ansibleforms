@@ -88,6 +88,23 @@ const secretStoreItem = {
   },
 };
 
+// Where a playbook runs : an RTE. `token` is the RTE's RTE_TOKEN.
+const runnerItem = {
+  type: "object",
+  additionalProperties: false,
+  required: ["name", "type", "uri"],
+  properties: {
+    name: str,
+    type: str,
+    description: str,
+    uri: str,
+    token: str,
+    ignore_certs: bool,
+    ca_bundle: str,
+    is_default: bool,
+  },
+};
+
 const oauth2Item = {
   type: "object",
   additionalProperties: false,
@@ -243,6 +260,7 @@ export const seedSchema = {
     version: { type: "integer", enum: [1] },
     awx: listSection(awxItem),
     secret_stores: listSection(secretStoreItem),
+    runners: listSection(runnerItem),
     credentials: listSection(credentialItem),
     oauth2: listSection(oauth2Item),
     repositories: listSection(repositoryItem),

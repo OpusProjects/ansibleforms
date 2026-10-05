@@ -390,6 +390,19 @@ describe("secret stores are seedable", () => {
   });
 });
 
+describe("runners are seedable", () => {
+  test("a runner validates, and lands before the credentials that may run on it", () => {
+    assert.doesNotThrow(() => validateSeed({ runners: { items: [{ name: "rte-vmware", type: "rte", uri: "https://rte:8000", token: "${RTE_TOKEN}", is_default: true }] } }));
+    const keys = listSections.map((s) => s.key);
+    assert.ok(keys.includes("runners"));
+  });
+
+  test("a runner needs name, type and uri ; an unknown field is rejected", () => {
+    assert.throws(() => validateSeed({ runners: { items: [{ name: "x", type: "rte" }] } }), /validation failed/);
+    assert.throws(() => validateSeed({ runners: { items: [{ name: "x", type: "rte", uri: "u", url: "u" }] } }), /validation failed/);
+  });
+});
+
 describe("the unattended schema bootstrap cannot wipe a live database", () => {
   test("an absent schema is empty", async () => {
     dbHandler = async (sql) => (/SHOW DATABASES/.test(sql) ? [] : []);

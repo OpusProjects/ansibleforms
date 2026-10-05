@@ -356,7 +356,8 @@
       `app` (the default) is AnsibleForms itself. `rte` starts the same image as a runtime
       environment : a small API that runs playbooks for an app, with no web interface,
       scheduler or seed. An RTE needs the app's database settings (`DB_*`), the same
-      `ENCRYPTION_SECRET`, and `RTE_TOKEN`. Preview in 7.2.
+      `ENCRYPTION_SECRET`, and `RTE_TOKEN`. The app reaches it through a runner added under
+      Connections > Runners.
   - name: RTE_TOKEN
     version: 7.2.0
     type: string
@@ -364,8 +365,7 @@
     short: The token between an app and its RTE
     description: |
       On an RTE (`AF_ROLE=rte`) : the bearer token every call must carry ; the RTE refuses to
-      start without one. On the app : the token it sends to the RTE at `RTE_URL`. Use the same
-      value on both sides.
+      start without one. The app stores the same token on the runner (Connections > Runners).
   - name: RTE_ID
     version: 7.2.0
     type: string
@@ -374,22 +374,6 @@
     description: |
       On an RTE : the name stored on the jobs it runs. When it restarts it abandons only the
       jobs carrying its own name, so give every RTE a different one.
-  - name: RTE_URL
-    version: 7.2.0
-    type: string
-    allowed: a url, e.g. https://rte:8000
-    short: The RTE that runs playbooks (preview)
-    description: |
-      On the app : when set, every playbook job runs on the RTE at this address instead of in
-      the app's own container. Preview in 7.2 ; a Runners page replaces it.
-  - name: RTE_IGNORE_CERTS
-    version: 7.2.0
-    type: number
-    allowed: 0, 1
-    short: Accept the RTE's self-signed certificate (preview)
-    default: "0"
-    description: |
-      On the app : 1 accepts any certificate from the RTE at `RTE_URL`.
   - name: JOB_RETENTION_DAYS
     version: 6.3.0
     type: number
@@ -2118,6 +2102,25 @@
             
           **Note** : You can also dynamically set the scm branch by using a field called `__scmBranch__`.  It must be sent as extravar.  If this extravar is found it will overwrite the static `scm_branch`.  
           **Note** : If you use multistep and you want to dynamically set every step, use the `key` property and `model` property to create separate extravars per step.
+      - name: runner
+        type: string
+        with_types: ansible
+        group: workflow
+        version: 7.2.0
+        allowed: the name of a runner (Connections > Runners)
+        short: Where the playbook runs
+        description: |
+          Runs the playbook on a runner - a runtime environment (RTE) container - instead of
+          in the AnsibleForms container itself. Runners are added under Connections > Runners.
+          Without this property the playbook runs on the runner marked as default, or in the
+          AnsibleForms container when there is none.
+        examples:
+        - name: Run on the vmware runtime
+          code: |
+            - name: Create a vm
+              type: ansible
+              playbook: create_vm.yaml
+              runner: rte-vmware
       - name: awx
         type: string
         with_types: awx

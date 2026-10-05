@@ -79,6 +79,23 @@ CREATE TABLE `secret_stores` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_AnsibleForms_secret_stores_natural_key` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- keep in sync with create_runners_table.sql, which the upgrade patch uses
+DROP TABLE IF EXISTS `runners`;
+CREATE TABLE `runners` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(250) NOT NULL,
+  `type` varchar(20) NOT NULL,
+  `description` text DEFAULT NULL,
+  `uri` varchar(500) NOT NULL,
+  `token` text DEFAULT NULL,
+  `ignore_certs` tinyint(4) DEFAULT 0,
+  `ca_bundle` text DEFAULT NULL,
+  `is_default` tinyint(4) DEFAULT 0,
+  `managed` tinyint(4) DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_AnsibleForms_runners_natural_key` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 -- create ldap table
 DROP TABLE IF EXISTS `ldap`;
 CREATE TABLE `ldap` (
@@ -165,6 +182,7 @@ CREATE TABLE `jobs` (
   `raw_form_data` longtext DEFAULT NULL,
   `pid` int(11) DEFAULT NULL,
   `host` varchar(255) DEFAULT NULL,
+  `runner` varchar(250) DEFAULT NULL,
   PRIMARY KEY (`id`),
   -- the retention sweep selects on (parent_id, status, end) ; without this it full
   -- scans the largest table in the schema on every batch. Keep in sync with the

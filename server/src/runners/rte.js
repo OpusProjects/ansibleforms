@@ -1,13 +1,15 @@
 // An RTE (runtime environment) : the playbook runs in another container (AF_ROLE=rte),
 // which reads the job, resolves its credentials and writes the output and the final status
 // to the database itself. This side only hands the job over and waits for it to end.
-//
-// PREVIEW : one RTE, from RTE_URL and RTE_TOKEN (RTE_IGNORE_CERTS=1 for a self-signed
-// certificate). The Runners page replaces these.
+// The RTE's address and token come from its row in the runners table.
 import axios from "axios";
 import https from "https";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import logger from "../lib/logger.js";
 import mysql from "../models/db.model.js";
+import Errors from "../lib/errors.js";
 import { stripTrailingSlashes } from "../lib/url.js";
 import Job from "../models/job.model.js";
 import { lastOrder } from "./ansible-core.js";
@@ -16,27 +18,36 @@ const POLL_MS = 1000;
 // how often the RTE itself is asked about the job, in polls
 const ASK_RTE_EVERY = 30;
 
-export function rteConfigured() {
-  return !!process.env.RTE_URL;
-}
+// this app's version : an RTE must run the same major.minor, it shares the code and schema
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const appVersion = (() => {
+  for (const file of ["../../build-info.json", "../../package.json"]) {
+    try {
+      const v = JSON.parse(fs.readFileSync(path.resolve(__dirname, file), "utf8")).version;
+      if (v) return v;
+    } catch { /* next */ }
+  }
+  return "unknown";
+})();
+const majorMinor = (v) => String(v || "").split(".").slice(0, 2).join(".");
 
-function client() {
-  const url = stripTrailingSlashes(process.env.RTE_URL || "");
+function client(runner) {
+  const url = stripTrailingSlashes(runner.uri || "");
   return {
     url,
     http: axios.create({
       baseURL: `${url}/rte/v1`,
-      headers: { Authorization: `Bearer ${process.env.RTE_TOKEN || ""}` },
+      headers: { Authorization: `Bearer ${runner.token || ""}` },
       timeout: 10000,
-      httpsAgent: new https.Agent({ rejectUnauthorized: process.env.RTE_IGNORE_CERTS !== "1" }),
+      httpsAgent: new https.Agent({ rejectUnauthorized: !runner.ignore_certs, ca: runner.ca_bundle || undefined }),
     }),
   };
 }
 
-// what the job output says when the hand-over fails
+// what the job output (or the connection test) says when the RTE does not take the call
 function describe(err, url) {
   const status = err?.response?.status;
-  if (status === 401) return `the RTE at ${url} refused the token : check RTE_TOKEN on both sides`;
+  if (status === 401) return `the RTE at ${url} refused the token : check its RTE_TOKEN and the token stored here`;
   if (status === 409) return `the RTE at ${url} did not take the job : ${err.response.data?.error || "conflict"}`;
   if (status) return `the RTE at ${url} answered ${status} : ${err.response.data?.error || err.message}`;
   return `the RTE at ${url} is unreachable : ${err.code || err.message}`;
@@ -53,7 +64,7 @@ async function dbStatus(jobId) {
 }
 
 /** waits until the job is no longer running ; true when it ended in success */
-async function track(jobId, { http, url }) {
+async function track(jobId, rte) {
   let polls = 0;
   let unknown = 0;
   for (;;) {
@@ -62,12 +73,12 @@ async function track(jobId, { http, url }) {
     if (status !== "running") return status === "success";
     if (++polls % ASK_RTE_EVERY) continue;
     try {
-      const { data } = await http.get(`/jobs/${jobId}`);
+      const { data } = await rte.http.get(`/jobs/${jobId}`);
       // the RTE answers but does not run it, and the row still says running : it is lost
       unknown = data?.status === "unknown" ? unknown + 1 : 0;
       if (unknown >= 2) {
         if ((await dbStatus(jobId)) !== "running") continue;
-        return failJob(jobId, `the RTE at ${url} lost job ${jobId}`);
+        return failJob(jobId, `the RTE '${rte.name}' lost job ${jobId}`);
       }
     } catch (err) {
       // unreachable for a while : keep waiting, the RTE writes the end itself, and an RTE
@@ -77,14 +88,31 @@ async function track(jobId, { http, url }) {
   }
 }
 
+/** the RTE's health, with its version checked against ours */
+async function check(runner) {
+  const rte = client(runner);
+  let data;
+  try {
+    ({ data } = await rte.http.get("/health"));
+  } catch (err) {
+    throw new Errors.BadRequestError(describe(err, rte.url));
+  }
+  const details = { id: data?.id, version: data?.version, ansible: data?.ansible, running: data?.running?.length || 0, appVersion };
+  if (majorMinor(data?.version) !== majorMinor(appVersion)) {
+    throw new Errors.BadRequestError(`the RTE at ${rte.url} runs ${data?.version}, this app runs ${appVersion} : use the same release of both`);
+  }
+  return details;
+}
+
 export default {
   type: "rte",
   capabilities: { playbook: true, template: false },
+  check,
   async launch(ctx) {
-    const { jobId } = ctx;
-    const rte = client();
+    const { jobId, runner } = ctx;
+    const rte = { ...client(runner), name: runner.name };
     // written before the hand-over, never after : from then on the RTE writes the output
-    await Job.printJobOutput(`ok: [Running on RTE ${rte.url}]`, "stdout", jobId, (await lastOrder(jobId)) + 1);
+    await Job.printJobOutput(`ok: [Running on RTE ${runner.name} (${rte.url})]`, "stdout", jobId, (await lastOrder(jobId)) + 1);
     try {
       await rte.http.post("/jobs", { jobId });
     } catch (err) {
@@ -94,7 +122,7 @@ export default {
   },
   // the fast path ; the abort flag in the database reaches the RTE too, within seconds
   async cancel(ctx) {
-    const rte = client();
+    const rte = client(ctx.runner);
     try {
       await rte.http.post(`/jobs/${ctx.jobId}/cancel`);
     } catch (err) {

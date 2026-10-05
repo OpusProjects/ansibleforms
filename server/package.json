@@ -13,7 +13,6 @@
   "scripts": {
     "start": "NODE_ENV=production node ./",
     "dev": "NODE_ENV=development nodemon --watch src --watch schema --watch config ./index.js",
-    "dev:app-rte": "NODE_ENV=development RTE_URL=http://127.0.0.1:8010 RTE_TOKEN=dev-rte-token-not-a-secret nodemon --watch src --watch schema --watch config ./index.js",
     "dev:rte": "NODE_ENV=development AF_ROLE=rte RTE_ID=rte-dev PORT=8010 HTTPS=0 RTE_TOKEN=dev-rte-token-not-a-secret nodemon --watch src --watch config ./index.js",
     "test": "vitest run",
     "test:watch": "vitest",

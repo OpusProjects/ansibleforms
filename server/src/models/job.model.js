@@ -28,7 +28,8 @@ import path from "path";
 import { fileURLToPath } from "url";
 import i18n from "../lib/i18n.js";
 import { dispatch } from "../runners/orchestrator.js";
-import RtRunner, { rteConfigured } from "../runners/rte.js";
+import { getRunner } from "../runners/index.js";
+import Runner from "./runner.model.js";
 import { stripTrailingSlashes } from "../lib/url.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -41,6 +42,7 @@ function pushForminfoToExtravars(formObj, extravars, creds = {}) {
   const topFields = [
     "template",
     "awx",
+    "runner",
     "playbook",
     "tags",
     "limit",
@@ -403,8 +405,8 @@ Job.requestAbort = async function (id) {
         }
       } else {
         logger.warning(`[Job ${id}] Process is running on different host (job on '${jobHost}', current '${currentHost}'). Abort flag set, that instance stops it within a few seconds.`);
-        // an RTE also takes a direct cancel, which stops it at once
-        if (rteConfigured()) RtRunner.cancel({ jobId: id });
+        // a configured runner (an RTE) also takes a direct cancel, which stops it at once
+        cancelOnRunner(id).catch((e) => logger.debug(`[Job ${id}] cancel on the runner failed : ${e.message}`));
       }
     } else if (!pid && !jobHost) {
       logger.warning(`[Job ${id}] No PID/host found for job, abort flag set but cannot kill process directly`);
@@ -414,6 +416,16 @@ Job.requestAbort = async function (id) {
   }
   return res;
 };
+// the runner a job was handed to, from jobs.runner (set by the orchestrator)
+async function cancelOnRunner(id) {
+  const rows = await mysql.do("SELECT runner FROM AnsibleForms.`jobs` WHERE id=?", [id]);
+  const name = rows?.[0]?.runner;
+  if (!name) return;
+  const row = await Runner.findByName(name);
+  if (!row) return;
+  const impl = getRunner(row.type);
+  if (impl.cancel) await impl.cancel({ jobId: id, runner: row });
+}
 Job.deleteOutput = async function (record) {
   // delete last output
   await mysql.do(

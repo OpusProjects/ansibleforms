@@ -96,7 +96,8 @@ Multistep stays in `job.model.js`; each step is a child job that goes through th
 2. `orchestrator.dispatch`: with an approval and not yet approved, the gate writes the
    `APPROVE` line, sets status `approve` and stops. `Job.approve` → `Job.continue` writes
    the extravars it continues with back to the row, then dispatches again with `approved`.
-3. `resolveRunner` picks the runner (preview: `rte` when `RTE_URL` is set, else `local`).
+3. `resolveRunner` picks the runner: the form's `runner: <name>` (a row of the `runners` table),
+   else the runner marked default, else `local`. The choice is stored in `jobs.runner`.
 4. **local**: `runAnsibleJob(jobId)` in the app process.
    **rte**: the app writes `ok: [Running on RTE <url>]`, posts the job id, and polls the row
    once a second until the status is final. The RTE claims the job
@@ -144,8 +145,6 @@ versioned on its own.
 | `AF_ROLE` | both | `app` (default) or `rte` |
 | `RTE_TOKEN` | both | the shared bearer token (at least 16 characters); the RTE refuses to start without it |
 | `RTE_ID` | RTE | its name in `jobs.host`; default `rte-<hostname>` |
-| `RTE_URL` | app | **preview**: when set, every playbook job runs on this RTE |
-| `RTE_IGNORE_CERTS` | app | **preview**: `1` accepts a self-signed RTE certificate |
 | `DB_*`, `ENCRYPTION_SECRET` | RTE | the app's own values - the RTE resolves credentials with them |
 | `PORT`, `HTTPS`, `HTTPS_CERT`, `HTTPS_KEY` | RTE | as for the app |
 
@@ -155,18 +154,23 @@ purpose: they describe the process, not a setting.
 ## Running it
 
 **On a dev machine:** `npm run dev` (in the repository root) starts the client, the app and
-an RTE next to it (`rte-dev` on port 8010), and points the app at that RTE - every playbook
-job runs there. Both use `server/.env.development`, so they share the database and the
-folders (playbooks, SSH key). `npm run dev:local` is the old setup, without an RTE.
+an RTE next to it (`rte-dev` on port 8010). Both use `server/.env.development`, so they
+share the database and the folders (playbooks, SSH key). Then, once:
+
+1. Connections > Runners > add: name `rte-dev`, type RTE, uri `http://127.0.0.1:8010`,
+   token `dev-rte-token-not-a-secret` (the token in the `dev:rte` script; a dev machine only).
+   Test connection shows its version and ansible.
+2. On a form: `runner: rte-dev`. Or tick *Default* on the runner for every playbook form.
+
+A job's output starts with `ok: [Running on RTE rte-dev (http://127.0.0.1:8010)]` when the
+RTE ran it. More RTEs: `RTE_ID=rte-network PORT=8011 npm run dev:rte` in another terminal,
+and another row on the page.
 
 | Script (root) | Starts |
 |---|---|
-| `npm run dev` | client + app (with `RTE_URL=http://127.0.0.1:8010`) + RTE on 8010 |
-| `npm run dev:local` | client + app, playbooks run in the app |
+| `npm run dev` | client + app + RTE `rte-dev` on 8010 |
+| `npm run dev:local` | client + app only |
 | `npm run dev:rte` | the RTE alone |
-
-The dev token in these scripts (`dev-rte-token-not-a-secret`) is for a dev machine only.
-A job's output starts with `ok: [Running on RTE http://127.0.0.1:8010]` when the RTE ran it.
 
 **As a container:**
 
@@ -189,21 +193,33 @@ Customers make it their own by forking `Dockerfile.rte` and adding
 |---|---|
 | (a) Abort through the database; `ansible-playbook` without a shell, in its own process group | merged (#578) |
 | (b) `ansible-core.js`, runner interface, orchestrator | this branch, PR to follow |
-| RTE preview: role, API, adapter, `Dockerfile.rte` | this branch, **not for merge** |
+| The RTE: role, API, adapter, `Dockerfile.rte`; `runners` table, Runners page, form property `runner:`, default runner | this branch, being tested |
 | (d) SSH key and known_hosts in the database; the `.joblogs` file stored on the job | planned - until then an RTE container needs the app's `.ssh` mounted |
-| (c) `runners` table and Runners page, form property `runner:` (with `awx:` as alias), AWX tracking that survives an app restart | planned - replaces `RTE_URL` / `RTE_IGNORE_CERTS` |
+| (c') AWX behind the Runners page too (`awx:` as alias of `runner:`), AWX tracking that survives an app restart | planned |
 | (e) The RTE for real: own clone of the playbooks repository, uploads check, version and `ENCRYPTION_SECRET` check on connect, image published as `ansibleforms-rte` | planned |
 | Semaphore, Rundeck adapters; a worker container (scheduler, tracking) so the app can run replicas | later |
 
-### Known limits of the preview
+### Known limits today
 
-- One RTE, chosen by `RTE_URL`; every playbook job goes there.
 - The RTE uses its own disk for playbooks, repositories, the SSH key and uploads: mount the
   app's folders, or run it on the same machine.
 - A different `ENCRYPTION_SECRET` on the RTE is not detected yet: credentials would decrypt
   to garbage (aes-256-ctr has no integrity check). Use the app's value.
 - A multistep job whose app restarts mid-run is abandoned (the step loop lives in the app);
   a step already handed to an RTE still finishes.
+
+## Security
+
+- Only the app talks to an RTE: every call carries `Authorization: Bearer <RTE_TOKEN>`,
+  anything else is 401. The token is stored encrypted on the runner row. The RTE has no
+  users, no login and no web pages; `HTTPS=1` works as for the app. Keep it off the public
+  network.
+- Even with the token the API can only start a job that already exists and is `running`,
+  report its status, cancel it, and answer health. It cannot create jobs, read credentials
+  or return output. Secrets never travel over the API.
+- The RTE holds the database password and `ENCRYPTION_SECRET`: it is as trusted as the app.
+  Treat its container the same way. Every RTE has its own token and `RTE_ID`, so one cannot
+  cancel or clean up another's jobs.
 
 ## Tests
 

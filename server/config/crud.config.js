@@ -66,6 +66,25 @@ const crudConfigs = {
     allowCache: true,
     cacheTTL: 3600
   },
+  // Where a playbook runs : an RTE (runtime environment container). Which fields a type
+  // uses is up to its runner in src/runners.
+  runner: {
+    table: 'AnsibleForms.runners',
+    fields: [
+      { name: 'id', isKey: true },
+      { name: 'name', isNaturalKey: true, required: true },
+      { name: 'type', required: true },
+      { name: 'description' },
+      { name: 'uri', required: true },
+      { name: 'token', isEncrypted: true },
+      { name: 'ignore_certs', isBoolean: true },
+      { name: 'ca_bundle' },
+      { name: 'is_default', isBoolean: true },
+      { name: 'managed', isBoolean: true }
+    ],
+    allowCache: true,
+    cacheTTL: 3600
+  },
   // HashiCorp Vault, CyberArk, ... : where credentials read their user and password from.
   // Which fields a type uses is up to its provider in src/secrets/providers.
   secretstore: {

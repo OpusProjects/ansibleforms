@@ -58,6 +58,7 @@
         },
         "vaultCredentials": {"not":{}},
         "playbook": {"not":{}},
+        "runner": {"not":{}},
         "ansibleCredentials": {"not":{}},
         "steps": {"not":{}},
         "expression": {"not":{}},
@@ -71,6 +72,7 @@
           "enum": ["multistep"]
         },
         "playbook": {"not":{}},
+        "runner": {"not":{}},
         "vaultCredentials": {"not":{}},
         "template": {"not":{}},
         "awx": {"not":{}},
@@ -97,6 +99,7 @@
         },
         "playbook": {"not":{}},
         "playbookSubPath": {"not":{}},
+        "runner": {"not":{}},
         "template": {"not":{}},
         "awx": {"not":{}},
         "steps": {"not":{}},
@@ -371,6 +374,7 @@
                   "enum": ["awx"]
                 },
                 "playbook": {"not":{}},
+                "runner": {"not":{}},
                 "vaultCredentials": {"not":{}},
                 "ansibleCredentials": {"not":{}},
                 "steps": {"not":{}}
@@ -398,6 +402,7 @@
             }
           },
           "awx": {"type": "string"},
+          "runner": {"type": "string"},
           "abortable": {"type": "boolean"},
           "awxCredentials": {
             "type": "array",
@@ -504,6 +509,7 @@
     "abortable": {"type": "boolean"},
     "template": {"type": "string"},
     "awx": {"type": "string"},
+    "runner": {"type": "string"},
     "credentials": {
       "type": "object",
       "patternProperties": {

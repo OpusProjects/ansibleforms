@@ -2702,10 +2702,11 @@ const forbiddenFormKeys = {
     'instanceGroups',
     'expression',
   ],
-  awx: ['playbook', 'playbookSubPath', 'ansibleCredentials', 'vaultCredentials', 'steps', 'expression'],
+  awx: ['playbook', 'playbookSubPath', 'runner', 'ansibleCredentials', 'vaultCredentials', 'steps', 'expression'],
   multistep: [
     'playbook',
     'playbookSubPath',
+    'runner',
     'template',
     'awx',
     'inventory',
@@ -2725,6 +2726,7 @@ const forbiddenFormKeys = {
   subform: [
     'playbook',
     'playbookSubPath',
+    'runner',
     'template',
     'awx',
     'steps',
@@ -2799,6 +2801,7 @@ function openFormSettings() {
       type: parsed.type || 'ansible',
       description: parsed.description || '',
       playbook: parsed.playbook || '',
+      runner: parsed.runner || '',
       template: parsed.template || '',
       inventory: parsed.inventory || '',
       tags: parsed.tags || '',
@@ -2838,6 +2841,7 @@ function applyFormSettings() {
     doc.set('type', s.type);
     setDocValue(doc, 'description', s.description.trim() || undefined);
     if (formTypeAllows('playbook')) setDocValue(doc, 'playbook', s.playbook.trim() || undefined);
+    if (formTypeAllows('runner')) setDocValue(doc, 'runner', (s.runner || '').trim() || undefined);
     if (formTypeAllows('template')) setDocValue(doc, 'template', s.template.trim() || undefined);
     if (formTypeAllows('inventory')) setDocValue(doc, 'inventory', s.inventory.trim() || undefined);
     if (formTypeAllows('tags')) setDocValue(doc, 'tags', s.tags.trim() || undefined);
@@ -5646,6 +5650,15 @@ onBeforeUnmount(() => {
                 v-model="formSettings.playbook"
                 :label="t('designer.formPlaybook')"
                 icon="play"
+              />
+            </div>
+            <div class="col-md-6" v-if="formSettings.type === 'ansible'">
+              <BsInput
+                :isFloating="false"
+                v-model="formSettings.runner"
+                :label="t('designer.formRunner')"
+                :help="t('designer.formRunnerHelp')"
+                icon="rocket"
               />
             </div>
             <div class="col-md-6" v-if="formSettings.type === 'awx'">

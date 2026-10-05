@@ -479,7 +479,7 @@ const SCHEMA_MANIFEST = {
   // tables the fresh install creates, so they must exist however the database was built
   base: {
     tables: ['groups', 'users', 'tokens', 'credentials', 'ldap', 'awx', 'jobs', 'job_output',
-             'settings', 'repositories', 'schedule', 'audit', 'chat_settings', 'secret_stores'],
+             'settings', 'repositories', 'schedule', 'audit', 'chat_settings', 'secret_stores', 'runners'],
   },
   patches: {
     patchVersion4: { columns: ['ldap.groups_search_base', 'ldap.groups_attribute', 'ldap.group_class',
@@ -510,9 +510,8 @@ const SCHEMA_MANIFEST = {
                                'chat_settings.request_user', 'chat_settings.extra_headers',
                                'chat_settings.ignore_certs'],
                      indexes: ['jobs.idx_jobs_retention'] },
-    patchVersion7: { tables: ['secret_stores'],
-                     columns: ['credentials.secret_store', 'credentials.secret_ref', 'settings.vault_env_imported_at',
-                               'schedule.owner'] },
+    patchVersion7: { tables: ['secret_stores', 'runners'],
+                     columns: ['schedule.owner', 'credentials.secret_store', 'credentials.secret_ref', 'settings.vault_env_imported_at', 'jobs.runner'] },
   },
 };
 
@@ -803,6 +802,11 @@ async function patchVersion7(messages, success, failed) {
   await checkPromise(addColumn("settings", "vault_env_imported_at", "datetime", true, "NULL"), messages, success, failed);
   // the user a planned job ("Run later" with allowPlannedJobs) runs as - see Schedule.plan
   await checkPromise(addColumn("schedule", "owner", "longtext", true, "NULL"), messages, success, failed);
+
+  // 7.2 : runners (where a playbook runs : an RTE) and the runner a job ran on
+  const runners = fs.readFileSync(`${__dirname}/../db/create_runners_table.sql`);
+  await checkPromise(addTable("runners", runners.toString()), messages, success, failed);
+  await checkPromise(addColumn("jobs", "runner", "varchar(250)", true, "NULL"), messages, success, failed);
 }
 
 // Idempotent by its WHERE clause : a row is copied once, and never over a store chosen since

@@ -12,6 +12,7 @@
     { "name": "group", "description": "Group management" },
     { "name": "settings", "description": "Application settings and configuration" },
     { "name": "secretstore", "description": "Secret stores (HashiCorp Vault, ...) that credentials read from" },
+    { "name": "runner", "description": "Runners : where a playbook runs (an RTE container)" },
     { "name": "config", "description": "Form configuration (config.yaml) and designer support" },
     { "name": "ssh", "description": "SSH key management" },
     { "name": "log", "description": "Application log access and download" },
@@ -1204,6 +1205,56 @@
           },
           "401": { "description": "Unauthorized" }
         }
+      }
+    },
+    "/runner": {
+      "get": {
+        "security": [ { "bearerAuth": [] } ],
+        "tags": ["runner"],
+        "summary": "List runners, or one by name (token masked)", "parameters": [ { "name": "name", "in": "query", "required": false, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Runner list or single runner" } }
+      },
+      "post": {
+        "security": [ { "bearerAuth": [] } ],
+        "tags": ["runner"],
+        "summary": "Create a runner", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Runner" } } } },
+        "responses": { "201": { "description": "Runner created" }, "400": { "description": "Unknown type or invalid field" } }
+      }
+    },
+    "/runner/types": {
+      "get": {
+        "security": [ { "bearerAuth": [] } ],
+        "tags": ["runner"],
+        "summary": "The runner types and what each can run",
+        "responses": { "200": { "description": "Type list" } }
+      }
+    },
+    "/runner/{id}": {
+      "get": {
+        "security": [ { "bearerAuth": [] } ],
+        "tags": ["runner"],
+        "summary": "Get a runner by ID (token masked)", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Runner" }, "404": { "description": "Not found" } }
+      },
+      "put": {
+        "security": [ { "bearerAuth": [] } ],
+        "tags": ["runner"],
+        "summary": "Update a runner by ID; a masked token is left unchanged", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Runner" } } } },
+        "responses": { "200": { "description": "Runner updated" }, "404": { "description": "Not found" } }
+      },
+      "delete": {
+        "security": [ { "bearerAuth": [] } ],
+        "tags": ["runner"],
+        "summary": "Delete a runner by ID", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Runner deleted" }, "404": { "description": "Not found" } }
+      }
+    },
+    "/runner/{id}/check": {
+      "post": {
+        "security": [ { "bearerAuth": [] } ],
+        "tags": ["runner"],
+        "summary": "Test the connection to a runner", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Connection OK, with the runner health" }, "400": { "description": "Unreachable, refused, or a different release" } }
       }
     },
     "/secretstore": {
@@ -2540,6 +2591,21 @@
       }
     },
     "schemas": {
+      "Runner": {
+        "type": "object",
+        "description": "Where a playbook runs. type rte : a runtime environment container started with AF_ROLE=rte.",
+        "required": ["name", "type", "uri"],
+        "properties": {
+          "name": { "type": "string", "example": "rte-vmware" },
+          "type": { "type": "string", "enum": ["rte"] },
+          "description": { "type": "string" },
+          "uri": { "type": "string", "example": "https://rte-vmware:8000" },
+          "token": { "type": "string", "description": "The RTE's RTE_TOKEN" },
+          "ignore_certs": { "type": "boolean" },
+          "ca_bundle": { "type": "string" },
+          "is_default": { "type": "boolean", "description": "Used by playbook forms that name no runner" }
+        }
+      },
       "SecretStore": {
         "type": "object",
         "description": "A secret store. Which fields are used depends on the type.",

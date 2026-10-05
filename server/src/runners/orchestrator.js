@@ -2,10 +2,12 @@
 // then the runner. Notifications and the multistep sequence stay in job.model.js.
 import moment from "moment";
 import logger from "../lib/logger.js";
+import Errors from "../lib/errors.js";
+import mysql from "../models/db.model.js";
 import Job from "../models/job.model.js";
+import Runner from "../models/runner.model.js";
 import { getRunner } from "./index.js";
 import { lastOrder } from "./ansible-core.js";
-import { rteConfigured } from "./rte.js";
 
 function getTimestamp() {
   return moment.utc(Date.now()).format("YYYY-MM-DD HH:mm:ss");
@@ -41,13 +43,25 @@ export async function approvalGate({ jobId, jobType, extravars, approval }) {
 }
 
 /**
- * The runner for a job ; a form cannot choose one yet, so this follows the form type.
- * PREVIEW : with RTE_URL set, every playbook job runs on that RTE.
+ * Where a job runs. A playbook form names a runner with `runner: <name>` (extravar
+ * __runner__) ; without one, the default runner ; without that, the app itself. An AWX
+ * form runs on AWX.
+ * Returns { impl, row } : the runner implementation and, for a configured one, its row.
  */
-export function resolveRunner({ jobType }) {
-  if (jobType === "ansible") return getRunner(rteConfigured() ? "rte" : "local");
-  if (jobType === "awx") return getRunner("awx");
-  throw new Error(`No runner for jobs of type '${jobType}'`);
+export async function resolveRunner({ jobType, extravars }) {
+  if (jobType === "awx") return { impl: getRunner("awx"), row: null };
+  if (jobType !== "ansible") throw new Errors.BadRequestError(`No runner for jobs of type '${jobType}'`);
+  const name = extravars?.__runner__;
+  if (name) {
+    const row = await Runner.findByName(name);
+    if (!row) throw new Errors.NotFoundError(`No runner named '${name}' - add it under Connections > Runners`);
+    const impl = getRunner(row.type);
+    if (!impl.capabilities.playbook) throw new Errors.BadRequestError(`Runner '${name}' (${row.type}) cannot run a playbook`);
+    return { impl, row };
+  }
+  const row = await Runner.findDefault();
+  if (row) return { impl: getRunner(row.type), row };
+  return { impl: getRunner("local"), row: null };
 }
 
 /**
@@ -59,6 +73,14 @@ export async function dispatch({ jobId, jobType, extravars, credentialMap, appro
     return approvalGate({ jobId, jobType, extravars, approval });
   }
   if (approval) logger.notice(`Continuing ${jobType} job ${jobId}, it has been approved`);
-  const runner = resolveRunner({ jobType });
-  return runner.launch({ jobId, jobType, extravars, credentialMap });
+  let runner;
+  try {
+    runner = await resolveRunner({ jobType, extravars });
+  } catch (err) {
+    await Job.endJobStatus(jobId, (await lastOrder(jobId)) + 1, "stderr", "failed", `[ERROR]: ${err.message}`);
+    return false;
+  }
+  // remembered on the job : an abort knows where to send the cancel
+  await mysql.do("UPDATE AnsibleForms.`jobs` SET runner=? WHERE id=?", [runner.row?.name || null, jobId]);
+  return runner.impl.launch({ jobId, jobType, extravars, credentialMap, runner: runner.row });
 }

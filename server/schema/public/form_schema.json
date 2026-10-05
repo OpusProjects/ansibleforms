@@ -123,6 +123,9 @@
             "playbook": {
               "not": {}
             },
+            "runner": {
+              "not": {}
+            },
             "ansibleCredentials": {
               "not": {}
             },
@@ -149,6 +152,9 @@
               ]
             },
             "playbook": {
+              "not": {}
+            },
+            "runner": {
               "not": {}
             },
             "vaultCredentials": {
@@ -216,6 +222,9 @@
               "not": {}
             },
             "playbookSubPath": {
+              "not": {}
+            },
+            "runner": {
               "not": {}
             },
             "template": {
@@ -1331,6 +1340,9 @@
                   "playbook": {
                     "not": {}
                   },
+                  "runner": {
+                    "not": {}
+                  },
                   "vaultCredentials": {
                     "not": {}
                   },
@@ -1380,6 +1392,9 @@
                 }
               },
               "awx": {
+                "type": "string"
+              },
+              "runner": {
                 "type": "string"
               },
               "abortable": {
@@ -1569,6 +1584,9 @@
           "type": "string"
         },
         "awx": {
+          "type": "string"
+        },
+        "runner": {
           "type": "string"
         },
         "credentials": {
@@ -4325,6 +4343,9 @@
               "playbook": {
                 "not": {}
               },
+              "runner": {
+                "not": {}
+              },
               "ansibleCredentials": {
                 "not": {}
               },
@@ -4351,6 +4372,9 @@
                 ]
               },
               "playbook": {
+                "not": {}
+              },
+              "runner": {
                 "not": {}
               },
               "vaultCredentials": {
@@ -4418,6 +4442,9 @@
                 "not": {}
               },
               "playbookSubPath": {
+                "not": {}
+              },
+              "runner": {
                 "not": {}
               },
               "template": {
@@ -5533,6 +5560,9 @@
                     "playbook": {
                       "not": {}
                     },
+                    "runner": {
+                      "not": {}
+                    },
                     "vaultCredentials": {
                       "not": {}
                     },
@@ -5582,6 +5612,9 @@
                   }
                 },
                 "awx": {
+                  "type": "string"
+                },
+                "runner": {
                   "type": "string"
                 },
                 "abortable": {
@@ -5771,6 +5804,9 @@
             "type": "string"
           },
           "awx": {
+            "type": "string"
+          },
+          "runner": {
             "type": "string"
           },
           "credentials": {

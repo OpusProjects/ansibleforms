@@ -36,6 +36,7 @@ const storedJobs = () => import('@/pages/admin/stored-jobs.vue');
 const settings = () => import('@/pages/admin/settings.vue');
 const status = () => import('@/pages/admin/status.vue');
 const secretStores = () => import('@/pages/admin/secretStores.vue');
+const runners = () => import('@/pages/admin/runners.vue');
 const audit = () => import('@/pages/admin/audit.vue');
 const categories = () => import('@/pages/admin/categories.vue');
 const roles = () => import('@/pages/admin/roles.vue');
@@ -155,6 +156,8 @@ const routes = [
   { path: '/admin/status', name: '/admin/status', component: status, beforeEnter: checkSettings },
   // /api/v2/secretstore is behind checkSettingsMiddleware, so the guard matches
   { path: '/admin/secretStores', name: '/admin/secretStores', component: secretStores, beforeEnter: checkSettings },
+  // /api/v2/runner is behind checkSettingsMiddleware, so the guard matches
+  { path: '/admin/runners', name: '/admin/runners', component: runners, beforeEnter: checkSettings },
   // GET /api/v2/audit is mounted behind checkSettingsMiddleware, so the guard matches
   { path: '/admin/audit', name: '/admin/audit', component: audit, beforeEnter: checkSettings },
 ];
