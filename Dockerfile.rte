@@ -7,8 +7,9 @@
 #   RUN /venv/bin/pip install pyvmomi
 # and build it : docker build -f Dockerfile.rte -t my-rte .
 #
-# The base is pinned by digest, the same pin as Dockerfile (keep the two equal).
-FROM ansibleguy/ansibleforms-base:latest@sha256:8a1ea5dd0a80be59ce78b4520893e0d42dc0d1231c0af02064a48bce5aad4b23 AS builder
+# The base is pinned by digest, the same pin as Dockerfile : keep the two equal (Dependabot
+# moves both in one pull request).
+FROM ghcr.io/ansibleforms/base-server:latest@sha256:e7b859d2c855c0ca9841d7cba68aaeefabf570347482fc8f756fac89454e3406 AS builder
 
 ARG GIT_SHA=unknown
 ARG BUILD_TIME=unknown
@@ -18,12 +19,12 @@ WORKDIR /app/server
 COPY ./server/package*.json ./
 RUN npm ci --omit=dev
 COPY ./server .
-COPY ./generate-build-info.sh /tmp/generate-build-info.sh
+COPY ./scripts/generate-build-info.sh /tmp/generate-build-info.sh
 RUN chmod +x /tmp/generate-build-info.sh && /tmp/generate-build-info.sh . "$GIT_SHA" "$BUILD_TIME" "$VERSION"
 # no web interface in an RTE
 RUN rm -f .env.* && rm -rf ./views
 
-FROM ansibleguy/ansibleforms-base:latest@sha256:8a1ea5dd0a80be59ce78b4520893e0d42dc0d1231c0af02064a48bce5aad4b23 AS final
+FROM ghcr.io/ansibleforms/base-server:latest@sha256:e7b859d2c855c0ca9841d7cba68aaeefabf570347482fc8f756fac89454e3406 AS final
 
 ARG VERSION=
 LABEL org.opencontainers.image.source="https://github.com/ansibleforms/ansibleforms" \
