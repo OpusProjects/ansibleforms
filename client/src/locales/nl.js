@@ -640,7 +640,7 @@ export default {
       nameHelp: "Een formulier verwijst met deze naam naar de runner : runner: <naam>.",
       type: "Type",
       isDefault: "Standaard",
-      isDefaultHelp: "De standaard van zijn type : playbook-formulieren zonder runner draaien op de standaard RTE, template-formulieren op de standaard AWX. Zonder standaard faalt zo'n job.",
+      isDefaultHelp: "De standaard van zijn type : playbook-formulieren zonder runner draaien op de standaard RTE, template-formulieren op de standaard AWX. Zonder standaard faalt zo'n job. De eerste runner van een type wordt automatisch de standaard.",
       uriHelp: "RTE : waar hij luistert, bv. https://rte-vmware:8000. AWX : zijn adres, bv. https://aap.example.com.",
       tokenHelp: "RTE : zijn RTE_TOKEN. AWX : een API-token, of vink Credentials gebruiken aan.",
       useCredentials: "Credentials gebruiken",

@@ -23,8 +23,8 @@ vi.mock("../src/models/db.model.js", () => ({
   default: { do: async (sql, vars) => { queries.push(sql); return await dbHandler(sql, vars); } },
 }));
 let storeState = { stores: [], info: null, error: null };
-let runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000" }], error: null };
-  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000" }], error: null };
+let runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000", is_default: 1 }], error: null };
+  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000", is_default: 1 }], error: null };
 let ldapRow = null;
 // a fully patched schema by default, matching the mocked manifest above
 let schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
@@ -109,7 +109,7 @@ beforeEach(async () => {
   await fs.mkdir(appConfig.repoPath, { recursive: true });
   await fs.mkdir(appConfig.backupPath, { recursive: true });
   storeState = { stores: [], info: null, error: null };
-  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000" }], error: null };
+  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000", is_default: 1 }], error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {
@@ -232,7 +232,7 @@ describe("health reports problems, not just ok", () => {
 
   test("a failed repository is an error and healthy ones are counted", async () => {
     storeState = { stores: [], info: null, error: null };
-  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000" }], error: null };
+  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000", is_default: 1 }], error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {
@@ -313,7 +313,7 @@ describe("health reports problems, not just ok", () => {
 
   test("a database failure becomes that row's error, not a broken page", async () => {
     storeState = { stores: [], info: null, error: null };
-  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000" }], error: null };
+  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000", is_default: 1 }], error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {
@@ -332,6 +332,13 @@ describe("health reports problems, not just ok", () => {
     const r = await Health.check();
     assert.equal(statusOf(r, "runners"), "warning");
     assert.match(checkOf(r, "runners").detail.reason, /Connections > Runners/);
+  });
+
+  test("runners : no default RTE is a warning, playbook forms without runner: would fail", async () => {
+    runnerState = { runners: [{ name: "rte-1", type: "rte" }, { name: "aap", type: "awx", is_default: 1 }], error: null };
+    const r = await Health.check();
+    assert.equal(statusOf(r, "runners"), "warning");
+    assert.equal(checkOf(r, "runners").value, "no default RTE");
   });
 
   test("runners : an unreachable one is an error naming it", async () => {
@@ -506,7 +513,7 @@ describe("health reports problems, not just ok", () => {
 describe("the database check names the engine, not just a version number", () => {
   test("MySQL is identified from @@version_comment", async () => {
     storeState = { stores: [], info: null, error: null };
-  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000" }], error: null };
+  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000", is_default: 1 }], error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {
@@ -522,7 +529,7 @@ describe("the database check names the engine, not just a version number", () =>
 
   test("MariaDB is identified, and the suffix is not repeated", async () => {
     storeState = { stores: [], info: null, error: null };
-  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000" }], error: null };
+  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000", is_default: 1 }], error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {
@@ -579,7 +586,7 @@ describe("the checks added after the first release round", () => {
 
   test("a job stuck in running is a warning", async () => {
     storeState = { stores: [], info: null, error: null };
-  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000" }], error: null };
+  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000", is_default: 1 }], error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {

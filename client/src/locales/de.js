@@ -647,7 +647,7 @@ export default {
       nameHelp: "Ein Formular verweist mit diesem Namen auf den Runner : runner: <Name>.",
       type: "Typ",
       isDefault: "Standard",
-      isDefaultHelp: "Der Standard seines Typs : Playbook-Formulare ohne Runner laufen auf dem Standard-RTE, Template-Formulare auf dem Standard-AWX. Ohne Standard schlägt ein solcher Job fehl.",
+      isDefaultHelp: "Der Standard seines Typs : Playbook-Formulare ohne Runner laufen auf dem Standard-RTE, Template-Formulare auf dem Standard-AWX. Ohne Standard schlägt ein solcher Job fehl. Der erste Runner eines Typs wird automatisch zum Standard.",
       uriHelp: "RTE : wo er lauscht, z.B. https://rte-vmware:8000. AWX : seine Adresse, z.B. https://aap.example.com.",
       tokenHelp: "RTE : sein RTE_TOKEN. AWX : ein API-Token, oder Anmeldedaten verwenden ankreuzen.",
       useCredentials: "Anmeldedaten verwenden",

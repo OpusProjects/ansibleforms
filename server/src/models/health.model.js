@@ -481,6 +481,13 @@ async function runnersCheck() {
       ? failing[0].value
       : `${failing.length} of ${results.length} runner(s) need attention : ${failing.map((r) => r.name).join(', ')}`;
   const reason = failing.length === 1 ? failing[0].reason : undefined;
+  // a playbook form that names no runner runs on the default RTE : without one it fails
+  if (worst === OK && !runners.some((r) => r.type === 'rte' && r.is_default)) {
+    return check('runners', WARNING, 'no default RTE', {
+      reason: 'Playbook forms that name no runner fail : mark an RTE as default under Connections > Runners',
+      runners: results,
+    });
+  }
   return check('runners', worst, value, { ...(reason ? { reason } : {}), runners: results });
 }
 

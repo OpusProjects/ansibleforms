@@ -89,6 +89,26 @@ describe("one default per type", () => {
   });
 });
 
+describe("the first runner of a type is its default", () => {
+  test("added without the tick, it becomes the default when its type has none", async () => {
+    rows = rows.filter((r) => r.type !== "rte");
+    await Runner.create({ name: "rte-new", type: "rte", uri: "http://n", token: "t" });
+    assert.equal(rows.find((r) => r.name === "rte-new").is_default, 1);
+  });
+
+  test("not when its type already has a default", async () => {
+    await Runner.create({ name: "rte-2", type: "rte", uri: "http://n", token: "t" });
+    assert.ok(!rows.find((r) => r.name === "rte-2").is_default);
+    assert.equal(rows.find((r) => r.name === "rte-1").is_default, 1);
+  });
+
+  test("not for the seed, which declares the flag itself", async () => {
+    rows = rows.filter((r) => r.type !== "rte");
+    await Runner.create({ name: "rte-seed", type: "rte", uri: "http://n", token: "t" }, { fromSeed: true });
+    assert.ok(!rows.find((r) => r.name === "rte-seed").is_default);
+  });
+});
+
 describe("masked secrets", () => {
   test("the mask sent back means unchanged, for the token and the password", async () => {
     rows[1].use_credentials = 1;

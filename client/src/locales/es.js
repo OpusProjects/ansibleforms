@@ -639,7 +639,7 @@ export default {
       nameHelp: "Un formulario se refiere al runner con este nombre : runner: <nombre>.",
       type: "Tipo",
       isDefault: "Predeterminado",
-      isDefaultHelp: "El predeterminado de su tipo : los formularios de playbook sin runner se ejecutan en el RTE predeterminado, los de plantilla en el AWX predeterminado. Sin predeterminado, ese job falla.",
+      isDefaultHelp: "El predeterminado de su tipo : los formularios de playbook sin runner se ejecutan en el RTE predeterminado, los de plantilla en el AWX predeterminado. Sin predeterminado, ese job falla. El primer runner de un tipo se convierte en su predeterminado.",
       uriHelp: "RTE : dónde escucha, ej. https://rte-vmware:8000. AWX : su dirección, ej. https://aap.example.com.",
       tokenHelp: "RTE : su RTE_TOKEN. AWX : un token de API, o marque Usar credenciales.",
       useCredentials: "Usar credenciales",

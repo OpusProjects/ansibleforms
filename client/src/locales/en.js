@@ -638,7 +638,7 @@ export default {
       nameHelp: "A form refers to the runner by this name : runner: <name>.",
       type: "Type",
       isDefault: "Default",
-      isDefaultHelp: "The default of its type : playbook forms that name no runner run on the default RTE, template forms on the default AWX. Without a default such a job fails.",
+      isDefaultHelp: "The default of its type : playbook forms that name no runner run on the default RTE, template forms on the default AWX. Without a default such a job fails. The first runner of a type becomes its default.",
       uriHelp: "RTE : where it listens, e.g. https://rte-vmware:8000. AWX : its address, e.g. https://aap.example.com.",
       tokenHelp: "RTE : its RTE_TOKEN. AWX : an API token, or tick Use credentials.",
       useCredentials: "Use credentials",

@@ -647,7 +647,7 @@ export default {
       nameHelp: "Un formulaire désigne le runner par ce nom : runner: <nom>.",
       type: "Type",
       isDefault: "Par défaut",
-      isDefaultHelp: "Le défaut de son type : les formulaires playbook sans runner s'exécutent sur le RTE par défaut, les formulaires template sur l'AWX par défaut. Sans défaut, un tel job échoue.",
+      isDefaultHelp: "Le défaut de son type : les formulaires playbook sans runner s'exécutent sur le RTE par défaut, les formulaires template sur l'AWX par défaut. Sans défaut, un tel job échoue. Le premier runner d'un type devient son défaut.",
       uriHelp: "RTE : où il écoute, ex. https://rte-vmware:8000. AWX : son adresse, ex. https://aap.example.com.",
       tokenHelp: "RTE : son RTE_TOKEN. AWX : un jeton API, ou cochez Utiliser des identifiants.",
       useCredentials: "Utiliser des identifiants",

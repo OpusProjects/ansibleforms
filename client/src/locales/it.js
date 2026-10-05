@@ -642,7 +642,7 @@ export default {
       nameHelp: "Un modulo si riferisce al runner con questo nome : runner: <nome>.",
       type: "Tipo",
       isDefault: "Predefinito",
-      isDefaultHelp: "Il predefinito del suo tipo : i moduli playbook senza runner girano sull'RTE predefinito, i moduli template sull'AWX predefinito. Senza predefinito un tale job fallisce.",
+      isDefaultHelp: "Il predefinito del suo tipo : i moduli playbook senza runner girano sull'RTE predefinito, i moduli template sull'AWX predefinito. Senza predefinito un tale job fallisce. Il primo runner di un tipo diventa il suo predefinito.",
       uriHelp: "RTE : dove ascolta, es. https://rte-vmware:8000. AWX : il suo indirizzo, es. https://aap.example.com.",
       tokenHelp: "RTE : il suo RTE_TOKEN. AWX : un token API, oppure seleziona Usa credenziali.",
       useCredentials: "Usa credenziali",

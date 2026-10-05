@@ -63,6 +63,12 @@ class Runner extends CrudModel {
     CrudModel.assertRequired(this.modelName, data);
     data = this.normalize(data);
     this.assertComplete(data);
+    // The first runner of a type is its default : forms that name no runner need one, and
+    // nobody should have to remember the tick. Not for the seed, which declares the flag
+    // itself - setting it here would flip it back on every start.
+    if (!data.is_default && !opts.fromSeed && !(await this.findDefault(data.type))) {
+      data.is_default = 1;
+    }
     await this.assertDefaultAllowed(data, data.type, opts);
     const insertId = await super.create(this.modelName, data, opts);
     if (data.is_default && insertId) await this.clearOtherDefaults(insertId, data.type, opts);
