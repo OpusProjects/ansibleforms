@@ -30,6 +30,16 @@ export function parseNumberFilter(raw) {
   }[op[1] || '='];
 }
 
+// The plain text of render() HTML, for filtering, sorting, tooltips and export. A tag-stripping
+// regex is not enough : "<scr<script>ipt>" leaves "<script>" behind. DOMParser builds an inert
+// document - no script runs, no image loads - and textContent is text, never markup, so callers
+// must keep using it as text (a binding or a CSV cell, never v-html).
+export function htmlToText(html) {
+  const s = String(html ?? '');
+  if (!/[<&]/.test(s)) return s;
+  return new DOMParser().parseFromString(s, 'text/html').body.textContent || '';
+}
+
 const HTML_ENTITIES = { '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#x27;': "'", '&#39;': "'" };
 export function csvCell(text) {
   let v = String(text ?? '').replace(/&(amp|lt|gt|quot|#x27|#39);/g, (m) => HTML_ENTITIES[m]);
