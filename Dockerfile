@@ -1,19 +1,20 @@
-# The base image is pinned by DIGEST, not by :latest. A rebuild of the base (the Base
-# image workflow) moves :latest, and without the pin that would silently change what every
-# application build starts from - with no commit here to show for it. Updating the pin
-# is a deliberate, reviewable act : Dependabot proposes it as a pull request.
+# The base image, base-server, is built in ansibleforms/base-images and pinned here by
+# DIGEST, not by :latest. A rebuild of the base moves :latest, and without the pin that would
+# silently change what every application build starts from - with no commit here to show
+# for it. Updating the pin is a deliberate, reviewable act : Dependabot proposes it as a
+# pull request.
 #
-#   docker pull ghcr.io/ansibleforms/ansibleforms-base:latest
-#   docker inspect --format='{{index .RepoDigests 0}}' ghcr.io/ansibleforms/ansibleforms-base:latest
+#   docker pull ghcr.io/ansibleforms/base-server:latest
+#   docker inspect --format='{{index .RepoDigests 0}}' ghcr.io/ansibleforms/base-server:latest
 #
-FROM ghcr.io/ansibleforms/ansibleforms-base:latest@sha256:f8f39504d26ff4fd954c201f77d89dc347c6ae85e490fe196abaa74523281f7d AS nodebase
+FROM ghcr.io/ansibleforms/base-server:latest@sha256:1525de71c23031acfae90cec3bae5ded9341c4c61c04f2a0453b577aec05a3ac AS nodebase
 
 ##################################################
 # builder stage
 # intermediate build to compile the client application with vite
 # can run in parallel with base stage
 
-FROM ghcr.io/ansibleforms/ansibleforms-base:latest@sha256:f8f39504d26ff4fd954c201f77d89dc347c6ae85e490fe196abaa74523281f7d AS tmp_builder
+FROM ghcr.io/ansibleforms/base-server:latest@sha256:1525de71c23031acfae90cec3bae5ded9341c4c61c04f2a0453b577aec05a3ac AS tmp_builder
 
 # Build arguments for git SHA, build time and version. VERSION is empty for a local build,
 # which leaves server/package.json as the version shown ; CI passes the release or
