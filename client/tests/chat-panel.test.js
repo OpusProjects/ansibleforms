@@ -11,16 +11,16 @@ const app = readFileSync(path.join(here, '../src/App.vue'), 'utf8');
 
 describe('the chat panel', () => {
   it('shows only for a logged-in user, with the chat enabled on the server, and allowChat not off', () => {
-    expect(src).toMatch(/const visible = computed\(\(\) => store\.authenticated && store\.chatEnabled && store\.profile\?\.options\?\.allowChat !== false && !NO_CHAT_ROUTES\.has\(route\.name\)\)/);
+    expect(src).toMatch(/const visible = computed\(\s*\(\) =>\s*store\.authenticated &&\s*store\.chatEnabled &&\s*store\.profile\?\.options\?\.allowChat !== false &&\s*!NO_CHAT_ROUTES\.has\(route\.name\),?\s*\)/);
     // an expired session lands on the login page with store.authenticated still true
     expect(src).toMatch(/NO_CHAT_ROUTES = new Set\(\['\/login', '\/logout', '\/error', '\/schema'\]\)/);
-    expect(src).toMatch(/watch\(visible, \(shown\) => \{\n {4}if \(shown\) return;\n {4}open\.value = false;/);
+    expect(src).toMatch(/watch\(visible, \(shown\) => \{\n +if \(shown\) return;\n +open\.value = false;/);
     expect(src).toMatch(/<template v-if="visible">/);
     expect(app).toMatch(/<AppChat \/>/);
   });
 
   it('approves with the plan id only - never a payload the page could have changed', () => {
-    expect(src).toContain("axios.post('/api/v2/chat/approve', { sessionId, planId: proposal.planId }, TokenStorage.getAuthentication())");
+    expect(src).toMatch(/axios\.post\(\s*'\/api\/v2\/chat\/approve',\s*\{ sessionId, planId: proposal\.planId \},\s*TokenStorage\.getAuthentication\(\),?\s*\)/);
     expect(src).not.toMatch(/approve[^\n]*extravars/);
   });
 
@@ -33,7 +33,7 @@ describe('the chat panel', () => {
 
   it('goes away once the chat is switched off, without a page reload', () => {
     expect(src).toMatch(/if \(!res\.data\?\.enabled\) store\.chatEnabled = false;/);
-    expect(src).toMatch(/if \(switchedOff\(err\)\) \{ store\.chatEnabled = false; return; \}/);
+    expect(src).toMatch(/if \(switchedOff\(err\)\) \{\s*store\.chatEnabled = false;\s*return;\s*\}/);
   });
 
   it('names a few of the user\'s own chat forms in the welcome, from the server', () => {

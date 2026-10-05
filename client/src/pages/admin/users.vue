@@ -1,6 +1,6 @@
 <script setup>
-import getSettings from "@/config/settings";
-import Profile from "@/lib/Profile";
+import getSettings from '@/config/settings';
+import Profile from '@/lib/Profile';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();

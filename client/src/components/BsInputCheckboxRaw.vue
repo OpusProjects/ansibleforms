@@ -1,64 +1,72 @@
 <script setup>
+/******************************************************************/
+/*                                                                */
+/*  Bootstrap Input Checkbox component                            */
+/*                                                                */
+/*  @props:                                                       */
+/*      label: String                                             */
+/*      readonly: Boolean                                         */
+/*      style: String                                             */
+/*      cssClass: String                                          */
+/*      isSwitch: Boolean                                           */
+/*      uid: String                                               */
+/*      hasError: Boolean                                         */
+/*                                                                */
+/******************************************************************/
 
-    /******************************************************************/
-    /*                                                                */
-    /*  Bootstrap Input Checkbox component                            */
-    /*                                                                */
-    /*  @props:                                                       */
-    /*      label: String                                             */
-    /*      readonly: Boolean                                         */
-    /*      style: String                                             */
-    /*      cssClass: String                                          */
-    /*      isSwitch: Boolean                                           */
-    /*      uid: String                                               */
-    /*      hasError: Boolean                                         */
-    /*                                                                */
-    /******************************************************************/
+const emit = defineEmits(['change']);
 
-    const emit = defineEmits(['change']);
+// MODEL
 
-    // MODEL
+const model = defineModel();
 
-    const model = defineModel();
+// PROPS
 
-    // PROPS
+defineProps({
+  label: {
+    type: String,
+    required: true,
+  },
+  readonly: {
+    type: Boolean,
+    default: false,
+  },
+  style: {
+    type: String,
+    default: '',
+  },
+  cssClass: {
+    type: String,
+    default: '',
+  },
+  isSwitch: {
+    type: Boolean,
+    default: true,
+  },
+  uid: {
+    type: [String, Number],
+    default: '',
+  },
+  hasError: {
+    type: Boolean,
+    default: false,
+  },
+});
 
-    defineProps({
-        label: {
-            type: String,
-            required: true,
-        },
-        readonly: {
-            type: Boolean,
-            default: false,
-        },
-        style: {
-            type: String,
-            default: "",
-        },
-        cssClass: {
-            type: String,
-            default: "",
-        },
-        isSwitch: {
-            type: Boolean,
-            default: true,
-        },
-        uid: {
-            type: [String,Number],
-            default: "",
-        },
-        hasError: {
-            type: Boolean,
-            default: false,
-        }
-    });
-
-    const change = () => {
-        emit('change',model.value);
-    };
-
+const change = () => {
+  emit('change', model.value);
+};
 </script>
 <template>
-    <BsCheckbox v-model="model" :isSwitch="isSwitch" :label="label" :readonly="readonly" @change="change" :uid="uid" :style="style" :cssClass="cssClass" :hasError="hasError" />
+  <BsCheckbox
+    v-model="model"
+    :isSwitch="isSwitch"
+    :label="label"
+    :readonly="readonly"
+    @change="change"
+    :uid="uid"
+    :style="style"
+    :cssClass="cssClass"
+    :hasError="hasError"
+  />
 </template>

@@ -7,5 +7,5 @@ export const languages = [
   { code: 'fr', label: 'Francais', flag: '🇫🇷' },
   { code: 'it', label: 'Italiano', flag: '🇮🇹' },
   { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
-  { code: 'es', label: 'Español', flag: '🇪🇸' }
+  { code: 'es', label: 'Español', flag: '🇪🇸' },
 ];

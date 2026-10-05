@@ -30,23 +30,22 @@ export const MONTH_ALPHA = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'au
 export const DOW_ALPHA = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
 export function normalizeNames(expr, field) {
-    if (expr.length < 3) return expr;
-    if (field === 'month') {
-        return MONTH_ALPHA.reduce((acc, n, i) => acc.replace(new RegExp(n, 'gi'), String(i + 1)), expr);
-    }
-    if (field === 'dow') {
-        // croner maps a trailing '-sun' to 7 first, so 'mon-sun' stays ascending
-        return DOW_ALPHA.reduce((acc, n, i) => acc.replace(new RegExp(n, 'gi'), String(i)),
-            expr.replace(/-sun/gi, '-7'));
-    }
-    return expr;
+  if (expr.length < 3) return expr;
+  if (field === 'month') {
+    return MONTH_ALPHA.reduce((acc, n, i) => acc.replace(new RegExp(n, 'gi'), String(i + 1)), expr);
+  }
+  if (field === 'dow') {
+    // croner maps a trailing '-sun' to 7 first, so 'mon-sun' stays ascending
+    return DOW_ALPHA.reduce((acc, n, i) => acc.replace(new RegExp(n, 'gi'), String(i)), expr.replace(/-sun/gi, '-7'));
+  }
+  return expr;
 }
 
 // The five scheduling fields of a 5- or 6-field expression, with month and weekday names
 // resolved so every matcher only ever sees digits.
 export function normalizeParts(all) {
-    const p = all.length === 6 ? all.slice(1) : all;
-    return [p[0], p[1], p[2], normalizeNames(p[3], 'month'), normalizeNames(p[4], 'dow')];
+  const p = all.length === 6 ? all.slice(1) : all;
+  return [p[0], p[1], p[2], normalizeNames(p[3], 'month'), normalizeNames(p[4], 'dow')];
 }
 
 // Per-field bounds, mirroring croner's CronPattern. It throws on a value outside these
@@ -54,12 +53,12 @@ export function normalizeParts(all) {
 // to value") and on a step larger than the field itself ("steps cannot be greater than
 // maximum value of part").
 export const FIELD_SPECS = {
-    second: { label: 'second', min: 0, max: 59, maxStep: 60 },
-    minute: { label: 'minute', min: 0, max: 59, maxStep: 60 },
-    hour: { label: 'hour', min: 0, max: 23, maxStep: 24 },
-    dom: { label: 'dayOfMonth', min: 1, max: 31, maxStep: 31 },
-    month: { label: 'month', min: 1, max: 12, maxStep: 12 },
-    dow: { label: 'dayOfWeek', min: 0, max: 7, maxStep: 7 },
+  second: { label: 'second', min: 0, max: 59, maxStep: 60 },
+  minute: { label: 'minute', min: 0, max: 59, maxStep: 60 },
+  hour: { label: 'hour', min: 0, max: 23, maxStep: 24 },
+  dom: { label: 'dayOfMonth', min: 1, max: 31, maxStep: 31 },
+  month: { label: 'month', min: 1, max: 12, maxStep: 12 },
+  dow: { label: 'dayOfWeek', min: 0, max: 7, maxStep: 7 },
 };
 
 export const FIELD_ORDER = ['minute', 'hour', 'dom', 'month', 'dow'];
@@ -85,50 +84,50 @@ const NEAREST_WEEKDAY = /w/i;
  * this module stays free of vue-i18n - see cronErrorMessage.
  */
 export function fieldError(expr, field) {
-    const spec = FIELD_SPECS[field];
-    for (const part of normalizeNames(expr, field).split(',')) {
-        let token = part;
-        let nth = null;
-        if (field === 'dow') {
-            // nth ('1#2') and last ('5L') weekday of the month are modifiers on the
-            // value, not part of it
-            if (token.includes('#')) {
-                // croner ignores an empty nth, so '1#' is just '1'
-                nth = token.split('#')[1] || null;
-                token = token.split('#')[0];
-            } else if (/L$/i.test(token)) {
-                nth = 'L';
-                token = token.slice(0, -1);
-            }
-            if (nth !== null && !/^(?:[1-5]|L)$/i.test(nth)) return { key: 'invalid' };
-        } else if (field === 'dom' && /L/i.test(token)) {
-            // croner strips every 'L' from the day-of-month field and matches the last day
-            // of the month in addition to whatever remains
-            token = token.replace(/L/gi, '');
-            if (token === '') continue; // 'L' on its own
-        }
-        if (token === '*') continue;
-        let range = token;
-        if (token.includes('/')) {
-            const bits = token.split('/');
-            const step = Number(bits[1]);
-            if (bits.length !== 2 || !/^\d+$/.test(bits[1]) || step < 1 || step > spec.maxStep) {
-                return { key: 'invalidStepSize', params: { field: spec.label, value: part, max: spec.maxStep } };
-            }
-            range = bits[0];
-            if (range !== '*' && !range.includes('-')) return { key: 'invalidStep' };
-        }
-        if (range === '*') continue;
-        const bounds = range.includes('-') ? range.split('-') : [range];
-        if (bounds.length > 2 || bounds.some(b => !/^\d+$/.test(b))) return { key: 'invalid' };
-        if (bounds.some(b => Number(b) < spec.min || Number(b) > spec.max)) {
-            return { key: 'invalidValue', params: { field: spec.label, value: part, min: spec.min, max: spec.max } };
-        }
-        if (bounds.length === 2 && Number(bounds[0]) > Number(bounds[1])) {
-            return { key: 'invalidRange', params: { field: spec.label, value: part } };
-        }
+  const spec = FIELD_SPECS[field];
+  for (const part of normalizeNames(expr, field).split(',')) {
+    let token = part;
+    let nth = null;
+    if (field === 'dow') {
+      // nth ('1#2') and last ('5L') weekday of the month are modifiers on the
+      // value, not part of it
+      if (token.includes('#')) {
+        // croner ignores an empty nth, so '1#' is just '1'
+        nth = token.split('#')[1] || null;
+        token = token.split('#')[0];
+      } else if (/L$/i.test(token)) {
+        nth = 'L';
+        token = token.slice(0, -1);
+      }
+      if (nth !== null && !/^(?:[1-5]|L)$/i.test(nth)) return { key: 'invalid' };
+    } else if (field === 'dom' && /L/i.test(token)) {
+      // croner strips every 'L' from the day-of-month field and matches the last day
+      // of the month in addition to whatever remains
+      token = token.replace(/L/gi, '');
+      if (token === '') continue; // 'L' on its own
     }
-    return null;
+    if (token === '*') continue;
+    let range = token;
+    if (token.includes('/')) {
+      const bits = token.split('/');
+      const step = Number(bits[1]);
+      if (bits.length !== 2 || !/^\d+$/.test(bits[1]) || step < 1 || step > spec.maxStep) {
+        return { key: 'invalidStepSize', params: { field: spec.label, value: part, max: spec.maxStep } };
+      }
+      range = bits[0];
+      if (range !== '*' && !range.includes('-')) return { key: 'invalidStep' };
+    }
+    if (range === '*') continue;
+    const bounds = range.includes('-') ? range.split('-') : [range];
+    if (bounds.length > 2 || bounds.some((b) => !/^\d+$/.test(b))) return { key: 'invalid' };
+    if (bounds.some((b) => Number(b) < spec.min || Number(b) > spec.max)) {
+      return { key: 'invalidValue', params: { field: spec.label, value: part, min: spec.min, max: spec.max } };
+    }
+    if (bounds.length === 2 && Number(bounds[0]) > Number(bounds[1])) {
+      return { key: 'invalidRange', params: { field: spec.label, value: part } };
+    }
+  }
+  return null;
 }
 
 /**
@@ -137,37 +136,37 @@ export function fieldError(expr, field) {
  * page that uses this, and `required` is a separate rule.
  */
 export function cronError(expression) {
-    const v = String(expression ?? '').trim();
-    if (!v) return null;
-    if (UNSUPPORTED_SYMBOL.test(v)) return { key: 'unsupported' };
-    const parts = v.split(/\s+/);
-    // croner reads 6 fields as a leading seconds field and 7 as seconds plus a trailing
-    // year, which this editor does not model
-    if (parts.length === 7) return { key: 'unsupported' };
-    if (parts.length !== 5 && parts.length !== 6) return { key: 'invalid' };
-    const fields = parts.length === 6 ? ['second', ...FIELD_ORDER] : FIELD_ORDER;
-    // per field, and only once the names are digits (see NEAREST_WEEKDAY)
-    for (let i = 0; i < parts.length; i++) {
-        if (NEAREST_WEEKDAY.test(normalizeNames(parts[i], fields[i]))) return { key: 'unsupported' };
-    }
-    for (let i = 0; i < parts.length; i++) {
-        const err = fieldError(parts[i], fields[i]);
-        if (err) return err;
-    }
-    return null;
+  const v = String(expression ?? '').trim();
+  if (!v) return null;
+  if (UNSUPPORTED_SYMBOL.test(v)) return { key: 'unsupported' };
+  const parts = v.split(/\s+/);
+  // croner reads 6 fields as a leading seconds field and 7 as seconds plus a trailing
+  // year, which this editor does not model
+  if (parts.length === 7) return { key: 'unsupported' };
+  if (parts.length !== 5 && parts.length !== 6) return { key: 'invalid' };
+  const fields = parts.length === 6 ? ['second', ...FIELD_ORDER] : FIELD_ORDER;
+  // per field, and only once the names are digits (see NEAREST_WEEKDAY)
+  for (let i = 0; i < parts.length; i++) {
+    if (NEAREST_WEEKDAY.test(normalizeNames(parts[i], fields[i]))) return { key: 'unsupported' };
+  }
+  for (let i = 0; i < parts.length; i++) {
+    const err = fieldError(parts[i], fields[i]);
+    if (err) return err;
+  }
+  return null;
 }
 
 /** Render a cronError() result with the caller's translator. '' when there is no error. */
 export function cronErrorMessage(t, err) {
-    if (!err) return '';
-    if (!err.params) return t(`settings.cron.${err.key}`);
-    // params.field is a label KEY, translated here rather than inside the pure part
-    const params = { ...err.params };
-    if (params.field) params.field = t(`settings.cron.${params.field}`);
-    return t(`settings.cron.${err.key}`, params);
+  if (!err) return '';
+  if (!err.params) return t(`settings.cron.${err.key}`);
+  // params.field is a label KEY, translated here rather than inside the pure part
+  const params = { ...err.params };
+  if (params.field) params.field = t(`settings.cron.${params.field}`);
+  return t(`settings.cron.${err.key}`, params);
 }
 
 /** The message for an expression, or '' when it is acceptable. */
 export function cronValidationMessage(t, expression) {
-    return cronErrorMessage(t, cronError(expression));
+  return cronErrorMessage(t, cronError(expression));
 }

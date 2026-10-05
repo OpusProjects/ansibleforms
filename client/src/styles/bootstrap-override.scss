@@ -1,86 +1,86 @@
 :root {
-    --bs-body-color: var(--af-body-color);
-    --bs-body-color-rgb: var(--af-body-color-rgb);
-    --bs-body-bg: var(--af-body-bg);
-    --bs-body-bg-rgb: var(--af-body-bg-rgb);
+  --bs-body-color: var(--af-body-color);
+  --bs-body-color-rgb: var(--af-body-color-rgb);
+  --bs-body-bg: var(--af-body-bg);
+  --bs-body-bg-rgb: var(--af-body-bg-rgb);
 }
 
 // Darker-orange outline button used for the designer "unsaved / unpushed"
 // indicators (issue #414) ; Bootstrap's warning (#ffc107) reads too light/yellow.
 .btn-outline-orange {
-    @include button-outline-variant(#d97400);
+  @include button-outline-variant(#d97400);
 }
 
 // Override Bootstrap's subtle background colors with theme-aware colors
 .bg-primary-subtle {
-    background-color: var(--af-bg-primary-subtle-color) !important;
+  background-color: var(--af-bg-primary-subtle-color) !important;
 }
 
 .bg-secondary-subtle {
-    background-color: var(--af-bg-secondary-subtle-color) !important;
+  background-color: var(--af-bg-secondary-subtle-color) !important;
 }
 
 .bg-success-subtle {
-    background-color: var(--af-bg-success-subtle-color) !important;
+  background-color: var(--af-bg-success-subtle-color) !important;
 }
 
 .bg-danger-subtle {
-    background-color: var(--af-bg-danger-subtle-color) !important;
+  background-color: var(--af-bg-danger-subtle-color) !important;
 }
 
 .bg-warning-subtle {
-    background-color: var(--af-bg-warning-subtle-color) !important;
+  background-color: var(--af-bg-warning-subtle-color) !important;
 }
 
 .bg-info-subtle {
-    background-color: var(--af-bg-info-subtle-color) !important;
+  background-color: var(--af-bg-info-subtle-color) !important;
 }
 
 .bg-light-subtle {
-    background-color: var(--af-bg-light-subtle-color) !important;
+  background-color: var(--af-bg-light-subtle-color) !important;
 }
 
 .bg-dark-subtle {
-    background-color: var(--af-bg-dark-subtle-color) !important;
+  background-color: var(--af-bg-dark-subtle-color) !important;
 }
 
 // Theme-aware overlay circle colors for icons
 .text-overlay-circle-primary {
-    color: var(--af-overlay-circle-primary) !important;
+  color: var(--af-overlay-circle-primary) !important;
 }
 
 .text-overlay-circle-secondary {
-    color: var(--af-overlay-circle-secondary) !important;
+  color: var(--af-overlay-circle-secondary) !important;
 }
 
 .text-overlay-circle-success {
-    color: var(--af-overlay-circle-success) !important;
+  color: var(--af-overlay-circle-success) !important;
 }
 
 .text-overlay-circle-danger {
-    color: var(--af-overlay-circle-danger) !important;
+  color: var(--af-overlay-circle-danger) !important;
 }
 
 .text-overlay-circle-warning {
-    color: var(--af-overlay-circle-warning) !important;
+  color: var(--af-overlay-circle-warning) !important;
 }
 
 .text-overlay-circle-info {
-    color: var(--af-overlay-circle-info) !important;
+  color: var(--af-overlay-circle-info) !important;
 }
 
 // Add subtle border to overlay circles for better definition in light theme
 .overlay-circle-border {
-    filter: drop-shadow(0 0 1px var(--af-overlay-circle-border));
+  filter: drop-shadow(0 0 1px var(--af-overlay-circle-border));
 }
 
 // Theme-aware overlay icon color (icon on top of circle)
 .text-overlay-icon {
-    color: var(--af-overlay-icon-color) !important;
+  color: var(--af-overlay-icon-color) !important;
 }
 
 // Placeholder styling for input fields
-[data-bs-theme=light] {
+[data-bs-theme='light'] {
   input::placeholder,
   textarea::placeholder,
   select::placeholder {
@@ -90,7 +90,7 @@
   }
 }
 
-[data-bs-theme=dark] {
+[data-bs-theme='dark'] {
   input::placeholder,
   textarea::placeholder,
   select::placeholder {
@@ -100,7 +100,7 @@
   }
 }
 
-[data-bs-theme=color] {
+[data-bs-theme='color'] {
   input::placeholder,
   textarea::placeholder,
   select::placeholder {
@@ -155,8 +155,9 @@
 // `outline: 0` keeps applying, which leaves the active tab without any focus
 // indicator : keep the marker and add the focus ring next to it.
 .nav-tabs .nav-link.active:focus-visible {
-  box-shadow: inset 0 2px 0 var(--bs-primary),
-              0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+  box-shadow:
+    inset 0 2px 0 var(--bs-primary),
+    0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
 }
 // The card AppSettings renders right under a tab strip (it stamps
 // `tab-card-flush-card` on it as soon as the #tabs slot is filled) : pull it up
