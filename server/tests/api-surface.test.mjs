@@ -57,15 +57,16 @@ function membersUsed(pattern) {
 
 test("found the source tree, so none of this is vacuous", () => {
   assert.ok(FILES.length > 100, `only ${FILES.length} files found`);
-  // form.model.js holds a literal NUL byte (a deliberate group-key separator), so GNU grep
-  // classifies it as binary and prints NOTHING for it - no error, no match. That has
-  // produced wrong conclusions before, and it is the largest model in the tree. readFileSync
-  // does not care, so these scans do cover it ; assert that, because a future rewrite of the
-  // walk to shell out to grep would silently stop covering 1300 lines.
+  // form.model.js and common.js used to hold a literal NUL byte (a key separator), so GNU
+  // grep classified them as binary and printed NOTHING for them - no error, no match. That
+  // produced wrong conclusions more than once. The separators are written as "\0" escapes
+  // now (the same string at runtime) ; keep it that way, so every source file stays text.
+  const withNul = FILES.filter((f) => readFileSync(f, "utf8").includes("\0")).map(rel);
+  assert.deepEqual(withNul, [], 'write a NUL as the escape "\\0", never as a raw byte');
+  // and the largest model in the tree must still be scanned and readable
   const formModel = FILES.find((f) => f.endsWith("form.model.js"));
   assert.ok(formModel, "form.model.js must be in the scanned set");
   const src = readFileSync(formModel, "utf8");
-  assert.ok(src.includes("\0"), "if the NUL is gone this note is stale, but the file must still be scanned");
   assert.match(src, /Errors\./, "and its contents must actually be readable");
 });
 

@@ -1302,7 +1302,7 @@ Form.save = async function(data){
     var src = item.source
     if(src){
       const repo = item.repository ?? null
-      const key = (repo ?? '') + ' ' + src
+      const key = (repo ?? '') + '\0' + src
       if(!groups[key]) groups[key] = { repository: repo, source: src, forms: [] }
       groups[key].forms.push(item)
       return false
