@@ -1016,15 +1016,17 @@ onBeforeUnmount(() => {
           </thead>
           <tbody>
             <template v-for="j in displayedJobs" :key="j.id">
+              <!-- the whole row opens the job (a multistep job's id unfolds its steps instead) : the
+                   actions cell too, where the icons keep their own action -->
               <tr :class="jobBackground(j)">
-                <td>
+                <td role="button" @click="getJob(j.id)">
                   <!-- a job waiting for approval is decided, not relaunched or deleted : it only
                        offers approve and reject -->
                   <span
                     role="button"
                     v-if="j.status != 'running' && j.status != 'approve' && canRelaunchJobs"
                     class="me-2 text-info"
-                    @click="
+                    @click.stop="
                       tempJobId = j.id;
                       showRelaunch = true;
                     "
@@ -1035,7 +1037,7 @@ onBeforeUnmount(() => {
                     role="button"
                     v-if="j.status == 'running' && !j.abort_requested"
                     class="me-2 text-warning"
-                    @click="
+                    @click.stop="
                       tempJobId = j.id;
                       showAbort = true;
                     "
@@ -1046,7 +1048,7 @@ onBeforeUnmount(() => {
                     role="button"
                     v-if="j.status != 'approve' && ((j.status != 'running' && !j.abort_requested) || store.isAdmin)"
                     class="me-2 text-danger"
-                    @click="
+                    @click.stop="
                       tempJobId = j.id;
                       showDelete = true;
                     "
@@ -1057,7 +1059,7 @@ onBeforeUnmount(() => {
                     role="button"
                     v-if="j.status == 'approve' && approvalAllowed(j)"
                     class="me-2 text-success af-approve-icon"
-                    @click="
+                    @click.stop="
                       tempJobId = j.id;
                       showApproval(j.id);
                     "
@@ -1068,7 +1070,7 @@ onBeforeUnmount(() => {
                     role="button"
                     v-if="j.status == 'approve' && approvalAllowed(j)"
                     class="me-2 text-danger af-reject-icon"
-                    @click="
+                    @click.stop="
                       tempJobId = j.id;
                       showApproval(j.id, true);
                     "
@@ -1079,7 +1081,8 @@ onBeforeUnmount(() => {
                 <template v-for="col in visibleColumns" :key="col.key">
                   <td
                     v-if="col.key === 'id'"
-                    class="is-clickable text-left"
+                    role="button"
+                    class="text-left"
                     @click="j.job_type == 'multistep' ? toggleCollapse(j.id) : getJob(j.id)"
                   >
                     <span>{{ j.id }}</span>
@@ -1097,7 +1100,7 @@ onBeforeUnmount(() => {
               </tr>
               <template v-for="c in childJobs(j.id)" :key="c.id">
                 <tr :class="jobBackground(c)">
-                  <td class="table-info"></td>
+                  <td class="table-info" role="button" @click="getJob(c.id)"></td>
                   <template v-for="col in visibleColumns" :key="col.key">
                     <td v-if="col.key === 'id'" role="button" class="text-end" @click="getJob(c.id)">{{ c.id }}</td>
                     <td
