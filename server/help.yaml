@@ -1144,9 +1144,9 @@
       - allowBackupOps: The user can perform database operations, such as backup and restore.
       - allowVerboseMode: The user can enable verbose mode on ansible forms.
       - allowJobRelaunch: The user can relaunch jobs with pre-filled form data from previous submissions.
-      - allowScheduledJobs: The user can create and manage scheduled jobs (recurring cron or one-time). Default for admins only. Grant it only to roles you would trust as admins: every user with this option sees and can change all schedules, not only their own, and a schedule runs with admin rights, for any form. (Added in 6.1.5)
+      - allowScheduledJobs: The user can create and manage scheduled jobs (recurring cron or one-time). Default for admins only. Grant it only to roles you would trust as admins: every user with this option sees and can change all schedules, not only their own, and a schedule they create runs with admin rights, for any form. (Added in 6.1.5)
       - allowStoredJobs: The user can store and load job data for later use. (Added in 6.1.5)
-      - allowPlannedJobs: The user can schedule jobs to run at a specific time. (Added in 6.1.5)
+      - allowPlannedJobs: The user can plan a one-time run of a form they may run ("Run later"). The job runs as that user, not as admin, and they cannot see or change other schedules. (Added in 6.1.5)
       - allowChat: The user can use the chat assistant (when it is enabled). Default true. (Added in 6.5.0)
         
       When options are not set, the admin role will have all options.  
@@ -1300,9 +1300,9 @@
           - allowBackupOps: The user can perform database operations, such as backup and restore.
           - allowVerboseMode: The user can enable verbose mode on ansible forms.
           - allowJobRelaunch: The user can relaunch jobs with pre-filled form data from previous submissions.
-          - allowScheduledJobs: The user can create and manage scheduled jobs (recurring cron or one-time). Default for admins only. Grant it only to roles you would trust as admins: every user with this option sees and can change all schedules, not only their own, and a schedule runs with admin rights, for any form. (Added in 6.1.5)
+          - allowScheduledJobs: The user can create and manage scheduled jobs (recurring cron or one-time). Default for admins only. Grant it only to roles you would trust as admins: every user with this option sees and can change all schedules, not only their own, and a schedule they create runs with admin rights, for any form. (Added in 6.1.5)
           - allowStoredJobs: The user can store and load job data for later use. (Added in 6.1.5)
-          - allowPlannedJobs: The user can schedule jobs to run at a specific time. (Added in 6.1.5)
+          - allowPlannedJobs: The user can plan a one-time run of a form they may run ("Run later"). The job runs as that user, not as admin, and they cannot see or change other schedules. (Added in 6.1.5)
           - allowChat: The user can use the chat assistant (when it is enabled). Default true. (Added in 6.5.0)
 
           When options are not set, the admin role will have all options.  

@@ -48,6 +48,28 @@ Middleware.checkBackupMiddleware = permissionGuard(u => u.options.allowBackupOps
 
 Middleware.checkScheduledJobsMiddleware = permissionGuard(u => u.options.allowScheduledJobs, 'errors.noScheduleAccess')
 
+// The /api/v2/schedule mount. "Run later (one-time)" on a form is offered to
+// allowPlannedJobs (on for everyone by default), and it creates a one-time schedule -
+// but the whole mount used to sit behind allowScheduledJobs (admin-only by default), so
+// every non-admin who pressed it got "You do not have permission to manage scheduled jobs".
+//
+// allowScheduledJobs stays what it was : the admin-level right to see and change ALL
+// schedules. allowPlannedJobs on its own opens exactly ONE door, POST / (create), and the
+// controller then narrows that to a one-time run of a form the user may run, which runs
+// as that user rather than as admin (Schedule.plan). Listing, reading, editing, deleting
+// and launching stay refused, so a planner never sees anybody else's schedules.
+Middleware.checkScheduleOrPlannedJobsMiddleware = (req, res, next) => {
+  try {
+    const user = req.user.user;
+    if (user.options.allowScheduledJobs) return next();
+    if (user.options.allowPlannedJobs && req.method === 'POST' && req.path === '/') return next();
+    res.status(403).json(RestResult.error(i18n.t(req, 'errors.noAccess'), i18n.t(req, 'errors.noScheduleAccess')));
+  } catch (e) {
+    // same 401-vs-403 rule as permissionGuard : 401 only when we cannot tell who you are
+    res.status(401).json(RestResult.error(i18n.t(req, 'errors.noAccess'), i18n.t(req, 'errors.noScheduleAccess')));
+  }
+}
+
 Middleware.checkStoredJobsMiddleware = permissionGuard(u => u.options.allowStoredJobs, 'errors.noStoredJobsAccess')
 Middleware.checkChatMiddleware = permissionGuard(u => u.options.allowChat !== false, 'errors.noChatAccess')
 

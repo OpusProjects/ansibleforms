@@ -511,7 +511,8 @@ const SCHEMA_MANIFEST = {
                                'chat_settings.ignore_certs'],
                      indexes: ['jobs.idx_jobs_retention'] },
     patchVersion7: { tables: ['secret_stores'],
-                     columns: ['credentials.secret_store', 'credentials.secret_ref', 'settings.vault_env_imported_at'] },
+                     columns: ['credentials.secret_store', 'credentials.secret_ref', 'settings.vault_env_imported_at',
+                               'schedule.owner'] },
   },
 };
 
@@ -800,6 +801,8 @@ async function patchVersion7(messages, success, failed) {
   // when the VAULT_* variables were imported as the secret store `vault` (once, at the
   // first 7.x start that has them - secrets/importVaultEnv.js)
   await checkPromise(addColumn("settings", "vault_env_imported_at", "datetime", true, "NULL"), messages, success, failed);
+  // the user a planned job ("Run later" with allowPlannedJobs) runs as - see Schedule.plan
+  await checkPromise(addColumn("schedule", "owner", "longtext", true, "NULL"), messages, success, failed);
 }
 
 // Idempotent by its WHERE clause : a row is copied once, and never over a store chosen since

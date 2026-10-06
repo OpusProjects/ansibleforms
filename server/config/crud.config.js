@@ -175,7 +175,10 @@ const crudConfigs = {
       { name: 'status' },
       { name: 'state' },
       { name: 'last_run', isDatetime: true },
-      { name: 'queue_id' }
+      { name: 'queue_id' },
+      // who planned it, as a JSON user object : set ONLY by Schedule.plan, never from a
+      // request body (the controller drops it). Empty = an admin-level schedule.
+      { name: 'owner' }
     ],
     allowCache: true,
     cacheTTL: 3600
