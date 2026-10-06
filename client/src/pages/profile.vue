@@ -321,12 +321,13 @@ async function changePassword() {
         <!-- ===================== account ===================== -->
         <template v-if="currentView === 'account'">
           <div class="card">
-            <!-- who : the avatar and the name (how it signs in is a row below) -->
-            <div class="card-body d-flex align-items-center gap-3 af-identity">
-              <span class="af-profile-avatar"><FaIcon icon="user" /></span>
-              <div class="min-w-0">
-                <div class="fs-4 fw-semibold lh-sm text-truncate">{{ profile.username }}</div>
-              </div>
+            <!-- who : the person's name when the sign-in brought one (ldap, azure ad, openid
+                 connect), else the username - the username itself is a row below. Styled like
+                 the permissions tables' headers, without a border-bottom of its own : the list
+                 group under it draws that line (a list group in a card takes the card's border
+                 on top), so both would double it -->
+            <div class="card-body d-flex align-items-center af-identity py-3">
+              <span class="fw-semibold text-truncate">{{ profile.displayName || profile.username }}</span>
             </div>
             <!-- the details : a label column and its values, one row each -->
             <ul class="list-group list-group-flush">
@@ -668,18 +669,6 @@ async function changePassword() {
 </template>
 
 <style scoped lang="scss">
-.af-profile-avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  font-size: 1.75rem;
-  color: #ffffff;
-  background-color: var(--af-primary);
-  flex-shrink: 0;
-}
 // the identity band at the top of the account card
 .af-identity {
   padding: 1.25rem;
@@ -687,27 +676,30 @@ async function changePassword() {
   border-top-left-radius: inherit;
   border-top-right-radius: inherit;
 }
-.min-w-0 {
-  min-width: 0;
-}
 // a detail row : the label in a fixed column, the value next to it
+// every row as high as one with chips (3.5rem), whatever it holds ; more chips than fit
+// wrap and make that row taller only then. The label and the first line of values share
+// one line height (a chip's), and the row aligns them at its top : with many groups or
+// roles, the label stays on the first line instead of drifting to the middle of the row.
+$af-detail-line: 1.8rem;
 .af-detail {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 1rem;
-  // every row as high as one with chips, whatever it holds ; more chips than fit wrap and
-  // make that row taller only then
   min-height: 3.5rem;
-  padding: 0.5rem 1.25rem;
+  // the padding leaves room for the row's 1px bottom border, so a one-line row is 3.5rem
+  padding: calc((3.5rem - #{$af-detail-line} - 1px) / 2) 1.25rem;
 }
 .af-detail-label {
   flex: 0 0 11rem;
+  line-height: $af-detail-line;
   color: var(--bs-secondary-color);
   font-weight: 500;
 }
 .af-detail-value {
   flex: 1 1 auto;
   min-width: 0;
+  min-height: $af-detail-line;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -719,6 +711,8 @@ async function changePassword() {
 }
 .af-count {
   display: inline-block;
+  // its own line height : the label's (a chip's) would make the count taller than the line
+  line-height: 1.5;
   min-width: 1.4rem;
   margin-left: 0.35rem;
   padding: 0 0.4rem;

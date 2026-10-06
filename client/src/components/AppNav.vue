@@ -58,6 +58,12 @@ function reloadPage() {
 
 // how the signed-in account signs in, shown under its name in the user menu
 const loginType = computed(() => Profile.loginType(t, store.profile?.type));
+// the person's name when the sign-in brought one (ldap, azure ad, openid connect), else
+// the username ; with a name shown, the username goes on the line under it
+const displayName = computed(() => store.profile?.displayName || store.profile?.username || '');
+const userMeta = computed(() =>
+  store.profile?.displayName ? `${store.profile.username} · ${loginType.value.label}` : loginType.value.label,
+);
 
 // the approvals bell : the count is loaded when the header appears (also right after a
 // login, which used to leave it at 0 until a reload) and refreshed once a minute, so a
@@ -297,8 +303,8 @@ const buildMismatch = computed(() => {
           type="button"
           data-bs-toggle="dropdown"
           aria-expanded="false"
-          :title="store.profile?.username || ''"
-          :aria-label="store.profile?.username || ''"
+          :title="displayName"
+          :aria-label="displayName"
         >
           <span class="af-avatar"><font-awesome-icon icon="user" /></span>
         </button>
@@ -306,8 +312,8 @@ const buildMismatch = computed(() => {
           <li class="af-user-card">
             <span class="af-avatar af-avatar-lg"><font-awesome-icon icon="user" /></span>
             <span class="d-flex flex-column lh-sm">
-              <strong>{{ store.profile?.username }}</strong>
-              <small class="af-menu-meta">{{ loginType.label }}</small>
+              <strong>{{ displayName }}</strong>
+              <small class="af-menu-meta">{{ userMeta }}</small>
             </span>
           </li>
           <li><hr class="dropdown-divider" /></li>
@@ -524,7 +530,9 @@ const buildMismatch = computed(() => {
     &:hover,
     &.show {
       color: var(--af-navbar-link-hover-color) !important;
-      background-color: var(--af-navbar-hover-bg);
+      // the circle around the avatar : the theme sets it apart so the avatar's ring (the
+      // header's color, the box-shadow below) shows against it in every theme
+      background-color: var(--af-avatar-hover-bg, var(--af-navbar-hover-bg));
     }
   }
   .af-avatar {

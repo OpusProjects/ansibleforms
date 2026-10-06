@@ -15,6 +15,7 @@ import RestResult from "../../models/restResult.model.v2.js";
 import auth_oidc from "../../auth/auth_oidc.js";
 import i18n from "../../lib/i18n.js";
 import Audit from "../../models/audit.model.js";
+import { claimsDisplayName } from "../../lib/displayName.js";
 
 // Login is audited here rather than by the blanket middleware, which deliberately
 // skips /auth : on a failed attempt there is no req.user, so that layer could only
@@ -366,6 +367,8 @@ const extractAzureUser = async function(payload, groups) {
   return {
     username: payload.upn,
     id: payload.oid,
+    // the person's name from the token, for the header (see lib/displayName.js)
+    ...(claimsDisplayName(payload) && { displayName: claimsDisplayName(payload) }),
     groups: groups.map(g => `azuread/${g}`) // groups are prefixed with azuread/ to avoid conflicts with oidc groups etc
   }
 };
@@ -373,6 +376,7 @@ const extractAzureUser = async function(payload, groups) {
 const extractOidcUser = async function(payload, groups) {
   return {
     username: payload.preferred_username,
+    ...(claimsDisplayName(payload) && { displayName: claimsDisplayName(payload) }),
     groups: groups.map(g => `oidc/${g}`) // groups are prefixed with oidc/ to avoid conflicts with azuread groups etc
   }
 };
