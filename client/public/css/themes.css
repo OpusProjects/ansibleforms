@@ -98,6 +98,7 @@
     --af-header-border           : rgba(15, 23, 42, 0.09);
     --af-header-shadow           : 0 1px 2px rgba(15, 23, 42, 0.04);
     --af-avatar-bg               : var(--af-primary);
+    --af-avatar-hover-bg         : var(--af-navbar-hover-bg);
 
     /* defaults */
     --af-shadow: 0, 0, 0;
@@ -219,6 +220,7 @@
     --af-header-border           : rgba(255, 255, 255, 0.08);
     --af-header-shadow           : none;
     --af-avatar-bg               : var(--af-primary);
+    --af-avatar-hover-bg         : rgba(255, 255, 255, 0.28); /* lighter than the other header buttons : the avatar's ring shows against it, as on the light header */
 
     /* defaults */
     --af-shadow: 128,128,128;
@@ -332,6 +334,7 @@
     --af-header-border           : rgba(0, 0, 0, 0.12);
     --af-header-shadow           : 0 1px 2px rgba(0, 0, 0, 0.08);
     --af-avatar-bg               : rgba(255, 255, 255, 0.22);
+    --af-avatar-hover-bg         : var(--af-navbar-hover-bg);
 
     /* defaults */
     --af-shadow: 0, 0, 0;    

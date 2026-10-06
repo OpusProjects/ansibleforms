@@ -5,6 +5,7 @@ import authConfig from '../../config/auth.config.js';
 import logger from '../lib/logger.js';
 import Helpers from '../lib/common.js';
 import Ldap from '../models/ldap.model.js';
+import { ldapDisplayName } from '../lib/displayName.js'
 
 
 // create username / password login strategy
@@ -48,6 +49,9 @@ passport.use(
         var user = {}
         user.username = result[ldapConfig.username_attribute]
         user.email = result[ldapConfig.mail_attribute]
+        // the person's name from the directory entry, for the header (see lib/displayName.js)
+        const displayName = ldapDisplayName(result)
+        if (displayName) user.displayName = displayName
         user.type = 'ldap'
         user.groups = User.getGroups(user,result,ldapConfig)
         const ro = await User.getRolesAndOptions(user.groups,user)
