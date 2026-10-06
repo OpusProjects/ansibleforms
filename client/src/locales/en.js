@@ -1286,6 +1286,7 @@ export default {
     // the line under the page title, per status of the left menu
     description: {
       all: 'Every job run from a form. Open one to see its output, or relaunch, abort or delete it.',
+      job: 'One job and its output. Copy or download the output, relaunch the job, or go back to the list.',
       running: 'Jobs that are running right now. Open one to follow its output live, or abort it.',
       approve:
         'Jobs that wait for an approval before they run. Approve or reject them with the icons in front of each job.',
@@ -1320,7 +1321,8 @@ export default {
     startTime: 'start time',
     endTime: 'end time',
     user: 'user',
-    jobOutput: 'Job output for job',
+    jobTitle: 'Job {id}',
+    backToJobs: 'Back to jobs',
     showExtravars: 'Show Extravars',
     hideExtravars: 'Hide Extravars',
     showArtifacts: 'Show Artifacts',
@@ -1328,7 +1330,8 @@ export default {
     refreshOutput: 'Refresh',
     applyFilter: 'Apply filter',
     removeFilter: 'Remove filter',
-    downloadJob: 'Download Job',
+    copyOutput: 'Copy Output',
+    downloadOutput: 'Download Output',
     extravars: 'Extravars',
     artifacts: 'Artifacts',
     viewAsYaml: 'View as YAML',

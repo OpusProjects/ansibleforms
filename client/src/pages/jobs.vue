@@ -60,8 +60,20 @@ function selectStatus(status) {
   const query = { ...route.query };
   if (status) query.status = status;
   else delete query.status;
-  router.replace({ query });
+  // from a job's page a status goes back to the list ; on the list it only filters
+  if (isJobPage.value) router.push({ path: '/jobs', query });
+  else router.replace({ query });
 }
+
+// a job that is opened (/jobs/:id) has a page of its own : its actions in the header, and
+// its output - not the list. The list's status filter rides along in
+// the address, so going back opens the list as it was left.
+const isJobPage = computed(() => !!route.params.id);
+function backToJobs() {
+  router.push({ path: '/jobs', query: route.query });
+}
+// a job's page and the list open at the top
+watch(isJobPage, () => window.scrollTo({ top: 0 }));
 
 // ─── DataTable-style state (sort / per-column filter / column visibility) ──
 const columnDefs = computed(() => [
@@ -194,13 +206,19 @@ const MENU_STATUSES = [
 ];
 // the page title is the view picked in the left menu (its name and icon, as in the menu)
 const pageTitle = computed(() => {
+  // a job's page : the job's name (the form it ran), its id until the job is loaded
+  if (isJobPage.value) {
+    return { title: job.value?.form || t('jobs.jobTitle', { id: route.params.id }), icon: 'file-lines' };
+  }
   const m = MENU_STATUSES.find((x) => x.status === statusFilter.value);
   return m ? { title: m.label(), icon: m.icon } : { title: t('jobs.menu.all'), icon: 'list' };
 });
 // the line under the page title : what the status picked in the left menu shows
-const pageDescription = computed(
-  () => MENU_STATUSES.find((m) => m.status === statusFilter.value)?.description() || t('jobs.description.all'),
-);
+const pageDescription = computed(() => {
+  // a job's page : what the page is for (the job's name is the title)
+  if (isJobPage.value) return t('jobs.description.job');
+  return MENU_STATUSES.find((m) => m.status === statusFilter.value)?.description() || t('jobs.description.all');
+});
 // the table's message when no job is shown : a status picked in the menu, a column
 // filter, or simply no jobs at all
 const emptyMessage = computed(() => {
@@ -372,6 +390,13 @@ async function clip(v, doNotStringify = false, asYaml = false) {
       toast.error('Error copying to clipboard : \n' + err.toString());
     }
   }
+}
+// copy the job's output as it reads on screen (the filter applied or not) : the output is
+// html - colored spans, <br> for the line breaks - so it is copied as its plain text
+function copyOutput() {
+  const html = filteredJobOutput.value.replace(/<br\s*\/?>/gi, '\n');
+  const text = new DOMParser().parseFromString(html, 'text/html').body.textContent || '';
+  clip(text, true);
 }
 // load jobs
 async function loadJobs() {
@@ -603,6 +628,8 @@ async function jobAction(id, action, method = 'post', uri_suffix = '') {
 // delete a job
 async function deleteJob(id) {
   await jobAction(id, 'delete', 'delete');
+  // the job of this page is gone (jobAction clears the id once the delete went through)
+  if (isJobPage.value && !jobId.value) backToJobs();
 }
 // abort a job
 async function abortJob(id) {
@@ -638,7 +665,7 @@ async function rejectJob(id) {
 }
 // get job by id - navigation
 function getJob(id) {
-  router.push({ name: '/jobs/:id', params: { id } }).catch((_e) => {});
+  router.push({ path: `/jobs/${id}`, query: route.query }).catch((_e) => {});
 }
 // check if approval is allowed for a job
 function approvalAllowed(job) {
@@ -856,7 +883,63 @@ onBeforeUnmount(() => {
       <AppJobsSidebar :jobs="jobs || []" :status="statusFilter" @select="selectStatus" />
       <AppSettings :title="pageTitle.title" :description="pageDescription" :icon="pageTitle.icon">
         <template #headerActions>
-          <div class="d-flex justify-content-end align-items-center">
+          <!-- a job's page : the actions the list offers on its row (same rules), then the way back -->
+          <div v-if="isJobPage" class="d-flex justify-content-end align-items-center gap-2">
+            <template v-if="job">
+              <BsButton
+                v-if="job.status != 'running' && job.status != 'approve' && canRelaunchJobs"
+                icon="redo"
+                cssClass="text-nowrap"
+                @click="
+                  tempJobId = job.id;
+                  showRelaunch = true;
+                "
+                >{{ t('jobs.relaunchJob') }}</BsButton
+              >
+              <BsButton
+                v-if="job.status == 'running' && !job.abort_requested"
+                icon="ban"
+                cssClass="text-nowrap"
+                @click="
+                  tempJobId = job.id;
+                  showAbort = true;
+                "
+                >{{ t('jobs.abortJob') }}</BsButton
+              >
+              <BsButton
+                v-if="job.status != 'approve' && ((job.status != 'running' && !job.abort_requested) || store.isAdmin)"
+                icon="trash-alt"
+                cssClass="text-nowrap"
+                @click="
+                  tempJobId = job.id;
+                  showDelete = true;
+                "
+                >{{ t('jobs.deleteJob') }}</BsButton
+              >
+              <BsButton
+                v-if="job.status == 'approve' && approvalAllowed(job)"
+                icon="circle-check"
+                cssClass="text-nowrap"
+                @click="
+                  tempJobId = job.id;
+                  showApproval(job.id);
+                "
+                >{{ t('jobs.approveJob') }}</BsButton
+              >
+              <BsButton
+                v-if="job.status == 'approve' && approvalAllowed(job)"
+                icon="circle-xmark"
+                cssClass="text-nowrap"
+                @click="
+                  tempJobId = job.id;
+                  showApproval(job.id, true);
+                "
+                >{{ t('jobs.rejectJob') }}</BsButton
+              >
+            </template>
+            <BsButton icon="arrow-left" @click="backToJobs" cssClass="text-nowrap">{{ t('jobs.backToJobs') }}</BsButton>
+          </div>
+          <div v-else class="d-flex justify-content-end align-items-center">
             <BsButton icon="refresh" @click="loadJobs" cssClass="me-2 text-nowrap">{{ t('jobs.refresh') }}</BsButton>
             <div class="input-group me-2" style="width: 160px">
               <span class="input-group-text">
@@ -895,7 +978,7 @@ onBeforeUnmount(() => {
             </div>
           </div>
         </template>
-        <table class="custom-table table-sm">
+        <table v-if="!isJobPage" class="custom-table table-sm">
           <thead>
             <tr class="text-start">
               <th class="action"></th>
@@ -997,7 +1080,7 @@ onBeforeUnmount(() => {
                   <td
                     v-if="col.key === 'id'"
                     class="is-clickable text-left"
-                    @click="j.job_type == 'multistep' ? toggleCollapse(j.id) : loadOutput(j.id)"
+                    @click="j.job_type == 'multistep' ? toggleCollapse(j.id) : getJob(j.id)"
                   >
                     <span>{{ j.id }}</span>
                     <template v-if="j.job_type == 'multistep'">
@@ -1048,25 +1131,21 @@ onBeforeUnmount(() => {
           </tbody>
         </table>
         <BsPagination
-          v-if="!isLoading"
+          v-if="!isLoading && !isJobPage"
           :dataList="parentJobs"
           :buttonsShown="7"
           :index="displayedJobIndex"
           name="jobs"
           @change="setDisplayJobs"
         />
-        <div v-if="job" class="row">
+        <div v-if="job && isJobPage" class="row af-job-output">
           <div class="col">
-            <h3>
-              {{ t('jobs.jobOutput') }} {{ jobId }}
-              <sup
-                ><span class="badge rounded-pill me-2 text-bg-info">{{ job.job_type || 'ansible' }}</span></sup
-              >
-              <sup
-                ><span class="badge rounded-pill" :class="Helpers.getColorClassByStatus(job.status, 'text-bg')">{{
-                  job.status
-                }}</span></sup
-              >
+            <h3 class="af-job-title">
+              {{ t('jobs.jobTitle', { id: jobId }) }}
+              <span class="badge rounded-pill text-bg-info">{{ job.job_type || 'ansible' }}</span>
+              <span class="badge rounded-pill" :class="Helpers.getColorClassByStatus(job.status, 'text-bg')">{{
+                job.status
+              }}</span>
             </h3>
             <BsButton
               v-if="store.profile.options?.showExtraVars"
@@ -1106,8 +1185,11 @@ onBeforeUnmount(() => {
               @click="hide = !hide"
               >{{ t('jobs.applyFilter') }}<template #toggle>{{ t('jobs.removeFilter') }}</template></BsButton
             >
+            <BsButton @click="copyOutput" icon="copy" cssClass="btn-sm me-2 fw-normal">{{
+              t('jobs.copyOutput')
+            }}</BsButton>
             <BsButton @click="download(jobId)" icon="download" cssClass="btn-sm me-2 fw-normal">{{
-              t('jobs.downloadJob')
+              t('jobs.downloadOutput')
             }}</BsButton>
 
             <!-- awx workflow graph (only for awx workflow jobs) -->
@@ -1121,14 +1203,12 @@ onBeforeUnmount(() => {
               <div class="col">
                 <AppAnsibleOutput :output="filteredJobOutput" :jobLog="job?.job_log">
                   <template #title>
-                    <h3 v-if="subjob">
+                    <h3 v-if="subjob" class="af-job-title">
                       {{ t('jobs.mainJob') }} (jobid {{ jobId }})
-                      <sup
-                        ><span
-                          class="badge rounded-pill status"
-                          :class="Helpers.getColorClassByStatus(job.status, 'bg')"
-                          >{{ job.status }}</span
-                        ></sup
+                      <span
+                        class="badge rounded-pill status"
+                        :class="Helpers.getColorClassByStatus(job.status, 'bg')"
+                        >{{ job.status }}</span
                       >
                     </h3>
                   </template>
@@ -1137,14 +1217,12 @@ onBeforeUnmount(() => {
               <div class="col" v-if="subjob">
                 <AppAnsibleOutput :output="filteredSubJobOutput" :jobLog="subjob?.job_log">
                   <template #title>
-                    <h3>
+                    <h3 class="af-job-title">
                       {{ t('jobs.currentStep') }} (jobid {{ subjobId }})
-                      <sup
-                        ><span
-                          class="badge rounded-pill status"
-                          :class="Helpers.getColorClassByStatus(subjob.status, 'bg')"
-                          >{{ subjob.status }}</span
-                        ></sup
+                      <span
+                        class="badge rounded-pill status"
+                        :class="Helpers.getColorClassByStatus(subjob.status, 'bg')"
+                        >{{ subjob.status }}</span
                       >
                     </h3>
                   </template>
@@ -1226,6 +1304,24 @@ onBeforeUnmount(() => {
   </div>
 </template>
 <style scoped>
+/* the output box keeps 16px under it for what follows it (the log file, the form page's
+   buttons) ; last in the job's card it would double the card's own padding */
+.af-job-output :deep(.ansible:last-child) {
+  margin-bottom: 0;
+}
+/* a job's titles : the type and status badges sit on the middle of the words, and the
+   buttons under the title look as far from it as from the output under them (mt-4) : the
+   title's line box has room under its letters, so its margin is the smaller one */
+.af-job-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.125rem;
+  .badge {
+    font-size: 0.5em;
+  }
+}
 /* approve and reject on a job waiting for approval : in the light theme the app darkens
    green and red text (textColors.scss), which made these two icons heavy ; they keep
    Bootstrap's own, lighter colors */

@@ -1307,6 +1307,7 @@ export default {
     // the line under the page title, per status of the left menu
     description: {
       all: 'Chaque job lancé depuis un formulaire. Ouvrez-en un pour voir sa sortie, ou relancez-le, arrêtez-le ou supprimez-le.',
+      job: 'Un job et sa sortie. Copiez ou téléchargez la sortie, relancez le job, ou revenez à la liste.',
       running: "Les jobs en cours d'exécution. Ouvrez-en un pour suivre sa sortie en direct, ou arrêtez-le.",
       approve:
         'Les jobs qui attendent une approbation avant de démarrer. Approuvez-les ou rejetez-les avec les icônes devant chaque job.',
@@ -1341,7 +1342,8 @@ export default {
     startTime: 'heure de debut',
     endTime: 'heure de fin',
     user: 'utilisateur',
-    jobOutput: 'Sortie du job pour le job',
+    jobTitle: 'Job {id}',
+    backToJobs: 'Retour aux jobs',
     showExtravars: 'Afficher les variables supplementaires',
     hideExtravars: 'Masquer les variables supplementaires',
     showArtifacts: 'Afficher les artefacts',
@@ -1349,7 +1351,8 @@ export default {
     refreshOutput: 'Actualiser',
     applyFilter: 'Appliquer le filtre',
     removeFilter: 'Supprimer le filtre',
-    downloadJob: 'Telecharger le job',
+    copyOutput: 'Copier la sortie',
+    downloadOutput: 'Télécharger la sortie',
     extravars: 'Variables supplementaires',
     artifacts: 'Artefacts',
     viewAsYaml: 'Afficher en YAML',
