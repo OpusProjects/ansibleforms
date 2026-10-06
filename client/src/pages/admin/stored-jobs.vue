@@ -51,7 +51,7 @@ onMounted(async () => {
   <AppNav />
   <div class="flex-shrink-0">
     <main class="d-flex flex-nowrap af-settings-layout">
-      <AppSidebar />
+      <AppJobsSidebar />
       <AppAdminMulti
         v-if="authenticated"
         apiVersion="2"

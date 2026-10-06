@@ -53,6 +53,15 @@ watch(
   () => route.query.status,
   (status) => (statusFilter.value = status || null),
 );
+// a status picked in the left menu : the address follows, so a reload or a shared link
+// opens the same view (the job that is open, if any, stays open)
+function selectStatus(status) {
+  statusFilter.value = status;
+  const query = { ...route.query };
+  if (status) query.status = status;
+  else delete query.status;
+  router.replace({ query });
+}
 
 // ─── DataTable-style state (sort / per-column filter / column visibility) ──
 const columnDefs = computed(() => [
@@ -149,8 +158,7 @@ const displayedJobIndex = computed(() => {
   const targetId = selected.parent_id ? selected.parent_id : selected.id;
   return parentJobs.value.findIndex((e) => e.id == targetId);
 });
-// the left menu : the jobs by status (with their counts), and the scheduled and stored
-// jobs pages for the roles that may use them
+// the statuses of the left menu (AppJobsSidebar), for the page title and the line under it
 // (the labels are spelled out, not built from the status, so the i18n key check can find them)
 const MENU_STATUSES = [
   {
@@ -193,48 +201,6 @@ const pageTitle = computed(() => {
 const pageDescription = computed(
   () => MENU_STATUSES.find((m) => m.status === statusFilter.value)?.description() || t('jobs.description.all'),
 );
-const sidebarSections = computed(() => {
-  const all = jobs.value?.filter((x) => !x.parent_id) || [];
-  const count = (status) => all.filter((x) => x.status === status).length;
-  const sections = [
-    {
-      title: t('jobs.menu.status'),
-      items: [
-        {
-          title: t('jobs.menu.all'),
-          icon: 'list',
-          badge: all.length,
-          active: !statusFilter.value,
-          action: () => (statusFilter.value = null),
-        },
-        ...MENU_STATUSES.map((m) => ({
-          title: m.label(),
-          icon: m.icon,
-          badge: count(m.status),
-          // a job waiting for approval needs someone : its count is red, like the header badge
-          badgeAlert: m.status === 'approve' && count(m.status) > 0,
-          active: statusFilter.value === m.status,
-          action: () => (statusFilter.value = m.status),
-        })),
-      ],
-    },
-  ];
-  const planned = [
-    store?.profile?.options?.allowScheduledJobs && {
-      title: t('sidebar.schedules'),
-      icon: 'clock',
-      link: '/admin/schedules',
-    },
-    store?.profile?.options?.allowStoredJobs && {
-      title: t('sidebar.storedJobs'),
-      icon: 'floppy-disk',
-      link: '/admin/stored-jobs',
-    },
-  ].filter(Boolean);
-  if (planned.length) sections.push({ title: t('jobs.menu.planned'), items: planned });
-  return sections;
-});
-
 // the table's message when no job is shown : a status picked in the menu, a column
 // filter, or simply no jobs at all
 const emptyMessage = computed(() => {
@@ -887,7 +853,7 @@ onBeforeUnmount(() => {
       >
     </BsModal>
     <main class="d-flex flex-nowrap af-settings-layout">
-      <BsSidebar :sections="sidebarSections" storageKey="af_jobs_sidebar_collapsed" />
+      <AppJobsSidebar :jobs="jobs || []" :status="statusFilter" @select="selectStatus" />
       <AppSettings :title="pageTitle.title" :description="pageDescription" :icon="pageTitle.icon">
         <template #headerActions>
           <div class="d-flex justify-content-end align-items-center">

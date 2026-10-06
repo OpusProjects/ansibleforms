@@ -15,7 +15,9 @@ import { fileURLToPath } from 'url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const read = (p) => readFileSync(path.join(here, '..', p), 'utf8');
 
-const sidebarSrc = read('src/components/AppSidebar.vue');
+// both left menus declare { link, permission } : the settings menu, and the jobs menu
+// (the scheduled and stored jobs pages)
+const sidebarSrc = read('src/components/AppSidebar.vue') + read('src/components/AppJobsSidebar.vue');
 const routerSrc = read('src/router/index.js');
 
 /** link -> permission, from the sidebar's item declarations. */
@@ -62,6 +64,9 @@ describe('the sidebar and the router agree on who may see a page', () => {
     for (const g of ['allowBackupOps', 'allowScheduledJobs', 'allowStoredJobs']) {
       expect(Object.keys(guards)).toContain(g);
     }
+    // the jobs menu's links were read too
+    expect(sidebar['/jobs/schedules']).toBe('allowScheduledJobs');
+    expect(sidebar['/jobs/stored']).toBe('allowStoredJobs');
   });
 
   it('every sidebar link points at a route that exists', () => {
