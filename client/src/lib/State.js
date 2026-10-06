@@ -26,18 +26,11 @@ var State = {
       store.version = result.data.version || result.data; // handle both old and new formats
       store.serverBuild = result.data.server || null;
 
-      // Get client build info
-      try {
-        const clientBuildResult = await axios.get(`/build-info.json`);
-        if (clientBuildResult.data?.gitSha) {
-          store.clientBuild = clientBuildResult.data;
-        } else {
-          store.clientBuild = { gitSha: 'dev', dirty: false, buildTime: null };
-        }
-      } catch (clientErr) {
-        // build-info.json not found (dev environment)
-        store.clientBuild = { gitSha: 'dev', dirty: false, buildTime: null };
-      }
+      // the client's own build, baked into the bundle by vite.config.mjs : it identifies the code
+      // running in this tab, so a tab left open across an upgrade shows a mismatch. 'dev' when
+      // the bundle was built without build-info.json, or under test (no vite define)
+      store.clientBuild =
+        typeof __CLIENT_BUILD__ !== 'undefined' ? __CLIENT_BUILD__ : { gitSha: 'dev', dirty: false, buildTime: null };
     } catch (err) {
       // silent fail
     }

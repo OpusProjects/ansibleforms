@@ -341,8 +341,9 @@ export default {
     sha: 'SHA',
     built: 'Gebouwd',
     dirty: 'onopgeslagen',
-    cacheMismatchTitle: 'Cache Mismatch Gedetecteerd!',
-    cacheMismatchMsg: 'Client en server builds komen niet overeen. Ververs de pagina met Ctrl+Shift+R of Cmd+Shift+R.',
+    cacheMismatchTitle: 'Er staat een nieuwere versie klaar',
+    cacheMismatchMsg:
+      'Deze pagina draait nog een oudere build dan de server. Herlaad de pagina om de nieuwe versie te krijgen.',
   },
   common: {
     clear: 'Wissen',

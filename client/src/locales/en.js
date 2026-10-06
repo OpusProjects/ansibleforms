@@ -341,8 +341,8 @@ export default {
     sha: 'SHA',
     built: 'Built',
     dirty: 'dirty',
-    cacheMismatchTitle: 'Cache Mismatch Detected!',
-    cacheMismatchMsg: "Client and server builds don't match. Please hard refresh (Ctrl+Shift+R or Cmd+Shift+R).",
+    cacheMismatchTitle: 'A newer version is deployed',
+    cacheMismatchMsg: 'This page still runs an older build than the server. Reload the page to get the new version.',
   },
   common: {
     clear: 'Clear',

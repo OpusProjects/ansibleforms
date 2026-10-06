@@ -345,9 +345,9 @@ export default {
     sha: 'SHA',
     built: 'Erstellt',
     dirty: 'dirty',
-    cacheMismatchTitle: 'Cache-Konflikt erkannt!',
+    cacheMismatchTitle: 'Eine neuere Version ist bereitgestellt',
     cacheMismatchMsg:
-      'Client- und Server-Build stimmen nicht ueberein. Bitte fuehren Sie ein hartes Neuladen aus (Ctrl+Shift+R oder Cmd+Shift+R).',
+      'Diese Seite läuft noch mit einem älteren Build als der Server. Laden Sie die Seite neu, um die neue Version zu erhalten.',
   },
   common: {
     clear: 'Leeren',

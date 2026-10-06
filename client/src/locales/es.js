@@ -341,9 +341,9 @@ export default {
     sha: 'SHA',
     built: 'Compilado',
     dirty: 'modificado',
-    cacheMismatchTitle: '¡Discrepancia de Caché Detectada!',
+    cacheMismatchTitle: 'Hay una versión más reciente',
     cacheMismatchMsg:
-      'Las compilaciones del cliente y servidor no coinciden. Actualice la página forzadamente (Ctrl+Mayús+R o Cmd+Mayús+R).',
+      'Esta página aún ejecuta una build más antigua que el servidor. Recarga la página para obtener la nueva versión.',
   },
   common: {
     clear: 'Borrar',
