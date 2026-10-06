@@ -126,7 +126,7 @@ function onClick() {
   <li role="button" v-if="countFormsByCategory(path) > 0">
     <!-- <li role="button"> -->
     <div
-      class="d-flex justify-content-between menu-item p-2 my-1"
+      class="d-flex justify-content-between align-items-center menu-item p-2 my-1"
       :class="{ active: isHighLighted }"
       @click="onClick()"
     >

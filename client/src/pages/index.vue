@@ -178,7 +178,7 @@ onMounted(async () => {
             <ul class="list-unstyled mb-3">
               <li role="button">
                 <div
-                  class="d-flex justify-content-between menu-item p-2 my-1"
+                  class="d-flex justify-content-between align-items-center menu-item p-2 my-1"
                   :class="{ 'bg-primary-forced': isAll }"
                   @click="select('')"
                 >
