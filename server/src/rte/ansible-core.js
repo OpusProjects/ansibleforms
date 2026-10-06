@@ -20,9 +20,13 @@ import Credential from "../models/credential.model.v2.js";
 import mysql from "../models/db.model.js";
 import Job from "../models/job.model.js";
 
-/** this RTE's name, stored in jobs.host on the jobs it claims (RTE_ID, default rte-<hostname>) */
+/**
+ * This RTE's name, stored in jobs.host on the jobs it claims : rte-<hostname>-<port>. Unique
+ * without a setting - two RTEs on one machine listen on different ports - and the same after a
+ * restart, so a restarted RTE finds and ends the jobs it was running.
+ */
 export function runnerIdentity() {
-  return process.env.RTE_ID || `rte-${os.hostname()}`;
+  return `rte-${os.hostname()}-${appConfig.port}`;
 }
 
 /** the folder the playbook runs from : the playbooks repository, else ANSIBLE_PATH, plus the sub path */

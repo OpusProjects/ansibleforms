@@ -366,14 +366,6 @@
     description: |
       On an RTE (`AF_ROLE=rte`) : the bearer token every call must carry ; the RTE refuses to
       start without one. The app stores the same token on the runner (Connections > Runners).
-  - name: RTE_ID
-    version: 7.3.0
-    type: string
-    short: The name of an RTE
-    default: rte-<hostname>
-    description: |
-      On an RTE : the name stored on the jobs it runs. When it restarts it abandons only the
-      jobs carrying its own name, so give every RTE a different one.
   - name: JOB_RETENTION_DAYS
     version: 6.3.0
     type: number

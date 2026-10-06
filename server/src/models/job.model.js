@@ -215,7 +215,7 @@ Job.create = async function (record) {
 Job.abandon = async function (all = false) {
   // abandon jobs
   logger.notice(`Abandoning jobs`);
-  // Only jobs no runner claimed : one running on an RTE (jobs.host = its RTE_ID) carries
+  // Only jobs no runner claimed : one running on an RTE (jobs.host = its name) carries
   // on when the app restarts, and that RTE cleans up its own jobs when it restarts. The
   // app runs no playbook itself, so it never claims one.
   var sql =

@@ -102,7 +102,7 @@ so steps can name different runners.
 3. `resolveRunner` picks the runner; `jobs.runner` records it.
 4. The app writes `ok: [Running on RTE <name> (<url>)]`, posts the job id, and polls the row
    once a second until the status is final. The RTE claims the job
-   (`UPDATE jobs SET host=<RTE_ID> WHERE id=? AND status='running' AND host IS NULL`), then runs
+   (`UPDATE jobs SET host=<its name> WHERE id=? AND status='running' AND host IS NULL`), then runs
    `runAnsibleJob(jobId)`.
 5. Output: every chunk becomes a `job_output` row; `order` continues from `MAX(order)` in the
    database (`Job.lastOrder`), so two writers (app then RTE) never collide. A
@@ -120,12 +120,14 @@ ends `aborted`.
 
 ### Who cleans up what
 
-`jobs.host` holds who runs a job: an RTE's `RTE_ID`; nothing for AWX jobs.
+`jobs.host` holds who runs a job: the RTE's name, `rte-<hostname>-<port>`; nothing for AWX
+jobs. The name needs no setting: two RTEs on one machine listen on different ports, and a
+restarted RTE keeps its name.
 
 - App start (and hourly): abandons jobs left `running` that no RTE claimed (`host IS NULL`).
   An RTE job carries on when the app restarts.
-- RTE start (and hourly for jobs older than a day): abandons only jobs with its own `RTE_ID`.
-  Give every RTE a different one (default `rte-<hostname>`).
+- RTE start (and hourly for jobs older than a day): abandons only the jobs carrying its own
+  name.
 
 ## The RTE API
 
@@ -153,7 +155,7 @@ release, so its tags always match the app's.
 ## Using a runner, step by step
 
 1. **Start an RTE** (see [Running it](#running-it)) with the app's database settings, the
-   app's `ENCRYPTION_SECRET`, a name (`RTE_ID`) and a token (`RTE_TOKEN`).
+   app's `ENCRYPTION_SECRET` and a token (`RTE_TOKEN`).
 2. **Add it**: Connections > Runners > add, type *RTE*, its address and the same token.
    *Test connection* shows its version and ansible version. An AWX/AAP connection is a
    runner of type *AWX* (a token, or *Use credentials* with a username and password); the v7
@@ -178,7 +180,6 @@ In dev the `dev:rte` script uses `dev-rte-token-not-a-secret`; never outside a d
 |---|---|---|
 | `AF_ROLE` | RTE | `app` (default) or `rte` |
 | `RTE_TOKEN` | RTE | the token every call must carry; the app holds the same value on the runner row |
-| `RTE_ID` | RTE | its name in `jobs.host`; default `rte-<hostname>` |
 | `DB_*`, `ENCRYPTION_SECRET` | RTE | the app's own values |
 | `ANSIBLE_PATH`, `PROCESS_MAX_BUFFER`, `REPO_PATH`, `HOME_PATH`, `UPLOAD_PATH` | RTE | where its playbooks, repositories, SSH key and uploads are |
 | `PORT`, `HTTPS`, `HTTPS_CERT`, `HTTPS_KEY` | RTE | as for the app |
@@ -190,14 +191,14 @@ they describe the process, not a setting.
 ## Running it
 
 **On a dev machine:** `npm run dev` (in the repository root) starts the client, the app and an
-RTE next to it (`rte-dev` on port 8010). Both use `server/.env.development`, so they share the
-database and the folders. Then once: Connections > Runners > add `rte-dev`, type RTE, uri
+RTE next to it on port 8010. Both use `server/.env.development`, so they share the
+database and the folders. Then once: Connections > Runners > add a runner `rte-dev`, type RTE, uri
 `http://127.0.0.1:8010`, token `dev-rte-token-not-a-secret`, tick *Default*. More RTEs:
-`RTE_ID=rte-network PORT=8011 npm run dev:rte` in another terminal, and another row.
+`PORT=8011 npm run dev:rte` in another terminal, and another row.
 
 | Script (root) | Starts |
 |---|---|
-| `npm run dev` | client + app + RTE `rte-dev` on 8010 |
+| `npm run dev` | client + app + an RTE on 8010 |
 | `npm run dev:local` | client + app only (playbook forms then need another runner) |
 | `npm run dev:rte` | the RTE alone |
 
@@ -206,7 +207,7 @@ database and the folders. Then once: Connections > Runners > add `rte-dev`, type
 ```bash
 docker run -d --name rte -p 8010:8000 \
   -e DB_HOST=... -e DB_PORT=3306 -e DB_USER=... -e DB_PASSWORD=... \
-  -e ENCRYPTION_SECRET=<the app's> -e RTE_TOKEN=<token> -e RTE_ID=rte-1 \
+  -e ENCRYPTION_SECRET=<the app's> -e RTE_TOKEN=<token> \
   -v <playbooks or repositories>:/app/dist/persistent/playbooks \
   -v <the app's .ssh>:/root/.ssh:ro \
   ghcr.io/ansibleforms/ansibleforms-rte:7
@@ -225,7 +226,7 @@ Customers make it their own by forking `Dockerfile.rte` (the full flavour) or
   report its status, cancel it, and answer health. It cannot create jobs, read credentials or
   return output.
 - The RTE holds the database password and `ENCRYPTION_SECRET`: it is as trusted as the app.
-  Every RTE has its own token and `RTE_ID`, so one cannot cancel or clean up another's jobs.
+  Every RTE can have its own token, and it cleans up only the jobs carrying its own name.
 
 ## Known limits
 
