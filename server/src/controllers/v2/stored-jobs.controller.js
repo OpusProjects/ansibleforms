@@ -4,6 +4,22 @@ import RestResult from "../../models/restResult.model.v2.js";
 import Errors from "../../lib/errors.js";
 import i18n from "../../lib/i18n.js";
 
+// The columns a caller may write. Everything else in the body is dropped :
+//  - id : the row key. On create a chosen id is inserted as is, and on update it moves the
+//    row. Either way a caller can push the AUTO_INCREMENT counter to the top of the INT range
+//    (id 2147483647), after which every new stored job of every user fails as a duplicate key.
+//  - username : the owner, always taken from the logged in user.
+//  - created_at : set by the database, a caller must not backdate or postdate it.
+// expires_at stays : the Store dialog lets the user pick when the stored job expires.
+const WRITABLE = ['name', 'description', 'form_name', 'form_data', 'expires_at'];
+function pickWritable(body) {
+  const data = {};
+  for (const key of WRITABLE) {
+    if (body && body[key] !== undefined) data[key] = body[key];
+  }
+  return data;
+}
+
 const stored_jobsController = {
   async find(req, res) {
     try {
@@ -20,9 +36,15 @@ const stored_jobsController = {
         const filtered = all.filter(s => s.form_name === req.query.form_name && s.username === username);
         return res.json(RestResult.list(filtered));
       } else {
-        // Return all stored jobs (for admin page management)
+        // The stored jobs page. Scoped exactly like findById, update and delete below :
+        // a settings user (admin) manages everyone's, any other user only sees their own.
+        // allowStoredJobs is on for every user by default, so returning every row here
+        // let any user read the stored field values of all other users - values the
+        // per-id read already refuses them.
+        const isAdmin = req.user.user.options?.showSettings;
         const all = await CrudModel.findAll('stored_jobs');
-        return res.json(RestResult.list(all));
+        const visible = isAdmin ? all : all.filter(s => s.username === username);
+        return res.json(RestResult.list(visible));
       }
     } catch (err) {
       Errors.ReturnError(res, err);
@@ -33,7 +55,7 @@ const stored_jobsController = {
     try {
       // Add username from authenticated user (format: type/username)
       const data = {
-        ...req.body,
+        ...pickWritable(req.body),
         username: `${req.user.user.type}/${req.user.user.username}`
       };
       const id = await CrudModel.create('stored_jobs', data);
@@ -70,11 +92,14 @@ const stored_jobsController = {
         throw new Errors.AccessDeniedError(i18n.t(req, 'resources.storedJobNoAccess'));
       }
       
-      // Don't allow changing username
-      const data = { ...req.body };
-      delete data.username;
+      // Don't allow changing the id, the owner or the creation time
+      const data = pickWritable(req.body);
       
-      await CrudModel.update('stored_jobs', data, req.params.id);
+      // a body with nothing writable left (only an id, say) changes nothing ; sent on it
+      // would be an UPDATE without columns, a syntax error
+      if (Object.keys(data).length) {
+        await CrudModel.update('stored_jobs', data, req.params.id);
+      }
       return res.json(RestResult.single(i18n.t(req, 'resources.storedJobUpdated')));
     } catch (err) {
       Errors.ReturnError(res, err);
