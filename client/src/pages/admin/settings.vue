@@ -48,7 +48,17 @@ const envGroupOrder = [
     icon: 'globe',
     // no BASE_URL : it is in OWNED_ELSEWHERE, which is filtered out before the groups are
     // consulted, so listing it here only claimed a variable this page never renders
-    exact: ['NODE_ENV', 'PORT', 'HTTPS', 'HTTPS_KEY', 'HTTPS_CERT', 'API_BODY_LIMIT_MB', 'ENABLE_MCP', 'ENABLE_CHAT'],
+    exact: [
+      'NODE_ENV',
+      'PORT',
+      'HTTPS',
+      'HTTPS_KEY',
+      'HTTPS_CERT',
+      'TRUST_PROXY',
+      'API_BODY_LIMIT_MB',
+      'ENABLE_MCP',
+      'ENABLE_CHAT',
+    ],
   },
   {
     key: 'database',
