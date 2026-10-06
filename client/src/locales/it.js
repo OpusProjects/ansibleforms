@@ -1019,7 +1019,7 @@ export default {
     forceUnlockCare: 'Procedi con attenzione e rispetto.',
     clickToForceUnlock: 'Clicca per forzare lo sblocco',
     notLocked: 'Il designer non è attivo',
-    notLockedHint: 'Attiva il blocco sopra per iniziare a modificare',
+    notLockedHint: "Attiva il blocco nell'angolo in alto a destra per iniziare a modificare",
     fileExplorer: 'Esplora file',
     search: 'Cerca',
     previewForm: 'Anteprima modulo',

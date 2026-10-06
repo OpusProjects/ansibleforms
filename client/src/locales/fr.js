@@ -1029,7 +1029,7 @@ export default {
     forceUnlockCare: 'Procedez avec prudence et respect.',
     clickToForceUnlock: 'Cliquer pour forcer le déverrouillage',
     notLocked: "Le designer n'est pas actif",
-    notLockedHint: 'Activez le verrou ci-dessus pour commencer à éditer',
+    notLockedHint: 'Activez le verrou en haut à droite pour commencer à éditer',
     fileExplorer: 'Explorateur de fichiers',
     search: 'Rechercher',
     previewForm: 'Aperçu du formulaire',

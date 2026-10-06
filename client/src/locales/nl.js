@@ -1017,7 +1017,7 @@ export default {
     forceUnlockCare: 'Ga zorgvuldig en respectvol te werk.',
     clickToForceUnlock: 'Klik om ontgrendeling te forceren',
     notLocked: 'Designer is niet actief',
-    notLockedHint: 'Schakel de vergrendeling hierboven in om te beginnen met bewerken',
+    notLockedHint: 'Schakel de vergrendeling rechtsboven in om te beginnen met bewerken',
     fileExplorer: 'Bestandsverkenner',
     search: 'Zoeken',
     previewForm: 'Formulier bekijken',
