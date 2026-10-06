@@ -2044,8 +2044,14 @@ Multistep.launch = async function ({
               // an abort that came in after the check above but before this step's row
               // existed only flagged the multistep (Job.abort aborts the steps it finds
               // running) - pass it on, or this step would still run to the end
-              if (await Job.isAbortRequested(jobid)) {
-                await Job.requestAbort(jobSuccess.id);
+              // (a failure here must not skip the wait below : the step would carry on
+              // unwatched while the multistep moved on as if it had failed)
+              try {
+                if (await Job.isAbortRequested(jobid)) {
+                  await Job.requestAbort(jobSuccess.id);
+                }
+              } catch (err) {
+                logger.error(`[Job ${jobSuccess.id}] Failed to pass the abort of job ${jobid} on to its step: ${err.message}`);
               }
               
               // Now wait for the step to complete
@@ -2113,8 +2119,13 @@ Multistep.launch = async function ({
           jobid,
           ++counter
         );
-        // if continue, we mark partial and mark as success
-        if (step.continue) {
+        // if continue, we mark partial and mark as success - unless the multistep was
+        // aborted : then this step failed because the abort stopped it, and continuing
+        // would end an aborted run as warning (the last step) instead of aborted
+        const abortedRun = step.continue
+          ? await Job.isAbortRequested(jobid).catch(() => false)
+          : false;
+        if (step.continue && !abortedRun) {
           await Job.printJobOutput(
             `CONTINUE on failure`,
             "stdout",

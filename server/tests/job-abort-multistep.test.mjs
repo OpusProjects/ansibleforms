@@ -111,6 +111,7 @@ describe("the multistep ends as aborted when its last step is aborted", () => {
   const saved = {};
   let outputs;
   let ended;
+  let beforeLaunch; // runs inside Job.launch, before the step's row exists
   beforeEach(() => {
     jobs = [{ id: 30, parent_id: null, status: "running", abort_requested: 0 }];
     outputs = [];
@@ -125,7 +126,9 @@ describe("the multistep ends as aborted when its last step is aborted", () => {
       ended = { status, message };
     };
     // each step is a job of its own ; it runs until the test ends it or it is aborted
+    beforeLaunch = null;
     Job.launch = async ({ parentId }) => {
+      if (beforeLaunch) await beforeLaunch();
       const id = jobs.length + 30;
       const step = { id, parent_id: parentId, status: "running", abort_requested: 0 };
       jobs.push(step);
@@ -174,5 +177,60 @@ describe("the multistep ends as aborted when its last step is aborted", () => {
     assert.equal(jobs.length, 2, "step two never started");
     assert.ok(outputs.includes("skipping: [Abort is requested]"));
     assert.equal(ended?.status, "aborted");
+  });
+
+  const twoSteps = (extra = {}) => [
+    { name: "one", type: "ansible" },
+    { name: "two", type: "ansible", ...extra },
+  ];
+
+  test("an abort before the step's row exists still stops that step", async () => {
+    // after the STEP header check, before Job.launch inserted the row : Job.abort finds
+    // no running step, so only the multistep is flagged - the runner passes it on
+    beforeLaunch = async () => {
+      if (jobs.length === 2) await Job.abort(admin, 30);
+    };
+    const run = Multistep.launch({ form: "two steps", steps: twoSteps(), user: admin, jobid: 30 });
+    await runStep(31, false);
+    await runStep(32, false);
+    await run;
+    assert.equal(jobs.find((j) => j.id == 32).status, "aborted", "the step got the abort");
+    assert.equal(ended?.status, "aborted");
+    assert.equal(flagged(30), false);
+  });
+
+  test("an abort after every step finished leaves a success, with the flag cleared", async () => {
+    const run = Multistep.launch({ form: "two steps", steps: twoSteps(), user: admin, jobid: 30 });
+    await runStep(31, false);
+    await runStep(32, false);
+    // the last step is done, the recap is not written yet
+    jobs.find((j) => j.id == 30).abort_requested = 1;
+    await run;
+    assert.equal(ended?.status, "success");
+    assert.equal(flagged(30), false, "a later abort of this job is not refused");
+  });
+
+  test("an aborted last step with continue ends the multistep as aborted, not warning", async () => {
+    const run = Multistep.launch({
+      form: "two steps", steps: twoSteps({ continue: true }), user: admin, jobid: 30,
+    });
+    await runStep(31, false);
+    await runStep(32, true);
+    await run;
+    assert.equal(ended?.status, "aborted");
+    assert.ok(!outputs.includes("CONTINUE on failure"));
+    assert.equal(flagged(30), false);
+  });
+
+  test("a failed step with continue still continues when nobody aborted", async () => {
+    const run = Multistep.launch({
+      form: "two steps", steps: twoSteps({ continue: true }), user: admin, jobid: 30,
+    });
+    await runStep(31, false);
+    const step = () => jobs.find((j) => j.id == 32);
+    while (!step()) await new Promise((r) => setImmediate(r));
+    step().finish("failed");
+    await run;
+    assert.equal(ended?.status, "warning");
   });
 });
