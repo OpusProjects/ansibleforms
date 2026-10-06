@@ -1,20 +1,39 @@
-# The base image, base-server, is built in ansibleforms/base-images and pinned here by
-# DIGEST, not by :latest. A rebuild of the base moves :latest, and without the pin that would
-# silently change what every application build starts from - with no commit here to show
-# for it. Updating the pin is a deliberate, reviewable act : Dependabot proposes it as a
-# pull request.
+# The app runs on plain node: it spawns git, ssh, ssh-keyscan, ssh-keygen, mariadb-dump,
+# mariadb, ytt, ps and sh, never ansible or python (playbooks run on an RTE, Dockerfile.rte).
+# Both node images are pinned by DIGEST, not by tag : a new node build moves the tag, and
+# without the pin that would silently change what every application build starts from - with
+# no commit here to show for it. Dependabot proposes a new pin as a pull request.
 #
-#   docker pull ghcr.io/ansibleforms/base-server:latest
-#   docker inspect --format='{{index .RepoDigests 0}}' ghcr.io/ansibleforms/base-server:latest
+#   docker pull node:24-bookworm-slim
+#   docker inspect --format='{{index .RepoDigests 0}}' node:24-bookworm-slim
 #
-FROM ghcr.io/ansibleforms/base-server:latest@sha256:e7b859d2c855c0ca9841d7cba68aaeefabf570347482fc8f756fac89454e3406 AS nodebase
+FROM node:24-bookworm-slim@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20 AS nodebase
+
+# ytt renders forms when USE_YTT=1 ; a static binary, checked against the release checksums
+ARG YTT_VERSION=0.55.3
+ARG YTT_SHA256_AMD64=15751b45a819edbf22b3d3eadb5fa9a5a2599128d921660a874bd39c47bb41e1
+ARG YTT_SHA256_ARM64=fed073d52b780a88ce506e68c44f33cedede2dad3d5f4fbe07a2833e45d996ed
+ARG TARGETARCH=amd64
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends git openssh-client mariadb-client procps ca-certificates curl \
+ && case "$TARGETARCH" in \
+      amd64) sum="$YTT_SHA256_AMD64" ;; \
+      arm64) sum="$YTT_SHA256_ARM64" ;; \
+      *) echo "no ytt for $TARGETARCH" >&2; exit 1 ;; \
+    esac \
+ && curl -fsSL -o /usr/local/bin/ytt "https://github.com/carvel-dev/ytt/releases/download/v${YTT_VERSION}/ytt-linux-${TARGETARCH}" \
+ && echo "$sum  /usr/local/bin/ytt" | sha256sum -c - \
+ && chmod +x /usr/local/bin/ytt \
+ && apt-get purge -y curl && apt-get autoremove -y \
+ && rm -rf /var/lib/apt/lists/*
 
 ##################################################
 # builder stage
 # intermediate build to compile the client application with vite
 # can run in parallel with base stage
 
-FROM ghcr.io/ansibleforms/base-server:latest@sha256:e7b859d2c855c0ca9841d7cba68aaeefabf570347482fc8f756fac89454e3406 AS tmp_builder
+FROM node:24-bookworm@sha256:22f6fe5f59fb7fed238b19623506d573dffaa932ce33b84ce541a9a2e0eade28 AS tmp_builder
 
 # Build arguments for git SHA, build time and version. VERSION is empty for a local build,
 # which leaves server/package.json as the version shown ; CI passes the release or
@@ -71,7 +90,7 @@ COPY ./server .
 RUN /tmp/generate-build-info.sh . "$GIT_SHA" "$BUILD_TIME" "$VERSION"
 
 # clean files
-RUN rm .env.*
+RUN rm -f .env.*
 RUN rm -rf ./views
 RUN mkdir ./views
 
@@ -105,6 +124,11 @@ WORKDIR /app/dist
 # copy the server code, no more compiling needed sing ESM
 COPY --from=tmp_builder /app/server/. ./
 
+
+EXPOSE 8000
+
+# server/healthcheck.js : /api/v2/version answers 200 without a login
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 CMD ["node", "./healthcheck.js"]
 
 # Use js files to run the application
 ENTRYPOINT ["node", "./index.js"]

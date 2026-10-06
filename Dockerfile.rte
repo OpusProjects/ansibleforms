@@ -1,14 +1,14 @@
 # The AnsibleForms RTE (runtime environment) : the server started with AF_ROLE=rte, which
-# runs playbooks for an AnsibleForms app. Same base image as the app, so a playbook finds
-# the same ansible, python packages and collections in both.
+# runs playbooks for an AnsibleForms app. It builds from base-server, which holds what the
+# all-in-one image of 6.x had : ansible, the python packages and the NetApp and community
+# collections. The app itself (Dockerfile) runs on plain node.
 #
 # Make it your own : fork this file, add what your playbooks need after the final FROM,
 #   RUN ansible-galaxy collection install vmware.vmware -p /usr/share/ansible/collections
 #   RUN /venv/bin/pip install pyvmomi
 # and build it : docker build -f Dockerfile.rte -t my-rte .
 #
-# The base is pinned by digest, the same pin as Dockerfile : keep the two equal (Dependabot
-# moves both in one pull request).
+# The base is pinned by digest : Dependabot proposes a new pin as a pull request.
 FROM ghcr.io/ansibleforms/base-server:latest@sha256:e7b859d2c855c0ca9841d7cba68aaeefabf570347482fc8f756fac89454e3406 AS builder
 
 ARG GIT_SHA=unknown

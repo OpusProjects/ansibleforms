@@ -19,6 +19,7 @@ Removed in 8.0.0. Each logs a warning when it is used.
 |---|---|
 | playbooks no longer run inside the AnsibleForms container | start an RTE (the `ansibleforms-rte` image), add it under Connections > Runners and mark it as default, or name it on the form with `runner:` |
 | `ANSIBLE_PATH`, `PROCESS_MAX_BUFFER` are read by the RTE, not the app | set them in the RTE container's environment |
+| the app image is node only: no ansible, python or collections | anything you added to the app image for playbooks goes into your RTE image (fork `Dockerfile.rte`) |
 | the `awx` table, `/api/v2/awx` and the A.A.P. page are gone | nothing : the upgrade moves every AWX/AAP connection to Runners (type `awx`) |
 
 ## Removed in 7.0.0

@@ -12,6 +12,7 @@ on:
       - 'Dockerfile'
       - 'Dockerfile.rte'
       - 'server/ansible.cfg'
+      - 'server/healthcheck.js'
       - 'client/package.json'
       - 'client/package-lock.json'
       - 'server/package.json'
