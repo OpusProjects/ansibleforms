@@ -1,0 +1,178 @@
+// Aborting a multistep must also stop the step that is running. A multistep runs each step
+// as a job of its own (jobs.parent_id = the multistep), and that step's runner only watches
+// the abort flag of its OWN row. Job.abort flagged only the multistep, so the steps that had
+// not started were skipped while the running one - a playbook or an AWX job - carried on to
+// the end. An abort during the LAST step was never noticed at all : the multistep ended as
+// success and kept its flag, which then refused every later abort of it.
+import { test, describe, beforeEach, afterEach, vi } from "vitest";
+import assert from "node:assert/strict";
+import os from "os";
+
+process.env.LOG_PATH = process.env.LOG_PATH || "/tmp/ansibleforms-test-logs";
+process.env.DB_HOST ||= "127.0.0.1";
+process.env.DB_PORT ||= "3306";
+process.env.DB_USER ||= "test";
+process.env.DB_PASSWORD ||= "test";
+
+// the jobs table, in memory : just the columns the abort path reads and writes
+let jobs;
+vi.mock("../src/models/db.model.js", () => ({
+  default: {
+    do: async (sql, params = []) => {
+      const row = (id) => jobs.find((j) => j.id == id);
+      if (/SELECT id FROM AnsibleForms.`jobs` WHERE id = \?/.test(sql)) {
+        return row(params[0]) ? [{ id: params[0] }] : [];
+      }
+      if (/SELECT abort_requested/.test(sql)) {
+        return [{ abort_requested: row(params[0])?.abort_requested || 0 }];
+      }
+      if (/set abort_requested=1 WHERE id=\? AND status='running'/.test(sql)) {
+        const j = row(params[0]);
+        if (j && j.status === "running" && !j.abort_requested) {
+          j.abort_requested = 1;
+          return { changedRows: 1 };
+        }
+        return { changedRows: 0 };
+      }
+      if (/set abort_requested=0 WHERE id=\?/.test(sql)) {
+        row(params[0]).abort_requested = 0;
+        return { changedRows: 1 };
+      }
+      if (/SELECT pid, host/.test(sql)) {
+        const j = row(params[0]);
+        return [{ pid: j?.pid ?? null, host: j?.host ?? null }];
+      }
+      if (/WHERE parent_id=\? AND status='running'/.test(sql)) {
+        return jobs.filter((j) => j.parent_id == params[0] && j.status === "running").map((j) => ({ id: j.id }));
+      }
+      return { changedRows: 0 };
+    },
+  },
+}));
+
+const { default: Job, Multistep } = await import("../src/models/job.model.js");
+
+const admin = { username: "root", type: "local", roles: ["admin"], options: {} };
+const flagged = (id) => !!jobs.find((j) => j.id == id).abort_requested;
+
+let kills;
+let killSpy;
+beforeEach(() => {
+  kills = [];
+  // never signal a real process
+  killSpy = vi.spyOn(process, "kill").mockImplementation((pid, signal) => {
+    kills.push([pid, signal]);
+    return true;
+  });
+});
+afterEach(() => {
+  killSpy.mockRestore();
+});
+
+describe("aborting a multistep aborts its running step", () => {
+  beforeEach(() => {
+    jobs = [
+      { id: 10, parent_id: null, status: "running", abort_requested: 0 },
+      // step one finished, step two is running a playbook on this host
+      { id: 11, parent_id: 10, status: "success", abort_requested: 0 },
+      { id: 12, parent_id: 10, status: "running", abort_requested: 0, pid: 4242, host: os.hostname() },
+      // a running job of another multistep is not touched
+      { id: 20, parent_id: 19, status: "running", abort_requested: 0, pid: 5151, host: os.hostname() },
+    ];
+  });
+
+  test("the running step is flagged and its playbook stopped", async () => {
+    await Job.abort(admin, 10);
+    assert.equal(flagged(10), true, "the multistep is flagged, so later steps are skipped");
+    assert.equal(flagged(12), true, "the running step is flagged, so its runner stops it");
+    assert.deepEqual(kills, [[-4242, "SIGTERM"]], "the step's playbook is stopped right away");
+  });
+
+  test("finished steps and other jobs are left alone", async () => {
+    await Job.abort(admin, 10);
+    assert.equal(flagged(11), false);
+    assert.equal(flagged(20), false);
+  });
+
+  test("a single job still aborts as before", async () => {
+    await Job.abort(admin, 20);
+    assert.equal(flagged(20), true);
+    assert.deepEqual(kills, [[-5151, "SIGTERM"]]);
+    assert.equal(flagged(12), false);
+  });
+
+  test("a job that is not running is still refused", async () => {
+    await assert.rejects(() => Job.abort(admin, 11), (e) => e.name === "ConflictError");
+    assert.equal(kills.length, 0);
+  });
+});
+
+describe("the multistep ends as aborted when its last step is aborted", () => {
+  const saved = {};
+  let outputs;
+  let ended;
+  beforeEach(() => {
+    jobs = [{ id: 30, parent_id: null, status: "running", abort_requested: 0 }];
+    outputs = [];
+    ended = null;
+    for (const k of ["launch", "findById", "printJobOutput", "update", "endJobStatus"]) saved[k] = Job[k];
+    Job.update = async () => {};
+    Job.printJobOutput = async (data, type, jobid) => {
+      outputs.push(data);
+      return flagged(jobid);
+    };
+    Job.endJobStatus = async (jobid, counter, stream, status, message) => {
+      ended = { status, message };
+    };
+    // each step is a job of its own ; it runs until the test ends it or it is aborted
+    Job.launch = async ({ parentId }) => {
+      const id = jobs.length + 30;
+      const step = { id, parent_id: parentId, status: "running", abort_requested: 0 };
+      jobs.push(step);
+      const completionPromise = new Promise((resolve) => {
+        step.finish = (status) => { step.status = status; resolve(); };
+      });
+      return { id, completionPromise };
+    };
+    Job.findById = async (user, id) => ({ status: jobs.find((j) => j.id == id).status });
+  });
+  afterEach(() => Object.assign(Job, saved));
+
+  // the step's runner : stops when its own flag is set, as Exec.executeCommand does
+  const runStep = async (id, abortedWhileRunning) => {
+    const step = () => jobs.find((j) => j.id == id);
+    while (!step()) await new Promise((r) => setImmediate(r));
+    if (abortedWhileRunning) await Job.abort(admin, 30);
+    step().finish(step().abort_requested ? "aborted" : "success");
+  };
+
+  test("an abort during the last step stops it and marks the multistep aborted", async () => {
+    const run = Multistep.launch({
+      form: "two steps",
+      steps: [{ name: "one", type: "ansible" }, { name: "two", type: "ansible" }],
+      user: admin,
+      jobid: 30,
+    });
+    await runStep(31, false);
+    await runStep(32, true);
+    await run;
+    assert.equal(jobs.find((j) => j.id == 32).status, "aborted", "the last step was stopped");
+    assert.equal(ended?.status, "aborted", "not success, not failed");
+    assert.equal(flagged(30), false, "the flag is reset, so the job can be aborted again later");
+  });
+
+  test("an abort during the first step stops it and skips the next", async () => {
+    const run = Multistep.launch({
+      form: "two steps",
+      steps: [{ name: "one", type: "ansible" }, { name: "two", type: "ansible" }],
+      user: admin,
+      jobid: 30,
+    });
+    await runStep(31, true);
+    await run;
+    assert.equal(jobs.find((j) => j.id == 31).status, "aborted", "the running step was stopped");
+    assert.equal(jobs.length, 2, "step two never started");
+    assert.ok(outputs.includes("skipping: [Abort is requested]"));
+    assert.equal(ended?.status, "aborted");
+  });
+});
