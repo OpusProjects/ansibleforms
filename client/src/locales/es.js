@@ -121,6 +121,7 @@ export default {
       connections: 'Conexiones',
       jobs: 'Trabajos',
       system: 'Sistema',
+      logs: 'Registros',
     },
     ansibleForms: 'General',
     categories: 'Categorias',

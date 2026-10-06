@@ -34,16 +34,14 @@ const can = (permission) => !!store.profile?.options?.[permission || 'showSettin
 const sections = computed(() =>
   [
     {
-      // The instance itself : configure it, inspect it, audit it. First, because
-      // "where do I set the url / what version is this / is anything broken" is
-      // what an admin opens this menu for most often.
+      // The instance itself : configure it, check its health, back it up. First,
+      // because "where do I set the url / what version is this / is anything
+      // broken" is what an admin opens this menu for most often.
       title: t('sidebar.sections.system'),
       items: [
         { title: t('sidebar.ansibleForms'), icon: 'toolbox', link: '/admin/settings', permission: 'showSettings' },
         { title: t('sidebar.logo'), icon: 'image', link: '/admin/logo', permission: 'showSettings' },
         { title: t('sidebar.status'), icon: 'heart-pulse', link: '/admin/status', permission: 'showSettings' },
-        { title: t('sidebar.audit'), icon: 'clipboard-list', link: '/admin/audit', permission: 'showSettings' },
-        { title: t('sidebar.logs'), icon: 'file-lines', link: '/logs', permission: 'showLogs' },
         // the database backups : the instance's own data, so with the instance
         { title: t('sidebar.backups'), icon: 'database', link: '/admin/backups', permission: 'allowBackupOps' },
       ],
@@ -88,6 +86,16 @@ const sections = computed(() =>
         { title: t('sidebar.aap'), icon: 'fac,ansible', link: '/admin/aap', permission: 'showSettings' },
         { title: t('sidebar.repositories'), icon: 'fab,git', link: '/admin/repositories', permission: 'showSettings' },
         { title: t('sidebar.chat'), icon: 'comments', link: '/admin/chat', permission: 'showSettings' },
+      ],
+    },
+    {
+      // What happened on the instance : who changed what (the audit log), and what
+      // the server itself reported (the server log, for troubleshooting). Last : the
+      // sections above are what you set up, these are read afterwards.
+      title: t('sidebar.sections.logs'),
+      items: [
+        { title: t('sidebar.audit'), icon: 'clipboard-list', link: '/admin/audit', permission: 'showSettings' },
+        { title: t('sidebar.logs'), icon: 'file-lines', link: '/logs', permission: 'showLogs' },
       ],
     },
   ]
