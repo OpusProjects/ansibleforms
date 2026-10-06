@@ -1755,8 +1755,7 @@ Job.sendEventNotification = async function (jobid, eventType, user = null) {
       'reject': 'Rejected'
     };
     
-    const byStr = user ? ' by ' + user.username : '';
-    const eventMessage = i18n.t(null, `email.jobevent.${eventType}`, { by: byStr });
+    const eventMessage = Job.eventMessage(eventType, user);
 
     var subject = `AnsibleForms '${job.form}' [${job.job_type}] (${jobid}) - ${eventTitles[eventType]}`;
     
@@ -1776,6 +1775,26 @@ Job.sendEventNotification = async function (jobid, eventType, user = null) {
     logger.error(`Failed to send ${eventType} notification: `, err);
     return false;
   }
+};
+/**
+ * The sentence of a job event mail, in the server's language.
+ *
+ * With a user it is a whole translated sentence naming them ("Job has been launched by
+ * admin."), not an English " by admin" pasted into one : the word order differs per
+ * language, and Japanese and Catalan put the name before the verb. The name is escaped,
+ * because the message goes into the html mail as it is.
+ *
+ * Args:
+ *   eventType (string): launch, relaunch, delete, approve or reject.
+ *   user (object): the user who did it, or nothing when no one is known.
+ *
+ * Returns:
+ *   string: the translated sentence.
+ */
+Job.eventMessage = function (eventType, user) {
+  const username = user?.username;
+  if (!username) return i18n.t(null, `email.jobevent.${eventType}`);
+  return i18n.t(null, `email.jobevent.${eventType}By`, { user: Helpers.htmlEscape(String(username)) });
 };
 Job.reject = async function (user, id) {
   const job = await Job.findById(user, id, true);

@@ -171,11 +171,18 @@ export default {
     jobevent: {
       button: "Mostra la tasca",
       regards: "Salutacions,<br>AnsibleForms",
-      launch: "La tasca s'ha llançat{by}.",
-      relaunch: "La tasca s'ha tornat a llançar{by}.",
-      delete: "La tasca s'ha suprimit{by}.",
-      approve: "La tasca s'ha aprovat{by} i continuarà l'execució.",
-      reject: "La tasca s'ha rebutjat{by}.",
+      // without a user, and with the user who did it : a whole sentence
+      // each, so every language puts the name where its word order needs it
+      launch: "La tasca s'ha llançat.",
+      relaunch: "La tasca s'ha tornat a llançar.",
+      delete: "La tasca s'ha suprimit.",
+      approve: "La tasca s'ha aprovat i continuarà l'execució.",
+      reject: "La tasca s'ha rebutjat.",
+      launchBy: "{user} ha llançat la tasca.",
+      relaunchBy: "{user} ha tornat a llançar la tasca.",
+      deleteBy: "{user} ha suprimit la tasca.",
+      approveBy: "{user} ha aprovat la tasca, que continuarà l'execució.",
+      rejectBy: "{user} ha rebutjat la tasca.",
     },
   },
 }

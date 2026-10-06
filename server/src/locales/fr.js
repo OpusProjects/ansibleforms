@@ -171,11 +171,18 @@ export default {
     jobevent: {
       button: "Voir la tache",
       regards: "Cordialement,<br>AnsibleForms",
-      launch: "La tache a ete lancee{by}.",
-      relaunch: "La tache a ete relancee{by}.",
-      delete: "La tache a ete supprimee{by}.",
-      approve: "La tache a ete approuvee{by} et continuera son execution.",
-      reject: "La tache a ete rejetee{by}.",
+      // without a user, and with the user who did it : a whole sentence
+      // each, so every language puts the name where its word order needs it
+      launch: "La tache a ete lancee.",
+      relaunch: "La tache a ete relancee.",
+      delete: "La tache a ete supprimee.",
+      approve: "La tache a ete approuvee et continuera son execution.",
+      reject: "La tache a ete rejetee.",
+      launchBy: "La tache a ete lancee par {user}.",
+      relaunchBy: "La tache a ete relancee par {user}.",
+      deleteBy: "La tache a ete supprimee par {user}.",
+      approveBy: "La tache a ete approuvee par {user} et continuera son execution.",
+      rejectBy: "La tache a ete rejetee par {user}.",
     },
   },
 }

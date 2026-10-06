@@ -171,11 +171,18 @@ export default {
     jobevent: {
       button: "Job bekijken",
       regards: "Met vriendelijke groet,<br>AnsibleForms",
-      launch: "Job is gestart{by}.",
-      relaunch: "Job is herstart{by}.",
-      delete: "Job is verwijderd{by}.",
-      approve: "Job is goedgekeurd{by} en wordt verder uitgevoerd.",
-      reject: "Job is afgewezen{by}.",
+      // without a user, and with the user who did it : a whole sentence
+      // each, so every language puts the name where its word order needs it
+      launch: "Job is gestart.",
+      relaunch: "Job is herstart.",
+      delete: "Job is verwijderd.",
+      approve: "Job is goedgekeurd en wordt verder uitgevoerd.",
+      reject: "Job is afgewezen.",
+      launchBy: "Job is gestart door {user}.",
+      relaunchBy: "Job is herstart door {user}.",
+      deleteBy: "Job is verwijderd door {user}.",
+      approveBy: "Job is goedgekeurd door {user} en wordt verder uitgevoerd.",
+      rejectBy: "Job is afgewezen door {user}.",
     },
   },
 }

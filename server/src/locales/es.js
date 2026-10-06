@@ -171,11 +171,18 @@ export default {
     jobevent: {
       button: "Ver Trabajo",
       regards: "Saludos,<br>AnsibleForms",
-      launch: "El trabajo ha sido lanzado{by}.",
-      relaunch: "El trabajo ha sido relanzado{by}.",
-      delete: "El trabajo ha sido eliminado{by}.",
-      approve: "El trabajo ha sido aprobado{by} y continuará la ejecución.",
-      reject: "El trabajo ha sido rechazado{by}.",
+      // without a user, and with the user who did it : a whole sentence
+      // each, so every language puts the name where its word order needs it
+      launch: "El trabajo ha sido lanzado.",
+      relaunch: "El trabajo ha sido relanzado.",
+      delete: "El trabajo ha sido eliminado.",
+      approve: "El trabajo ha sido aprobado y continuará la ejecución.",
+      reject: "El trabajo ha sido rechazado.",
+      launchBy: "El trabajo ha sido lanzado por {user}.",
+      relaunchBy: "El trabajo ha sido relanzado por {user}.",
+      deleteBy: "El trabajo ha sido eliminado por {user}.",
+      approveBy: "El trabajo ha sido aprobado por {user} y continuará la ejecución.",
+      rejectBy: "El trabajo ha sido rechazado por {user}.",
     },
   },
 }
