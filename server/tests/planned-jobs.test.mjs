@@ -26,6 +26,8 @@ vi.mock("../src/lib/i18n.js", () => ({
 let launched = null;
 vi.mock("../src/models/job.model.js", () => ({
   default: { launch: async (args) => { launched = args; return { id: 42 }; } },
+  // the real rule : the stricter of the form's own setting and the instance's (off here)
+  launchValidationMode: (formObj) => formObj?.launchValidation || "off",
 }));
 
 vi.mock("../src/services/cron.service.js", () => ({
@@ -36,9 +38,10 @@ vi.mock("../src/services/cron.service.js", () => ({
 vi.mock("../src/models/form.model.js", () => ({
   default: {
     load: async (roles, name) => {
-      const forms = { "Demo Form": ["users"], "Admin Form": ["admin"] };
+      const forms = { "Demo Form": ["users"], "Admin Form": ["admin"], "Strict Form": ["users"] };
       if (!forms[name]) return { forms: [] };
-      if (roles.includes("admin") || forms[name].some((r) => roles.includes(r))) return { forms: [{ name }] };
+      const launchValidation = name === "Strict Form" ? "enforce" : undefined;
+      if (roles.includes("admin") || forms[name].some((r) => roles.includes(r))) return { forms: [{ name, launchValidation }] };
       // what the real Form.load does for a named form the roles do not reach
       const err = new Error(`Access denied to form ${name}.`);
       err.name = "AccessDeniedError";
@@ -153,6 +156,18 @@ describe("Schedule.plan", () => {
   test("extra_vars must be a dictionary, and a run_at is required", async () => {
     await assert.rejects(Schedule.plan(planner, planBody({ extra_vars: "- a\n- b\n" })), { name: "BadRequestError" });
     await assert.rejects(Schedule.plan(planner, planBody({ run_at: null })), { name: "BadRequestError" });
+  });
+
+  test("the owner is the whole token user, so ansibleforms_user matches a browser launch", async () => {
+    await Schedule.plan({ ...planner, type: "ldap", displayName: "Bob Builder" }, planBody());
+    const owner = JSON.parse(created.owner);
+    assert.equal(owner.displayName, "Bob Builder", "a field the token carries must not be dropped");
+    assert.equal(owner.type, "ldap");
+  });
+
+  test("a form with launch validation 'enforce' is refused when planned, not when it fires", async () => {
+    await assert.rejects(Schedule.plan(planner, planBody({ form: "Strict Form" })), { name: "BadRequestError" });
+    assert.equal(created, null);
   });
 
   test("without allowPlannedJobs nothing is planned", async () => {

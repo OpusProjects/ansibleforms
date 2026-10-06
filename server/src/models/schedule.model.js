@@ -1,7 +1,7 @@
 'use strict';
 
 import logger from "../lib/logger.js";
-import Job from "./job.model.js";
+import Job, { launchValidationMode } from "./job.model.js";
 import yaml from 'yaml';
 import CrudModel from './crud.model.js';
 import mysql from './db.model.js';
@@ -42,7 +42,8 @@ class Schedule extends CrudModel {
    * @param {object} user the authenticated user (req.user.user)
    * @param {object} data the request body
    * @returns {Promise<number>} the id of the new schedule
-   * @throws {Errors.BadRequestError} no name or run_at, or extra_vars not a dictionary
+   * @throws {Errors.BadRequestError} no name or run_at, extra_vars not a dictionary, or a
+   *   form whose launch validation is 'enforce'
    * @throws {Errors.AccessDeniedError} no allowPlannedJobs, not one-time, a form the user may
    *   not run, or verbose mode without allowVerboseMode
    */
@@ -68,6 +69,14 @@ class Schedule extends CrudModel {
       throw err;
     }
     if (!formName || !formConfig?.forms?.length) throw noAccess;
+    // A planned run is launched like a browser launch, with launch validation - but "Run
+    // later" stores the built extra_vars, not the raw field values that validation reads.
+    // Under 'enforce' the run would therefore be refused when it fires, after the schedule
+    // was accepted and with nobody there to see it (a one-time schedule is deleted after
+    // its run). Refuse it now, while the user is still looking.
+    if (launchValidationMode(formConfig.forms[0]) === 'enforce') {
+      throw new Errors.BadRequestError(`Form '${formName}' cannot be run later : its launch validation is 'enforce', and a planned run has no raw form data to validate.`);
+    }
     let extravars;
     try {
       extravars = yaml.parse(data.extra_vars || '{}');
@@ -81,16 +90,11 @@ class Schedule extends CrudModel {
     if (extravars.__verbose__ && !user?.options?.allowVerboseMode) {
       throw new Errors.AccessDeniedError("You do not have permission to run jobs in verbose mode.");
     }
-    // the identity the job will run as : what the token says now. No secrets in it.
-    const owner = {
-      id: user.id,
-      username: user.username,
-      type: user.type,
-      email: user.email,
-      groups: user.groups || [],
-      roles: user.roles || [],
-      options: user.options || {},
-    };
+    // the identity the job will run as : the user object of the token, as it is now - the
+    // same object a launch from the browser puts in `ansibleforms_user`, so a playbook sees
+    // the same fields either way (displayName, the oid of an Entra ID user...). It is the
+    // signed payload's `user`, not the token : no secrets in it.
+    const owner = { ...user, groups: user.groups || [], roles: user.roles || [], options: user.options || {} };
     logger.info(`Planning a one-time run of form '${formName}' for ${user.username} at ${data.run_at}`);
     return super.create(this.modelName, {
       name: data.name,
