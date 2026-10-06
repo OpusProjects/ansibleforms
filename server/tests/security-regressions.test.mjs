@@ -4,7 +4,7 @@
 // written so that reverting the fix makes it fail. They are grouped here rather than by
 // module because what they have in common is the failure mode: input the code trusted
 // without checking who supplied it.
-import { test, describe, beforeEach, vi } from "vitest";
+import { test, describe, beforeEach, afterEach, vi } from "vitest";
 import assert from "node:assert/strict";
 import { readFileSync } from "fs";
 
@@ -155,6 +155,62 @@ describe("aborting someone else's job is refused", () => {
     await Job.abort(admin, 7).catch((e) => {
       assert.notEqual(e.name, "AccessDeniedError", "an admin must not be refused");
     });
+  });
+});
+
+describe("deleting someone else's job that waits for approval is refused", () => {
+  // Job.delete reused the non-admin query of Job.findById, including its
+  // `OR (j.status='approve')` - there so an approver can open a pending job. For a delete
+  // that meant any signed-in user could remove another user's job awaiting approval
+  // through the API ; the UI only hid the button.
+  const owner = { username: "alice", type: "local", roles: [], options: {} };
+  const other = { username: "mallory", type: "local", roles: ["approvers"], options: {} };
+  const admin = { username: "root", type: "local", roles: ["admin"], options: {} };
+  const seesAll = { username: "auditor", type: "local", roles: [], options: { showAllJobLogs: true } };
+
+  // job 7 belongs to alice and waits for approval. The SELECT is answered the way MySQL
+  // would answer it : the row comes back when the WHERE the model wrote lets it through.
+  const row = { id: 7, user: "alice", user_type: "local", status: "approve" };
+  const pendingJobOfAlice = async (sql, vars) => {
+    if (/SELECT id FROM AnsibleForms.`jobs` WHERE id = \?/.test(sql)) return [{ id: 7 }];
+    if (/^SELECT j\.\*/.test(sql)) {
+      const ownerFilter = /j\.user=\? AND j\.user_type=\?/.test(sql);
+      if (!ownerFilter) return [row]; // admin / showAllJobLogs query
+      const [username, type] = vars.slice(-2);
+      const owns = username === row.user && type === row.user_type;
+      const approveShortcut = /j\.status='approve'/.test(sql) && row.status === "approve";
+      return owns || approveShortcut ? [row] : [];
+    }
+    return { affectedRows: 1 };
+  };
+  const deleted = () => queries.some((q) => /^DELETE FROM AnsibleForms.`jobs`/.test(q.sql));
+
+  let sendEventNotification;
+  beforeEach(() => {
+    sendEventNotification = Job.sendEventNotification;
+    Job.sendEventNotification = async () => {};
+    dbHandler = pendingJobOfAlice;
+  });
+  afterEach(() => { Job.sendEventNotification = sendEventNotification; });
+
+  test("another user is refused with 403, and nothing is deleted", async () => {
+    await assert.rejects(() => Job.delete(other, 7), (e) => e.name === "AccessDeniedError");
+    assert.equal(deleted(), false, "a refused delete must not have removed the job");
+  });
+
+  test("the owner may delete it", async () => {
+    await Job.delete(owner, 7);
+    assert.equal(deleted(), true);
+  });
+
+  test("an admin may delete it", async () => {
+    await Job.delete(admin, 7);
+    assert.equal(deleted(), true);
+  });
+
+  test("a user with showAllJobLogs may delete it", async () => {
+    await Job.delete(seesAll, 7);
+    assert.equal(deleted(), true);
   });
 });
 
