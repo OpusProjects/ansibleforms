@@ -510,7 +510,48 @@ Job.abort = async function (user, id) {
   if (abort_requested) {
     throw new Errors.ConflictError("Abort already requested for this job");
   }
-  
+
+  const res = await Job.requestAbort(id);
+  if (res.changedRows != 1) {
+    throw new Errors.ConflictError("This job was not running");
+  }
+
+  // A multistep runs each step as a job of its own (jobs.parent_id = the multistep), and
+  // that step's runner only reacts to its OWN row : a playbook (Exec.executeCommand) is
+  // stopped by killing its PID and reads its own flag on exit to end as aborted, and an
+  // AWX job (Awx.trackJob(Workflow Job)) polls its own flag to cancel it. Flagging just the
+  // multistep made it skip the steps that had not started yet, while the step already
+  // running carried on to the end : a playbook kept running for as long as it took, and an
+  // AWX job was never cancelled. So the running step gets the same abort as a single job.
+  // Ownership was checked on the multistep above, and its steps run as the same user.
+  const runningSteps = await mysql.do(
+    "SELECT id FROM AnsibleForms.`jobs` WHERE parent_id=? AND status='running'",
+    [id]
+  );
+  for (const step of runningSteps || []) {
+    logger.notice(`Aborting step ${step.id} of multistep job ${id}`);
+    try {
+      await Job.requestAbort(step.id);
+    } catch (err) {
+      // the multistep itself is flagged already, so it still stops after this step
+      logger.error(`[Job ${step.id}] Failed to abort step of job ${id}: ${err.message}`);
+    }
+  }
+  return res;
+};
+/**
+ * Flags one running job for abort and, when its playbook runs on this host, kills its
+ * process (Cmd.killChildren). The flag is what the runner reads : a playbook ends as
+ * aborted when it exits with the flag set, and an AWX job is cancelled by Awx.trackJob
+ * when it sees the flag. A playbook on another host only gets the flag set.
+ * No access check here - callers do that (Job.abort, and the multistep runner for its
+ * own steps).
+ *
+ * @param {number|string} id The job to abort.
+ * @returns {Promise<object>} The result of the flag update ; changedRows is 1 when the
+ *   job was running and is now flagged, 0 when it was not running (or already flagged).
+ */
+Job.requestAbort = async function (id) {
   // Set the abort_requested flag first (database as source of truth)
   const res = await mysql.do(
     "UPDATE AnsibleForms.`jobs` set abort_requested=1 WHERE id=? AND status='running'",
@@ -547,11 +588,8 @@ Job.abort = async function (user, id) {
     } else {
       logger.warning(`[Job ${id}] Incomplete PID info (pid: ${pid}, host: ${jobHost}), abort flag set`);
     }
-    
-    return res;
-  } else {
-    throw new Errors.ConflictError("This job was not running");
   }
+  return res;
 };
 Job.deleteOutput = async function (record) {
   // delete last output
@@ -1868,7 +1906,7 @@ Multistep.launch = async function ({
   var ok = 0;
   var failed = 0;
   var skipped = 0;
-  var abort_requested = false;
+  var abort_requested; // set per step, and re-read once all steps are done
 
   try {
     var finalSuccessStatus = true; // multistep success from start to end ?
@@ -2011,6 +2049,18 @@ Multistep.launch = async function ({
                 jobid,
                 ++counter
               );
+              // an abort that came in after the check above but before this step's row
+              // existed only flagged the multistep (Job.abort aborts the steps it finds
+              // running) - pass it on, or this step would still run to the end
+              // (a failure here must not skip the wait below : the step would carry on
+              // unwatched while the multistep moved on as if it had failed)
+              try {
+                if (await Job.isAbortRequested(jobid)) {
+                  await Job.requestAbort(jobSuccess.id);
+                }
+              } catch (err) {
+                logger.error(`[Job ${jobSuccess.id}] Failed to pass the abort of job ${jobid} on to its step: ${err.message}`);
+              }
               
               // Now wait for the step to complete
               if (jobSuccess.completionPromise) {
@@ -2077,8 +2127,13 @@ Multistep.launch = async function ({
           jobid,
           ++counter
         );
-        // if continue, we mark partial and mark as success
-        if (step.continue) {
+        // if continue, we mark partial and mark as success - unless the multistep was
+        // aborted : then this step failed because the abort stopped it, and continuing
+        // would end an aborted run as warning (the last step) instead of aborted
+        const abortedRun = step.continue
+          ? await Job.isAbortRequested(jobid).catch(() => false)
+          : false;
+        if (step.continue && !abortedRun) {
           await Job.printJobOutput(
             `CONTINUE on failure`,
             "stdout",
@@ -2097,6 +2152,11 @@ Multistep.launch = async function ({
 
     // create recap
     if (!approve) {
+      // re-read the flag : an abort during the LAST step stopped that step (Job.abort
+      // aborts the running step too) but never reached the check at the top of the loop,
+      // so the multistep ended as failed - or, if the step finished anyway, as success
+      // with the flag left set, which then refused every later abort of this job
+      abort_requested = await Job.isAbortRequested(jobid);
       await Job.printJobOutput(
         `MULTISTEP RECAP ${"*".repeat(64)}`,
         "stdout",
@@ -2111,6 +2171,8 @@ Multistep.launch = async function ({
       );
       if (finalSuccessStatus) {
         // if multistep was success
+        // (an abort that came too late, after every step had finished, is cleared)
+        if (abort_requested) await Job.resetAbortRequested(jobid);
         if (partialstatus) {
           // but a step failed with continue => mark as warning
           await Job.endJobStatus(
@@ -3278,4 +3340,4 @@ Awx.findInventoryByName = async function (awxName, name) {
 
 export default Job;
 // named export of the awx interaction functions (mainly for testing)
-export { Awx, stripReservedExtravars, setUserExtravars, guardLaunch, launchValidationMode, pushForminfoToExtravars };
+export { Awx, Exec, Multistep, stripReservedExtravars, setUserExtravars, guardLaunch, launchValidationMode, pushForminfoToExtravars };
