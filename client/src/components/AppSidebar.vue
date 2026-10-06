@@ -10,12 +10,13 @@
 /*  home, which has happened twice in this codebase.              */
 /*                                                                */
 /*  It matters because the guards are NOT uniform : showSettings  */
-/*  covers most pages, while backups, schedules and stored jobs   */
-/*  each have their own option (and allowStoredJobs defaults to   */
-/*  true for everybody, so this sidebar renders for users who     */
-/*  cannot open most of what it lists). Filtering per item means   */
-/*  an unusable link cannot be rendered, rather than relying on   */
-/*  someone remembering to wrap a section by hand.                */
+/*  covers most pages, while backups and the server log each      */
+/*  have their own option. Filtering per item means an unusable   */
+/*  link cannot be rendered, rather than relying on someone       */
+/*  remembering to wrap a section by hand.                        */
+/*                                                                */
+/*  The scheduled and stored jobs are in the jobs menu            */
+/*  (AppJobsSidebar), which follows the same rule.                */
 /*                                                                */
 /******************************************************************/
 
@@ -43,6 +44,8 @@ const sections = computed(() =>
         { title: t('sidebar.status'), icon: 'heart-pulse', link: '/admin/status', permission: 'showSettings' },
         { title: t('sidebar.audit'), icon: 'clipboard-list', link: '/admin/audit', permission: 'showSettings' },
         { title: t('sidebar.logs'), icon: 'file-lines', link: '/logs', permission: 'showLogs' },
+        // the database backups : the instance's own data, so with the instance
+        { title: t('sidebar.backups'), icon: 'database', link: '/admin/backups', permission: 'allowBackupOps' },
       ],
     },
     {
@@ -85,21 +88,6 @@ const sections = computed(() =>
         { title: t('sidebar.aap'), icon: 'fac,ansible', link: '/admin/aap', permission: 'showSettings' },
         { title: t('sidebar.repositories'), icon: 'fab,git', link: '/admin/repositories', permission: 'showSettings' },
         { title: t('sidebar.chat'), icon: 'comments', link: '/admin/chat', permission: 'showSettings' },
-      ],
-    },
-    {
-      // Timed and saved work : the nightly backup is cron driven like the schedules.
-      // These three are the only entries needing something other than showSettings.
-      title: t('sidebar.sections.jobs'),
-      items: [
-        { title: t('sidebar.backups'), icon: 'database', link: '/admin/backups', permission: 'allowBackupOps' },
-        { title: t('sidebar.schedules'), icon: 'clock', link: '/admin/schedules', permission: 'allowScheduledJobs' },
-        {
-          title: t('sidebar.storedJobs'),
-          icon: 'floppy-disk',
-          link: '/admin/stored-jobs',
-          permission: 'allowStoredJobs',
-        },
       ],
     },
   ]

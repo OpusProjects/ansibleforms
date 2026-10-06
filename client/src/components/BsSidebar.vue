@@ -65,9 +65,10 @@ const isActive = (link) => {
 
 // the section of the current page is open on arrival : on a first visit (no saved state)
 // only that one, and when a link in a closed section is followed, that section opens too
-// (the others stay as the user left them)
+// (the others stay as the user left them). An in-page entry marked active counts as the
+// current page too (the jobs list's status filters).
 function openActiveSection() {
-  const idx = (props.sections || []).findIndex((s) => (s.items || []).some((i) => isActive(i.link)));
+  const idx = (props.sections || []).findIndex((s) => (s.items || []).some((i) => i.active || isActive(i.link)));
   if (idx < 0) return;
   const firstVisit = Object.keys(collapsed.value).length === 0;
   if (firstVisit) {

@@ -116,6 +116,10 @@ const routes = [
   { path: '/profile', name: '/profile', component: profile },
   { path: '/logout', name: '/logout', component: logout },
   { path: '/jobs', name: '/jobs', component: jobs, beforeEnter: checkJobs },
+  // the scheduled and stored jobs live with the jobs (their menu is the jobs menu) ; a fixed
+  // segment outranks /jobs/:id, whatever the order
+  { path: '/jobs/schedules', name: '/jobs/schedules', component: schedules, beforeEnter: allowScheduledJobs },
+  { path: '/jobs/stored', name: '/jobs/stored', component: storedJobs, beforeEnter: allowStoredJobs },
   { path: '/jobs/:id', name: '/jobs/:id', component: jobs, beforeEnter: checkJobs },
   { path: '/logs', name: '/logs', component: logs, beforeEnter: checkLogs },
   { path: '/schema', name: '/schema', component: schema },
@@ -134,8 +138,9 @@ const routes = [
   { path: '/admin/mailSettings', name: '/admin/mailSettings', component: mailSettings, beforeEnter: checkSettings },
   { path: '/admin/logo', name: '/admin/logo', component: logo, beforeEnter: checkSettings },
   { path: '/admin/repositories', name: '/admin/repositories', component: repositories, beforeEnter: checkSettings },
-  { path: '/admin/schedules', name: '/admin/schedules', component: schedules, beforeEnter: allowScheduledJobs },
-  { path: '/admin/stored-jobs', name: '/admin/stored-jobs', component: storedJobs, beforeEnter: allowStoredJobs },
+  // moved under /jobs (7.3) : bookmarks to the old addresses still land on the page
+  { path: '/admin/schedules', redirect: '/jobs/schedules' },
+  { path: '/admin/stored-jobs', redirect: '/jobs/stored' },
   { path: '/admin/settings', name: '/admin/settings', component: settings, beforeEnter: checkSettings },
   { path: '/admin/categories', name: '/admin/categories', component: categories, beforeEnter: checkSettings },
   { path: '/admin/roles', name: '/admin/roles', component: roles, beforeEnter: checkSettings },
