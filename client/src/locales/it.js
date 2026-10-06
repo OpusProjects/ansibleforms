@@ -24,6 +24,17 @@ export default {
     roles: 'Ruoli',
     options: 'Opzioni',
   },
+  // the header search
+  search: {
+    title: 'Cerca',
+    placeholder: 'Cerca moduli e pagine',
+    close: 'Chiudi la ricerca',
+    noResults: 'Nessun risultato per "{query}"',
+    kind: {
+      form: 'Modulo',
+      page: 'Pagina',
+    },
+  },
   profilePage: {
     languageHint: "La lingua di menu, pagine e messaggi. Anche la bandiera nell'intestazione la cambia.",
     themeHint:

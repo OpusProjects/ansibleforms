@@ -24,6 +24,17 @@ export default {
     roles: 'Rollen',
     options: 'Optionen',
   },
+  // the header search
+  search: {
+    title: 'Suchen',
+    placeholder: 'Formulare und Seiten suchen',
+    close: 'Suche schließen',
+    noResults: 'Keine Ergebnisse für "{query}"',
+    kind: {
+      form: 'Formular',
+      page: 'Seite',
+    },
+  },
   profilePage: {
     languageHint: 'Die Sprache der Menüs, Seiten und Meldungen. Die Flagge in der Kopfzeile wechselt sie ebenfalls.',
     themeHint:
