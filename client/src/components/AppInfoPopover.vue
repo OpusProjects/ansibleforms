@@ -106,7 +106,7 @@ onBeforeUnmount(() => {
     :aria-expanded="open"
     @click="popover?.toggle()"
   >
-    <FaIcon icon="circle-info" />
+    <span class="af-info-icon"><FaIcon icon="info" /></span>
   </button>
 </template>
 
@@ -122,6 +122,28 @@ onBeforeUnmount(() => {
   &:hover,
   &[aria-expanded='true'] {
     color: var(--af-primary);
+  }
+}
+// an "i" in a circle drawn here, not Font Awesome's circle-info (solid only in the free set) :
+// on a light page an outline, a ring and an "i" in the icon's color, light next to the title ;
+// on a dark page a filled circle, which reads better there than a thin ring
+.af-info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25em;
+  height: 1.25em;
+  border: 0.1em solid currentColor;
+  border-radius: 50%;
+  svg {
+    height: 0.65em;
+  }
+  [data-bs-theme='dark'] & {
+    border-color: transparent;
+    background-color: currentColor;
+    svg {
+      color: var(--bs-body-bg);
+    }
   }
 }
 // the popover : room for a few sentences, at the size of the page's text
