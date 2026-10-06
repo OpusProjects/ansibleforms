@@ -171,11 +171,18 @@ export default {
     jobevent: {
       button: "查看作业",
       regards: "此致，<br>AnsibleForms",
-      launch: "作业已启动{by}。",
-      relaunch: "作业已重新运行{by}。",
-      delete: "作业已删除{by}。",
-      approve: "作业已获批准{by}，将继续执行。",
-      reject: "作业已被拒绝{by}。",
+      // without a user, and with the user who did it : a whole sentence
+      // each, so every language puts the name where its word order needs it
+      launch: "作业已启动。",
+      relaunch: "作业已重新运行。",
+      delete: "作业已删除。",
+      approve: "作业已获批准，将继续执行。",
+      reject: "作业已被拒绝。",
+      launchBy: "作业已由 {user} 启动。",
+      relaunchBy: "作业已由 {user} 重新运行。",
+      deleteBy: "作业已被 {user} 删除。",
+      approveBy: "作业已获 {user} 批准，将继续执行。",
+      rejectBy: "作业已被 {user} 拒绝。",
     },
   },
 }

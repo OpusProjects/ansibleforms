@@ -171,11 +171,18 @@ export default {
     jobevent: {
       button: "ジョブを表示",
       regards: "よろしくお願いいたします。<br>AnsibleForms",
-      launch: "ジョブが起動されました{by}。",
-      relaunch: "ジョブが再起動されました{by}。",
-      delete: "ジョブが削除されました{by}。",
-      approve: "ジョブが承認されました{by}。実行を続行します。",
-      reject: "ジョブが却下されました{by}。",
+      // without a user, and with the user who did it : a whole sentence
+      // each, so every language puts the name where its word order needs it
+      launch: "ジョブが起動されました。",
+      relaunch: "ジョブが再起動されました。",
+      delete: "ジョブが削除されました。",
+      approve: "ジョブが承認されました。実行を続行します。",
+      reject: "ジョブが却下されました。",
+      launchBy: "{user} がジョブを起動しました。",
+      relaunchBy: "{user} がジョブを再起動しました。",
+      deleteBy: "{user} がジョブを削除しました。",
+      approveBy: "{user} がジョブを承認しました。実行を続行します。",
+      rejectBy: "{user} がジョブを却下しました。",
     },
   },
 }

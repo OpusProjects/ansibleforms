@@ -171,11 +171,18 @@ export default {
     jobevent: {
       button: "Visualizza Job",
       regards: "Cordiali saluti,<br>AnsibleForms",
-      launch: "Il job e stato avviato{by}.",
-      relaunch: "Il job e stato riavviato{by}.",
-      delete: "Il job e stato eliminato{by}.",
-      approve: "Il job e stato approvato{by} e continuera l'esecuzione.",
-      reject: "Il job e stato rifiutato{by}.",
+      // without a user, and with the user who did it : a whole sentence
+      // each, so every language puts the name where its word order needs it
+      launch: "Il job e stato avviato.",
+      relaunch: "Il job e stato riavviato.",
+      delete: "Il job e stato eliminato.",
+      approve: "Il job e stato approvato e continuera l'esecuzione.",
+      reject: "Il job e stato rifiutato.",
+      launchBy: "Il job e stato avviato da {user}.",
+      relaunchBy: "Il job e stato riavviato da {user}.",
+      deleteBy: "Il job e stato eliminato da {user}.",
+      approveBy: "Il job e stato approvato da {user} e continuera l'esecuzione.",
+      rejectBy: "Il job e stato rifiutato da {user}.",
     },
   },
 }

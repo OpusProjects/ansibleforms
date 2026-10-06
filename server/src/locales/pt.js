@@ -171,11 +171,18 @@ export default {
     jobevent: {
       button: "Ver Tarefa",
       regards: "Cumprimentos,<br>AnsibleForms",
-      launch: "A tarefa foi iniciada{by}.",
-      relaunch: "A tarefa foi relançada{by}.",
-      delete: "A tarefa foi eliminada{by}.",
-      approve: "A tarefa foi aprovada{by} e vai continuar a execução.",
-      reject: "A tarefa foi rejeitada{by}.",
+      // without a user, and with the user who did it : a whole sentence
+      // each, so every language puts the name where its word order needs it
+      launch: "A tarefa foi iniciada.",
+      relaunch: "A tarefa foi relançada.",
+      delete: "A tarefa foi eliminada.",
+      approve: "A tarefa foi aprovada e vai continuar a execução.",
+      reject: "A tarefa foi rejeitada.",
+      launchBy: "A tarefa foi iniciada por {user}.",
+      relaunchBy: "A tarefa foi relançada por {user}.",
+      deleteBy: "A tarefa foi eliminada por {user}.",
+      approveBy: "A tarefa foi aprovada por {user} e vai continuar a execução.",
+      rejectBy: "A tarefa foi rejeitada por {user}.",
     },
   },
 }
