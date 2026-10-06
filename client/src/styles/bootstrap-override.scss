@@ -133,17 +133,34 @@
   opacity: 0 !important;
 }
 // Nav tabs with flush card connection
-// Bootstrap's bottom border on the nav is kept on purpose : it is the baseline
-// that closes the top edge of whatever sits under the tab strip (the flush card
-// below overlaps it, a plain `border border-top-0` panel - like the child lists
-// in AppAdminMulti - leans on it).
+// The strip keeps to one line : when the tabs do not fit, it scrolls sideways (with
+// its scrollbar under the tabs) instead of wrapping to a second row.
+// A scrolling element clips what reaches outside its padding box, so the baseline
+// that closes the top edge of whatever sits under the strip is drawn INSIDE it (an
+// inset shadow on its last pixel row) rather than as Bootstrap's bottom border,
+// and the tabs no longer hang 1px below the strip : the active tab's background
+// covers the baseline itself. The flush card below still overlaps that row, and a
+// plain `border border-top-0` panel - like the child lists in AppAdminMulti - still
+// leans on it.
+.nav-tabs {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-bottom: 0;
+  box-shadow: inset 0 -1px 0 var(--bs-border-color);
+  scrollbar-width: thin;
+}
+.nav-tabs .nav-item {
+  flex-shrink: 0;
+}
 .nav-tabs .nav-item:first-child {
   padding-left: 0;
 }
 .nav-tabs .nav-link {
   border: 1px solid var(--bs-border-color);
   border-bottom-color: transparent;
-  margin-bottom: -1px;
+  margin-bottom: 0;
+  white-space: nowrap;
   color: var(--bs-secondary-color);
 }
 // Bootstrap's own `:hover` rule wins over the base rule above and repaints the
@@ -168,11 +185,15 @@
 }
 // The inset marker above replaces Bootstrap's `:focus-visible` box-shadow while
 // `outline: 0` keeps applying, which leaves the active tab without any focus
-// indicator : keep the marker and add the focus ring next to it.
+// indicator : keep the marker and add the focus ring next to it. The ring is drawn
+// inside the tab, as the scrolling strip would cut off one drawn around it.
+.nav-tabs .nav-link:focus-visible {
+  box-shadow: inset 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+}
 .nav-tabs .nav-link.active:focus-visible {
   box-shadow:
     inset 0 2px 0 var(--bs-primary),
-    0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+    inset 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
 }
 // The card AppSettings renders right under a tab strip (it stamps
 // `tab-card-flush-card` on it as soon as the #tabs slot is filled) : pull it up
