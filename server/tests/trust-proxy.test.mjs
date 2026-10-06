@@ -77,6 +77,14 @@ describe("parseTrustProxy", () => {
     expect(() => compileTrustProxy("10.0.0.300")).toThrow();
     expect(() => compileTrustProxy("not-an-address")).toThrow();
   });
+
+  test("the legacy shapes ipaddr.js would read as an address are refused too", () => {
+    // '1, 10.0.0.5' used to trust 0.0.0.1 and 10.0.0.5 without a word
+    for (const raw of ["1, 10.0.0.5", "2,3", "0x1", "10.1", "10.1/8"]) {
+      expect(() => compileTrustProxy(raw), raw).toThrow(/invalid IP address/);
+    }
+    expect(compileTrustProxy("::ffff:10.0.0.1, fe80::/10, 10.0.0.0/255.0.0.0, uniquelocal")).toHaveLength(4);
+  });
 });
 
 describe("the address req.ip reports", () => {

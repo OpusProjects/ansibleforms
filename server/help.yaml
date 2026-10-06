@@ -156,7 +156,7 @@
       Set it to tell the application which proxies it may believe when they report the real client address in the `X-Forwarded-For` header. It is passed to the Express `trust proxy` setting:
 
       - `0` (default) : trust no proxy, the address of the connection is recorded
-      - a number, for example `1` : trust that many proxies in front of the application (1 = a single reverse proxy)
+      - a number, for example `1` : trust that many proxies in front of the application (1 = a single reverse proxy). Use the exact count : a higher number lets a client choose the recorded address
       - a comma-separated list of proxy addresses and CIDR ranges, for example `10.0.0.5,172.16.0.0/12`, or the presets `loopback`, `linklocal` and `uniquelocal`
       - `true` : trust every hop, the left-most `X-Forwarded-For` address is recorded
 

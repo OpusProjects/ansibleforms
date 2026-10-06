@@ -1,5 +1,6 @@
 'use strict';
 import express from 'express';
+import { isIP } from 'net';
 import logger from './logger.js';
 
 // Which client address the application records: TRUST_PROXY -> express 'trust proxy'.
@@ -45,11 +46,20 @@ export function parseTrustProxy(raw) {
   return v.split(',').map((s) => s.trim()).filter(Boolean);
 }
 
+// the names proxy-addr accepts in place of an address
+const PRESETS = new Set(['loopback', 'linklocal', 'uniquelocal']);
+
 /**
  * Parses TRUST_PROXY and lets express compile it, so an invalid address is caught here.
  *
  * express (proxy-addr underneath) compiles the list the moment it is set and throws on an
  * address it cannot parse. A scratch app is used, so a bad value never reaches the real one.
+ *
+ * proxy-addr is lenient, though: it parses with ipaddr.js, which also takes the legacy
+ * inet_aton shapes - `1` is 0.0.0.1, `0x1` too, `10.1` is 10.0.0.1. So `1, 10.0.0.5` or
+ * `2,3` passed, and silently trusted addresses nobody meant instead of telling the operator
+ * the value was wrong. Each list entry must therefore be a preset or a plain IPv4/IPv6
+ * address (with an optional /prefix, which proxy-addr still checks).
  *
  * @param {string|undefined|null} raw the TRUST_PROXY value
  * @returns {boolean|number|string[]} the 'trust proxy' value
@@ -57,6 +67,13 @@ export function parseTrustProxy(raw) {
  */
 export function compileTrustProxy(raw) {
   const value = parseTrustProxy(raw);
+  if (Array.isArray(value)) {
+    for (const entry of value) {
+      if (!PRESETS.has(entry) && !isIP(entry.split('/')[0])) {
+        throw new TypeError(`invalid IP address: ${entry}`);
+      }
+    }
+  }
   express().set('trust proxy', value);
   return value;
 }
