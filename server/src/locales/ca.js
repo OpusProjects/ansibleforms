@@ -184,5 +184,30 @@ export default {
       approveBy: "{user} ha aprovat la tasca, que continuarà l'execució.",
       rejectBy: "{user} ha rebutjat la tasca.",
     },
+    // the subjects : "AnsibleForms '<form>' [<type>] (<id>) - <one of these>", and the
+    // approval one when the form gives no title
+    subject: {
+      approval: "Sol·licitud d'aprovació d'AnsibleForms",
+      event: {
+        launch: "Llançada",
+        relaunch: "Rellançada",
+        delete: "Suprimida",
+        approve: "Aprovada",
+        reject: "Rebutjada",
+      },
+      status: {
+        success: "Correcta",
+        failed: "Fallida",
+        aborted: "Avortada",
+        rejected: "Rebutjada",
+        abandoned: "Abandonada",
+        warning: "Avís",
+      },
+    },
+    // the test mail of the mail settings
+    test: {
+      subject: "Missatge de prova",
+      body: "<p>Aquest és un missatge de prova d'AnsibleForms</p>",
+    },
   },
 }

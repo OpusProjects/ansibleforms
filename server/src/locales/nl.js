@@ -184,5 +184,30 @@ export default {
       approveBy: "Job is goedgekeurd door {user} en wordt verder uitgevoerd.",
       rejectBy: "Job is afgewezen door {user}.",
     },
+    // the subjects : "AnsibleForms '<form>' [<type>] (<id>) - <one of these>", and the
+    // approval one when the form gives no title
+    subject: {
+      approval: "AnsibleForms goedkeuringsaanvraag",
+      event: {
+        launch: "Gestart",
+        relaunch: "Herstart",
+        delete: "Verwijderd",
+        approve: "Goedgekeurd",
+        reject: "Afgewezen",
+      },
+      status: {
+        success: "Geslaagd",
+        failed: "Mislukt",
+        aborted: "Afgebroken",
+        rejected: "Afgewezen",
+        abandoned: "Achtergelaten",
+        warning: "Waarschuwing",
+      },
+    },
+    // the test mail of the mail settings
+    test: {
+      subject: "Testbericht",
+      body: "<p>Dit is een testbericht van AnsibleForms</p>",
+    },
   },
 }

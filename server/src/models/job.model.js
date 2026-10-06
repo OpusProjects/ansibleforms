@@ -1648,7 +1648,7 @@ Job.sendApprovalNotification = async function (approval, extravars, jobid) {
   
   var subject =
     Helpers.replacePlaceholders(approval.title, extravars) ||
-    "AnsibleForms Approval Request";
+    i18n.t(null, 'email.subject.approval');
   var approvalMessage = Helpers.replacePlaceholders(
     approval.message,
     extravars
@@ -1698,7 +1698,7 @@ Job.sendStatusNotification = async function (jobid) {
     }
     
     // Send the mail
-    var subject = `AnsibleForms '${job.form}' [${job.job_type}] (${jobid}) - ${job.status}`;
+    var subject = Job.mailSubject(job, jobid, Job.mailWord('status', job.status));
     
     return await Job._buildAndSendEmail({
       recipients: notifications.recipients,
@@ -1746,18 +1746,10 @@ Job.sendEventNotification = async function (jobid, eventType, user = null) {
       return false;
     }
 
-    // Event-specific subject and message content
-    const eventTitles = {
-      'launch': 'Launched',
-      'relaunch': 'Relaunched',
-      'delete': 'Deleted',
-      'approve': 'Approved',
-      'reject': 'Rejected'
-    };
-    
+    // Event-specific subject and message content, in the server's language
     const eventMessage = Job.eventMessage(eventType, user);
 
-    var subject = `AnsibleForms '${job.form}' [${job.job_type}] (${jobid}) - ${eventTitles[eventType]}`;
+    var subject = Job.mailSubject(job, jobid, Job.mailWord('event', eventType));
     
     return await Job._buildAndSendEmail({
       recipients: notifications.recipients,
@@ -1776,6 +1768,38 @@ Job.sendEventNotification = async function (jobid, eventType, user = null) {
     return false;
   }
 };
+/**
+ * The subject of a job mail : "AnsibleForms '<form>' [<type>] (<id>) - <word>".
+ *
+ * Args:
+ *   job (object): the job, for its form name and job type.
+ *   jobid (number): the job id.
+ *   word (string): what happened, already translated (see Job.mailWord).
+ *
+ * Returns:
+ *   string: the subject line.
+ */
+Job.mailSubject = function (job, jobid, word) {
+  return `AnsibleForms '${job.form}' [${job.job_type}] (${jobid}) - ${word}`;
+};
+
+/**
+ * The translated word a job mail subject ends with, in the server's language.
+ *
+ * Args:
+ *   kind (string): 'event' (launch, relaunch, ...) or 'status' (success, failed, ...).
+ *   value (string): the event or the job status.
+ *
+ * Returns:
+ *   string: the translation, or the value itself when it has none (a status added later
+ *     still reads, untranslated, rather than as a translation key).
+ */
+Job.mailWord = function (kind, value) {
+  const key = `email.subject.${kind}.${value}`;
+  const word = i18n.t(null, key);
+  return word === key ? value : word;
+};
+
 /**
  * The sentence of a job event mail, in the server's language.
  *

@@ -184,5 +184,30 @@ export default {
       approveBy: "{user} がジョブを承認しました。実行を続行します。",
       rejectBy: "{user} がジョブを却下しました。",
     },
+    // the subjects : "AnsibleForms '<form>' [<type>] (<id>) - <one of these>", and the
+    // approval one when the form gives no title
+    subject: {
+      approval: "AnsibleForms 承認リクエスト",
+      event: {
+        launch: "起動",
+        relaunch: "再起動",
+        delete: "削除",
+        approve: "承認",
+        reject: "却下",
+      },
+      status: {
+        success: "成功",
+        failed: "失敗",
+        aborted: "中止",
+        rejected: "却下",
+        abandoned: "放棄",
+        warning: "警告",
+      },
+    },
+    // the test mail of the mail settings
+    test: {
+      subject: "テストメッセージ",
+      body: "<p>これは AnsibleForms からのテストメッセージです。</p>",
+    },
   },
 }
