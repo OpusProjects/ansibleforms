@@ -167,9 +167,9 @@ watch(() => route.path, openActiveSection);
   width: 300px; /* the same width as the forms page category list (.af-forms-sidebar) */
   flex-shrink: 0;
   position: sticky;
-  top: var(--af-header-height);
+  top: var(--af-header-offset);
   align-self: flex-start;
-  height: calc(100vh - var(--af-header-height));
+  height: calc(100vh - var(--af-header-offset));
   overflow-y: auto;
 }
 .af-list-first {

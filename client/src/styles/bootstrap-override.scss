@@ -1,7 +1,10 @@
 // The height of the header bar (BsNavBar) ; the settings sidebar (BsSidebar) sticks
-// right below it, so both read it from here
+// right below it, so both read it from here. The bar has a 1px bottom border on top of its
+// height : what sticks under it, and sizes itself to the rest of the window, uses the full
+// offset, or the page comes out 1px taller than the window and scrolls.
 :root {
   --af-header-height: 68px;
+  --af-header-offset: calc(var(--af-header-height) + 1px);
 }
 
 :root {
@@ -253,9 +256,9 @@
   min-width: 300px;
   @media (min-width: 768px) {
     position: sticky;
-    top: var(--af-header-height);
+    top: var(--af-header-offset);
     align-self: flex-start;
-    height: calc(100vh - var(--af-header-height));
+    height: calc(100vh - var(--af-header-offset));
     overflow-y: auto;
   }
 }

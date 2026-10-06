@@ -9,9 +9,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ansible Forms</title>
   <style>
+    /* at least the window's height, and taller with its content : the header is sticky
+       inside #app, so a fixed 100vh let it scroll away on a page taller than the window.
+       The full height pages (af-fill-page : logs, designer) keep exactly the window, so
+       their own pane is the one that scrolls. */
     #app{
       display:flex;
       flex-direction: column;
+      min-height: 100vh;
+    }
+    #app:has(> .af-fill-page){
       height: 100vh;
     }
   </style>
