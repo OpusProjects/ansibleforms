@@ -997,7 +997,7 @@ export default {
       groupsFromGraph:
         'Lida do Microsoft Graph no início de sessão (pertenças diretas e aninhadas, pelo nome a apresentar). A claim groups do token não é usada, por isso não precisa de ser configurada.',
       groupsRoleMapping:
-        'Num papel, indique um grupo como azuread/ seguido do seu nome a apresentar (ex. azuread/AF-Admins).',
+        'Numa função, indique um grupo como azuread/ seguido do seu nome a apresentar (ex. azuread/AF-Admins).',
       openIdHelp: 'Ajuda do Open ID',
       openIdNotice: 'Aviso:',
       openIdTestedWith: 'Até agora, o Open ID só foi testado com o Keycloak.',
