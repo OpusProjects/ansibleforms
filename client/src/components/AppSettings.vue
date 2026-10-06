@@ -99,6 +99,14 @@ defineProps({
 h3 {
   white-space: nowrap;
 }
+/* the › between the steps of a title is a small glyph at text size : larger, centered on the
+   words, and with no line height of its own, so the title is no taller than one without it
+   and the divider under it does not move */
+.af-crumb-separator {
+  font-size: 1.5em;
+  line-height: 0;
+  vertical-align: -0.05em;
+}
 /* without the page's card, the content's own cards end the page : leave the same 16px under
    the last one as under the designer's card and the forms tiles */
 .af-bare-content {
