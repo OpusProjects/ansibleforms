@@ -235,11 +235,8 @@ const unevaluatedFieldsWarning = computed(() => {
   if (canSubmit.value) {
     return undefined;
   } else {
-    return (
-      unevaluatedFields.value.join(',') +
-      ' ' +
-      (unevaluatedFields.value.length == 1 ? t('form.unevaluatedIs') : t('form.unevaluatedAre'))
-    );
+    // one sentence per language and count : "x is unevaluated", "x, y are unevaluated"
+    return t('form.unevaluated', { fields: unevaluatedFields.value.join(', ') }, unevaluatedFields.value.length);
   }
 });
 

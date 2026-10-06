@@ -173,14 +173,9 @@ onMounted(async () => {
                       :disabled="readOnly"
                       :placeholder="t('settings.settingsPage.constantValuePlaceholder')"
                     ></textarea>
-                    <span v-else class="text-muted fst-italic small"
-                      >{{ entry.row.children.length }}
-                      {{
-                        entry.row.children.length === 1
-                          ? t('settings.settingsPage.subkey')
-                          : t('settings.settingsPage.subkeys')
-                      }}</span
-                    >
+                    <span v-else class="text-muted fst-italic small">{{
+                      t('settings.settingsPage.subkeyCount', entry.row.children.length)
+                    }}</span>
                   </td>
                   <td class="text-center">
                     <div v-if="!readOnly" class="d-flex justify-content-center gap-1">

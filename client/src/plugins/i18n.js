@@ -11,6 +11,7 @@ import ja from '@/locales/ja.js';
 import zh from '@/locales/zh.js';
 import pl from '@/locales/pl.js';
 import Helpers from '@/lib/Helpers';
+import { pluralRules } from '@/lib/Plural';
 
 // Get language from cookie (set later from server default if no cookie exists)
 const savedLocale = Helpers.getCookie('af_language') || 'en';
@@ -35,6 +36,8 @@ const i18n = createI18n({
   locale: savedLocale,
   fallbackLocale: 'en',
   messages,
+  // counted texts ("{n} file | {n} files") : each language's own plural forms (lib/Plural.js)
+  pluralRules: pluralRules(Object.keys(messages)),
 });
 
 /**
