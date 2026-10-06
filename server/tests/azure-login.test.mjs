@@ -59,6 +59,15 @@ describe("the groups come from Graph, through the server", () => {
     expect(user).toMatchObject({ username: "alice@example.com", type: "azuread", groups: ["azuread/af-admins"], roles: ["azuread/af-admins"] });
   });
 
+  test("a handoff without a sealed access token falls back to its groups claim, filtered too", async () => {
+    vi.stubGlobal("fetch", graph([]));
+    const r = res();
+    await controller.azureadoauth2login(req(signHandoff({ upn: "alice@example.com", oid: "1234", groups: ["af-ops", "everyone"] }, "azuread")), r);
+    expect(r.statusCode).toBe(200);
+    expect(graph.calls).toHaveLength(0);
+    expect(jwt.verify(r.body.token, authConfig.secret).user.groups).toEqual(["azuread/af-ops"]);
+  });
+
   test("Graph refusing the token fails the login with the reason, logged on the server", async () => {
     vi.stubGlobal("fetch", graph([], 401));
     const r = res();
