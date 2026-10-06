@@ -46,6 +46,11 @@ const STRIPES = {
       <circle cx="24" cy="20" r="8" fill="none" stroke="#ffcc00" stroke-width="2.5" />
       <rect x="21" y="16.5" width="6" height="7" rx="1" fill="#ffffff" stroke="#ff0000" stroke-width="1.2" />
     </g>
+    <!-- japan: a red disc, 3/5 of the height across, centred on a white field -->
+    <g v-else-if="code === 'ja'">
+      <rect width="60" height="40" fill="#ffffff" />
+      <circle cx="30" cy="20" r="12" fill="#bc002d" />
+    </g>
     <!-- striped flags -->
     <g v-else-if="STRIPES[code]">
       <template v-for="(color, i) in STRIPES[code][1]" :key="i">

@@ -15,7 +15,7 @@ import { fileURLToPath } from "url";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const serverRoot = path.join(here, "..");
 const clientLocales = path.join(here, "../../client/src/locales");
-const LANGS = ["en", "de", "fr", "it", "es", "nl", "ca", "pt"];
+const LANGS = ["en", "de", "fr", "it", "es", "nl", "ca", "pt", "ja"];
 
 // the REAL actionFrom and the REAL skip list, lifted from the middleware
 const mwSrc = readFileSync(path.join(serverRoot, "src/lib/auditMiddleware.js"), "utf8");
