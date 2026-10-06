@@ -35,7 +35,7 @@ onMounted(async () => {
 <template>
   <AppNav />
   <div class="flex-shrink-0">
-    <main class="d-flex flex-nowrap container-xxl">
+    <main class="d-flex flex-nowrap af-settings-layout">
       <AppSidebar />
       <AppAdminMulti v-if="authenticated" apiVersion="2" :settings="settings.knownhosts" @preview="preview" />
     </main>

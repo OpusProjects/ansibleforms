@@ -85,11 +85,13 @@ the schema builds itself at startup.
 CI runs exactly these, so running them first saves a round trip:
 
 ```bash
-cd client && npm run lint:check && npm run test && npm run build
+cd client && npm run lint:check && npm run format:check && npm run test && npm run build
 cd server && npm run lint:check && npm run test
 ```
 
-Both sides are lint-clean and green, and the intent is to keep them that way. The server
+`format:check` is the client's Prettier check ; when it fails, `npm run format` in `client`
+rewrites the files it names. Both sides are lint-clean and green, and the intent is to keep
+them that way. The server
 suite needs no database — it runs against the stubs in `server/tests/__mocks__`.
 
 ## Things that are easy to get wrong

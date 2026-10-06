@@ -14,7 +14,8 @@ Token.store = function (username, username_type, refresh_token) {
 };
 
 Token.delete = function (username, username_type, refresh_token) {
-  logger.info(`Deleting token for user ${username} (${username_type}) - ${refresh_token}`);
+  // never the token itself : it is a credential, and the log is read, downloaded and shipped to syslog
+  logger.info(`Deleting token for user ${username} (${username_type})`);
   return mysql.do("DELETE FROM AnsibleForms.`tokens` WHERE username=? AND username_type=? AND refresh_token=?", [username, username_type, refresh_token]);
 };
 

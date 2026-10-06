@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
 const settings = computed(() => getSettings(t));
 import YAML from 'yaml';
+import Time from '@/lib/Time';
 
 const adminMulti = ref(null);
 const authenticated = ref(false);
@@ -23,18 +24,10 @@ const formDataYaml = computed(() => {
   }
 });
 
+// in the user's time zone (Profile > Preferences)
 const formatDateTime = (dateString) => {
   if (!dateString) return t('admin.storedJobs.never');
-  const date = new Date(dateString);
-  return date.toLocaleString('en-US', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  });
+  return Time.format(dateString);
 };
 
 function previewDetails(storedJob) {
@@ -57,7 +50,7 @@ onMounted(async () => {
 <template>
   <AppNav />
   <div class="flex-shrink-0">
-    <main class="d-flex flex-nowrap container-xxl">
+    <main class="d-flex flex-nowrap af-settings-layout">
       <AppSidebar />
       <AppAdminMulti
         v-if="authenticated"

@@ -107,7 +107,7 @@ onMounted(async () => {
   </BsModal>
   <AppNav />
   <div class="flex-shrink-0">
-    <main class="d-flex flex-nowrap container-xxl">
+    <main class="d-flex flex-nowrap af-settings-layout">
       <AppSidebar />
       <AppAdminSingle v-if="authenticated" apiVersion="2" :settings="settings.ldap" @test="openTestModal" />
     </main>

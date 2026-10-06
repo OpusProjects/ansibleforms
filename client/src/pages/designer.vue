@@ -47,7 +47,7 @@ import {
 
 dayjs.extend(relativeTime);
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const categories = ref('');
 const roles = ref('');
@@ -57,13 +57,39 @@ const formMeta = ref({});
 const loaded = ref(false);
 const lockLoading = ref(false);
 const currentForm = ref(null);
+// name is the internal key (warnings and the editors switch on it), label what the menu shows
+// description is the line under the page title, as on the settings pages (the first three
+// reuse those pages' own descriptions, so both places say the same)
 const tabs = [
-  { name: 'Categories', icon: 'th-list' },
-  { name: 'Roles', icon: 'user-shield' },
-  { name: 'Constants', icon: 'sliders-h' },
-  { name: 'Forms', icon: 'pen-to-square' },
+  {
+    name: 'Categories',
+    label: () => t('sidebar.categories'),
+    description: () => t('settings.settingsPage.categoriesDescription'),
+    icon: 'sitemap',
+  },
+  {
+    name: 'Roles',
+    label: () => t('sidebar.roles'),
+    description: () => t('settings.settingsPage.rolesDescription'),
+    icon: 'user-shield',
+  },
+  {
+    name: 'Constants',
+    label: () => t('sidebar.constants'),
+    description: () => t('settings.settingsPage.constantsDescription'),
+    icon: 'sliders-h',
+  },
+  {
+    name: 'Forms',
+    label: () => t('nav.forms'),
+    description: () => t('designer.formsDescription'),
+    icon: 'far,rectangle-list',
+  }, // the header's Forms icon, outlined : the solid one is a dark blob at menu size
 ];
-const currentTab = ref('Forms');
+// the views in the menu, alphabetically by their (translated) label
+const sortedTabs = computed(() => [...tabs].sort((a, b) => a.label().localeCompare(b.label(), locale.value)));
+// the designer opens on the first view of the menu ; a link to a form (?form=) opens that form
+const currentTab = ref(useRoute().query.form ? 'Forms' : sortedTabs.value[0].name);
 const showWarnings = ref(false);
 const action = ref(null);
 const lock = ref(false);
@@ -3368,6 +3394,39 @@ function selectTab(name) {
   currentTab.value = name;
 }
 
+// the page title : the open view's name and icon once the designer is started, the lock
+// before that
+const pageTitle = computed(() => {
+  if (!lock.value || lock.value.free) return { title: t('designer.lockTitle'), icon: 'lock' };
+  const tab = tabs.find((x) => x.name === currentTab.value);
+  return tab ? { title: tab.label(), icon: tab.icon } : { title: t('designer.title'), icon: 'pen-to-square' };
+});
+
+// the line under the title describes the open view once the designer is started, and
+// what the designer is for until then
+const tabDescription = computed(() => {
+  if (!lock.value || lock.value.free) return t('designer.offDescription');
+  return tabs.find((tab) => tab.name === currentTab.value)?.description() || '';
+});
+
+// the left menu : one entry per view ; until the designer is started (locked) the entries
+// are shown greyed out, so it is clear what the designer holds but nothing can be opened
+const sidebarSections = computed(() => {
+  const started = !!lock.value && !lock.value.free;
+  return [
+    {
+      title: '',
+      items: sortedTabs.value.map((tab) => ({
+        title: tab.label(),
+        icon: tab.icon,
+        active: started && isCurrentTab(tab.name),
+        disabled: !started,
+        action: () => selectTab(tab.name),
+      })),
+    },
+  ];
+});
+
 function isCurrentForm(id) {
   return currentForm.value == id;
 }
@@ -4500,7 +4559,10 @@ onBeforeUnmount(() => {
 <template>
   <AppNav />
   <div class="af-fill-page designer-page">
-    <main class="d-flex container-xxl">
+    <main class="d-flex flex-nowrap af-settings-layout af-with-sidebar">
+      <!-- the designer's views (categories, roles, constants, forms) : a left menu like
+           the settings pages, listed once the designer is started -->
+      <BsSidebar :sections="sidebarSections" storageKey="af_designer_sidebar_collapsed" />
       <!-- Modal - delete verify -->
       <BsModal v-if="action == 'delete'" @close="resetAction()">
         <template #title> {{ t('designer.deleteForm') }} {{ currentFormName }} </template>
@@ -6172,8 +6234,26 @@ onBeforeUnmount(() => {
           ></p>
         </template>
       </BsOffCanvas>
-      <AppSettings v-if="authenticated" :title="t('designer.title')" icon="pencil">
+      <!-- titled after the open view, like the jobs and profile pages ; until the designer is
+           started (nothing can be opened yet) after the lock it needs -->
+      <AppSettings v-if="authenticated" :title="pageTitle.title" :description="tabDescription" :icon="pageTitle.icon">
         <template #feedback>
+          <Transition appear>
+            <div v-if="warnings.length > 0" class="ms-2">
+              <button @click="showWarnings = !showWarnings" class="btn btn-warning me-3">
+                <span class="me-2">
+                  <font-awesome-icon icon="exclamation-triangle" />
+                </span>
+                <span class="mr-1"
+                  >{{ showWarnings ? t('designer.hideWarnings') : t('designer.hasWarnings') }}
+                  {{ t('designer.warnings') }}
+                </span>
+              </button>
+            </div>
+          </Transition>
+        </template>
+        <!-- the designer's on/off switch, on the right of the title row -->
+        <template #headerActions>
           <template v-if="lock">
             <popper v-if="lock.lock && !lock.match">
               <div class="form-check form-switch d-inline-flex align-items-center ms-3 mb-0">
@@ -6215,33 +6295,6 @@ onBeforeUnmount(() => {
               </label>
             </div>
           </template>
-          <Transition appear>
-            <div v-if="warnings.length > 0" class="ms-2">
-              <button @click="showWarnings = !showWarnings" class="btn btn-warning me-3">
-                <span class="me-2">
-                  <font-awesome-icon icon="exclamation-triangle" />
-                </span>
-                <span class="mr-1"
-                  >{{ showWarnings ? t('designer.hideWarnings') : t('designer.hasWarnings') }}
-                  {{ t('designer.warnings') }}
-                </span>
-              </button>
-            </div>
-          </Transition>
-        </template>
-        <template #tabs v-if="lock && !lock.free">
-          <ul class="nav nav-tabs mb-0">
-            <li v-for="tab in tabs" :key="tab.name" class="nav-item">
-              <a
-                class="nav-link"
-                :class="{ active: isCurrentTab(tab.name) }"
-                role="button"
-                @click="selectTab(tab.name)"
-              >
-                <FaIcon :icon="tab.icon" class="me-1" />{{ tab.name }}
-              </a>
-            </li>
-          </ul>
         </template>
         <template #default>
           <div
@@ -6262,15 +6315,13 @@ onBeforeUnmount(() => {
           <div v-else>
             <!-- the file picker of the import : hidden, openImport() clicks it -->
             <input ref="importInput" type="file" accept=".yaml,.yml,text/yaml" class="d-none" @change="onImportFile" />
-            <!-- The gap the eye sees is not the padding: above the buttons it is the
-                 card body's 1.25rem plus this 0.9rem = 34px, while below it this
-                 padding is followed by the 8px bottom margin of the empty <label>
-                 BsInput always renders. 1.625rem + 8px lands on the same 34px, so
-                 the toolbar sits centred between the tab strip and the editor. -->
-            <div
-              class="d-flex align-items-center flex-wrap gap-2"
-              style="padding-top: 0.9rem; padding-bottom: 1.625rem"
-            >
+            <!-- Every gap in the card matches its side padding : the card's 1px border plus
+                 the body's 16px = 17px from the card edge. Above the buttons that is all there
+                 is (no padding here) ; below them this 9px is followed by the 8px bottom
+                 margin of the empty <label> BsInput always renders, 17px again ; and under
+                 the editor the wrapper's margin is removed (see the global style block), so
+                 the editor ends 17px above the card's bottom edge as well. -->
+            <div class="d-flex align-items-center flex-wrap gap-2" style="padding-top: 0; padding-bottom: 9px">
               <small
                 v-if="lockError !== ''"
                 class="d-inline-flex px-2 py-1 fw-semibold text-warning-emphasis bg-warning-subtle border border-warning-subtle rounded-2"
@@ -6738,7 +6789,7 @@ onBeforeUnmount(() => {
                           />
                           <span class="fw-bold text-truncate" :title="item.name">{{ item.name }}</span>
                         </span>
-                        <span class="d-flex gap-2 flex-shrink-0 ms-1">
+                        <span class="d-flex gap-2 flex-shrink-0 ms-2">
                           <span
                             role="button"
                             class="tree-add-btn"
@@ -6777,14 +6828,14 @@ onBeforeUnmount(() => {
                               item.name || t('designer.baseFile')
                             }}</span>
                           </span>
-                          <span class="d-flex gap-2 flex-shrink-0 ms-1">
+                          <span class="d-flex gap-2 flex-shrink-0 ms-2">
                             <span
                               role="button"
                               class="tree-add-btn"
                               @click.stop="addForm(item.source)"
                               :title="t('designer.addForm')"
                             >
-                              <FaIcon icon="pen-to-square" />
+                              <FaIcon icon="plus" />
                             </span>
                             <!-- no delete for the base file : it is not a file on disk -->
                             <span
@@ -6828,7 +6879,7 @@ onBeforeUnmount(() => {
                               <FaIcon v-if="n.icon" :icon="n.icon" class="me-2 flex-shrink-0" />
                               <span class="text-truncate" :title="n.name">{{ n.name }}</span>
                             </span>
-                            <span role="button" class="tree-del-btn flex-shrink-0 ms-1" @click.stop="deleteForm(n.id)">
+                            <span role="button" class="tree-del-btn flex-shrink-0 ms-2" @click.stop="deleteForm(n.id)">
                               <FaIcon icon="times" />
                             </span>
                           </div>
@@ -6900,9 +6951,16 @@ onBeforeUnmount(() => {
 }
 .designer-tree {
   max-height: 80vh;
-  overflow-y: auto;
+  // the panel scrolls its file list, not itself : the header with its buttons (and the
+  // search bar) stay in place, and the scrollbar starts below them
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
   // see .designer-resize : aligns the panel's top edge with the ace box
   margin-top: 0.5rem;
+  // its bottom edge already lines up : the editor's wrapper has no bottom margin here (see
+  // the global style block), so the grid row ends where the ace box ends
 }
 @media (max-width: 991.98px) {
   .designer-layout {
@@ -6918,6 +6976,14 @@ onBeforeUnmount(() => {
   border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.25);
   border-radius: 0.375rem;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 100%;
+}
+.file-tree-header,
+.tree-search-bar {
+  flex-shrink: 0;
 }
 .file-tree-header {
   font-size: 0.9rem;
@@ -6925,7 +6991,9 @@ onBeforeUnmount(() => {
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: var(--bs-secondary-color);
-  padding: 0.5rem 1rem 0.5rem 0.75rem;
+  // 0.5rem on the right, the file list's own padding, so these buttons line up with the
+  // buttons of the rows below
+  padding: 0.5rem 0.5rem 0.5rem 0.75rem;
   background: var(--bs-card-bg, var(--bs-body-bg));
   border-bottom: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.25);
 }
@@ -6935,7 +7003,10 @@ onBeforeUnmount(() => {
 }
 .file-tree-content {
   padding: 0.25rem 0.5rem;
-  overflow: hidden;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 .tree-add-btn,
 .tree-del-btn {
@@ -6966,7 +7037,8 @@ onBeforeUnmount(() => {
 }
 .tree-node {
   border-radius: 0.25rem;
-  padding-right: 0.5rem;
+  // no space on the right : the row's buttons sit on its right edge, so the highlight of
+  // the selected row ends on the edge of its buttons (the header's buttons line up with them)
   min-width: 0;
 }
 .tree-drop-above {
@@ -6989,6 +7061,12 @@ onBeforeUnmount(() => {
 }
 .tree-active:hover {
   background-color: rgba(var(--bs-primary-rgb), 0.35);
+}
+/* on the selected row the delete button gets a light red fill (the ✕ stays red, white on
+   light red would be unreadable), so the row's action stands out from the blue ; hover
+   still turns it solid red with a white ✕ */
+.tree-active .tree-del-btn:not(:hover) {
+  background-color: var(--bs-danger-bg-subtle);
 }
 .tree-dirty > span > span.text-truncate {
   color: var(--bs-primary);
@@ -7177,6 +7255,11 @@ onBeforeUnmount(() => {
   flex: 1 1 auto;
   min-height: 0;
   align-items: stretch;
+}
+/* the editor's BsInput wrapper keeps no bottom margin : the card body's own padding is
+   the gap under the editor, the same as the card's side padding */
+.designer-page .card-body .mb-3:has(.ace_editor) {
+  margin-bottom: 0 !important;
 }
 /* breathing room between the bottom of the card and the bottom of the screen ;
    flexbox subtracts item margins before handing out the free space, so the card

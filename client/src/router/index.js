@@ -16,6 +16,7 @@ const jobs = () => import('@/pages/jobs.vue');
 const apidocs = () => import('@/pages/api-docs.vue');
 const unknown = () => import('@/pages/unknown.vue');
 const changePassword = () => import('@/pages/change-password.vue');
+const profile = () => import('@/pages/profile.vue');
 const schema = () => import('@/pages/schema.vue');
 const error = () => import('@/pages/error.vue');
 
@@ -112,6 +113,7 @@ const routes = [
   { path: '/form', name: '/form', component: form },
   { path: '/login', name: '/login', component: login },
   { path: '/change-password', name: '/change-password', component: changePassword },
+  { path: '/profile', name: '/profile', component: profile },
   { path: '/logout', name: '/logout', component: logout },
   { path: '/jobs', name: '/jobs', component: jobs, beforeEnter: checkJobs },
   { path: '/jobs/:id', name: '/jobs/:id', component: jobs, beforeEnter: checkJobs },

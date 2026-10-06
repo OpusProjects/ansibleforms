@@ -12,6 +12,7 @@ import State from '@/lib/State';
 import Navigate from '@/lib/Navigate';
 import TokenStorage from '@/lib/TokenStorage';
 import YAML from 'yaml';
+import Time from '@/lib/Time';
 
 // use
 const route = useRoute();
@@ -2284,10 +2285,8 @@ onBeforeUnmount(() => {
               <h6 class="mb-1">{{ job.name }}</h6>
               <p v-if="job.description" class="mb-1 small text-muted">{{ job.description }}</p>
               <small class="text-muted">
-                {{ t('form.created') }}: {{ new Date(job.created_at).toLocaleString() }}
-                <span v-if="job.expires_at">
-                  • {{ t('form.expires') }}: {{ new Date(job.expires_at).toLocaleString() }}</span
-                >
+                {{ t('form.created') }}: {{ Time.format(job.created_at) }}
+                <span v-if="job.expires_at"> • {{ t('form.expires') }}: {{ Time.format(job.expires_at) }}</span>
               </small>
             </div>
           </div>
@@ -2304,7 +2303,7 @@ onBeforeUnmount(() => {
   margin: auto;
 }
 
-.status {
+.badge.status {
   font-size: 0.75rem;
 }
 

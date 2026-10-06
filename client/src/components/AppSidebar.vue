@@ -38,10 +38,11 @@ const sections = computed(() =>
       // what an admin opens this menu for most often.
       title: t('sidebar.sections.system'),
       items: [
-        { title: t('sidebar.ansibleForms'), icon: 'cog', link: '/admin/settings', permission: 'showSettings' },
+        { title: t('sidebar.ansibleForms'), icon: 'toolbox', link: '/admin/settings', permission: 'showSettings' },
         { title: t('sidebar.logo'), icon: 'image', link: '/admin/logo', permission: 'showSettings' },
         { title: t('sidebar.status'), icon: 'heart-pulse', link: '/admin/status', permission: 'showSettings' },
         { title: t('sidebar.audit'), icon: 'clipboard-list', link: '/admin/audit', permission: 'showSettings' },
+        { title: t('sidebar.logs'), icon: 'file-lines', link: '/logs', permission: 'showLogs' },
       ],
     },
     {
@@ -50,7 +51,7 @@ const sections = computed(() =>
       // useFormsConfig.js with the roles page.
       title: t('sidebar.sections.forms'),
       items: [
-        { title: t('sidebar.categories'), icon: 'th-list', link: '/admin/categories', permission: 'showSettings' },
+        { title: t('sidebar.categories'), icon: 'sitemap', link: '/admin/categories', permission: 'showSettings' },
         { title: t('sidebar.constants'), icon: 'sliders-h', link: '/admin/constants', permission: 'showSettings' },
       ],
     },

@@ -53,7 +53,7 @@ router.get("/config", async (req, res) => {
   const defaults = await resolveDefaults();
   res.json({
     navHomeLabel: process.env.NAV_HOME_LABEL || "Forms",
-    navHomeIcon: process.env.NAV_HOME_ICON || "home",
+    navHomeIcon: process.env.NAV_HOME_ICON || "rectangle-list",
     defaultLanguage: defaults.language,
     defaultTheme: defaults.theme,
     defaultThemeColor: defaults.color,

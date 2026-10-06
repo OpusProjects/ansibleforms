@@ -6,7 +6,7 @@ import axios from 'axios';
 import TokenStorage from '@/lib/TokenStorage';
 import Profile from '@/lib/Profile';
 import Helpers from '@/lib/Helpers.js';
-import dayjs from 'dayjs';
+import Time from '@/lib/Time';
 
 const { t } = useI18n();
 
@@ -57,7 +57,7 @@ async function load() {
   try {
     const res = await axios.get('/api/v2/health', TokenStorage.getAuthentication());
     result.value = res.data.result ?? res.data;
-    checkedAt.value = dayjs().format('HH:mm:ss');
+    checkedAt.value = Time.format(new Date(), 'HH:mm:ss');
   } catch (err) {
     toast.error(Helpers.parseAxiosResponseError(err, t('health.failedLoad')));
   } finally {
@@ -101,7 +101,7 @@ onMounted(async () => {
 <template>
   <AppNav />
   <div class="flex-shrink-0">
-    <main class="d-flex flex-nowrap container-xxl">
+    <main class="d-flex flex-nowrap af-settings-layout">
       <AppSidebar />
       <AppSettings
         v-if="authenticated"

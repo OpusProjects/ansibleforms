@@ -220,7 +220,7 @@ defineExpose({
 });
 </script>
 <template>
-  <AppSettings :icon="objectIcon" :title="objectLabel" :description="objectDescription">
+  <AppSettings :icon="objectIcon" :title="settings.pageTitle || objectLabel" :description="objectDescription">
     <template #actions>
       <!-- the action bar holds buttons only : the 'isAction' checkbox row that
                  used to render here reached nothing, because the only fields carrying

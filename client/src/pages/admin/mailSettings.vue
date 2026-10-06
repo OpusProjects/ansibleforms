@@ -114,12 +114,12 @@ onMounted(async () => {
 <template>
   <AppNav />
   <div class="flex-shrink-0">
-    <main class="d-flex flex-nowrap container-xxl">
+    <main class="d-flex flex-nowrap af-settings-layout">
       <AppSidebar />
       <AppSettings
         v-if="authenticated"
         icon="envelope"
-        :title="t('settings.mail.label')"
+        :title="t('sidebar.mail')"
         :description="t('settings.mail.description')"
       >
         <template #tabs>

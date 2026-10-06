@@ -72,7 +72,26 @@ function select(path) {
 
 const getForms = computed(() => {
   return filterForms(currentCategory.value);
+}); // the page title : the open category's name and icon (a sub category with its path, e.g.
+// Expressions › Test1), "All forms" when none is open
+function findCategory(items, names) {
+  const item = (items || []).find((c) => c.name === names[0]);
+  if (!item || names.length === 1) return item;
+  return findCategory(item.items, names.slice(1));
+}
+const categoryTitle = computed(() => {
+  if (!currentCategory.value) return { title: t('forms.allForms'), icon: 'check-double', crumbs: [] };
+  const names = currentCategory.value.split('/');
+  // every step with its own icon : the category, then each sub category below it
+  const crumbs = names.map((name, i) => ({
+    title: name,
+    icon: findCategory(formConfig.value?.categories, names.slice(0, i + 1))?.icon || 'folder',
+  }));
+  return { title: names.join(' › '), icon: crumbs[crumbs.length - 1].icon, crumbs: crumbs.length > 1 ? crumbs : [] };
 });
+
+// the list view shows an icon column only when one of the listed forms has an icon or image
+const listHasIcons = computed(() => (getForms.value || []).some((f) => f.icon || f.image));
 
 function filterForms(category) {
   var f = filteredFormsBySearch.value || [];
@@ -146,15 +165,17 @@ onMounted(async () => {
     </template>
   </BsOffCanvas>
   <div class="flex-shrink-0">
-    <main class="d-flex container-xxl">
-      <div v-if="authenticated && forms" class="container-fluid min-vh-100 d-flex flex-column">
-        <div class="row flex-grow-1">
-          <div class="col-md-auto bg-categories h-100 border-top-0">
-            <div class="d-flex align-items-center p-3 mb-3 link-body-emphasis text-decoration-none border-bottom">
-              <FaIcon icon="fas,layer-group" />
-              <span class="ms-2 fs-5 fw-bold">{{ t('forms.categories') }}</span>
-            </div>
-            <ul class="list-unstyled my-3">
+    <main class="d-flex flex-nowrap af-settings-layout">
+      <div v-if="authenticated && forms" class="w-100 d-flex flex-column">
+        <div class="row g-0 flex-grow-1 flex-md-nowrap af-forms-row">
+          <!-- the top padding follows the selection : with "All Forms" highlighted its bar is what
+               the eye measures to, so it starts 20px down (16px + the rows' 4px margin) ; otherwise
+               the eye measures to the text, inside the row's padding, so the row starts at 12px -->
+          <div
+            class="col-md-auto af-forms-sidebar bg-body-tertiary px-3 border-top-0"
+            :style="{ paddingTop: isAll ? '16px' : '8px' }"
+          >
+            <ul class="list-unstyled mb-3">
               <li role="button">
                 <div
                   class="d-flex justify-content-between menu-item p-2 my-1"
@@ -184,37 +205,41 @@ onMounted(async () => {
             </ul>
           </div>
           <div class="col h-100 bg-body">
-            <div v-if="forms" class="p-3">
-              <div class="d-flex justify-content-end mb-2">
-                <button
-                  v-if="formConfig?.warnings?.length > 0 || formConfig?.errors?.length > 0"
-                  @click="showWarnings = !showWarnings"
-                  class="btn btn-warning btn-sm"
-                  type="button"
-                >
-                  <span class="me-1">
-                    <FaIcon icon="exclamation-triangle" />
-                  </span>
-                  {{ showWarnings ? t('forms.hideWarnings') : t('forms.hasWarnings') }}
-                  {{ t('forms.warningsOrErrors') }}
-                </button>
-                <button
-                  class="btn btn-outline-secondary btn-sm ms-2"
-                  @click="viewMode === 'tiles' ? setView('list') : setView('tiles')"
-                  :title="t('common.actions')"
-                >
-                  <span class="me-1"><FaIcon :icon="viewMode === 'tiles' ? 'th-list' : 'th'" /></span>
-                  <span v-if="viewMode === 'tiles'">{{ t('forms.list') }}</span>
-                  <span v-else>{{ t('forms.tiles') }}</span>
-                </button>
-              </div>
-              <BsInput
-                v-model="search"
-                :placeholder="t('forms.search')"
-                :label="t('forms.filter')"
-                type="text"
-                icon="search"
-              />
+            <!-- the same page layout as the other pages : the open category as the title, with the
+                 search and the view switch on the right, and the divider under it -->
+            <AppSettings
+              v-if="forms"
+              bare
+              :title="categoryTitle.title"
+              :icon="categoryTitle.icon"
+              :crumbs="categoryTitle.crumbs"
+            >
+              <template #headerActions>
+                <div class="d-flex align-items-center gap-2 af-forms-toolbar">
+                  <BsSearch v-model="search" style="width: 320px" :placeholder="t('forms.filter')" />
+                  <button
+                    v-if="formConfig?.warnings?.length > 0 || formConfig?.errors?.length > 0"
+                    @click="showWarnings = !showWarnings"
+                    class="btn btn-warning text-nowrap"
+                    type="button"
+                  >
+                    <span class="me-1">
+                      <FaIcon icon="exclamation-triangle" />
+                    </span>
+                    {{ showWarnings ? t('forms.hideWarnings') : t('forms.hasWarnings') }}
+                    {{ t('forms.warningsOrErrors') }}
+                  </button>
+                  <button
+                    class="btn btn-outline-primary text-nowrap"
+                    @click="viewMode === 'tiles' ? setView('list') : setView('tiles')"
+                    :title="t('common.actions')"
+                  >
+                    <span class="me-1"><FaIcon :icon="viewMode === 'tiles' ? 'th-list' : 'th'" /></span>
+                    <span v-if="viewMode === 'tiles'">{{ t('forms.list') }}</span>
+                    <span v-else>{{ t('forms.tiles') }}</span>
+                  </button>
+                </div>
+              </template>
               <div v-if="viewMode === 'tiles'" class="row align-content-stretch g-4">
                 <TransitionGroup>
                   <div class="col-md-6 col-lg-4 col-xxl-3" v-for="form in getForms" :key="form.name">
@@ -252,12 +277,15 @@ onMounted(async () => {
                   </div>
                 </TransitionGroup>
               </div>
-              <div v-else class="table-responsive">
-                <table class="table table-bordered table-hover">
+              <div v-else class="table-responsive af-list-frame">
+                <table class="table table-bordered table-hover mb-0">
                   <thead>
                     <tr>
-                      <th>{{ t('forms.name') }}</th>
-                      <th>{{ t('forms.description') }}</th>
+                      <!-- the icon column : only when a listed form has an icon or image ; no
+                           separator between it and the name, the icon belongs with the name -->
+                      <th v-if="listHasIcons" class="af-icon-cell"></th>
+                      <th class="af-name-cell" :class="{ 'af-after-icon': listHasIcons }">{{ t('forms.name') }}</th>
+                      <th class="af-desc-cell">{{ t('forms.description') }}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -267,17 +295,33 @@ onMounted(async () => {
                       style="cursor: pointer"
                       @click="$router.push({ path: '/form', query: { form: form.name } })"
                     >
-                      <td :class="getFormClass(form)">
+                      <td v-if="listHasIcons" class="af-icon-cell text-center" :class="getFormClass(form)">
+                        <img v-if="form.image" :src="form.image" alt="" class="af-list-image" />
+                        <FaIcon
+                          v-else-if="form.icon"
+                          :icon="form.icon"
+                          :color="form.iconColor"
+                          :fixedwidth="true"
+                          :overlayIcon="form.overlayIcon"
+                          :overlayIconCircle="form.overlayIconCircle"
+                          :overlayIconTransform="form.overlayIconTransform"
+                          :overlayIconColor="form.overlayIconColor"
+                          :overlayIconText="form.overlayIconText"
+                          :overlayIconTextPosition="form.overlayIconTextPosition"
+                          :overlayIconTextColor="form.overlayIconTextColor"
+                        />
+                      </td>
+                      <td class="af-name-cell" :class="[getFormClass(form), { 'af-after-icon': listHasIcons }]">
                         {{ form.name }}
                       </td>
-                      <td :class="getFormClass(form)">
+                      <td class="af-desc-cell" :class="getFormClass(form)" :title="form.description">
                         {{ form.description }}
                       </td>
                     </tr>
                   </tbody>
                 </table>
               </div>
-            </div>
+            </AppSettings>
           </div>
         </div>
       </div>
@@ -285,6 +329,98 @@ onMounted(async () => {
   </div>
 </template>
 <style scoped lang="scss">
+// the list view's frame : the outer border is drawn by the wrapper, so its bottom corners
+// can be rounded (a collapsed table border cannot) ; the cells keep only their inner lines
+.af-list-frame {
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0 0 var(--bs-border-radius-lg) var(--bs-border-radius-lg);
+}
+.af-list-frame > .table > :not(caption) > tr > :first-child {
+  border-left-width: 0;
+}
+.af-list-frame > .table > :not(caption) > tr > :last-child {
+  border-right-width: 0;
+}
+.af-list-frame > .table > thead > tr > * {
+  border-top-width: 0;
+}
+/* Bootstrap's bordered table also draws a line above and below each row : the first row's
+   top and the last row's bottom would double the frame's own border, so those two go */
+.af-list-frame > .table > :not(caption) {
+  border-top-width: 0;
+  border-bottom-width: 0;
+}
+.af-list-frame > .table > thead > tr:first-child {
+  border-top-width: 0;
+}
+/* the header row : a light grey, the same panel color as the left menu (Bootstrap's tertiary
+   background, which the dark theme turns into a dark grey) */
+.af-list-frame > .table > thead > tr > th {
+  --bs-table-bg: var(--bs-tertiary-bg);
+}
+/* in the light theme that grey is all but white next to the rows : a step darker */
+[data-bs-theme='light'] .af-list-frame > .table > thead > tr > th {
+  --bs-table-bg: #f1f3f5;
+}
+/* and in the dark theme a clear step above the rows (below), like the menu panel */
+[data-bs-theme='dark'] .af-list-frame > .table > thead > tr > th {
+  --bs-table-bg: #2c3136;
+}
+/* the rows a shade lighter than the page (#212529), so the list stands apart from it */
+[data-bs-theme='dark'] .af-list-frame > .table > tbody > tr > td {
+  --bs-table-bg: #24282d;
+}
+.af-list-frame > .table > tbody > tr:last-child {
+  border-bottom-width: 0;
+}
+.af-list-frame > .table > tbody > tr:last-child > * {
+  border-bottom-width: 0;
+}
+// the list view's rows : more room above and below, every cell centred vertically
+.table > :not(caption) > tr > td,
+.table > :not(caption) > tr > th {
+  padding-top: 0.85rem;
+  padding-bottom: 0.85rem;
+  vertical-align: middle;
+}
+// its icon column : a fixed width (wide images and icons fit, the names line up), and
+// joined to the name column (no border between)
+.af-icon-cell {
+  width: 4rem;
+  min-width: 4rem;
+  white-space: nowrap;
+  border-right-width: 0 !important;
+  padding-left: 1rem !important;
+  padding-right: 0.25rem !important;
+}
+// the description stays on one line : cut off with "..." (the full text is its tooltip) ;
+// max-width 0 lets the cell shrink to the room the table leaves it instead of growing
+.af-desc-cell {
+  max-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-left: 1rem !important;
+  padding-right: 1.5rem !important; // the same room after the "..." as after the longest name
+}
+// the name column is as wide as the longest name (names never wrap) ; the description
+// takes the rest of the width
+.af-name-cell {
+  width: 1%;
+  white-space: nowrap;
+  padding-right: 1.5rem !important; // room between the longest name and the description
+}
+.af-after-icon {
+  border-left-width: 0 !important;
+  padding-left: 0.5rem !important;
+}
+.af-list-image {
+  height: 1.25em;
+  width: auto;
+  max-width: 3rem;
+  vertical-align: -0.25em;
+}
+
 // the warning/error list renders as TEXT rather than v-html (see the template) ; these
 // messages carry \r\n between the summary and the reason, which text nodes collapse
 .text-prewrap {

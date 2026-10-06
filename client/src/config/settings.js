@@ -267,6 +267,8 @@ export default function getSettings(t) {
       ],
     },
     oauth2_providers: {
+      // the page title is the menu entry's label (AppSidebar), so the two always match
+      pageTitle: t('sidebar.oauth2'),
       type: 'oauth2',
       route: 'oauth2',
       label: t('settings.oauth2.label'),
@@ -667,6 +669,8 @@ export default function getSettings(t) {
       ],
     },
     ssh: {
+      // the page title is the menu entry's label (AppSidebar), so the two always match
+      pageTitle: t('sidebar.ssh'),
       label: t('settings.ssh.label'),
       description: t('settings.ssh.description'),
       type: 'sshkey',
@@ -1010,6 +1014,8 @@ export default function getSettings(t) {
     // External secret managers. The types mirror SECRET_STORE_TYPES in
     // server/src/secrets/providers/index.js ; which fields a type shows follows its provider.
     secretStores: {
+      // the page title is the menu entry's label (AppSidebar), so the two always match
+      pageTitle: t('sidebar.secretStores'),
       type: 'secretstore',
       label: t('settings.secretStores.label'),
       description: t('settings.secretStores.description'),
@@ -1207,6 +1213,8 @@ export default function getSettings(t) {
       ],
     },
     aap: {
+      // the page title is the menu entry's label (AppSidebar), so the two always match
+      pageTitle: t('sidebar.aap'),
       type: 'awx',
       label: t('settings.aap.label'),
       description: t('settings.aap.description'),

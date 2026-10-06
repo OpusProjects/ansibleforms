@@ -17,11 +17,105 @@ export default {
     logout: 'Esci',
     language: 'Lingua',
     aboutMe: 'Informazioni su di me',
+    profile: 'Profilo',
     username: 'Nome utente',
     type: 'Tipo',
     groups: 'Gruppi',
     roles: 'Ruoli',
     options: 'Opzioni',
+  },
+  profilePage: {
+    languageHint: "La lingua di menu, pagine e messaggi. Anche la bandiera nell'intestazione la cambia.",
+    themeHint:
+      "Chiaro, scuro, o un'intestazione nel colore che preferisci. Anche l'icona del sole nell'intestazione lo cambia.",
+    formsViewHint:
+      'Come la pagina Form elenca i form: a riquadri o come elenco. Anche il pulsante su quella pagina lo cambia.',
+    timezone: 'Fuso orario',
+    timezoneBrowser: 'Questo browser ({zone})',
+    timezoneAll: 'Tutti i fusi',
+    timezoneHint:
+      "Date e orari in tutto AnsibleForms sono mostrati in questo fuso orario. Il log del server e l'output dei job mantengono gli orari scritti dal server.",
+    formsView: 'Vista dei form',
+    // the api token view
+    token: {
+      lifetimeHint:
+        'Il token smette di funzionare dopo questo tempo. Scegli la durata più breve di cui il tuo script ha bisogno.',
+      passwordHint: 'La tua password di accesso, per confermare che sei tu. Non viene salvata nel token.',
+      lifetime: 'Valido per',
+      days: '{n} giorni',
+      password: 'La tua password',
+      create: 'Crea token',
+      created: 'Il tuo token, valido fino al {date}',
+      copy: 'Copia',
+      copied: 'Token copiato',
+      once: 'Copialo adesso: viene mostrato una sola volta e non può essere revocato prima della scadenza. Trattalo come la tua password.',
+      example: "Invialo nell'header Authorization di ogni chiamata API:",
+      notForType: 'I token API si creano con la tua password, quindi non sono disponibili per gli account {type}.',
+      failed: 'Impossibile creare il token. Controlla la tua password.',
+      another: 'Crea un altro token',
+    },
+    columnSetting: 'Impostazione',
+    columnDescription: 'Descrizione',
+    columnAccess: 'Il tuo accesso',
+    // what each role option lets the user do
+    optionDescription: {
+      showSettings: 'Vedere le pagine delle impostazioni.',
+      showDesigner: 'Vedere e usare il designer.',
+      showLogs: 'Vedere il log del server.',
+      showJobs: 'Vedere la pagina dei job.',
+      showDebugButtons: 'Vedere i pulsanti di debug su un form.',
+      allowJobRelaunch: "Rilanciare i job con i dati del form di un'esecuzione precedente.",
+      allowVerboseMode: 'Eseguire i job in modalità verbose.',
+      allowScheduledJobs: 'Creare e gestire job pianificati, ricorrenti o una tantum.',
+      allowStoredJobs: 'Salvare i dati di un job e ricaricarli più tardi.',
+      allowPlannedJobs: 'Pianificare un job a un orario stabilito.',
+      showAllJobLogs: 'Vedere i job di tutti gli utenti, non solo i tuoi.',
+      showArtifacts: 'Vedere gli artifact restituiti da un job.',
+      showExtravars: 'Vedere le extravars di un form.',
+      allowLogin: 'Accedere ad AnsibleForms.',
+      allowBackupOps: 'Eseguire backup e ripristino del database.',
+      allowChat: "Usare l'assistente chat, se è abilitato.",
+      extendedTokenExpiration: "Richiedere un token di durata più lunga, per esempio per l'API.",
+    },
+    groupPages: 'Pagine e menu',
+    groupJobs: 'Job',
+    groupOther: 'Altro',
+    allowedCount: '{n} di {total} consentiti',
+    localAccount: 'Account locale',
+    // the profile page (its left menu, the line under the title, and its views)
+    menu: {
+      account: 'Account',
+      preferences: 'Preferenze',
+      password: 'Password',
+      permissions: 'Permessi',
+      token: 'Token API',
+    },
+    description: {
+      account:
+        "Con quale utente hai effettuato l'accesso, e i gruppi e i ruoli che decidono cosa puoi vedere ed eseguire.",
+      token: "Un token di lunga durata per script e per l'API, creato con la tua password.",
+      preferences: 'Come appare AnsibleForms per te. Queste scelte sono salvate in questo browser.',
+      password: 'Cambia la password del tuo account locale.',
+      passwordElsewhere: 'La tua password è gestita dal tuo provider di accesso.',
+      permissions: 'Cosa ti permettono di fare i tuoi ruoli in AnsibleForms.',
+    },
+    username: 'Nome utente',
+    loginType: 'Tipo di accesso',
+    groups: 'Gruppi',
+    roles: 'Ruoli',
+    noneYet: 'Nessuno',
+    language: 'Lingua',
+    theme: 'Tema',
+    color: 'Colore',
+    currentPassword: 'Password attuale',
+    newPassword: 'Nuova password',
+    confirmPassword: 'Conferma la nuova password',
+    mismatch: 'Le nuove password non coincidono.',
+    changed: 'La tua password è stata cambiata.',
+    change: 'Cambia password',
+    elsewhere: 'Accedi con {type}, quindi la tua password è gestita lì e non può essere cambiata qui.',
+    allowed: 'Consentito',
+    notAllowed: 'Non consentito',
   },
   sidebar: {
     sections: {
@@ -31,7 +125,7 @@ export default {
       jobs: 'Job',
       system: 'Sistema',
     },
-    ansibleForms: 'Impostazioni',
+    ansibleForms: 'Generale',
     categories: 'Categorie',
     roles: 'Ruoli',
     constants: 'Costanti',
@@ -46,13 +140,14 @@ export default {
     credentials: 'Credenziali',
     ssh: 'SSH',
     knownHosts: 'Host conosciuti',
-    aap: 'A.A.P.',
+    aap: 'AAP',
     secretStores: 'Archivi di segreti',
     repositories: 'Repository',
     schedules: 'Pianificazioni',
     storedJobs: 'Job salvati',
     status: 'Stato',
     audit: 'Registro di audit',
+    logs: 'Log del server',
   },
   audit: {
     // Every audit action, in the order the routes produce them. Keys are the stored
@@ -254,6 +349,7 @@ export default {
       'Le build client e server non corrispondono. Esegui un refresh forzato (Ctrl+Shift+R o Cmd+Shift+R).',
   },
   common: {
+    clear: 'Cancella',
     create: 'Crea',
     cancel: 'Annulla',
     delete: 'Elimina',
@@ -901,6 +997,11 @@ export default {
   },
   designer: {
     title: 'Designer',
+    lockTitle: 'Bloccato',
+    offDescription:
+      'Modifica categorie, costanti, form e ruoli. Avvia il designer per bloccare la configurazione mentre la modifichi.',
+    formsDescription:
+      "Modifica i form in YAML. L'esplora file a destra elenca i file dei form e i form all'interno di ciascun file.",
     startDesigner: 'Avvia designer',
     forceUnlock: 'Forza sblocco',
     lockedByMe: 'Bloccato da me',
@@ -1173,6 +1274,34 @@ export default {
     badYamlDuplicate: 'Impossibile duplicare: YAML non valido',
   },
   jobs: {
+    // the jobs page's left menu
+    menu: {
+      status: 'Stato',
+      all: 'Tutti i job',
+      running: 'In esecuzione',
+      approve: 'In attesa di approvazione',
+      success: 'Riuscito',
+      failed: 'Fallito',
+      aborted: 'Interrotto',
+      planned: 'Pianificato',
+    },
+    // the message in the table when no job is shown
+    empty: {
+      status: 'Nessun job con stato {status}.',
+      filtered: 'Nessun job corrisponde ai filtri delle colonne.',
+      none: 'Ancora nessun job. Compaiono qui non appena viene eseguito un form.',
+    },
+    // the line under the page title, per status of the left menu
+    description: {
+      all: "Ogni job avviato da un form. Aprine uno per vederne l'output, oppure rilancialo, interrompilo o eliminalo.",
+      running:
+        "I job in esecuzione in questo momento. Aprine uno per seguirne l'output in diretta, oppure interrompilo.",
+      approve:
+        "I job che attendono un'approvazione prima di partire. Approvali o rifiutali con le icone davanti a ogni job.",
+      success: 'I job terminati con successo.',
+      failed: 'I job terminati con un errore. Aprine uno per vedere nel suo output cosa è andato storto.',
+      aborted: 'I job interrotti prima della fine.',
+    },
     title: 'Job',
     refresh: 'Aggiorna',
     filterPlaceholder: 'regex (su qualsiasi cosa)',
@@ -1300,7 +1429,9 @@ export default {
     wizardMissingSubform: 'Il passo della procedura guidata fa riferimento a un sottomodulo sconosciuto',
   },
   logs: {
-    title: 'Log',
+    title: 'Log del server',
+    description:
+      'Il log del server AnsibleForms: accessi, caricamenti della configurazione, richieste ed errori. Le righe più recenti sono in fondo.',
     autoRefresh: 'Aggiornamento automatico',
     download: 'Scarica',
     filterPlaceholder: 'regex',

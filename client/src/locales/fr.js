@@ -17,11 +17,107 @@ export default {
     logout: 'Se deconnecter',
     language: 'Langue',
     aboutMe: 'A propos de moi',
+    profile: 'Profil',
     username: "Nom d'utilisateur",
     type: 'Type',
     groups: 'Groupes',
     roles: 'Roles',
     options: 'Options',
+  },
+  profilePage: {
+    languageHint: "La langue des menus, des pages et des messages. Le drapeau dans l'en-tête la change aussi.",
+    themeHint:
+      "Clair, sombre, ou un en-tête dans la couleur de votre choix. L'icône soleil dans l'en-tête le change aussi.",
+    formsViewHint:
+      'Comment la page Formulaires affiche les formulaires : en tuiles ou en liste. Le bouton de cette page le change aussi.',
+    timezone: 'Fuseau horaire',
+    timezoneBrowser: 'Ce navigateur ({zone})',
+    timezoneAll: 'Tous les fuseaux',
+    timezoneHint:
+      "Les dates et heures d'AnsibleForms sont affichées dans ce fuseau horaire. Le journal du serveur et la sortie des jobs gardent les heures écrites par le serveur.",
+    formsView: 'Affichage des formulaires',
+    // the api token view
+    token: {
+      lifetimeHint:
+        'Le token cesse de fonctionner après ce délai. Choisissez la durée la plus courte dont votre script a besoin.',
+      passwordHint:
+        "Votre mot de passe de connexion, pour confirmer que c'est bien vous. Il n'est pas stocké dans le token.",
+      lifetime: 'Valable',
+      days: '{n} jours',
+      password: 'Votre mot de passe',
+      create: 'Créer le token',
+      created: "Votre token, valable jusqu'au {date}",
+      copy: 'Copier',
+      copied: 'Token copié',
+      once: "Copiez-le maintenant : il n'est affiché qu'une fois et ne peut pas être révoqué avant son expiration. Traitez-le comme votre mot de passe.",
+      example: "Envoyez-le dans l'en-tête Authorization de chaque appel API :",
+      notForType:
+        'Les tokens API sont créés avec votre mot de passe : ils ne sont pas disponibles pour les comptes {type}.',
+      failed: "Le token n'a pas pu être créé. Vérifiez votre mot de passe.",
+      another: 'Créer un autre token',
+    },
+    columnSetting: 'Paramètre',
+    columnDescription: 'Description',
+    columnAccess: 'Votre accès',
+    // what each role option lets the user do
+    optionDescription: {
+      showSettings: 'Voir les pages de paramètres.',
+      showDesigner: 'Voir et utiliser le designer.',
+      showLogs: 'Voir le journal du serveur.',
+      showJobs: 'Voir la page des jobs.',
+      showDebugButtons: 'Voir les boutons de débogage sur un formulaire.',
+      allowJobRelaunch: "Relancer des jobs avec les données de formulaire d'une exécution précédente.",
+      allowVerboseMode: 'Lancer des jobs en mode verbeux.',
+      allowScheduledJobs: 'Créer et gérer des jobs planifiés, récurrents ou ponctuels.',
+      allowStoredJobs: "Enregistrer les données d'un job et les recharger plus tard.",
+      allowPlannedJobs: 'Planifier un job à une heure donnée.',
+      showAllJobLogs: 'Voir les jobs de tous les utilisateurs, pas seulement les vôtres.',
+      showArtifacts: 'Voir les artifacts renvoyés par un job.',
+      showExtravars: "Voir les extravars d'un formulaire.",
+      allowLogin: 'Se connecter à AnsibleForms.',
+      allowBackupOps: 'Sauvegarder et restaurer la base de données.',
+      allowChat: "Utiliser l'assistant de chat, s'il est activé.",
+      extendedTokenExpiration: "Demander un token de plus longue durée, par exemple pour l'API.",
+    },
+    groupPages: 'Pages et menus',
+    groupJobs: 'Jobs',
+    groupOther: 'Autres',
+    allowedCount: '{n} sur {total} autorisés',
+    localAccount: 'Compte local',
+    // the profile page (its left menu, the line under the title, and its views)
+    menu: {
+      account: 'Compte',
+      preferences: 'Préférences',
+      password: 'Mot de passe',
+      permissions: 'Autorisations',
+      token: 'Token API',
+    },
+    description: {
+      account:
+        'Avec quel compte vous êtes connecté, et les groupes et rôles qui décident de ce que vous pouvez voir et lancer.',
+      token: "Un token de longue durée pour les scripts et l'API, créé avec votre mot de passe.",
+      preferences: "L'apparence d'AnsibleForms pour vous. Ces choix sont gardés dans ce navigateur.",
+      password: 'Changez le mot de passe de votre compte local.',
+      passwordElsewhere: 'Votre mot de passe est géré par votre fournisseur de connexion.',
+      permissions: 'Ce que vos rôles vous permettent de faire dans AnsibleForms.',
+    },
+    username: "Nom d'utilisateur",
+    loginType: 'Type de connexion',
+    groups: 'Groupes',
+    roles: 'Rôles',
+    noneYet: 'Aucun',
+    language: 'Langue',
+    theme: 'Thème',
+    color: 'Couleur',
+    currentPassword: 'Mot de passe actuel',
+    newPassword: 'Nouveau mot de passe',
+    confirmPassword: 'Confirmez le nouveau mot de passe',
+    mismatch: 'Les nouveaux mots de passe ne correspondent pas.',
+    changed: 'Votre mot de passe est changé.',
+    change: 'Changer le mot de passe',
+    elsewhere: 'Vous vous connectez avec {type} : votre mot de passe y est géré et ne peut pas être changé ici.',
+    allowed: 'Autorisé',
+    notAllowed: 'Non autorisé',
   },
   sidebar: {
     sections: {
@@ -31,7 +127,7 @@ export default {
       jobs: 'Jobs',
       system: 'Système',
     },
-    ansibleForms: 'Parametres',
+    ansibleForms: 'Général',
     categories: 'Categories',
     roles: 'Roles',
     constants: 'Constantes',
@@ -46,13 +142,14 @@ export default {
     credentials: 'Identifiants',
     ssh: 'SSH',
     knownHosts: 'Hotes connus',
-    aap: 'A.A.P.',
+    aap: 'AAP',
     secretStores: 'Coffres de secrets',
     repositories: 'Depots',
     schedules: 'Planifications',
     storedJobs: 'Jobs enregistres',
     status: 'Statut',
     audit: "Journal d'audit",
+    logs: 'Journal du serveur',
   },
   audit: {
     // Every audit action, in the order the routes produce them. Keys are the stored
@@ -254,6 +351,7 @@ export default {
       'Les builds client et serveur ne correspondent pas. Veuillez effectuer un rechargement force (Ctrl+Shift+R ou Cmd+Shift+R).',
   },
   common: {
+    clear: 'Effacer',
     create: 'Créer',
     cancel: 'Annuler',
     delete: 'Supprimer',
@@ -908,6 +1006,11 @@ export default {
   },
   designer: {
     title: 'Concepteur',
+    lockTitle: 'Verrouillé',
+    offDescription:
+      "Modifiez les catégories, constantes, formulaires et rôles. Démarrez le designer pour verrouiller la configuration pendant l'édition.",
+    formsDescription:
+      "Modifiez les formulaires en YAML. L'explorateur à droite liste les fichiers de formulaires et les formulaires dans chaque fichier.",
     startDesigner: 'Demarrer le concepteur',
     forceUnlock: 'Forcer le deblocage',
     lockedByMe: 'Verrouille par moi',
@@ -1181,6 +1284,33 @@ export default {
     badYamlDuplicate: 'Duplication impossible : YAML incorrect',
   },
   jobs: {
+    // the jobs page's left menu
+    menu: {
+      status: 'Statut',
+      all: 'Tous les jobs',
+      running: 'En cours',
+      approve: "En attente d'approbation",
+      success: 'Réussi',
+      failed: 'Échoué',
+      aborted: 'Annulé',
+      planned: 'Planifié',
+    },
+    // the message in the table when no job is shown
+    empty: {
+      status: 'Aucun job avec le statut {status}.',
+      filtered: 'Aucun job ne correspond aux filtres de colonnes.',
+      none: "Aucun job pour le moment. Ils apparaissent ici dès qu'un formulaire est exécuté.",
+    },
+    // the line under the page title, per status of the left menu
+    description: {
+      all: 'Chaque job lancé depuis un formulaire. Ouvrez-en un pour voir sa sortie, ou relancez-le, arrêtez-le ou supprimez-le.',
+      running: "Les jobs en cours d'exécution. Ouvrez-en un pour suivre sa sortie en direct, ou arrêtez-le.",
+      approve:
+        'Les jobs qui attendent une approbation avant de démarrer. Approuvez-les ou rejetez-les avec les icônes devant chaque job.',
+      success: 'Les jobs terminés avec succès.',
+      failed: "Les jobs terminés en erreur. Ouvrez-en un pour voir dans sa sortie ce qui n'a pas fonctionné.",
+      aborted: 'Les jobs arrêtés avant la fin.',
+    },
     title: 'Jobs',
     refresh: 'Actualiser',
     filterPlaceholder: 'regex (sur tout)',
@@ -1308,7 +1438,9 @@ export default {
     wizardMissingSubform: "L'étape de l'assistant fait référence à un sous-formulaire inconnu",
   },
   logs: {
-    title: 'Journaux',
+    title: 'Journal du serveur',
+    description:
+      'Le journal propre du serveur AnsibleForms : connexions, chargements de la configuration, requêtes et erreurs. Les lignes les plus récentes sont en bas.',
     autoRefresh: 'Actualisation automatique',
     download: 'Telecharger',
     filterPlaceholder: 'regex',

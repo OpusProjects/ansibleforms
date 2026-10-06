@@ -18,6 +18,7 @@ import TokenStorage from '@/lib/TokenStorage';
 import { sanitize } from '@/lib/HtmlSanitizer';
 import { useAppStore } from '@/stores/app';
 import { useRoute } from 'vue-router';
+import Time from '@/lib/Time';
 
 const { t } = useI18n();
 const store = useAppStore();
@@ -267,7 +268,7 @@ const labelFor = (p) => ({ Launch: t('chat.launch'), Relaunch: t('chat.relaunch'
 const pretty = (v) => JSON.stringify(v, null, 2);
 const expires = (p) => {
   try {
-    return new Date(p.expiresAt).toLocaleTimeString();
+    return Time.format(p.expiresAt, 'HH:mm:ss');
   } catch {
     return '';
   }

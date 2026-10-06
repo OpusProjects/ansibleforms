@@ -23,7 +23,7 @@ onMounted(async () => {
 <template>
   <AppNav />
   <div class="flex-shrink-0">
-    <main class="d-flex flex-nowrap container-xxl">
+    <main class="d-flex flex-nowrap af-settings-layout">
       <AppSidebar />
       <div class="d-flex flex-column w-100">
         <AppAdminMulti v-if="authenticated" :apiVersion="2" :settings="settings.oauth2_providers" />

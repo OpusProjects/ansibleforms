@@ -10,6 +10,7 @@ import Helpers from '@/lib/Helpers';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import YAML from 'yaml';
+import Time from '@/lib/Time';
 
 // INIT
 
@@ -27,7 +28,6 @@ const job = ref(null);
 const isLoading = ref(false);
 const lines = ref(1000);
 const jobId = ref(null);
-const filter = ref(null);
 const displayedJobs = ref([]);
 const showExtraVars = ref(false);
 const showArtifacts = ref(false);
@@ -46,6 +46,13 @@ const relaunchVerbose = ref(false);
 const relaunchWithEdit = ref(false);
 const tempJobId = ref(null);
 const noOfRecords = ref(500);
+// the left menu's status filter : null shows every job ; ?status= opens the page on one
+// (the approvals bell in the header links to ?status=approve)
+const statusFilter = ref(route.query.status || null);
+watch(
+  () => route.query.status,
+  (status) => (statusFilter.value = status || null),
+);
 
 // ─── DataTable-style state (sort / per-column filter / column visibility) ──
 const columnDefs = computed(() => [
@@ -142,25 +149,109 @@ const displayedJobIndex = computed(() => {
   const targetId = selected.parent_id ? selected.parent_id : selected.id;
   return parentJobs.value.findIndex((e) => e.id == targetId);
 });
+// the left menu : the jobs by status (with their counts), and the scheduled and stored
+// jobs pages for the roles that may use them
+// (the labels are spelled out, not built from the status, so the i18n key check can find them)
+const MENU_STATUSES = [
+  {
+    status: 'running',
+    icon: 'play',
+    label: () => t('jobs.menu.running'),
+    description: () => t('jobs.description.running'),
+  },
+  {
+    status: 'approve',
+    icon: 'hourglass-half',
+    label: () => t('jobs.menu.approve'),
+    description: () => t('jobs.description.approve'),
+  },
+  {
+    status: 'success',
+    icon: 'check',
+    label: () => t('jobs.menu.success'),
+    description: () => t('jobs.description.success'),
+  },
+  {
+    status: 'failed',
+    icon: 'xmark',
+    label: () => t('jobs.menu.failed'),
+    description: () => t('jobs.description.failed'),
+  },
+  {
+    status: 'aborted',
+    icon: 'ban',
+    label: () => t('jobs.menu.aborted'),
+    description: () => t('jobs.description.aborted'),
+  },
+];
+// the page title is the view picked in the left menu (its name and icon, as in the menu)
+const pageTitle = computed(() => {
+  const m = MENU_STATUSES.find((x) => x.status === statusFilter.value);
+  return m ? { title: m.label(), icon: m.icon } : { title: t('jobs.menu.all'), icon: 'list' };
+});
+// the line under the page title : what the status picked in the left menu shows
+const pageDescription = computed(
+  () => MENU_STATUSES.find((m) => m.status === statusFilter.value)?.description() || t('jobs.description.all'),
+);
+const sidebarSections = computed(() => {
+  const all = jobs.value?.filter((x) => !x.parent_id) || [];
+  const count = (status) => all.filter((x) => x.status === status).length;
+  const sections = [
+    {
+      title: t('jobs.menu.status'),
+      items: [
+        {
+          title: t('jobs.menu.all'),
+          icon: 'list',
+          badge: all.length,
+          active: !statusFilter.value,
+          action: () => (statusFilter.value = null),
+        },
+        ...MENU_STATUSES.map((m) => ({
+          title: m.label(),
+          icon: m.icon,
+          badge: count(m.status),
+          // a job waiting for approval needs someone : its count is red, like the header badge
+          badgeAlert: m.status === 'approve' && count(m.status) > 0,
+          active: statusFilter.value === m.status,
+          action: () => (statusFilter.value = m.status),
+        })),
+      ],
+    },
+  ];
+  const planned = [
+    store?.profile?.options?.allowScheduledJobs && {
+      title: t('sidebar.schedules'),
+      icon: 'clock',
+      link: '/admin/schedules',
+    },
+    store?.profile?.options?.allowStoredJobs && {
+      title: t('sidebar.storedJobs'),
+      icon: 'floppy-disk',
+      link: '/admin/stored-jobs',
+    },
+  ].filter(Boolean);
+  if (planned.length) sections.push({ title: t('jobs.menu.planned'), items: planned });
+  return sections;
+});
+
+// the table's message when no job is shown : a status picked in the menu, a column
+// filter, or simply no jobs at all
+const emptyMessage = computed(() => {
+  if (statusFilter.value) {
+    const entry = MENU_STATUSES.find((m) => m.status === statusFilter.value);
+    return t('jobs.empty.status', { status: (entry ? entry.label() : statusFilter.value).toLowerCase() });
+  }
+  const filtered = Object.values(columnFilters.value).some((v) => v != null && String(v).trim() !== '');
+  return filtered ? t('jobs.empty.filtered') : t('jobs.empty.none');
+});
+
 // main jobs
 const parentJobs = computed(() => {
   let list = jobs.value?.filter((x) => !x.parent_id) || [];
 
-  // Global (legacy) filter — keeps its regex-style match semantics.
-  if (filter.value) {
-    // includes(), not match(). String.match compiles its argument as a RegExp, so
-    // typing a bare '(' - or searching for a form actually named 'Deploy (prod)' -
-    // threw SyntaxError inside this computed and broke the whole jobs table render.
-    // Every other filter in this file already uses includes().
-    const f = filter.value.toLowerCase();
-    const has = (v) =>
-      String(v ?? '')
-        .toLowerCase()
-        .includes(f);
-    list = list.filter(
-      (x) => has(x.id) || has(x.status) || has(x.form) || has(x.job_type) || has(x.start) || has(x.end) || has(x.user),
-    );
-  }
+  // the left menu's status filter
+  if (statusFilter.value) list = list.filter((x) => x.status === statusFilter.value);
 
   // Per-column filters (case-insensitive substring on the rendered text).
   // For the `id` and `form` columns we also match against any of the
@@ -442,25 +533,25 @@ function setDisplayJobs(jobs) {
   displayedJobs.value = jobs;
 }
 // format time
+// a job time in the user's time zone (Profile > Preferences)
 function formatTime(t) {
-  // preserve zone/offset sent by backend and do not convert to client local time
-  if (!t) return '';
-
-  return dayjs.utc(t).format('YYYY-MM-DD HH:mm:ss');
+  return Time.format(t);
 }
 // get job index by id
 function getJobIndex(id) {
   return jobs.value.findIndex((x) => x.id === id);
 }
 // show approval (approve or reject)
+// The job is read for its approval text only : it is not selected (jobId, job), so closing
+// the modal without approving or rejecting leaves the page as it was, without the job output.
+// Confirming does open the output (jobAction), to follow the job that was just approved.
 async function showApproval(id, reject) {
   try {
-    jobId.value = id;
     const result = await axios.get(`/api/v2/job/${id}`, TokenStorage.getAuthentication());
     if (result.status === 200) {
-      job.value = result.data;
-      approvalMessage.value = replacePlaceholders(job.value.approval?.message || '');
-      approvalTitle.value = replacePlaceholders(job.value.approval?.title) || 'Approve';
+      const approvalJob = result.data;
+      approvalMessage.value = replacePlaceholders(approvalJob.approval?.message || '', approvalJob.extravars);
+      approvalTitle.value = replacePlaceholders(approvalJob.approval?.title, approvalJob.extravars) || 'Approve';
       if (reject) {
         showReject.value = true;
       } else {
@@ -474,16 +565,14 @@ async function showApproval(id, reject) {
   }
 }
 // replace placeholders in a string
-function replacePlaceholders(msg) {
+function replacePlaceholders(msg, extravars) {
   if (!msg) {
     return '';
   }
   return msg.replace(
     /\$\(([^\)]+)\)/g, // eslint-disable-line
     (placeholderWithDelimiters, placeholderWithoutDelimiters) =>
-      Helpers.htmlEncode(
-        String(findExtravar(job.value.extravars, placeholderWithoutDelimiters) || placeholderWithDelimiters),
-      ),
+      Helpers.htmlEncode(String(findExtravar(extravars, placeholderWithoutDelimiters) || placeholderWithDelimiters)),
   );
 }
 // find extravars
@@ -797,25 +886,13 @@ onBeforeUnmount(() => {
         ></template
       >
     </BsModal>
-    <main class="d-flex container-xxl">
-      <AppSettings :title="t('jobs.title')" icon="history">
-        <template #feedback>
-          <div class="input-group ms-5" style="width: 400px">
-            <span class="input-group-text">
-              <FaIcon icon="search" />
-            </span>
-            <input
-              v-model="filter"
-              type="text"
-              class="form-control text-start"
-              :placeholder="t('jobs.filterPlaceholder')"
-            />
-          </div>
-        </template>
+    <main class="d-flex flex-nowrap af-settings-layout">
+      <BsSidebar :sections="sidebarSections" storageKey="af_jobs_sidebar_collapsed" />
+      <AppSettings :title="pageTitle.title" :description="pageDescription" :icon="pageTitle.icon">
         <template #headerActions>
           <div class="d-flex justify-content-end align-items-center">
-            <BsButton icon="refresh" @click="loadJobs" cssClass="me-2">{{ t('jobs.refresh') }}</BsButton>
-            <div class="input-group me-2" style="width: 300px">
+            <BsButton icon="refresh" @click="loadJobs" cssClass="me-2 text-nowrap">{{ t('jobs.refresh') }}</BsButton>
+            <div class="input-group me-2" style="width: 160px">
               <span class="input-group-text">
                 <FaIcon icon="list-ol" />
               </span>
@@ -829,7 +906,7 @@ onBeforeUnmount(() => {
             <!-- Column picker -->
             <div class="dropdown me-2">
               <button
-                class="btn btn-outline-secondary dropdown-toggle"
+                class="btn btn-outline-primary dropdown-toggle"
                 type="button"
                 data-bs-toggle="dropdown"
                 data-bs-auto-close="outside"
@@ -892,9 +969,11 @@ onBeforeUnmount(() => {
             <template v-for="j in displayedJobs" :key="j.id">
               <tr :class="jobBackground(j)">
                 <td>
+                  <!-- a job waiting for approval is decided, not relaunched or deleted : it only
+                       offers approve and reject -->
                   <span
                     role="button"
-                    v-if="j.status != 'running' && canRelaunchJobs"
+                    v-if="j.status != 'running' && j.status != 'approve' && canRelaunchJobs"
                     class="me-2 text-info"
                     @click="
                       tempJobId = j.id;
@@ -916,7 +995,7 @@ onBeforeUnmount(() => {
                   /></span>
                   <span
                     role="button"
-                    v-if="(j.status != 'running' && !j.abort_requested) || store.isAdmin"
+                    v-if="j.status != 'approve' && ((j.status != 'running' && !j.abort_requested) || store.isAdmin)"
                     class="me-2 text-danger"
                     @click="
                       tempJobId = j.id;
@@ -928,7 +1007,7 @@ onBeforeUnmount(() => {
                   <span
                     role="button"
                     v-if="j.status == 'approve' && approvalAllowed(j)"
-                    class="me-2 text-success"
+                    class="me-2 text-success af-approve-icon"
                     @click="
                       tempJobId = j.id;
                       showApproval(j.id);
@@ -939,7 +1018,7 @@ onBeforeUnmount(() => {
                   <span
                     role="button"
                     v-if="j.status == 'approve' && approvalAllowed(j)"
-                    class="me-2 text-danger"
+                    class="me-2 text-danger af-reject-icon"
                     @click="
                       tempJobId = j.id;
                       showApproval(j.id, true);
@@ -988,6 +1067,18 @@ onBeforeUnmount(() => {
                 </tr>
               </template>
             </template>
+            <!-- nothing to show : say why, above the pagination -->
+            <tr v-if="!isLoading && parentJobs.length === 0" class="af-empty-row">
+              <!-- 24px above the text ; below it 9px plus the pagination's own 16px margin, so the
+                   message sits centred between the column filters and the pagination -->
+              <td
+                :colspan="visibleColumns.length + 1"
+                class="text-center text-body-secondary pt-4"
+                style="padding-bottom: 9px"
+              >
+                <FaIcon icon="circle-info" class="me-2" />{{ emptyMessage }}
+              </td>
+            </tr>
           </tbody>
         </table>
         <BsPagination
@@ -1169,13 +1260,29 @@ onBeforeUnmount(() => {
   </div>
 </template>
 <style scoped>
+/* approve and reject on a job waiting for approval : in the light theme the app darkens
+   green and red text (textColors.scss), which made these two icons heavy ; they keep
+   Bootstrap's own, lighter colors */
+[data-bs-theme='light'] .af-approve-icon {
+  color: var(--bs-success) !important;
+}
+[data-bs-theme='light'] .af-reject-icon {
+  color: var(--bs-danger) !important;
+}
+/* the "no jobs" message is a table row, but not a job : no row separator under it */
+.af-empty-row td {
+  border-bottom: 0 !important;
+  box-shadow: none !important;
+}
 .is-clipped-horizontal {
   overflow-x: hidden;
 }
 /* Status badge in the ansible-output headings. Same rule as form.vue, which
        renders the identical markup — scoped styles don't cross components, so
-       it has to be repeated here rather than shared. */
-.status {
+       it has to be repeated here rather than shared. Limited to the badge : the
+       table's header cells carry their column key as a class, and a bare .status
+       shrank the "status" column header too. */
+.badge.status {
   font-size: 0.75rem;
 }
 .custom-table {

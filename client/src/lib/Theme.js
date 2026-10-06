@@ -45,8 +45,8 @@ var Theme = {
     localStorage.setItem('themeColor', hex);
     const el = document.documentElement;
     el.style.setProperty('--af-bg-navbar', hex);
-    el.style.setProperty('--af-navbar-link-hover-color', 'rgba(255,255,255,0.7)');
-    el.style.setProperty('--af-navbar-link-active-color', 'rgba(255,255,255,0.7)');
+    el.style.setProperty('--af-navbar-link-hover-color', '#ffffff');
+    el.style.setProperty('--af-navbar-link-active-color', '#ffffff');
   },
   clearColor() {
     const el = document.documentElement;

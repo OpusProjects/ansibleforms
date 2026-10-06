@@ -17,11 +17,106 @@ export default {
     logout: 'Abmelden',
     language: 'Sprache',
     aboutMe: 'Ueber mich',
+    profile: 'Profil',
     username: 'Benutzername',
     type: 'Typ',
     groups: 'Gruppen',
     roles: 'Rollen',
     options: 'Optionen',
+  },
+  profilePage: {
+    languageHint: 'Die Sprache der Menüs, Seiten und Meldungen. Die Flagge in der Kopfzeile wechselt sie ebenfalls.',
+    themeHint:
+      'Hell, dunkel oder eine Kopfzeile in einer Farbe Ihrer Wahl. Das Sonnensymbol in der Kopfzeile wechselt es ebenfalls.',
+    formsViewHint:
+      'Wie die Seite Formulare die Formulare zeigt: als Kacheln oder als Liste. Die Schaltfläche auf dieser Seite wechselt es ebenfalls.',
+    timezone: 'Zeitzone',
+    timezoneBrowser: 'Dieser Browser ({zone})',
+    timezoneAll: 'Alle Zonen',
+    timezoneHint:
+      'Datum und Uhrzeit werden in ganz AnsibleForms in dieser Zeitzone angezeigt. Das Serverprotokoll und die Jobausgabe behalten die Zeiten, die der Server hineingeschrieben hat.',
+    formsView: 'Formularansicht',
+    // the api token view
+    token: {
+      lifetimeHint:
+        'Nach dieser Zeit funktioniert das Token nicht mehr. Wählen Sie die kürzeste Zeit, die Ihr Skript braucht.',
+      passwordHint: 'Ihr Anmeldepasswort, um zu bestätigen, dass Sie es sind. Es wird nicht im Token gespeichert.',
+      lifetime: 'Gültig für',
+      days: '{n} Tage',
+      password: 'Ihr Passwort',
+      create: 'Token erstellen',
+      created: 'Ihr Token, gültig bis {date}',
+      copy: 'Kopieren',
+      copied: 'Token kopiert',
+      once: 'Kopieren Sie es jetzt: Es wird nur einmal angezeigt und kann vor seinem Ablauf nicht widerrufen werden. Behandeln Sie es wie Ihr Passwort.',
+      example: 'Senden Sie es im Authorization-Header jedes API-Aufrufs mit:',
+      notForType: 'API-Tokens werden mit Ihrem Passwort erstellt und sind daher für {type}-Konten nicht verfügbar.',
+      failed: 'Das Token konnte nicht erstellt werden. Prüfen Sie Ihr Passwort.',
+      another: 'Weiteres Token erstellen',
+    },
+    columnSetting: 'Einstellung',
+    columnDescription: 'Beschreibung',
+    columnAccess: 'Ihr Zugriff',
+    // what each role option lets the user do
+    optionDescription: {
+      showSettings: 'Die Einstellungsseiten sehen.',
+      showDesigner: 'Den Designer sehen und verwenden.',
+      showLogs: 'Das Serverprotokoll sehen.',
+      showJobs: 'Die Jobs-Seite sehen.',
+      showDebugButtons: 'Die Debug-Schaltflächen auf einem Formular sehen.',
+      allowJobRelaunch: 'Jobs mit den Formulardaten eines früheren Laufs neu starten.',
+      allowVerboseMode: 'Jobs im Verbose-Modus ausführen.',
+      allowScheduledJobs: 'Geplante Jobs erstellen und verwalten, wiederkehrend oder einmalig.',
+      allowStoredJobs: 'Jobdaten speichern und später wieder laden.',
+      allowPlannedJobs: 'Einen Job zu einer festen Zeit einplanen.',
+      showAllJobLogs: 'Die Jobs aller Benutzer sehen, nicht nur die eigenen.',
+      showArtifacts: 'Die Artifacts sehen, die ein Job zurückgibt.',
+      showExtravars: 'Die Extravars eines Formulars sehen.',
+      allowLogin: 'Sich bei AnsibleForms anmelden.',
+      allowBackupOps: 'Die Datenbank sichern und wiederherstellen.',
+      allowChat: 'Den Chat-Assistenten verwenden, wenn er aktiviert ist.',
+      extendedTokenExpiration: 'Ein länger gültiges Token anfordern, zum Beispiel für die API.',
+    },
+    groupPages: 'Seiten und Menüs',
+    groupJobs: 'Jobs',
+    groupOther: 'Sonstiges',
+    allowedCount: '{n} von {total} erlaubt',
+    localAccount: 'Lokales Konto',
+    // the profile page (its left menu, the line under the title, and its views)
+    menu: {
+      account: 'Konto',
+      preferences: 'Einstellungen',
+      password: 'Passwort',
+      permissions: 'Berechtigungen',
+      token: 'API-Token',
+    },
+    description: {
+      account:
+        'Als wer Sie angemeldet sind, und die Gruppen und Rollen, die bestimmen, was Sie sehen und ausführen können.',
+      token: 'Ein lange gültiges Token für Skripte und die API, erstellt mit Ihrem Passwort.',
+      preferences: 'Wie AnsibleForms für Sie aussieht. Diese Einstellungen werden in diesem Browser gespeichert.',
+      password: 'Ändern Sie das Passwort Ihres lokalen Kontos.',
+      passwordElsewhere: 'Ihr Passwort wird von Ihrem Anmeldeanbieter verwaltet.',
+      permissions: 'Was Ihre Rollen Ihnen in AnsibleForms erlauben.',
+    },
+    username: 'Benutzername',
+    loginType: 'Anmeldeart',
+    groups: 'Gruppen',
+    roles: 'Rollen',
+    noneYet: 'Keine',
+    language: 'Sprache',
+    theme: 'Design',
+    color: 'Farbe',
+    currentPassword: 'Aktuelles Passwort',
+    newPassword: 'Neues Passwort',
+    confirmPassword: 'Neues Passwort bestätigen',
+    mismatch: 'Die neuen Passwörter stimmen nicht überein.',
+    changed: 'Ihr Passwort wurde geändert.',
+    change: 'Passwort ändern',
+    elsewhere:
+      'Sie melden sich über {type} an, daher wird Ihr Passwort dort verwaltet und kann hier nicht geändert werden.',
+    allowed: 'Erlaubt',
+    notAllowed: 'Nicht erlaubt',
   },
   sidebar: {
     sections: {
@@ -31,7 +126,7 @@ export default {
       jobs: 'Jobs',
       system: 'System',
     },
-    ansibleForms: 'Einstellungen',
+    ansibleForms: 'Allgemein',
     categories: 'Kategorien',
     roles: 'Rollen',
     constants: 'Konstanten',
@@ -46,13 +141,14 @@ export default {
     credentials: 'Anmeldedaten',
     ssh: 'SSH',
     knownHosts: 'Bekannte Hosts',
-    aap: 'A.A.P.',
+    aap: 'AAP',
     secretStores: 'Secret Stores',
     repositories: 'Repositories',
     schedules: 'Zeitplaene',
     storedJobs: 'Gespeicherte Jobs',
     status: 'Status',
     audit: 'Audit-Protokoll',
+    logs: 'Serverprotokoll',
   },
   audit: {
     // Every audit action, in the order the routes produce them. Keys are the stored
@@ -254,6 +350,7 @@ export default {
       'Client- und Server-Build stimmen nicht ueberein. Bitte fuehren Sie ein hartes Neuladen aus (Ctrl+Shift+R oder Cmd+Shift+R).',
   },
   common: {
+    clear: 'Leeren',
     create: 'Erstellen',
     cancel: 'Abbrechen',
     delete: 'Loeschen',
@@ -911,6 +1008,11 @@ export default {
   },
   designer: {
     title: 'Designer',
+    lockTitle: 'Gesperrt',
+    offDescription:
+      'Bearbeiten Sie Kategorien, Konstanten, Formulare und Rollen. Starten Sie den Designer, um die Konfiguration beim Bearbeiten zu sperren.',
+    formsDescription:
+      'Bearbeiten Sie die Formulare als YAML. Der Datei-Explorer rechts listet die Formulardateien und die Formulare in jeder Datei.',
     startDesigner: 'Designer starten',
     forceUnlock: 'Entsperrung erzwingen',
     lockedByMe: 'Von mir gesperrt',
@@ -1184,6 +1286,35 @@ export default {
     badYamlDuplicate: 'Duplizieren nicht möglich: ungültiges YAML',
   },
   jobs: {
+    // the jobs page's left menu
+    menu: {
+      status: 'Status',
+      all: 'Alle Jobs',
+      running: 'Läuft',
+      approve: 'Wartet auf Genehmigung',
+      success: 'Erfolgreich',
+      failed: 'Fehlgeschlagen',
+      aborted: 'Abgebrochen',
+      planned: 'Geplant',
+    },
+    // the message in the table when no job is shown
+    empty: {
+      status: 'Keine Jobs mit Status {status}.',
+      filtered: 'Keine Jobs entsprechen den Spaltenfiltern.',
+      none: 'Noch keine Jobs. Sie erscheinen hier, sobald ein Formular ausgeführt wird.',
+    },
+    // the line under the page title, per status of the left menu
+    description: {
+      all: 'Jeder Job, der aus einem Formular gestartet wurde. Öffnen Sie einen, um seine Ausgabe zu sehen, oder starten Sie ihn neu, brechen Sie ihn ab oder löschen Sie ihn.',
+      running:
+        'Jobs, die gerade laufen. Öffnen Sie einen, um seine Ausgabe live zu verfolgen, oder brechen Sie ihn ab.',
+      approve:
+        'Jobs, die vor dem Start auf eine Genehmigung warten. Genehmigen oder lehnen Sie sie mit den Symbolen vor jedem Job ab.',
+      success: 'Jobs, die erfolgreich beendet wurden.',
+      failed:
+        'Jobs, die mit einem Fehler beendet wurden. Öffnen Sie einen, um in seiner Ausgabe zu sehen, was schiefging.',
+      aborted: 'Jobs, die vor ihrem Ende abgebrochen wurden.',
+    },
     title: 'Jobs',
     refresh: 'Aktualisieren',
     filterPlaceholder: 'Regex (auf alles)',
@@ -1311,7 +1442,9 @@ export default {
     wizardMissingSubform: 'Wizard-Schritt verweist auf unbekanntes Unterformular',
   },
   logs: {
-    title: 'Protokolle',
+    title: 'Serverprotokoll',
+    description:
+      'Das eigene Protokoll des AnsibleForms-Servers: Anmeldungen, Laden der Konfiguration, Anfragen und Fehler. Die neuesten Zeilen stehen unten.',
     autoRefresh: 'Automatisch aktualisieren',
     download: 'Herunterladen',
     filterPlaceholder: 'Regex',
