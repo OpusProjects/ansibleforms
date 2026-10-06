@@ -1297,6 +1297,7 @@ export default {
     // the line under the page title, per status of the left menu
     description: {
       all: "Ogni job avviato da un form. Aprine uno per vederne l'output, oppure rilancialo, interrompilo o eliminalo.",
+      job: "Un job e il suo output. Copia o scarica l'output, rilancia il job, oppure torna all'elenco.",
       running:
         "I job in esecuzione in questo momento. Aprine uno per seguirne l'output in diretta, oppure interrompilo.",
       approve:
@@ -1332,7 +1333,8 @@ export default {
     startTime: 'ora di inizio',
     endTime: 'ora di fine',
     user: 'utente',
-    jobOutput: 'Output del job per il job',
+    jobTitle: 'Job {id}',
+    backToJobs: 'Torna ai job',
     showExtravars: 'Mostra variabili extra',
     hideExtravars: 'Nascondi variabili extra',
     showArtifacts: 'Mostra artefatti',
@@ -1340,7 +1342,8 @@ export default {
     refreshOutput: 'Aggiorna',
     applyFilter: 'Applica filtro',
     removeFilter: 'Rimuovi filtro',
-    downloadJob: 'Scarica job',
+    copyOutput: "Copia l'output",
+    downloadOutput: "Scarica l'output",
     extravars: 'Variabili extra',
     artifacts: 'Artefatti',
     viewAsYaml: 'Visualizza come YAML',

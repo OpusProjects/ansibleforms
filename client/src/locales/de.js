@@ -1309,6 +1309,7 @@ export default {
     // the line under the page title, per status of the left menu
     description: {
       all: 'Jeder Job, der aus einem Formular gestartet wurde. Öffnen Sie einen, um seine Ausgabe zu sehen, oder starten Sie ihn neu, brechen Sie ihn ab oder löschen Sie ihn.',
+      job: 'Ein Job und seine Ausgabe. Kopieren oder laden Sie die Ausgabe herunter, starten Sie den Job neu, oder kehren Sie zur Liste zurück.',
       running:
         'Jobs, die gerade laufen. Öffnen Sie einen, um seine Ausgabe live zu verfolgen, oder brechen Sie ihn ab.',
       approve:
@@ -1345,7 +1346,8 @@ export default {
     startTime: 'Startzeit',
     endTime: 'Endzeit',
     user: 'Benutzer',
-    jobOutput: 'Job-Ausgabe fuer Job',
+    jobTitle: 'Job {id}',
+    backToJobs: 'Zurück zu den Jobs',
     showExtravars: 'Extra-Variablen anzeigen',
     hideExtravars: 'Extra-Variablen ausblenden',
     showArtifacts: 'Artefakte anzeigen',
@@ -1353,7 +1355,8 @@ export default {
     refreshOutput: 'Aktualisieren',
     applyFilter: 'Filter anwenden',
     removeFilter: 'Filter entfernen',
-    downloadJob: 'Job herunterladen',
+    copyOutput: 'Ausgabe kopieren',
+    downloadOutput: 'Ausgabe herunterladen',
     extravars: 'Extra-Variablen',
     artifacts: 'Artefakte',
     viewAsYaml: 'Als YAML anzeigen',

@@ -1295,6 +1295,7 @@ export default {
     // the line under the page title, per status of the left menu
     description: {
       all: 'Elke job die vanuit een formulier is gestart. Open er een om de uitvoer te zien, of start hem opnieuw, breek hem af of verwijder hem.',
+      job: 'Eén job en zijn uitvoer. Kopieer of download de uitvoer, start de job opnieuw, of ga terug naar de lijst.',
       running: 'Jobs die nu bezig zijn. Open er een om de uitvoer live te volgen, of breek hem af.',
       approve:
         'Jobs die op een goedkeuring wachten voordat ze starten. Keur ze goed of af met de iconen voor elke job.',
@@ -1329,7 +1330,8 @@ export default {
     startTime: 'starttijd',
     endTime: 'eindtijd',
     user: 'gebruiker',
-    jobOutput: 'Job uitvoer voor job',
+    jobTitle: 'Job {id}',
+    backToJobs: 'Terug naar jobs',
     showExtravars: 'Toon Extravars',
     hideExtravars: 'Verberg Extravars',
     showArtifacts: 'Toon Artifacts',
@@ -1337,7 +1339,8 @@ export default {
     refreshOutput: 'Vernieuwen',
     applyFilter: 'Filter toepassen',
     removeFilter: 'Filter verwijderen',
-    downloadJob: 'Job downloaden',
+    copyOutput: 'Uitvoer kopiëren',
+    downloadOutput: 'Uitvoer downloaden',
     extravars: 'Extravars',
     artifacts: 'Artifacts',
     viewAsYaml: 'Weergave als YAML',

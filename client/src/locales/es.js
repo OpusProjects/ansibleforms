@@ -1295,6 +1295,7 @@ export default {
     // the line under the page title, per status of the left menu
     description: {
       all: 'Cada job lanzado desde un formulario. Abre uno para ver su salida, o relánzalo, cancélalo o elimínalo.',
+      job: 'Un job y su salida. Copia o descarga la salida, relanza el job, o vuelve a la lista.',
       running: 'Los jobs que se están ejecutando ahora. Abre uno para seguir su salida en directo, o cancélalo.',
       approve:
         'Los jobs que esperan una aprobación antes de ejecutarse. Apruébalos o recházalos con los iconos delante de cada job.',
@@ -1329,7 +1330,8 @@ export default {
     startTime: 'hora de inicio',
     endTime: 'hora de finalización',
     user: 'usuario',
-    jobOutput: 'Salida de trabajo para el trabajo',
+    jobTitle: 'Trabajo {id}',
+    backToJobs: 'Volver a los trabajos',
     showExtravars: 'Mostrar Variables Extra',
     hideExtravars: 'Ocultar Variables Extra',
     showArtifacts: 'Mostrar Artefactos',
@@ -1337,7 +1339,8 @@ export default {
     refreshOutput: 'Actualizar',
     applyFilter: 'Aplicar filtro',
     removeFilter: 'Quitar filtro',
-    downloadJob: 'Descargar Trabajo',
+    copyOutput: 'Copiar Salida',
+    downloadOutput: 'Descargar Salida',
     extravars: 'Variables Extra',
     artifacts: 'Artefactos',
     viewAsYaml: 'Ver como YAML',
