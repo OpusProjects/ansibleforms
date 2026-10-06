@@ -361,6 +361,8 @@ export default {
       'Deze pagina draait nog een oudere build dan de server. Herlaad de pagina om de nieuwe versie te krijgen.',
   },
   common: {
+    // the info icon after a page title, that shows the page's description
+    aboutThisPage: 'Over deze pagina',
     clear: 'Wissen',
     create: 'Aanmaken',
     cancel: 'Annuleren',
@@ -998,6 +1000,9 @@ export default {
     },
   },
   forms: {
+    // what the forms page is for, in the info popover after its title
+    pageDescription:
+      'De formulieren die u kunt uitvoeren. Kies links een categorie of filter op naam, en open dan een formulier om het in te vullen en te starten.',
     categories: 'Categorie\u00ebn',
     allForms: 'Alle formulieren',
     search: 'Zoeken',

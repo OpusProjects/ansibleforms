@@ -364,6 +364,8 @@ export default {
       'Questa pagina usa ancora una build più vecchia del server. Ricarica la pagina per ottenere la nuova versione.',
   },
   common: {
+    // the info icon after a page title, that shows the page's description
+    aboutThisPage: 'Informazioni su questa pagina',
     clear: 'Cancella',
     create: 'Crea',
     cancel: 'Annulla',
@@ -999,6 +1001,9 @@ export default {
     },
   },
   forms: {
+    // what the forms page is for, in the info popover after its title
+    pageDescription:
+      'I moduli che puoi eseguire. Scegli una categoria a sinistra o filtra per nome, poi apri un modulo per compilarlo e avviarlo.',
     categories: 'Categorie',
     allForms: 'Tutti i moduli',
     search: 'Cerca',

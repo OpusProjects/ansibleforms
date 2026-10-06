@@ -355,6 +355,8 @@ export default {
     cacheMismatchMsg: '此页面运行的构建仍比服务器的旧。请重新加载页面以获取新版本。',
   },
   common: {
+    // the info icon after a page title, that shows the page's description
+    aboutThisPage: '关于此页面',
     clear: '清除',
     create: '新建',
     cancel: '取消',
@@ -963,6 +965,8 @@ export default {
     },
   },
   forms: {
+    // what the forms page is for, in the info popover after its title
+    pageDescription: '您可以运行的表单。在左侧选择类别或按名称筛选，然后打开表单填写并启动。',
     categories: '类别',
     allForms: '所有表单',
     search: '搜索',

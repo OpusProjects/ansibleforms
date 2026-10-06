@@ -360,6 +360,8 @@ export default {
       'このページはサーバーより古いビルドで動作しています。ページを再読み込みして新しいバージョンを取得してください。',
   },
   common: {
+    // the info icon after a page title, that shows the page's description
+    aboutThisPage: 'このページについて',
     clear: 'クリア',
     create: '作成',
     cancel: 'キャンセル',
@@ -987,6 +989,9 @@ export default {
     },
   },
   forms: {
+    // what the forms page is for, in the info popover after its title
+    pageDescription:
+      '実行できるフォームです。左側でカテゴリを選ぶか名前で絞り込み、フォームを開いて入力し、起動します。',
     categories: 'カテゴリ',
     allForms: 'すべてのフォーム',
     search: '検索',

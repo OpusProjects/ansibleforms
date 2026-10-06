@@ -360,6 +360,8 @@ export default {
     cacheMismatchMsg: 'This page still runs an older build than the server. Reload the page to get the new version.',
   },
   common: {
+    // the info icon after a page title, that shows the page's description
+    aboutThisPage: 'About this page',
     clear: 'Clear',
     create: 'Create',
     cancel: 'Cancel',
@@ -989,6 +991,9 @@ export default {
     },
   },
   forms: {
+    // what the forms page is for, in the info popover after its title
+    pageDescription:
+      'The forms you can run. Pick a category on the left or filter by name, then open a form to fill it in and launch it.',
     categories: 'Categories',
     allForms: 'All Forms',
     search: 'Search',

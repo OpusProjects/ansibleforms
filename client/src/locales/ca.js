@@ -363,6 +363,8 @@ export default {
       'Aquesta pàgina encara executa una compilació més antiga que la del servidor. Torna a carregar la pàgina per obtenir la versió nova.',
   },
   common: {
+    // the info icon after a page title, that shows the page's description
+    aboutThisPage: 'Quant a aquesta pàgina',
     clear: 'Esborra',
     create: 'Crea',
     cancel: 'Cancel·la',
@@ -1005,6 +1007,9 @@ export default {
     },
   },
   forms: {
+    // what the forms page is for, in the info popover after its title
+    pageDescription:
+      "Els formularis que pots executar. Tria una categoria a l'esquerra o filtra pel nom i obre un formulari per omplir-lo i llançar-lo.",
     categories: 'Categories',
     allForms: 'Tots els formularis',
     search: 'Cerca',

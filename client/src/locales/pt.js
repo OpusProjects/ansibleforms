@@ -363,6 +363,8 @@ export default {
       'Esta página ainda executa uma build mais antiga do que a do servidor. Recarregue a página para obter a nova versão.',
   },
   common: {
+    // the info icon after a page title, that shows the page's description
+    aboutThisPage: 'Sobre esta página',
     clear: 'Limpar',
     create: 'Criar',
     cancel: 'Cancelar',
@@ -1003,6 +1005,9 @@ export default {
     },
   },
   forms: {
+    // what the forms page is for, in the info popover after its title
+    pageDescription:
+      'Os formulários que pode executar. Escolha uma categoria à esquerda ou filtre pelo nome e abra um formulário para o preencher e iniciar.',
     categories: 'Categorias',
     allForms: 'Todos os Formulários',
     search: 'Pesquisar',
