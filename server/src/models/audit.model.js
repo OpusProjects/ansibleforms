@@ -96,6 +96,23 @@ function actorFrom(user) {
 }
 
 /**
+ * The address as an operator would write it.
+ *
+ * node listens dual-stack, so a client reaching it over IPv4 is reported as the IPv4-mapped
+ * IPv6 address `::ffff:203.0.113.7`, while an address taken from X-Forwarded-For (TRUST_PROXY)
+ * is plain `203.0.113.7`. The same client then appeared in two spellings depending on the
+ * path it took. Only the mapped prefix in front of a dotted quad is removed ; anything else,
+ * real IPv6 included, is kept as it is.
+ *
+ * @param {string|undefined|null} ip the address express reported (req.ip)
+ * @returns {string|undefined|null} the same address, without the ::ffff: prefix
+ */
+function plainIp(ip) {
+  if (typeof ip !== 'string') return ip;
+  return ip.replace(/^::ffff:(?=\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$)/i, '');
+}
+
+/**
  * Record one event. Fire and forget : callers do not await this for correctness,
  * and it never throws.
  *
@@ -120,7 +137,7 @@ Audit.log = async function (entry) {
       [
         clamp(actor, 255),
         clamp(actor_type, 20),
-        clamp(entry.ip, 45),
+        clamp(plainIp(entry.ip), 45),
         clamp(entry.action || 'unknown', 64),
         clamp(entry.targetType, 64),
         clamp(entry.target, 255),
