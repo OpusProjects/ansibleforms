@@ -12,7 +12,9 @@ var log_config = {
   path: process.env.LOG_PATH || path.resolve(__dirname + '/../persistent/logs'),
   consolelevel: process.env.LOG_CONSOLE_LEVEL || "notice",
   sysloglevel: process.env.LOG_SYSLOG_LEVEL || "debug",
-  sysloghost: process.env.LOG_SYSLOG_HOST || "localhost",
+  // no default host : syslog is off until LOG_SYSLOG_HOST names one (logger.js only builds
+  // the transport for a host). A "localhost" default sent every install's logs to udp 514.
+  sysloghost: process.env.LOG_SYSLOG_HOST || "",
   syslogport: process.env.LOG_SYSLOG_PORT || 514,
   syslogprotocol: process.env.LOG_SYSLOG_PROTOCOL || "udp4",
   syslogpath: process.env.LOG_SYSLOG_PATH || "/dev/log",
