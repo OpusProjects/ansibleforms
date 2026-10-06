@@ -6785,7 +6785,7 @@ onBeforeUnmount(() => {
                           />
                           <FaIcon
                             :icon="isCollapsed(item.key) ? 'folder' : 'folder-open'"
-                            class="text-warning me-2 flex-shrink-0"
+                            class="tree-folder-icon me-2 flex-shrink-0"
                           />
                           <span class="fw-bold text-truncate" :title="item.name">{{ item.name }}</span>
                         </span>
@@ -7075,6 +7075,11 @@ onBeforeUnmount(() => {
 .tree-chevron {
   width: 0.75rem;
   color: var(--bs-secondary-color);
+}
+// a folder is folder yellow in every theme : it used text-warning, which the themes tone
+// down for warning text (nearly black on the light theme, nearly white on the dark one)
+.tree-folder-icon {
+  color: #f0b429;
 }
 .diff-view {
   max-height: 60vh;
