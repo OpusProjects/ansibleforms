@@ -1613,7 +1613,7 @@ function doImport() {
   collapsedPaths.value.delete(`file:${target}`);
   if (firstId) selectForm(firstId);
   showImportModal.value = false;
-  toast.success(t('designer.importDone', { count: selected.length, file: target }));
+  toast.success(t('designer.importDone', { file: target }, selected.length));
   if (renamed.length > 0) toast.warning(t('designer.importRenamed', { details: renamed.join(', ') }));
 }
 
@@ -4665,7 +4665,7 @@ onBeforeUnmount(() => {
             </div>
           </div>
           <p v-if="importSkipped > 0" class="text-muted small mt-3 mb-0">
-            {{ t('designer.importSkipped', { count: importSkipped }) }}
+            {{ t('designer.importSkipped', importSkipped) }}
           </p>
         </template>
         <template #footer>
@@ -5524,12 +5524,7 @@ onBeforeUnmount(() => {
                   t('settings.settingsPage.value')
                 }}</label>
                 <div class="form-control bg-body-tertiary text-muted fst-italic" style="cursor: default">
-                  {{ entry.row.children.length }}
-                  {{
-                    entry.row.children.length === 1
-                      ? t('settings.settingsPage.subkey')
-                      : t('settings.settingsPage.subkeys')
-                  }}
+                  {{ t('settings.settingsPage.subkeyCount', entry.row.children.length) }}
                 </div>
               </template>
               <template v-else>

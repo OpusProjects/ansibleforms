@@ -153,7 +153,7 @@ onMounted(async () => {
         <li class="list-group-item">
           <strong>{{ t('admin.backups.formsDirectory') }}:</strong>
           <span v-if="currentBackup.formsDirExists">
-            {{ t('admin.backups.exists') }} ({{ currentBackup.formsDirFileCount }} {{ t('admin.backups.files') }},
+            {{ t('admin.backups.exists') }} ({{ t('admin.backups.fileCount', currentBackup.formsDirFileCount) }},
             {{ Helpers.humanFileSize(currentBackup.formsDirTotalSize) }})
           </span>
           <span v-else>
@@ -228,7 +228,7 @@ onMounted(async () => {
             <li class="list-group-item">
               <strong>{{ t('admin.backups.formsDirectory') }}:</strong>
               <span v-if="currentBackup.formsDirExists">
-                {{ t('admin.backups.exists') }} ({{ currentBackup.formsDirFileCount }} {{ t('admin.backups.files') }},
+                {{ t('admin.backups.exists') }} ({{ t('admin.backups.fileCount', currentBackup.formsDirFileCount) }},
                 {{ Helpers.humanFileSize(currentBackup.formsDirTotalSize) }})
               </span>
               <span v-else>

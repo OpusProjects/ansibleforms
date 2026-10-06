@@ -26,6 +26,7 @@ import YAML from 'yaml';
 import { toast } from 'vue-sonner';
 import Helpers from '@/lib/Helpers';
 import { listMarkers } from '@engine/output.js';
+import { useI18n } from 'vue-i18n';
 
 const props = defineProps({
   field: { type: Object, required: true },
@@ -43,6 +44,9 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update:modelValue']);
+
+// the row counts of nested lists ("3 items") are translated, with each language's plural
+const { t } = useI18n();
 
 const fileInputRef = ref(null);
 
@@ -198,7 +202,7 @@ function cellData(row, f) {
   }
   if (type === 'list' || Array.isArray(v)) {
     if (Array.isArray(v)) {
-      if (v.length === 0) return { kind: 'count', value: '0 items' };
+      if (v.length === 0) return { kind: 'count', value: t('form.itemCount', 0) };
       if (v.every((x) => x == null || typeof x !== 'object')) {
         return {
           kind: 'text',
@@ -208,7 +212,7 @@ function cellData(row, f) {
             .join(', '),
         };
       }
-      return { kind: 'count', value: `${v.length} item${v.length === 1 ? '' : 's'}` };
+      return { kind: 'count', value: t('form.itemCount', v.length) };
     }
     return { kind: 'null' };
   }
