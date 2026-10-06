@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.5.5](https://github.com/ansibleforms/ansibleforms/compare/6.5.4...6.5.5) (2026-10-06)
+
+
+### Fixed
+
+* correct the ldap group search and entra id group hints ([#705](https://github.com/ansibleforms/ansibleforms/issues/705)) ([07dcc31](https://github.com/ansibleforms/ansibleforms/commit/07dcc3127ab5532c4e3979d90fea99ec82a94dd4))
+* **oidc:** apply the group filter to the groups in the token ([#703](https://github.com/ansibleforms/ansibleforms/issues/703)) ([c2dac5d](https://github.com/ansibleforms/ansibleforms/commit/c2dac5d66c94993c9f77096600bb8e4d97853ab1))
+* stop the running step when a multistep job is aborted ([#702](https://github.com/ansibleforms/ansibleforms/issues/702)) ([3d335c5](https://github.com/ansibleforms/ansibleforms/commit/3d335c504b9d7ce32046b3e9d83bec65fbfa451b))
+
+
+### Security
+
+* only show users their own stored jobs ([#700](https://github.com/ansibleforms/ansibleforms/issues/700)) ([bdaa43f](https://github.com/ansibleforms/ansibleforms/commit/bdaa43fed10c0f0081ef7941bcebe44b7c387375))
+* stop other users from deleting a job awaiting approval ([#699](https://github.com/ansibleforms/ansibleforms/issues/699)) ([1e038f6](https://github.com/ansibleforms/ansibleforms/commit/1e038f6f4c185f0388b40eef20a9c9a240716c14))
+
 ## [6.5.4](https://github.com/ansibleforms/ansibleforms/compare/6.5.3...6.5.4) (2026-10-05)
 
 
