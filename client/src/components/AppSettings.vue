@@ -7,6 +7,8 @@
 /*  @props:                                                       */
 /*      icon: String                                              */
 /*      title: String                                             */
+/*      description: String - what the page is for, in a popover  */
+/*                   behind an info icon after the title          */
 /*      crumbs: Array of { title, icon } - a title in steps       */
 /*      bare: Boolean - the content without the card around it    */
 /*                                                                */
@@ -64,12 +66,14 @@ defineProps({
             <span v-if="i > 0" class="mx-2 text-body-secondary af-crumb-separator">›</span>
             <span class="me-2"><FaIcon :icon="c.icon" /></span>{{ c.title }}
           </template>
+          <AppInfoPopover v-if="description" :text="description" />
         </h3>
         <h3 v-else>
           <span class="me-2">
             <FaIcon :icon="icon" />
           </span>
           {{ title }}
+          <AppInfoPopover v-if="description" :text="description" />
         </h3>
         <slot name="feedback"></slot>
         <template v-if="$slots.headerActions">
@@ -77,7 +81,6 @@ defineProps({
           <slot name="headerActions"></slot>
         </template>
       </div>
-      <p v-if="description" class="text-muted settings-description">{{ description }}</p>
       <slot name="tabs"></slot>
       <div v-if="!bare" class="card" :class="{ 'tab-card-flush-card': $slots.tabs }">
         <div class="card-body">
@@ -115,12 +118,5 @@ h3 {
 .tab-card-flush-card {
   border-top-left-radius: 0;
   border-top-right-radius: 0;
-}
-/* 25px between the title divider and the text, and 25px between the text and the card
-   (or tab strip) below : the 16px margin under the title row, this padding and the
-   line's own leading above ; this margin and the leading below */
-.settings-description {
-  padding-top: 7px;
-  margin-bottom: 22px;
 }
 </style>

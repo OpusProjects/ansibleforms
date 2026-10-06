@@ -361,6 +361,8 @@ export default {
       'Deze pagina draait nog een oudere build dan de server. Herlaad de pagina om de nieuwe versie te krijgen.',
   },
   common: {
+    // the info icon after a page title, that shows the page's description
+    aboutThisPage: 'Over deze pagina',
     clear: 'Wissen',
     create: 'Aanmaken',
     cancel: 'Annuleren',

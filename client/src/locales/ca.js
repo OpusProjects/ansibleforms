@@ -363,6 +363,8 @@ export default {
       'Aquesta pàgina encara executa una compilació més antiga que la del servidor. Torna a carregar la pàgina per obtenir la versió nova.',
   },
   common: {
+    // the info icon after a page title, that shows the page's description
+    aboutThisPage: 'Quant a aquesta pàgina',
     clear: 'Esborra',
     create: 'Crea',
     cancel: 'Cancel·la',

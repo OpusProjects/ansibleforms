@@ -360,6 +360,8 @@ export default {
     cacheMismatchMsg: 'This page still runs an older build than the server. Reload the page to get the new version.',
   },
   common: {
+    // the info icon after a page title, that shows the page's description
+    aboutThisPage: 'About this page',
     clear: 'Clear',
     create: 'Create',
     cancel: 'Cancel',

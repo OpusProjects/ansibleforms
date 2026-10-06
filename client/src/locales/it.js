@@ -364,6 +364,8 @@ export default {
       'Questa pagina usa ancora una build più vecchia del server. Ricarica la pagina per ottenere la nuova versione.',
   },
   common: {
+    // the info icon after a page title, that shows the page's description
+    aboutThisPage: 'Informazioni su questa pagina',
     clear: 'Cancella',
     create: 'Crea',
     cancel: 'Annulla',

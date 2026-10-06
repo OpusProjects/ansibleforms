@@ -360,6 +360,8 @@ export default {
       'このページはサーバーより古いビルドで動作しています。ページを再読み込みして新しいバージョンを取得してください。',
   },
   common: {
+    // the info icon after a page title, that shows the page's description
+    aboutThisPage: 'このページについて',
     clear: 'クリア',
     create: '作成',
     cancel: 'キャンセル',

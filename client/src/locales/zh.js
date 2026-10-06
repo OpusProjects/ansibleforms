@@ -355,6 +355,8 @@ export default {
     cacheMismatchMsg: '此页面运行的构建仍比服务器的旧。请重新加载页面以获取新版本。',
   },
   common: {
+    // the info icon after a page title, that shows the page's description
+    aboutThisPage: '关于此页面',
     clear: '清除',
     create: '新建',
     cancel: '取消',

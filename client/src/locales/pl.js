@@ -361,6 +361,8 @@ export default {
       'Ta strona nadal działa na starszej kompilacji niż serwer. Przeładuj stronę, aby uzyskać nową wersję.',
   },
   common: {
+    // the info icon after a page title, that shows the page's description
+    aboutThisPage: 'O tej stronie',
     clear: 'Wyczyść',
     create: 'Utwórz',
     cancel: 'Anuluj',
