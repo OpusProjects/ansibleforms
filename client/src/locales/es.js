@@ -24,6 +24,17 @@ export default {
     roles: 'Roles',
     options: 'Opciones',
   },
+  // the header search
+  search: {
+    title: 'Buscar',
+    placeholder: 'Buscar formularios y páginas',
+    close: 'Cerrar la búsqueda',
+    noResults: 'No hay resultados para "{query}"',
+    kind: {
+      form: 'Formulario',
+      page: 'Página',
+    },
+  },
   profilePage: {
     languageHint: 'El idioma de los menús, las páginas y los mensajes. La bandera de la cabecera también lo cambia.',
     themeHint: 'Claro, oscuro, o una cabecera del color que elijas. El icono del sol de la cabecera también lo cambia.',

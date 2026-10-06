@@ -215,6 +215,11 @@ const buildMismatch = computed(() => {
     </template>
 
     <ul class="navbar-nav af-nav-utility ms-auto">
+      <!-- search : forms and pages, live as you type (also on "/" and Ctrl+K) -->
+      <BsNavItem>
+        <AppSearch />
+      </BsNavItem>
+
       <!-- approvals bell : a red count when jobs wait for an approval, opens them on the jobs page -->
       <BsNavItem>
         <router-link

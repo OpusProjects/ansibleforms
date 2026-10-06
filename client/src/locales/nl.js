@@ -24,6 +24,17 @@ export default {
     roles: 'Rollen',
     options: 'Opties',
   },
+  // the header search
+  search: {
+    title: 'Zoeken',
+    placeholder: "Formulieren en pagina's zoeken",
+    close: 'Zoeken sluiten',
+    noResults: 'Geen resultaten voor "{query}"',
+    kind: {
+      form: 'Formulier',
+      page: 'Pagina',
+    },
+  },
   profilePage: {
     languageHint: "De taal van de menu's, pagina's en berichten. De vlag in de kopbalk wisselt die ook.",
     themeHint: 'Licht, donker, of een kopbalk in een kleur naar keuze. Het zonicoon in de kopbalk wisselt het ook.',

@@ -24,6 +24,17 @@ export default {
     roles: 'Roles',
     options: 'Options',
   },
+  // the header search
+  search: {
+    title: 'Search',
+    placeholder: 'Search forms and pages',
+    close: 'Close the search',
+    noResults: 'No results for "{query}"',
+    kind: {
+      form: 'Form',
+      page: 'Page',
+    },
+  },
   profilePage: {
     languageHint: 'The language of the menus, pages and messages. The flag in the header switches it too.',
     themeHint: 'Light, dark, or a header in a color of your choice. The sun icon in the header switches it too.',

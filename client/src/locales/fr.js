@@ -24,6 +24,17 @@ export default {
     roles: 'Roles',
     options: 'Options',
   },
+  // the header search
+  search: {
+    title: 'Rechercher',
+    placeholder: 'Rechercher des formulaires et des pages',
+    close: 'Fermer la recherche',
+    noResults: 'Aucun résultat pour "{query}"',
+    kind: {
+      form: 'Formulaire',
+      page: 'Page',
+    },
+  },
   profilePage: {
     languageHint: "La langue des menus, des pages et des messages. Le drapeau dans l'en-tête la change aussi.",
     themeHint:
