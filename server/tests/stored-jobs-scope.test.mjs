@@ -28,11 +28,13 @@ vi.mock("../src/models/crud.model.js", () => ({
       }
       return { ...row };
     }),
+    create: vi.fn(async () => 99),
     update: vi.fn(async () => true),
     delete: vi.fn(async () => true),
   },
 }));
 
+const CrudModel = (await import("../src/models/crud.model.js")).default;
 const controller = (await import("../src/controllers/v2/stored-jobs.controller.js")).default;
 
 // Minimal express-shaped double; `status()` must be chainable
@@ -59,6 +61,7 @@ const bob = user("bob");
 const admin = user("admin", { showSettings: true });
 
 beforeEach(() => {
+  vi.clearAllMocks();
   rows = [
     { id: 1, name: "a1", form_name: "Demo", username: "local/alice", form_data: '{"key":"alice-value"}' },
     { id: 2, name: "b1", form_name: "Demo", username: "local/bob", form_data: '{"key":"bob-value"}' },
@@ -116,4 +119,36 @@ describe("the per-id routes refuse another user's stored job", () => {
       assert.equal(res.statusCode, 200);
     });
   }
+});
+
+describe("the body of a create or update only reaches the writable columns", () => {
+  const body = {
+    id: 2147483647, username: "local/bob", created_at: "2000-01-01T00:00:00.000Z",
+    name: "n", description: "d", form_name: "Demo", form_data: "{}", expires_at: null,
+  };
+
+  test("create drops id, username and created_at, and owns the row to the caller", async () => {
+    const res = await call("create", alice, { body });
+    assert.equal(res.statusCode, 201);
+    const [model, data] = CrudModel.create.mock.calls[0];
+    assert.equal(model, "stored_jobs");
+    assert.deepEqual(data, {
+      name: "n", description: "d", form_name: "Demo", form_data: "{}", expires_at: null,
+      username: "local/alice",
+    });
+  });
+
+  test("update drops id, username and created_at", async () => {
+    const res = await call("update", alice, { params: { id: "1" }, body });
+    assert.equal(res.statusCode, 200);
+    const [, data, id] = CrudModel.update.mock.calls[0];
+    assert.equal(id, "1");
+    assert.deepEqual(data, { name: "n", description: "d", form_name: "Demo", form_data: "{}", expires_at: null });
+  });
+
+  test("an update with nothing writable does not reach the database", async () => {
+    const res = await call("update", alice, { params: { id: "1" }, body: { id: 5 } });
+    assert.equal(res.statusCode, 200);
+    assert.equal(CrudModel.update.mock.calls.length, 0);
+  });
 });
