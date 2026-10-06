@@ -10,6 +10,7 @@ Removed in 8.0.0. Each logs a warning when it is used.
 | `hasApproval` on a form or a step (it has no effect) | `approval` | 7.3.0 |
 | `awx: <name>` on a form | `runner: <name>` (an AWX connection is a runner of type `awx`) | 7.3.0 |
 | the config seed's `awx:` section | `runners:` items with `type: awx` | 7.3.0 |
+| `LOCK_PATH` (no longer read) | nothing: the designer lock is kept in the database | 7.3.0 |
 
 ## Changed in 7.3.0 - read before upgrading
 

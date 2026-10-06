@@ -1,0 +1,64 @@
+# AnsibleForms split over several containers : two app nodes behind nginx, one worker (and a
+# second one waiting), one RTE, one database. A starting point - see README.md.
+#
+#   cp .env.example .env   # and fill in the secrets
+#   docker compose up -d   # then https://localhost:8443
+x-ansibleforms: &ansibleforms
+  image: ghcr.io/ansibleforms/ansibleforms:7
+  restart: unless-stopped
+  depends_on: [db]
+  env_file: .env
+  volumes:
+    # one volume for every app node and the worker : forms, repositories, uploads, backups
+    - persistent:/app/dist/persistent
+    # the ssh key and known_hosts for git over ssh, the same everywhere
+    - ssh:/root/.ssh
+
+services:
+  db:
+    image: mariadb:11
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql:/var/lib/mysql
+
+  app1:
+    <<: *ansibleforms
+    environment: { AF_ROLE: app, AF_NODE_ID: app-1 }
+  app2:
+    <<: *ansibleforms
+    environment: { AF_ROLE: app, AF_NODE_ID: app-2 }
+
+  # the background work ; worker2 waits and takes over when worker1 stops
+  worker1:
+    <<: *ansibleforms
+    environment: { AF_ROLE: worker, AF_NODE_ID: worker-1 }
+  worker2:
+    <<: *ansibleforms
+    environment: { AF_ROLE: worker, AF_NODE_ID: worker-2 }
+
+  # runs the playbooks : add it under Connections > Runners (http://rte:8000, RTE_TOKEN)
+  rte:
+    image: ghcr.io/ansibleforms/ansibleforms-rte:7
+    restart: unless-stopped
+    depends_on: [db]
+    env_file: .env
+    environment: { RTE_ID: rte-1, HTTPS: "0" }
+    volumes:
+      - persistent:/app/dist/persistent
+      - ssh:/root/.ssh
+
+  lb:
+    image: nginx:stable
+    restart: unless-stopped
+    depends_on: [app1, app2]
+    ports: ["8443:443"]
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+
+volumes:
+  persistent:
+  ssh:
+  mysql:

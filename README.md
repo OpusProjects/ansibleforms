@@ -44,9 +44,13 @@ Coming from 6? Read [Upgrading to 7](https://ansibleforms.com/upgrade-7) before 
 
 ## Deployment topology
 
-AnsibleForms runs as a single instance (playbooks run on any number of RTEs): schema migrations and the
-scheduler assume they are the only writer, so replicas behind a load balancer are not supported. For high
-availability, run one instance with restart-on-failure and back up the database and the persistent volume.
+One container is enough: with `AF_ROLE` unset it serves the web app and runs the background work
+(schema, seed, schedules, backups, repository syncs, cleanups). Playbooks run on any number of RTEs.
+
+To scale out or for high availability, split it: several app nodes (`AF_ROLE=app`) behind a load
+balancer and a worker (`AF_ROLE=worker`), all from the same image, on one database and one shared
+persistent volume. One worker works at a time; a second one waits and takes over when the first
+stops. See [examples/scale](examples/scale) for what they need and a compose file.
 
 ## Contributing
 
