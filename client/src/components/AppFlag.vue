@@ -27,6 +27,28 @@ const STRIPES = {
   // the Senyera: nine equal stripes, five yellow and four red, yellow at top and bottom
   ca: ['h', ['#fcdd09', '#da121a', '#fcdd09', '#da121a', '#fcdd09', '#da121a', '#fcdd09', '#da121a', '#fcdd09']],
 };
+
+// the points of a five-pointed star centred on (cx, cy), with outer radius r, its first point
+// at `angle` radians (screen coordinates: -PI/2 points straight up)
+function starPoints(cx, cy, r, angle = -Math.PI / 2) {
+  const inner = r * 0.382; // the inner radius of a regular five-pointed star
+  const points = [];
+  for (let i = 0; i < 10; i++) {
+    const radius = i % 2 === 0 ? r : inner;
+    const a = angle + (i * Math.PI) / 5;
+    points.push(`${(cx + radius * Math.cos(a)).toFixed(2)},${(cy + radius * Math.sin(a)).toFixed(2)}`);
+  }
+  return points.join(' ');
+}
+
+// china: one large star in the upper hoist, four small ones in an arc, each pointing at its centre
+const CHINA_BIG_STAR = starPoints(10, 10, 6);
+const CHINA_SMALL_STARS = [
+  [20, 4],
+  [24, 8],
+  [24, 14],
+  [20, 18],
+].map(([x, y]) => starPoints(x, y, 2, Math.atan2(10 - y, 10 - x)));
 </script>
 
 <template>
@@ -50,6 +72,12 @@ const STRIPES = {
     <g v-else-if="code === 'ja'">
       <rect width="60" height="40" fill="#ffffff" />
       <circle cx="30" cy="20" r="12" fill="#bc002d" />
+    </g>
+    <!-- china: red field, a large yellow star and four small ones in the upper hoist -->
+    <g v-else-if="code === 'zh'">
+      <rect width="60" height="40" fill="#ee1c25" />
+      <polygon :points="CHINA_BIG_STAR" fill="#ffff00" />
+      <polygon v-for="(points, i) in CHINA_SMALL_STARS" :key="i" :points="points" fill="#ffff00" />
     </g>
     <!-- striped flags -->
     <g v-else-if="STRIPES[code]">

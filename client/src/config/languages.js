@@ -12,6 +12,7 @@ export const languages = [
   { code: 'nl', label: 'Nederlands', flag: '🇳🇱' },
   { code: 'pt', label: 'Português', flag: '🇵🇹' },
   { code: 'ja', label: '日本語', flag: '🇯🇵' },
+  { code: 'zh', label: '简体中文', flag: '🇨🇳' },
 ];
 
 // the language shown when the current one is not in the list : the i18n fallback

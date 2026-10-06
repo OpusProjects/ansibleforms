@@ -145,7 +145,7 @@
       Note : when using an OAuth2 identity provider (Entra ID / OIDC), make sure the instance url in the provider settings includes the subpath, so the generated redirect uri matches.
   - name: DEFAULT_LANGUAGE
     type: string
-    allowed: ca, de, en, es, fr, it, nl, pt, ja
+    allowed: ca, de, en, es, fr, it, nl, pt, ja, zh
     short: Default language
     required: false
     description: |
