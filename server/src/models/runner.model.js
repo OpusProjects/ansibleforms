@@ -55,7 +55,7 @@ class Runner extends CrudModel {
     logger.info(`Unsetting is_default on the other ${type} runners`);
     const scope = opts.fromSeed ? '' : ' AND managed = 0';
     await mysql.do('UPDATE AnsibleForms.`runners` SET is_default = 0 WHERE id <> ? AND type = ?' + scope, [keepId, type]);
-    this.getCache(this.modelName)?.flushAll();
+    this.changed(this.modelName);
   }
 
   // opts carries { fromSeed:true } for the declarative config seed only

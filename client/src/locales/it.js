@@ -320,6 +320,7 @@ export default {
     checkDisk: 'Spazio su disco',
     checkJobs: 'Job',
     checkScheduler: 'Pianificatore',
+    checkNodes: 'Nodi',
     checkBackupTooling: 'Strumenti di backup',
     checkLastBackup: 'Ultimo backup',
     checkDesignerLock: 'Blocco del designer',

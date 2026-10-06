@@ -295,11 +295,12 @@
   - name: LOCK_PATH
     type: string
     allowed: a valid file path
-    short: Designer lock file path
-    hint: Where the designer's single-user lock file is written.
+    short: Designer lock file path (deprecated)
+    hint: No longer used - the designer lock is kept in the database.
     default: "%PERSISTENT_FOLDER%/ansibleForms.lock"
-    description: | 
-      Only 1 user can use the designer, so we use a locking file to hold the current owners information.
+    description: |
+      Deprecated since 7.3.0 and ignored : the designer lock (who is editing the forms) is kept
+      in the database, so every app node sees the same lock. Removed in 8.0.0.
   - name: FORMS_BACKUP_PATH
     version: 4.0.3
     type: string
@@ -349,15 +350,32 @@
   - name: AF_ROLE
     version: 7.3.0
     type: string
-    allowed: app, rte
+    allowed: all, app, worker, rte
     short: What this process runs
-    default: app
+    default: all
     description: |
-      `app` (the default) is AnsibleForms itself. `rte` starts the same image as a runtime
-      environment : a small API that runs playbooks for an app, with no web interface,
-      scheduler or seed. An RTE needs the app's database settings (`DB_*`), the same
-      `ENCRYPTION_SECRET`, and `RTE_TOKEN`. The app reaches it through a runner added under
-      Connections > Runners.
+      `all` (the default, or unset) is AnsibleForms as it always ran : the web app and the
+      worker in one process. To run several app nodes behind a load balancer, split them :
+      `app` serves the web interface and the API only (as many as you like, each with the same
+      `ACCESS_TOKEN_SECRET`), and `worker` runs the background work only - the database
+      bootstrap and seed, the schedules, the nightly backup, the repository syncs and the
+      cleanups. One worker works at a time ; a second one waits and takes over when the first
+      stops. App nodes and the worker share the database and the persistent volume.
+
+      `rte` starts the same image as a runtime environment : a small API that runs playbooks
+      for an app, with no web interface, scheduler or seed. An RTE needs the app's database
+      settings (`DB_*`), the same `ENCRYPTION_SECRET`, and `RTE_TOKEN`. The app reaches it
+      through a runner added under Connections > Runners.
+  - name: AF_NODE_ID
+    version: 7.3.0
+    type: string
+    short: The name of an app or worker process
+    default: <role>-<hostname>
+    description: |
+      The name this process goes by on the Status page and on the jobs it follows. When it
+      restarts it ends only the jobs carrying its own name ; the worker ends the jobs of a
+      node that stopped answering. Defaults to the role and the hostname, which is unique per
+      container.
   - name: RTE_TOKEN
     version: 7.3.0
     type: string

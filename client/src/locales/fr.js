@@ -322,6 +322,7 @@ export default {
     checkDisk: 'Espace disque',
     checkJobs: 'Tâches',
     checkScheduler: 'Planificateur',
+    checkNodes: 'Nœuds',
     checkBackupTooling: 'Outils de sauvegarde',
     checkLastBackup: 'Dernière sauvegarde',
     checkDesignerLock: 'Verrou du designer',

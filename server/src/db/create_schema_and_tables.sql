@@ -169,6 +169,7 @@ CREATE TABLE `jobs` (
   `host` varchar(255) DEFAULT NULL,
   `runner` varchar(250) DEFAULT NULL,
   `job_log` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `tracker` varchar(250) DEFAULT NULL,
   PRIMARY KEY (`id`),
   -- the retention sweep selects on (parent_id, status, end) ; without this it full
   -- scans the largest table in the schema on every batch. Keep in sync with the
@@ -311,6 +312,36 @@ CREATE TABLE `stored_jobs` (
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `expires_at` DATETIME DEFAULT NULL,
   UNIQUE KEY `uk_user_form_name` (`username`, `form_name`, `name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- the processes on this database (lib/nodes.js), what changed between them
+-- (lib/epochs.js) and the designer lock (models/lock.model.js). Keep in sync with
+-- create_nodes_table.sql, create_cache_epochs_table.sql and create_designer_lock_table.sql.
+DROP TABLE IF EXISTS `nodes`;
+CREATE TABLE `nodes` (
+  `id` varchar(250) NOT NULL,
+  `role` varchar(20) DEFAULT NULL,
+  `version` varchar(50) DEFAULT NULL,
+  `started_at` datetime DEFAULT NULL,
+  `last_seen` datetime DEFAULT NULL,
+  `is_worker` tinyint(4) DEFAULT 0,
+  `info` text DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+DROP TABLE IF EXISTS `cache_epochs`;
+CREATE TABLE `cache_epochs` (
+  `name` varchar(64) NOT NULL,
+  `version` bigint(20) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+DROP TABLE IF EXISTS `designer_lock`;
+CREATE TABLE `designer_lock` (
+  `id` tinyint(4) NOT NULL,
+  `data` mediumtext DEFAULT NULL,
+  `created` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- enable foreign key checks

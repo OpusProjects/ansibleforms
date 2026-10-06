@@ -321,6 +321,7 @@ export default {
     checkDisk: 'Speicherplatz',
     checkJobs: 'Jobs',
     checkScheduler: 'Zeitplaner',
+    checkNodes: 'Knoten',
     checkBackupTooling: 'Backup-Werkzeuge',
     checkLastBackup: 'Letztes Backup',
     checkDesignerLock: 'Designer-Sperre',

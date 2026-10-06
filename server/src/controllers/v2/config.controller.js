@@ -16,6 +16,7 @@ import { getStore, checkStore, listMounts, VAULT_STORE_NAME } from "../../secret
 import appConfig from "../../../config/app.config.js";
 
 import { fileURLToPath } from 'url';
+import { bump } from '../../lib/epochs.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -139,6 +140,8 @@ const saveEnv = async function(req,res){
       if(value === ''){ managed.delete(name) } else { managed.set(name, value) }
     }
     await EnvSettings.writeManaged(managed)
+    // the other nodes read the file again and apply what changed (init/cluster.js)
+    bump('env')
 
     const restart = []
     for(const name of names){

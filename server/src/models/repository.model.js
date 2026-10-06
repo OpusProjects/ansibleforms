@@ -8,6 +8,7 @@ import fs from "fs";
 import fse from "fs-extra";
 import appConfig from "../../config/app.config.js";
 import CrudModel from './crud.model.js';
+import { bump } from '../lib/epochs.js';
 import { friendlyPullError, configRepoFromPath } from "../lib/forms-git.js";
 
 class Repository extends CrudModel {
@@ -27,6 +28,8 @@ class Repository extends CrudModel {
   // delete() already had to evict by hand for the same reason; this keeps every other
   // path honest, so a new raw write cannot reintroduce it.
   static evictCache({ name, id } = {}) {
+    // the other processes drop their whole repositories cache (lib/epochs.js)
+    bump(this.modelName);
     const cache = CrudModel.getCache(this.modelName);
     if (!cache) return;
     if (name === undefined && id === undefined) return cache.flushAll();

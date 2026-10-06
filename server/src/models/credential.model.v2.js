@@ -37,7 +37,7 @@ class CredentialModel extends CrudModel {
     const res = await super.delete(this.modelName, id, opts);
     // the regex lookups below are cached under their pattern, not under the name, so a
     // deleted credential must not stay resolvable through them until the ttl runs out
-    this.getCache(this.modelName)?.flushAll();
+    this.changed(this.modelName);
     return res;
   }
 

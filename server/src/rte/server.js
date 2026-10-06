@@ -14,29 +14,16 @@
 import express from "express";
 import http from "http";
 import https from "https";
-import fs from "fs";
-import path from "path";
 import { timingSafeEqual } from "crypto";
 import { execFile } from "child_process";
-import { fileURLToPath } from "url";
 import logger from "../lib/logger.js";
 import mysql from "../models/db.model.js";
 import httpsConfig from "../../config/https.config.js";
 import appConfig from "../../config/app.config.js";
 import { runAnsibleJob, runnerIdentity } from "./ansible-core.js";
 import { RTE_CONTRACT } from "./contract.js";
+import { appVersion as version } from "../lib/version.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const version = (() => {
-  // a release build bakes its version into build-info.json ; a local build leaves it empty
-  for (const file of ["../../build-info.json", "../../package.json"]) {
-    try {
-      const v = JSON.parse(fs.readFileSync(path.resolve(__dirname, file), "utf8")).version;
-      if (v) return v;
-    } catch { /* next */ }
-  }
-  return "unknown";
-})();
 
 // the jobs this process is running ; a job is only ever run by the RTE that claimed it
 const activeJobs = new Set();

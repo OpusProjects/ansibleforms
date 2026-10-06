@@ -14,6 +14,7 @@ let writes;
 vi.mock("../src/models/crud.model.js", () => ({
   default: class {
     static getCache() { return null; }
+    static changed() {}
     static assertRequired() {}
     static async checkExist() {}
     static async assertNotManaged() {}

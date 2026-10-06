@@ -109,7 +109,7 @@ const envGroupOrder = [
     key: 'formsConfig',
     label: () => t('settings.settingsPage.envGroupFormsConfig'),
     icon: 'file-code',
-    exact: ['CONFIG_PATH', 'FORMS_FOLDER_PATH', 'FORMS_STAGING_PATH', 'LOCK_PATH'],
+    exact: ['CONFIG_PATH', 'FORMS_FOLDER_PATH', 'FORMS_STAGING_PATH'],
   },
   {
     key: 'git',
@@ -176,10 +176,11 @@ function envHelp(e) {
 // served index.html has the base path baked into it, so every page already open would break.
 // Showing it on a page of editable settings would only offer an edit that cannot work; it is
 // reported as a fact on the Status page instead.
-// AF_ROLE and RTE_* describe which process this is and where its RTE lives : set in the
-// environment of the container, not edited from inside the app. ANSIBLE_PATH and
+// AF_ROLE, AF_NODE_ID and RTE_* describe which process this is and where its RTE lives : set in
+// the environment of the container, not edited from inside the app. LOCK_PATH is no longer read
+// (the designer lock is in the database since 7.3). ANSIBLE_PATH and
 // PROCESS_MAX_BUFFER are read by an RTE only : since 7.3 the app runs no playbook itself.
-const OWNED_ELSEWHERE = /^VAULT_|^BASE_URL$|^AF_ROLE$|^RTE_|^ANSIBLE_PATH$|^PROCESS_MAX_BUFFER$/;
+const OWNED_ELSEWHERE = /^VAULT_|^BASE_URL$|^AF_ROLE$|^AF_NODE_ID$|^LOCK_PATH$|^RTE_|^ANSIBLE_PATH$|^PROCESS_MAX_BUFFER$/;
 
 const envGroups = computed(() => {
   if (!env.value || !Array.isArray(env.value)) return [];

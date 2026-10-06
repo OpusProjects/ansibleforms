@@ -32,6 +32,8 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import init from "../init/index.js";
+import { runsWorker } from "../lib/role.js";
+import { holdsWorkerLock } from "../lib/workerLock.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -51,9 +53,12 @@ class Schema {
    */
   static _cachedOk = null;
 
+  // Checks the schema, and patches it - but only in a process that may run the worker
+  // (AF_ROLE unset or worker) : an app node (AF_ROLE=app) only checks, so it never runs DDL
+  // next to the worker patching the same tables.
   static async hasSchema() {
     if (Schema._cachedOk) return Schema._cachedOk;
-    const result = await checkAll();
+    const result = await checkAll({ patch: runsWorker });
     Schema._cachedOk = result;
     return result;
   }
@@ -111,10 +116,21 @@ class Schema {
    * Callers are responsible for establishing that this is allowed - the endpoint
    * checks isProvisioned(), the startup bootstrap checks isEmpty().
    */
-  static async createTables() {
+  // `onlyIf` is checked again once the lock is held : the startup bootstrap creates only an
+  // empty database, and another process may have created it while this one waited.
+  static async createTables({ onlyIf } = {}) {
     if (!appConfig.allowSchemaCreation) {
       throw new Error(`Schema creation is disabled`);
     }
+    // two processes never run the script at the same time : it drops every table first,
+    // so the second would wipe what the first had just created
+    return mysql.withLock("ansibleforms_schema", 120, async () => {
+      if (onlyIf && !(await onlyIf())) return false;
+      return Schema.runCreateScript();
+    });
+  }
+
+  static async runCreateScript() {
     // added in 5.0.3
     const buffer = fs.readFileSync(`${__dirname}/../db/create_schema_and_tables.sql`);
     const query = buffer.toString();
@@ -137,7 +153,10 @@ class Schema {
   static async create() {
     logger.notice(`Trying to create database schema 'AnsibleForms' and tables`);
     await Schema.createTables();
-    await init()
+    // the bootstrap that follows (the admin account, the default rows, the seed) is the
+    // worker's : run here when this process is the worker, otherwise the worker finds the
+    // new schema on its next check (init/worker.js)
+    if (holdsWorkerLock()) await init()
     return { message: `Created schema 'AnsibleForms' and tables` };
   }
 }
@@ -484,7 +503,8 @@ const SCHEMA_MANIFEST = {
   // tables the fresh install creates, so they must exist however the database was built
   base: {
     tables: ['groups', 'users', 'tokens', 'credentials', 'ldap', 'jobs', 'job_output',
-             'settings', 'repositories', 'schedule', 'audit', 'chat_settings', 'secret_stores', 'runners'],
+             'settings', 'repositories', 'schedule', 'audit', 'chat_settings', 'secret_stores', 'runners',
+             'nodes', 'cache_epochs', 'designer_lock'],
   },
   patches: {
     patchVersion4: { columns: ['ldap.groups_search_base', 'ldap.groups_attribute', 'ldap.group_class',
@@ -517,9 +537,12 @@ const SCHEMA_MANIFEST = {
                      indexes: ['jobs.idx_jobs_retention'] },
     // 7.3 : runners - AWX connections are runners of type awx (the awx table is copied, then
     // dropped), and the job log a playbook writes is stored on the job
-    patchVersion7: { tables: ['secret_stores', 'runners'],
+    // and the worker and several app nodes : the processes on the database, what changed
+    // between them, the designer lock, and the node that follows a job
+    patchVersion7: { tables: ['secret_stores', 'runners', 'nodes', 'cache_epochs', 'designer_lock'],
                      columns: ['schedule.owner', 'credentials.secret_store', 'credentials.secret_ref', 'settings.vault_env_imported_at', 'jobs.runner',
-                               'runners.username', 'runners.password', 'runners.use_credentials', 'jobs.job_log'] },
+                               'runners.username', 'runners.password', 'runners.use_credentials', 'jobs.job_log',
+                               'jobs.tracker'] },
   },
 };
 
@@ -832,6 +855,14 @@ async function patchVersion7(messages, success, failed) {
   await checkPromise(addColumn("runners", "use_credentials", "tinyint(4)", true, "0"), messages, success, failed);
   await checkPromise(copyAwxToRunners(), messages, success, failed);
   await checkPromise(addColumn("jobs", "job_log", "longtext", true, "NULL"), messages, success, failed);
+
+  // 7.3 : a worker and several app nodes on one database (lib/nodes.js, lib/epochs.js,
+  // the designer lock in models/lock.model.js, the node following a job)
+  for (const table of ["nodes", "cache_epochs", "designer_lock"]) {
+    const sql = fs.readFileSync(`${__dirname}/../db/create_${table}_table.sql`);
+    await checkPromise(addTable(table, sql.toString()), messages, success, failed);
+  }
+  await checkPromise(addColumn("jobs", "tracker", "varchar(250)", true, "NULL"), messages, success, failed);
 }
 
 // Idempotent by its WHERE clause : a row is copied once, and never over a store chosen since
@@ -904,7 +935,7 @@ async function checkTables(tables, messages, success, failed) {
   }
 }
 
-async function checkAll() {
+async function checkAll({ patch = true } = {}) {
   var messages = [];
   var success = [];
   var failed = [];
@@ -935,7 +966,7 @@ async function checkAll() {
   }
 
   // patch the tables
-  await checkPromise(patchAll(messages, success, failed), messages, success, failed);
+  if (patch) await checkPromise(patchAll(messages, success, failed), messages, success, failed);
 
   if (failed.length > 0) {
     // some of the patches failed // throw now

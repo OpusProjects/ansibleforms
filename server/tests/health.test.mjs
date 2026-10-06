@@ -73,8 +73,23 @@ vi.mock("../src/services/cron.service.js", () => ({
       schedules: new Map(),
       repositories: new Map(),
     },
+    // the real describe(), over the mocked registry
+    describe() {
+      const tasks = [...this.jobs.system.entries()].map(([name, t]) => {
+        const next = t.nextRun();
+        return { name, nextRun: next ? next.toISOString() : null };
+      });
+      return { counts: { system: this.jobs.system.size, schedules: this.jobs.schedules.size, repositories: this.jobs.repositories.size }, tasks, lastResync: null };
+    },
   },
 }));
+// this process is the worker by default (AF_ROLE unset, the lock held) ; an app node is not
+let holdsLock = true;
+let nodesState = [];
+vi.mock("../src/lib/workerLock.js", () => ({ holdsWorkerLock: () => holdsLock }));
+vi.mock("../src/lib/nodes.js", () => ({ listNodes: async () => nodesState }));
+// the designer lock row, or null when free
+let lockRow = null;
 
 const appConfig = (await import("./__mocks__/app.config.js")).default;
 const Cmd = (await import("./__mocks__/cmd.js")).default;
@@ -111,9 +126,13 @@ beforeEach(async () => {
   storeState = { stores: [], info: null, error: null };
   runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000", is_default: 1 }], error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
+  lockRow = null;
+  holdsLock = true;
+  nodesState = [{ id: "af-test", role: "all", version: "7.3.0", isWorker: true, alive: true, ageSeconds: 3, self: true }];
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {
     if (/VERSION\(\)/.test(sql)) return [{ version: "8.4.9" }];
+    if (/FROM AnsibleForms.`designer_lock`/.test(sql)) return lockRow ? [lockRow] : [];
     if (/repositories/.test(sql)) return [];
     if (/FROM AnsibleForms.`ldap`/.test(sql)) return ldapRow ? [ldapRow] : [];
     if (/information_schema.tables/.test(sql)) return schemaState.tables.map((t) => ({ t }));
@@ -164,7 +183,7 @@ describe("health reports problems, not just ok", () => {
   test("a lock held right now is ok, and names the holder", async () => {
     const now = new Date();
     const stamp = now.toISOString().slice(0, 19).replace("T", " ");
-    await fs.writeFile(appConfig.lockPath, `username: alice\ntype: local\ncreated: ${stamp}\n`);
+    lockRow = { data: JSON.stringify({ username: "alice", type: "local", created: stamp }) };
     const r = await Health.check();
     assert.equal(statusOf(r, "designerLock"), "ok");
     assert.match(checkOf(r, "designerLock").value, /alice/);
@@ -173,7 +192,7 @@ describe("health reports problems, not just ok", () => {
   test("a lock held for longer than the threshold is a warning", async () => {
     const old = new Date(Date.now() - 30 * 3600000);
     const stamp = old.toISOString().slice(0, 19).replace("T", " ");
-    await fs.writeFile(appConfig.lockPath, `username: alice\ntype: local\ncreated: ${stamp}\n`);
+    lockRow = { data: JSON.stringify({ username: "alice", type: "local", created: stamp }) };
     const r = await Health.check();
     assert.equal(statusOf(r, "designerLock"), "warning");
     assert.match(checkOf(r, "designerLock").value, /alice for \d+h/);
@@ -181,13 +200,13 @@ describe("health reports problems, not just ok", () => {
   });
 
   test("a lock with no timestamp is a warning : it cannot be shown to be active", async () => {
-    await fs.writeFile(appConfig.lockPath, "username: alice\ntype: local\n");
+    lockRow = { data: JSON.stringify({ username: "alice", type: "local" }) };
     const r = await Health.check();
     assert.equal(statusOf(r, "designerLock"), "warning");
     assert.match(checkOf(r, "designerLock").detail.reason, /no usable creation time/);
   });
 
-  test("no lock file is ok", async () => {
+  test("no lock is ok", async () => {
     await writeBackup(folderDaysAgo(0), "-- dump\n");
     const r = await Health.check();
     assert.equal(statusOf(r, "designerLock"), "ok");
@@ -322,8 +341,8 @@ describe("health reports problems, not just ok", () => {
     };
     const r = await Health.check();
     assert.equal(statusOf(r, "database"), "error");
-    // every other check still reported (16 : runners joined in 7.3)
-    assert.equal(r.checks.length, 16);
+    // every other check still reported (17 : runners and nodes joined in 7.3)
+    assert.equal(r.checks.length, 17);
   });
 
   // Since 7.3 jobs run on runners : none at all means no form can run a job
@@ -494,6 +513,35 @@ describe("health reports problems, not just ok", () => {
     assert.match(JSON.stringify(checkOf(r, "scheduler").detail), /nightlyBackup/);
   });
 
+  // an app node (AF_ROLE=app) runs no scheduler : it shows the worker's, from its node row
+  test("an app node shows the scheduler of the live worker", async () => {
+    holdsLock = false;
+    nodesState = [
+      { id: "app-1", role: "app", version: "7.3.0", isWorker: false, alive: true, ageSeconds: 2, self: true },
+      { id: "worker-1", role: "worker", version: "7.3.0", isWorker: true, alive: true, ageSeconds: 4, self: false,
+        info: { scheduler: { counts: { system: 7, schedules: 2, repositories: 1 }, tasks: [{ name: "nightlyBackup", nextRun: "2030-01-01T00:00:00.000Z" }] } } },
+    ];
+    const r = await Health.check();
+    assert.equal(statusOf(r, "scheduler"), "ok");
+    assert.equal(checkOf(r, "scheduler").detail.worker, "worker-1");
+    assert.match(checkOf(r, "scheduler").value, /7 system, 2 schedules/);
+  });
+
+  test("an app node without a live worker reports it : nothing runs in the background", async () => {
+    holdsLock = false;
+    nodesState = [{ id: "app-1", role: "app", version: "7.3.0", isWorker: false, alive: true, ageSeconds: 2, self: true }];
+    const r = await Health.check();
+    assert.equal(statusOf(r, "scheduler"), "error");
+    assert.equal(checkOf(r, "scheduler").value, "no worker");
+  });
+
+  test("nodes on different versions are a warning", async () => {
+    nodesState.push({ id: "app-2", role: "app", version: "7.2.0", isWorker: false, alive: true, ageSeconds: 5, self: false });
+    const r = await Health.check();
+    assert.equal(statusOf(r, "nodes"), "warning");
+    assert.match(checkOf(r, "nodes").value, /7\.3 and 7\.2/);
+  });
+
   test("every check is always present", async () => {
     const r = await Health.check();
     const keys = r.checks.map((c) => c.key).sort();
@@ -502,7 +550,7 @@ describe("health reports problems, not just ok", () => {
     // runtime moved to `info` because they have no failing value.
     assert.deepEqual(keys, [
       "backupTooling", "configSeed", "database", "designerLock", "disk", "expressions",
-      "jobs", "lastBackup", "ldap", "repositories", "runners", "scheduler", "schema", "secretStores", "storage", "writable",
+      "jobs", "lastBackup", "ldap", "nodes", "repositories", "runners", "scheduler", "schema", "secretStores", "storage", "writable",
     ]);
     // and every info entry is status-free by construction
     assert.ok(r.info.length > 0);
