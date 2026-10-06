@@ -402,12 +402,13 @@ onMounted(async () => {
 <template>
   <AppNav />
   <div class="flex-shrink-0">
-    <main class="d-flex flex-nowrap container-xxl">
+    <main class="d-flex flex-nowrap af-settings-layout">
       <AppSidebar />
+      <!-- titled like its menu entry, "General" : the header link and the menu are "Settings" already -->
       <AppSettings
         v-if="authenticated"
-        icon="cog"
-        :title="t('settings.settingsPage.label')"
+        icon="toolbox"
+        :title="t('sidebar.ansibleForms')"
         :description="t('settings.settingsPage.description')"
       >
         <template #tabs>

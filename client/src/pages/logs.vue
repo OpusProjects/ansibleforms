@@ -132,8 +132,9 @@ onUnmounted(() => {
 <template>
   <AppNav />
   <div class="af-fill-page">
-    <main class="d-flex container-xxl">
-      <AppSettings :title="t('logs.title')" icon="file-lines">
+    <main class="d-flex flex-nowrap af-settings-layout af-with-sidebar">
+      <AppSidebar />
+      <AppSettings :title="t('logs.title')" :description="t('logs.description')" icon="file-lines">
         <template #headerActions>
           <div class="ms-2">
             <BsInput

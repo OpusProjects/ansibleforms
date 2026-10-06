@@ -2,6 +2,16 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 
+// the user's time zone preference, kept in this browser like the theme ; storage can be
+// unavailable (private mode), then the default applies
+function loadTimezone() {
+  try {
+    return localStorage.getItem('af_timezone') || 'UTC';
+  } catch {
+    return 'UTC';
+  }
+}
+
 export const useAppStore = defineStore('app', () => {
   const theme = ref('light'); // default theme
   const profile = ref(null);
@@ -16,6 +26,9 @@ export const useAppStore = defineStore('app', () => {
   const errorMessage = ref('');
   const schemaData = ref(null);
   const chatEnabled = ref(false); // ENABLE_CHAT and a configured provider (/api/v2/app/config)
+  // the time zone dates are shown in : 'UTC', 'browser' or an IANA zone (lib/Time.js) ; read
+  // here so every page re-renders its dates when the user picks another one
+  const timezone = ref(loadTimezone());
 
   // const doubleCount = computed(() => count.value * 2)
   // function increment() {
@@ -36,5 +49,6 @@ export const useAppStore = defineStore('app', () => {
     errorMessage,
     schemaData,
     chatEnabled,
+    timezone,
   };
 });

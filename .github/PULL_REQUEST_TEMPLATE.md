@@ -20,7 +20,7 @@ What you actually ran, not what you assume. Reverting the fix and watching the t
 fail is worth more than the test passing.
 -->
 
-- [ ] `cd client && npm run lint:check && npm run test && npm run build`
+- [ ] `cd client && npm run lint:check && npm run format:check && npm run test && npm run build`
 - [ ] `cd server && npm run lint:check && npm run test`
 
 ## Website

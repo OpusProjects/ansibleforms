@@ -92,9 +92,9 @@ onMounted(async () => {
 <template>
   <AppNav />
   <div class="flex-shrink-0">
-    <main class="d-flex flex-nowrap container-xxl">
+    <main class="d-flex flex-nowrap af-settings-layout">
       <AppSidebar />
-      <AppSettings v-if="authenticated" icon="image" :title="t('logo.title')" :description="t('logo.description')">
+      <AppSettings v-if="authenticated" icon="image" :title="t('sidebar.logo')" :description="t('logo.description')">
         <template #actions>
           <BsButton
             icon="upload"

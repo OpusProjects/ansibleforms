@@ -7,6 +7,8 @@
 /*  @props:                                                       */
 /*      icon: String                                              */
 /*      title: String                                             */
+/*      crumbs: Array of { title, icon } - a title in steps       */
+/*      bare: Boolean - the content without the card around it    */
 /*                                                                */
 /*  @slots:                                                       */
 /*      default       the card body                               */
@@ -40,13 +42,30 @@ defineProps({
     type: String,
     default: '',
   },
+  // a title in steps, each with its own icon (the forms page's sub categories :
+  // Expressions › Test1) ; when given, it is shown instead of icon + title
+  crumbs: {
+    type: Array,
+    default: () => [],
+  },
+  // the content without the card around it, for a page that lays out cards of its own
+  bare: {
+    type: Boolean,
+    default: false,
+  },
 });
 </script>
 <template>
   <section class="section w-100" :class="{ 'mt-3': title }">
     <div class="container-fluid">
       <div v-if="title" class="d-flex align-items-center border-bottom mb-3 pb-2">
-        <h3>
+        <h3 v-if="crumbs.length" :aria-label="title">
+          <template v-for="(c, i) in crumbs" :key="i">
+            <span v-if="i > 0" class="mx-2 text-body-secondary af-crumb-separator">›</span>
+            <span class="me-2"><FaIcon :icon="c.icon" /></span>{{ c.title }}
+          </template>
+        </h3>
+        <h3 v-else>
           <span class="me-2">
             <FaIcon :icon="icon" />
           </span>
@@ -60,11 +79,12 @@ defineProps({
       </div>
       <p v-if="description" class="text-muted settings-description">{{ description }}</p>
       <slot name="tabs"></slot>
-      <div class="card" :class="{ 'tab-card-flush-card': $slots.tabs }">
+      <div v-if="!bare" class="card" :class="{ 'tab-card-flush-card': $slots.tabs }">
         <div class="card-body">
           <slot></slot>
         </div>
       </div>
+      <div v-else class="af-bare-content"><slot></slot></div>
       <slot name="footer"></slot>
       <!-- only reserve the footer action bar when there is something in it,
                  otherwise every page without #actions gains dead vertical space -->
@@ -75,12 +95,24 @@ defineProps({
   </section>
 </template>
 <style scoped>
+/* the page title never wraps (its icon above the word) : the actions next to it give way */
+h3 {
+  white-space: nowrap;
+}
+/* without the page's card, the content's own cards end the page : leave the same 16px under
+   the last one as under the designer's card and the forms tiles */
+.af-bare-content {
+  padding-bottom: 1rem;
+}
 .tab-card-flush-card {
   border-top-left-radius: 0;
   border-top-right-radius: 0;
 }
+/* 25px between the title divider and the text, and 25px between the text and the card
+   (or tab strip) below : the 16px margin under the title row, this padding and the
+   line's own leading above ; this margin and the leading below */
 .settings-description {
-  padding-top: 0.5rem;
-  margin-bottom: 1.75rem;
+  padding-top: 7px;
+  margin-bottom: 22px;
 }
 </style>

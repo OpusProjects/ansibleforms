@@ -135,7 +135,7 @@ function processLogin(data) {
     Navigate.toOrigin(router, route);
     State.refreshAuthenticated();
     State.loadProfile();
-    // loadApprovals() // TODO - load approvals
+    // the approvals count is loaded by the header (AppNav) as soon as it appears
   }
 }
 async function login() {

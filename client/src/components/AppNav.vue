@@ -6,13 +6,15 @@
 /*                                                                */
 /******************************************************************/
 
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useAppStore } from '@/stores/app';
 import { useI18n } from 'vue-i18n';
 import Theme from '@/lib/Theme';
 import Helpers from '@/lib/Helpers';
-import { applyDefaultLanguage } from '@/plugins/i18n';
+import State from '@/lib/State';
+import Profile from '@/lib/Profile';
 import { languages } from '@/config/languages';
+import { applyDefaultLanguage } from '@/plugins/i18n';
 
 // INIT
 const store = useAppStore();
@@ -25,9 +27,10 @@ function setLanguage(code) {
 
 // ENV-BASED HOME MENU LABEL/ICON
 const navHomeLabel = ref('Forms');
-const navHomeIcon = ref('home');
+const navHomeIcon = ref('rectangle-list');
 
 import axios from 'axios';
+import Time from '@/lib/Time';
 
 onMounted(async () => {
   try {
@@ -48,11 +51,35 @@ onMounted(async () => {
   }
 });
 
+// how the signed-in account signs in, shown under its name in the user menu
+const loginType = computed(() => Profile.loginType(t, store.profile?.type));
+
+// the approvals bell : the count is loaded when the header appears (also right after a
+// login, which used to leave it at 0 until a reload) and refreshed once a minute, so a
+// new request shows up while a page stays open
+let approvalsTimer = null;
+function refreshApprovals() {
+  State.refreshApprovals().catch(() => {
+    // not logged in (any more) or the server is down : the next page load tells
+  });
+}
+onMounted(() => {
+  refreshApprovals();
+  approvalsTimer = setInterval(refreshApprovals, 60000);
+});
+onBeforeUnmount(() => clearInterval(approvalsTimer));
+
 // DATA
 
 const showVersion = ref(false);
-const showProfile = ref(false);
 const currentTheme = ref(Theme.load());
+// the profile page can change the theme too: keep the header (logo, switcher) in step
+watch(
+  () => store.theme,
+  (theme) => {
+    if (theme) currentTheme.value = theme;
+  },
+);
 const menuOptions = computed(() => [
   { title: t('nav.jobs'), link: '/jobs', icon: 'history' },
   { title: t('nav.settings'), link: '/admin/settings', icon: 'gear' },
@@ -60,11 +87,9 @@ const menuOptions = computed(() => [
 ]);
 const helpMenuOptions = computed(() => [
   { title: t('nav.documentation'), href: 'https://ansibleforms.com', icon: 'globe', target: '_blank' },
-  { title: t('nav.logs'), link: '/logs', icon: 'file-lines', target: '_self' },
   { title: t('nav.apiDocs'), link: '/api-docs', icon: 'code', target: '_blank' },
 ]);
 const profileMenu = computed(() => [
-  { title: t('nav.changePassword'), link: '/change-password', icon: 'key', target: '_self', local_only: true },
   { title: t('nav.logout'), link: '/logout', icon: 'arrow-right-from-bracket', target: '_self' },
 ]);
 
@@ -74,11 +99,7 @@ const menu = computed(() => {
   // Clone menuOptions to avoid mutating the original array
   let m = menuOptions.value.map((item) => ({ ...item }));
 
-  // Add badge to Jobs menu
-  const jobsMenu = m.find((item) => item.link === '/jobs');
-  if (jobsMenu) {
-    jobsMenu.badge = store.approvals;
-  }
+  // (the approvals count is on the bell in the header, not on the Jobs link)
 
   // Add home menu item
   m.unshift({
@@ -97,13 +118,9 @@ const menu = computed(() => {
   return m;
 });
 
-const helpMenu = computed(() => {
-  var m = helpMenuOptions.value;
-  if (!store?.profile?.options?.showLogs) {
-    m = m.filter((m) => m.link != '/logs');
-  }
-  return m;
-});
+const currentLanguage = computed(() => languages.find((l) => l.code === locale.value) || languages[0]);
+
+const helpMenu = computed(() => helpMenuOptions.value);
 
 // Check if client/server builds match (cache detection)
 const buildMismatch = computed(() => {
@@ -145,7 +162,7 @@ const buildMismatch = computed(() => {
                 </p>
                 <p class="card-text mb-0" v-if="store.serverBuild?.buildTime">
                   <small class="text-muted">{{ t('version.built') }}:</small>
-                  <small class="ms-1">{{ new Date(store.serverBuild.buildTime).toLocaleString() }}</small>
+                  <small class="ms-1">{{ Time.format(store.serverBuild.buildTime) }}</small>
                 </p>
               </div>
             </div>
@@ -161,7 +178,7 @@ const buildMismatch = computed(() => {
                 </p>
                 <p class="card-text mb-0" v-if="store.clientBuild?.buildTime">
                   <small class="text-muted">{{ t('version.built') }}:</small>
-                  <small class="ms-1">{{ new Date(store.clientBuild.buildTime).toLocaleString() }}</small>
+                  <small class="ms-1">{{ Time.format(store.clientBuild.buildTime) }}</small>
                 </p>
               </div>
             </div>
@@ -178,55 +195,33 @@ const buildMismatch = computed(() => {
       </p>
     </template>
   </BsModal>
-  <BsModal v-if="showProfile" @close="showProfile = false">
-    <template v-slot:title>
-      {{ t('nav.aboutMe') }}
+  <BsNavBar :currentTheme="currentTheme">
+    <!-- primary navigation, next to the logo -->
+    <template #start>
+      <ul class="navbar-nav af-nav-primary me-auto">
+        <BsNavLink v-for="m in menu" :key="m.link" :link="m" />
+      </ul>
     </template>
 
-    <div class="row gy-2 m-2">
-      <div class="col m-2 bg-info-subtle">
-        <div class="p-2">
-          <strong>{{ t('nav.username') }} : </strong>{{ store?.profile?.username }}
-        </div>
-      </div>
-      <div class="col m-2 bg-info-subtle">
-        <div class="p-2">
-          <strong>{{ t('nav.type') }} : </strong>{{ store?.profile?.type }}
-        </div>
-      </div>
-    </div>
-    <div class="row gy-2 m-2">
-      <div class="col m-2 bg-success-subtle">
-        <div class="p-2">
-          <strong>{{ t('nav.groups') }} : </strong>
-          <ul class="list-unstyled">
-            <li v-for="g in store?.profile?.groups || []" :key="g"><font-awesome-icon icon="check" /> {{ g }}</li>
-          </ul>
-        </div>
-      </div>
-      <div class="col m-2 bg-warning-subtle">
-        <div class="p-2">
-          <strong>{{ t('nav.roles') }} : </strong>
-          <ul class="list-unstyled">
-            <li v-for="r in store?.profile?.roles || []" :key="r"><font-awesome-icon icon="check" /> {{ r }}</li>
-          </ul>
-          <strong>{{ t('nav.options') }} : </strong>
-          <ul class="list-unstyled">
-            <li v-for="r in Object.keys(store?.profile?.options || [])" :key="r">
-              <font-awesome-icon icon="check" /> {{ r }} : {{ store?.profile?.options[r] }}
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </BsModal>
-  <BsNavBar :currentTheme="currentTheme">
-    <ul class="navbar-nav ms-auto mb-2 mb-md-0">
-      <BsNavLink v-for="m in menu" :key="m.link" :link="m" />
+    <ul class="navbar-nav af-nav-utility ms-auto">
+      <!-- approvals bell : a red count when jobs wait for an approval, opens them on the jobs page -->
+      <BsNavItem>
+        <router-link
+          class="btn af-icon-btn af-bell"
+          :to="{ path: '/jobs', query: { status: 'approve' } }"
+          :title="t('jobs.menu.approve')"
+          :aria-label="t('jobs.menu.approve')"
+        >
+          <font-awesome-icon icon="bell" />
+          <span v-if="store.approvals > 0" class="af-bell-count">{{
+            store.approvals > 99 ? '99+' : store.approvals
+          }}</span>
+        </router-link>
+      </BsNavItem>
+
       <!-- help menu -->
-      <BsNavDivider />
       <BsNavItem :dropdown="true">
-        <BsNavMenu icon="circle-question" title="Help">
+        <BsNavMenu icon="circle-question" title="Help" buttonClass="af-icon-btn">
           <li v-for="m in helpMenu" :key="m.title">
             <a
               v-if="m.href"
@@ -243,67 +238,371 @@ const buildMismatch = computed(() => {
               <span class="ms-2">{{ m.title }}</span>
             </router-link>
           </li>
-          <hr />
+          <li><hr class="dropdown-divider" /></li>
           <li>
             <button type="button" class="dropdown-item d-flex align-items-center" @click="showVersion = true">
               <span class="icon"><font-awesome-icon icon="code-branch" /></span>
-              <span class="ms-2">{{ t('nav.about') }} v{{ store.version }}</span>
-            </button>
-          </li>
-        </BsNavMenu>
-      </BsNavItem>
-
-      <!-- user profile -->
-      <BsNavDivider />
-      <BsNavItem :dropdown="true">
-        <BsNavMenu icon="user" :title="store.profile?.username || ''" :showTitle="true">
-          <li v-for="m in profileMenu" :key="m.link">
-            <template v-if="(store.profile?.type == 'local' && m.local_only) || !m.local_only">
-              <a v-if="m.href" type="button" class="dropdown-item d-flex align-items-center" :href="m.href">
-                <span class="icon"><font-awesome-icon :icon="m.icon" /></span>
-                <span class="ms-2">{{ m.title }}</span>
-              </a>
-              <router-link v-else class="dropdown-item d-flex align-items-center" :to="m.link" :target="m.target">
-                <span class="icon"><font-awesome-icon :icon="m.icon" /></span>
-                <span class="ms-2">{{ m.title }}</span>
-              </router-link>
-            </template>
-          </li>
-          <hr />
-          <li>
-            <button type="button" class="dropdown-item d-flex align-items-center" @click="showProfile = true">
-              <span class="icon"><font-awesome-icon icon="address-card" /></span>
-              <span class="ms-2">{{ t('nav.aboutMe') }}</span>
-            </button>
-          </li>
-        </BsNavMenu>
-      </BsNavItem>
-
-      <!-- language switcher -->
-      <BsNavDivider />
-      <BsNavItem :dropdown="true">
-        <BsNavMenu icon="globe" :title="languages.find((l) => l.code === locale)?.flag || '🌐'">
-          <li v-for="lang in languages" :key="lang.code">
-            <button
-              type="button"
-              class="dropdown-item d-flex align-items-center"
-              :class="{ active: locale === lang.code }"
-              @click="setLanguage(lang.code)"
-            >
-              <span class="me-2">{{ lang.flag }}</span>
-              <span>{{ lang.label }}</span>
+              <span class="ms-2">{{ t('nav.about') }}</span>
+              <span class="ms-auto ps-3 af-menu-meta">v{{ store.version }}</span>
             </button>
           </li>
         </BsNavMenu>
       </BsNavItem>
 
       <!-- theme switcher -->
-      <BsNavDivider />
       <BsNavItem :dropdown="true">
-        <BsThemeSwitcher v-model="currentTheme" />
+        <BsThemeSwitcher v-model="currentTheme" buttonClass="af-icon-btn" />
+      </BsNavItem>
+
+      <!-- language switcher: shows the current language's flag -->
+      <BsNavItem :dropdown="true">
+        <button
+          class="btn af-icon-btn"
+          type="button"
+          data-bs-toggle="dropdown"
+          aria-expanded="false"
+          :aria-label="t('nav.language')"
+          :title="currentLanguage.label"
+        >
+          <AppFlag :code="currentLanguage.code" class="af-nav-flag" />
+          <span class="d-md-none ms-2">{{ currentLanguage.label }}</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li v-for="lang in languages" :key="lang.code">
+            <button
+              type="button"
+              class="dropdown-item d-flex align-items-center gap-2"
+              :class="{ active: locale === lang.code }"
+              @click="setLanguage(lang.code)"
+            >
+              <AppFlag :code="lang.code" />
+              <span>{{ lang.label }}</span>
+              <span v-if="locale === lang.code" class="ms-auto ps-3"><font-awesome-icon icon="check" /></span>
+            </button>
+          </li>
+        </ul>
+      </BsNavItem>
+
+      <!-- user menu: profile and sign out -->
+      <BsNavItem :dropdown="true" class="af-user-item">
+        <!-- only the avatar, like the icon buttons beside it : the name and the login type are in
+             the menu it opens, and in its tooltip -->
+        <button
+          class="btn af-user-btn"
+          type="button"
+          data-bs-toggle="dropdown"
+          aria-expanded="false"
+          :title="store.profile?.username || ''"
+          :aria-label="store.profile?.username || ''"
+        >
+          <span class="af-avatar"><font-awesome-icon icon="user" /></span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end af-user-menu">
+          <li class="af-user-card">
+            <span class="af-avatar af-avatar-lg"><font-awesome-icon icon="user" /></span>
+            <span class="d-flex flex-column lh-sm">
+              <strong>{{ store.profile?.username }}</strong>
+              <small class="af-menu-meta">{{ loginType.label }}</small>
+            </span>
+          </li>
+          <li><hr class="dropdown-divider" /></li>
+          <li>
+            <router-link class="dropdown-item d-flex align-items-center" to="/profile">
+              <span class="icon"><font-awesome-icon icon="user-gear" /></span>
+              <span class="ms-2">{{ t('nav.profile') }}</span>
+            </router-link>
+          </li>
+          <li><hr class="dropdown-divider" /></li>
+          <template v-for="m in profileMenu" :key="m.link">
+            <li>
+              <router-link class="dropdown-item d-flex align-items-center" :to="m.link" :target="m.target">
+                <span class="icon"><font-awesome-icon :icon="m.icon" /></span>
+                <span class="ms-2">{{ m.title }}</span>
+              </router-link>
+            </li>
+          </template>
+        </ul>
       </BsNavItem>
     </ul>
   </BsNavBar>
 </template>
 
-<style scoped lang="scss"></style>
+<style lang="scss">
+// ===============================================================
+// Header navigation (not scoped: it styles the links and menus that
+// BsNavLink, BsNavMenu and BsThemeSwitcher render inside the header)
+// ===============================================================
+
+.af-header {
+  font-size: 0.875rem;
+
+  // primary links: full header height, so the active underline sits on the bottom edge
+  .af-nav-primary .nav-link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-size: 1.0625rem;
+    font-weight: 500;
+    padding: 0.45rem 0.85rem !important;
+    margin: 0 0.9rem;
+    border-radius: 6px;
+    color: var(--af-navbar-link-color) !important;
+    transition:
+      background-color 0.15s,
+      color 0.15s;
+    svg {
+      font-size: 1.3em; // about 22px next to the 17px text
+      opacity: 0.75;
+    }
+    &:hover {
+      color: var(--af-navbar-link-hover-color) !important;
+      background-color: var(--af-navbar-hover-bg);
+    }
+    &.active {
+      color: var(--af-navbar-link-active-color) !important;
+      font-weight: 600;
+      svg {
+        opacity: 1;
+      }
+    }
+    @media (min-width: 768px) {
+      &.active::after {
+        content: '';
+        position: absolute;
+        left: 0.85rem;
+        right: 0.85rem;
+        bottom: calc((var(--af-header-height) - 100%) / -2);
+        height: 3px;
+        border-radius: 3px 3px 0 0;
+        background-color: var(--af-navbar-indicator);
+      }
+    }
+    .badge {
+      font-size: 0.68rem;
+      padding: 0.2em 0.5em;
+      margin-left: 0.1rem !important;
+    }
+  }
+
+  // on wide screens the primary links sit in the middle of the bar, independent of how
+  // wide the logo and the user menu are ; narrower screens keep them next to the logo
+  @media (min-width: 1200px) {
+    .af-nav-primary {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+  }
+
+  // utility buttons on the right: icon only, square, subtle hover
+  .af-nav-utility {
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .af-icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 42px;
+    height: 42px;
+    font-size: 1.25rem;
+    padding: 0 0.5rem;
+    border-radius: 6px;
+    border: 0;
+    color: var(--af-navbar-link-color) !important;
+    .icon {
+      margin-right: 0 !important;
+    }
+    svg {
+      font-size: 1.45rem;
+    }
+    &::after {
+      display: none; // no caret on icon buttons
+    }
+    // BsNavMenu repeats the title for the collapsed menu (below lg); the header expands at md,
+    // so hide it there to keep the button icon-only
+    @media (min-width: 768px) {
+      .d-lg-none {
+        display: none !important;
+      }
+    }
+    &:hover,
+    &.show {
+      color: var(--af-navbar-link-hover-color) !important;
+      background-color: var(--af-navbar-hover-bg);
+    }
+  }
+
+  // the count on the approvals bell : a red circle on the bell's top right corner
+  .af-bell {
+    position: relative;
+  }
+  .af-bell-count {
+    position: absolute;
+    top: 1px;
+    right: 0;
+    min-width: 1.15rem;
+    height: 1.15rem;
+    padding: 0 0.3rem;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1.15rem;
+    text-align: center;
+    color: #ffffff;
+    background-color: var(--bs-danger);
+    box-shadow: 0 0 0 2px var(--af-bg-navbar);
+  }
+
+  // light theme : its hover color is darker than the icons, so the buttons on the right
+  // use a lighter grey instead, as the other themes lighten them ; the hover background
+  // stays (the flag and the avatar lighten through their brightness filter below)
+  [data-bs-theme='light'] & {
+    // the bell, help and theme icons and the user name turn black
+    .af-icon-btn,
+    .af-user-btn {
+      &:hover,
+      &.show {
+        color: #000000 !important;
+      }
+    }
+  }
+
+  // the flag in the language button, a little larger than the menu flags
+  .af-nav-flag {
+    width: 1.75rem;
+    height: 1.2rem;
+    transition: filter 0.15s;
+  }
+  // on hover the flag lightens, like the other header icons change color ; brightness and
+  // not opacity, so it lightens on a dark header as well instead of fading into it
+  .af-icon-btn:hover .af-nav-flag,
+  .af-icon-btn.show .af-nav-flag,
+  .af-user-btn:hover .af-avatar,
+  .af-user-btn.show .af-avatar {
+    filter: brightness(1.25);
+  }
+
+  // user button: avatar with the name next to it
+  // the avatar sits in the row of icon buttons, with no separator before it
+  .af-user-item {
+    margin-left: 0.25rem;
+  }
+  .af-user-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    // a round hover area around the avatar, a little larger than it
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    color: var(--af-navbar-link-color) !important;
+    &:hover,
+    &.show {
+      color: var(--af-navbar-link-hover-color) !important;
+      background-color: var(--af-navbar-hover-bg);
+    }
+  }
+  .af-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #ffffff;
+    background-color: var(--af-avatar-bg);
+    box-shadow: 0 0 0 2px var(--af-bg-navbar);
+    transition: filter 0.15s;
+  }
+  .af-avatar-lg {
+    width: 40px;
+    height: 40px;
+    font-size: 1.1rem;
+  }
+
+  // dropdown menus: rounded, hairline border, soft shadow
+  .dropdown-menu {
+    min-width: 15rem;
+    padding: 0.35rem;
+    margin-top: 0.5rem !important;
+    font-size: 0.9375rem; // 15px
+    border: 1px solid var(--af-header-border);
+    border-radius: 10px;
+    box-shadow:
+      0 10px 30px rgba(15, 23, 42, 0.12),
+      0 2px 6px rgba(15, 23, 42, 0.06);
+  }
+  .dropdown-item {
+    border-radius: 6px;
+    padding: 0.5rem 0.7rem;
+    .icon {
+      width: 1.1rem;
+      text-align: center;
+      opacity: 0.75;
+    }
+  }
+  .dropdown-header {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.4rem 0.6rem 0.25rem;
+  }
+  .dropdown-divider {
+    margin: 0.35rem 0;
+  }
+  // the user menu grows with the name : a long one (an Azure AD e-mail address) stays on one
+  // line and widens the menu, up to the screen width, where it is cut off with an ellipsis
+  .af-user-menu {
+    width: max-content;
+    max-width: calc(100vw - 2rem);
+  }
+  .af-user-card {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.5rem 0.6rem 0.4rem;
+    > span:last-child {
+      min-width: 0;
+    }
+    strong,
+    small {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .af-avatar {
+      box-shadow: none;
+      background-color: var(--af-primary);
+    }
+  }
+  .af-menu-meta {
+    color: var(--bs-secondary-color);
+    font-size: 0.85rem;
+  }
+
+  // collapsed (mobile) menu: plain stacked list
+  @media (max-width: 767.98px) {
+    .navbar-collapse {
+      padding: 0.5rem 0 0.75rem;
+    }
+    .af-nav-utility {
+      flex-direction: row;
+      justify-content: flex-start;
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--af-header-border);
+    }
+    .af-user-item {
+      margin-left: auto;
+    }
+  }
+}
+</style>

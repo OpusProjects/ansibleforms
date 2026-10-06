@@ -1033,7 +1033,7 @@
     allowed: a valid free fontawesome icon
     short: The icon of navigation home link
     hint: Icon of the home link in the navigation bar.
-    default: home
+    default: rectangle-list
     description: |
       In the navigation bar, A home link is shown.  You can set the icon of this link with this variable, for example `play` or `house`.  Use in combination with `VUE_APP_NAV_HOME_LABEL`.
   - name: MYSQLDUMP_COMMAND

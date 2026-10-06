@@ -1,3 +1,9 @@
+// The height of the header bar (BsNavBar) ; the settings sidebar (BsSidebar) sticks
+// right below it, so both read it from here
+:root {
+  --af-header-height: 68px;
+}
+
 :root {
   --bs-body-color: var(--af-body-color);
   --bs-body-color-rgb: var(--af-body-color-rgb);
@@ -94,9 +100,15 @@
   input::placeholder,
   textarea::placeholder,
   select::placeholder {
-    color: #6c757d !important;
-    opacity: 0.5 !important;
+    color: #8b949e !important;
+    opacity: 0.85 !important;
     font-style: italic;
+  }
+  // an unchecked switch : Bootstrap's dark knob and border are barely visible on the dark
+  // background, so both get a lighter grey
+  .form-switch .form-check-input:not(:checked) {
+    --bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba%28255, 255, 255, 0.65%29'/%3e%3c/svg%3e");
+    border-color: rgba(255, 255, 255, 0.35);
   }
 }
 
@@ -203,6 +215,58 @@
   flex: 1 1 auto;
   min-height: 12rem;
   overflow: auto;
+}
+// The settings pages (admin/* and the server log) use the full width : the sidebar sits
+// against the left edge and the content keeps only a small gap on the right, so wide
+// screens are not wasted on centred margins (the tab strip fits on one row there)
+.af-settings-layout {
+  width: 100%;
+  padding-left: 0;
+  padding-right: 2rem; // the same room on the right as between the sidebar and the content
+  column-gap: 2rem; // room between the sidebar and the content
+}
+
+// The forms page's category list behaves like the settings sidebar : the same panel
+// color, pinned below the header, one screen high and scrolling on its own. On a phone
+// it stacks above the forms and scrolls with the page.
+.af-forms-row {
+  column-gap: 2rem;
+}
+// the view switch (and the warnings button) sit on the search bar's row, instead of on a
+// row of their own above it ; the search bar is a plain input, so all three are as high
+.af-forms-toolbar > .btn {
+  display: inline-flex;
+  align-items: center;
+}
+
+// the category entries look like the settings and designer menu entries (Bootstrap
+// nav-pills) : rounded corners, the same padding, and the same grey hover
+.af-forms-sidebar .menu-item {
+  padding: 0.5rem 1rem !important;
+  border-radius: var(--bs-nav-pills-border-radius, var(--bs-border-radius));
+  transition: background-color 0.15s ease-in-out;
+  &:not(.active):not(.bg-primary-forced):hover {
+    background-color: var(--bs-secondary-bg);
+  }
+}
+.af-forms-sidebar {
+  min-width: 300px;
+  @media (min-width: 768px) {
+    position: sticky;
+    top: var(--af-header-height);
+    align-self: flex-start;
+    height: calc(100vh - var(--af-header-height));
+    overflow-y: auto;
+  }
+}
+
+// a full height page that also shows the settings sidebar (logs) : the sidebar and the
+// section sit side by side, and the section takes the remaining width
+.af-fill-page > main.af-with-sidebar {
+  flex-direction: row;
+}
+.af-fill-page > main.af-with-sidebar > .section {
+  min-width: 0;
 }
 
 // Vue Datepicker: align the input + popup background with Bootstrap's

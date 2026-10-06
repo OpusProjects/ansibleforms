@@ -1,6 +1,7 @@
 import { copyText } from 'vue3-clipboard';
 import { buildFormOutput as engineBuildFormOutput } from '@engine/output.js';
 import { getFieldValue as engineGetFieldValue } from '@engine/placeholders.js';
+import Time from './Time';
 
 const Helpers = {
   // Turns help.yaml's `allowed` text into select options when - and only when - it really
@@ -144,26 +145,21 @@ const Helpers = {
         return 'body';
     }
   },
-  // Show a server timestamp in the timezone the SERVER already put it in.
+  // A server timestamp in the user's time zone (Profile > Preferences, lib/Time.js).
   //
-  // Some endpoints deliberately convert to the application timezone before sending
-  // (backup dates come from Helpers.dateFromBackupFolder on the server, which parses
-  // the UTC folder name and applies LOG_TZ). Passing that through dayjs() converts it
-  // a second time, into the browser's zone - which is why a backup folder named
-  // ...20260726002146 displayed as 02:21 in a +02:00 browser, disagreeing with its own
-  // folder name. Read the wall clock straight out of the ISO string instead.
+  // The server sends ISO strings with their zone : 'Z' for database columns, an explicit
+  // offset for the dates it already put in LOG_TZ (backups, from Helpers.dateFromBackupFolder).
+  // Those convert exactly. A string WITHOUT a zone cannot be placed in time, so its wall
+  // clock is shown as written (reading it with dayjs() would silently take the browser's zone
+  // - a backup folder named ...20260726002146 once displayed as 02:21 that way).
   // Returns ONLY a `YYYY-MM-DD HH:MM:SS` string or ''. It never echoes its input back,
   // because BsDataTable treats a column `render()` result as trusted HTML (cellHtml does
   // not escape it) - a pass-through formatter in that slot would be an injection sink.
   formatServerDate(value) {
     if (!value) return '';
-    const text =
-      typeof value === 'string'
-        ? value
-        : // a Date or a number would otherwise render as 'Sun Jul 26 2026 …' or an epoch
-          value instanceof Date
-          ? value.toISOString()
-          : String(value);
+    if (value instanceof Date || typeof value === 'number') return Time.format(value);
+    const text = String(value);
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})$/.test(text)) return Time.format(text);
     const m = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}:\d{2})/.exec(text);
     return m ? `${m[1]} ${m[2]}` : '';
   },

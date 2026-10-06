@@ -12,6 +12,7 @@
 /*                                                                */
 /******************************************************************/
 
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 // INIT
@@ -101,6 +102,25 @@ function inCategory(c, category) {
 function countFormsByCategory(category) {
   return filterAllowedForms(category).length;
 }
+
+// a category opens to show its sub categories : only the ones with forms are listed, so
+// only those count when deciding whether to show the open/close chevron
+const hasChildren = computed(() =>
+  (props.menu?.items || []).some((item) => countFormsByCategory(path.value + '/' + item.name) > 0),
+);
+
+// a click on the selected category, while it is open, folds its sub categories away (it
+// stays selected) ; the next click opens them again. Selecting another category resets it.
+const folded = ref(false);
+const isOpen = computed(() => isActive.value && !folded.value);
+function onClick() {
+  if (hasChildren.value && isHighLighted.value) {
+    folded.value = !folded.value;
+    return;
+  }
+  folded.value = false;
+  emit('click', path.value);
+}
 </script>
 <template>
   <li role="button" v-if="countFormsByCategory(path) > 0">
@@ -108,21 +128,22 @@ function countFormsByCategory(category) {
     <div
       class="d-flex justify-content-between menu-item p-2 my-1"
       :class="{ active: isHighLighted }"
-      @click="emit('click', path)"
+      @click="onClick()"
     >
       <span class="me-3">
         <span class="me-2">
           <FaIcon :icon="menu.icon" :fixedwidth="true"></FaIcon>
         </span>
-        {{ menu.name }}</span
-      >
+        {{ menu.name }}
+        <FaIcon v-if="hasChildren" :icon="isOpen ? 'chevron-up' : 'chevron-down'" class="ms-2 af-chevron"></FaIcon
+      ></span>
       <span v-if="isHighLighted" class="badge px-3 rounded-pill active">{{ countFormsByCategory(path) }}</span>
       <span v-else class="badge px-3 rounded-pill">{{ countFormsByCategory(path) }}</span>
     </div>
     <Transition name="slidedown">
       <ul
         class="list-unstyled border-start border-1 border-secondary"
-        v-if="isActive && menu && menu.items && menu.items.length > 0"
+        v-if="isOpen && menu && menu.items && menu.items.length > 0"
       >
         <AppMenuItem
           @click="goto(path + '/' + item.name)"
@@ -148,6 +169,11 @@ ul {
       color: var(--af-text-active) !important;
     }
   }
+}
+
+.af-chevron {
+  font-size: 0.7em;
+  opacity: 0.6;
 }
 
 .badge {

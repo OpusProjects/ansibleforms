@@ -884,7 +884,7 @@ defineExpose({
       <BsButton icon="trash" @click="removeItem()">{{ t('common.delete') }}</BsButton>
     </template>
   </BsModal>
-  <AppSettings :icon="objectIcon" :title="objectLabelPlural" :description="objectDescription">
+  <AppSettings :icon="objectIcon" :title="settings.pageTitle || objectLabelPlural" :description="objectDescription">
     <template #default>
       <BsDataTable
         v-if="!loading && itemList != undefined"
