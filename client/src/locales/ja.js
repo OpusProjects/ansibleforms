@@ -989,6 +989,9 @@ export default {
     },
   },
   forms: {
+    // what the forms page is for, in the info popover after its title
+    pageDescription:
+      '実行できるフォームです。左側でカテゴリを選ぶか名前で絞り込み、フォームを開いて入力し、起動します。',
     categories: 'カテゴリ',
     allForms: 'すべてのフォーム',
     search: '検索',

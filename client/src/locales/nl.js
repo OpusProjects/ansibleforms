@@ -1000,6 +1000,9 @@ export default {
     },
   },
   forms: {
+    // what the forms page is for, in the info popover after its title
+    pageDescription:
+      'De formulieren die u kunt uitvoeren. Kies links een categorie of filter op naam, en open dan een formulier om het in te vullen en te starten.',
     categories: 'Categorie\u00ebn',
     allForms: 'Alle formulieren',
     search: 'Zoeken',

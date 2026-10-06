@@ -1001,6 +1001,9 @@ export default {
     },
   },
   forms: {
+    // what the forms page is for, in the info popover after its title
+    pageDescription:
+      'I moduli che puoi eseguire. Scegli una categoria a sinistra o filtra per nome, poi apri un modulo per compilarlo e avviarlo.',
     categories: 'Categorie',
     allForms: 'Tutti i moduli',
     search: 'Cerca',

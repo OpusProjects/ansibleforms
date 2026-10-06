@@ -1007,6 +1007,9 @@ export default {
     },
   },
   forms: {
+    // what the forms page is for, in the info popover after its title
+    pageDescription:
+      "Els formularis que pots executar. Tria una categoria a l'esquerra o filtra pel nom i obre un formulari per omplir-lo i llançar-lo.",
     categories: 'Categories',
     allForms: 'Tots els formularis',
     search: 'Cerca',

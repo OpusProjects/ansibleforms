@@ -1001,6 +1001,9 @@ export default {
     },
   },
   forms: {
+    // what the forms page is for, in the info popover after its title
+    pageDescription:
+      'Formularze, które możesz uruchomić. Wybierz kategorię po lewej stronie lub filtruj po nazwie, a następnie otwórz formularz, aby go wypełnić i uruchomić.',
     categories: 'Kategorie',
     allForms: 'Wszystkie formularze',
     search: 'Szukaj',

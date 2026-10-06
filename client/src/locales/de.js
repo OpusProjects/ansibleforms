@@ -1013,6 +1013,9 @@ export default {
     },
   },
   forms: {
+    // what the forms page is for, in the info popover after its title
+    pageDescription:
+      'Die Formulare, die Sie ausführen können. Wählen Sie links eine Kategorie oder filtern Sie nach Namen und öffnen Sie dann ein Formular, um es auszufüllen und zu starten.',
     categories: 'Kategorien',
     allForms: 'Alle Formulare',
     search: 'Suchen',

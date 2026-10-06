@@ -1005,6 +1005,9 @@ export default {
     },
   },
   forms: {
+    // what the forms page is for, in the info popover after its title
+    pageDescription:
+      'Os formulários que pode executar. Escolha uma categoria à esquerda ou filtre pelo nome e abra um formulário para o preencher e iniciar.',
     categories: 'Categorias',
     allForms: 'Todos os Formulários',
     search: 'Pesquisar',

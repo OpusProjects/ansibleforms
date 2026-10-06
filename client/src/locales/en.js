@@ -991,6 +991,9 @@ export default {
     },
   },
   forms: {
+    // what the forms page is for, in the info popover after its title
+    pageDescription:
+      'The forms you can run. Pick a category on the left or filter by name, then open a form to fill it in and launch it.',
     categories: 'Categories',
     allForms: 'All Forms',
     search: 'Search',

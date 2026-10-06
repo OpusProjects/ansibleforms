@@ -965,6 +965,8 @@ export default {
     },
   },
   forms: {
+    // what the forms page is for, in the info popover after its title
+    pageDescription: '您可以运行的表单。在左侧选择类别或按名称筛选，然后打开表单填写并启动。',
     categories: '类别',
     allForms: '所有表单',
     search: '搜索',

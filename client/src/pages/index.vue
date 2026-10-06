@@ -221,6 +221,7 @@ onMounted(async () => {
               :title="categoryTitle.title"
               :icon="categoryTitle.icon"
               :crumbs="categoryTitle.crumbs"
+              :description="t('forms.pageDescription')"
             >
               <template #headerActions>
                 <div class="d-flex align-items-center gap-2 af-forms-toolbar">

@@ -1000,6 +1000,9 @@ export default {
     },
   },
   forms: {
+    // what the forms page is for, in the info popover after its title
+    pageDescription:
+      'Los formularios que puedes ejecutar. Elige una categoría a la izquierda o filtra por nombre y abre un formulario para rellenarlo y lanzarlo.',
     categories: 'Categorías',
     allForms: 'Todos los Formularios',
     search: 'Buscar',
