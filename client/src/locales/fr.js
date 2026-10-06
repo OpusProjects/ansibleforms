@@ -346,6 +346,9 @@ export default {
     sha: 'SHA',
     built: 'Construit',
     dirty: 'dirty',
+    newVersionAvailable: "Une version plus récente d'AnsibleForms est disponible.",
+    newVersionReload: 'Recharger',
+    newVersionDismiss: 'Fermer',
     cacheMismatchTitle: 'Une version plus récente est déployée',
     cacheMismatchMsg:
       'Cette page utilise encore une build plus ancienne que le serveur. Rechargez la page pour obtenir la nouvelle version.',

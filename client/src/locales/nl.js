@@ -341,6 +341,9 @@ export default {
     sha: 'SHA',
     built: 'Gebouwd',
     dirty: 'onopgeslagen',
+    newVersionAvailable: 'Er is een nieuwere versie van AnsibleForms beschikbaar.',
+    newVersionReload: 'Herladen',
+    newVersionDismiss: 'Sluiten',
     cacheMismatchTitle: 'Er staat een nieuwere versie klaar',
     cacheMismatchMsg:
       'Deze pagina draait nog een oudere build dan de server. Herlaad de pagina om de nieuwe versie te krijgen.',

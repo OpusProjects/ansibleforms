@@ -51,6 +51,11 @@ onMounted(async () => {
   }
 });
 
+// the banner's reload : the new index.html (served no-cache) brings the new bundle
+function reloadPage() {
+  window.location.reload();
+}
+
 // how the signed-in account signs in, shown under its name in the user menu
 const loginType = computed(() => Profile.loginType(t, store.profile?.type));
 
@@ -325,6 +330,22 @@ const buildMismatch = computed(() => {
       </BsNavItem>
     </ul>
   </BsNavBar>
+  <!-- the server runs a newer build than this tab (a tab opened before an upgrade, issue #660) :
+       offer a reload, never reload by itself, so nothing typed in a form is lost -->
+  <div v-if="store.newVersionAvailable && !store.newVersionDismissed" class="af-new-version" role="status">
+    <FaIcon icon="circle-arrow-up" class="me-2" />
+    <span>{{ t('version.newVersionAvailable') }}</span>
+    <button type="button" class="btn btn-sm btn-primary ms-3" @click="reloadPage">
+      <FaIcon icon="rotate-right" class="me-1" />{{ t('version.newVersionReload') }}
+    </button>
+    <button
+      type="button"
+      class="btn-close ms-auto"
+      :aria-label="t('version.newVersionDismiss')"
+      :title="t('version.newVersionDismiss')"
+      @click="store.newVersionDismissed = true"
+    ></button>
+  </div>
 </template>
 
 <style lang="scss">
@@ -558,6 +579,20 @@ const buildMismatch = computed(() => {
   .dropdown-divider {
     margin: 0.35rem 0;
   }
+}
+
+// the "newer version" banner under the header : the accent's light tint, one line
+.af-new-version {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 2.5rem;
+  font-size: 0.9375rem;
+  color: var(--bs-primary-text-emphasis);
+  background-color: var(--bs-primary-bg-subtle);
+  border-bottom: 1px solid var(--bs-primary-border-subtle);
+}
+
+.af-header {
   // the user menu grows with the name : a long one (an Azure AD e-mail address) stays on one
   // line and widens the menu, up to the screen width, where it is cut off with an ellipsis
   .af-user-menu {

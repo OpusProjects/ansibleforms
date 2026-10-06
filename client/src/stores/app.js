@@ -29,6 +29,10 @@ export const useAppStore = defineStore('app', () => {
   // the time zone dates are shown in : 'UTC', 'browser' or an IANA zone (lib/Time.js) ; read
   // here so every page re-renders its dates when the user picks another one
   const timezone = ref(loadTimezone());
+  // the server runs a newer build than this tab (App.vue's response interceptor) ; the banner
+  // under the header offers a reload, and can be dismissed for the rest of this visit
+  const newVersionAvailable = ref(false);
+  const newVersionDismissed = ref(false);
 
   // const doubleCount = computed(() => count.value * 2)
   // function increment() {
@@ -50,5 +54,7 @@ export const useAppStore = defineStore('app', () => {
     schemaData,
     chatEnabled,
     timezone,
+    newVersionAvailable,
+    newVersionDismissed,
   };
 });

@@ -3,6 +3,7 @@ import ansibleforms from './src/app.js';
 import appConfig from './config/app.config.js';
 import { injectBaseUrl } from './src/lib/baseurl.js';
 import { staticCacheHeaders, injectAssetVersion } from './src/lib/staticCache.js';
+import { readBuildInfo, appBuildHeader } from './src/lib/appBuild.js';
 import { resolve } from 'path';
 import history from 'connect-history-api-fallback';
 import httpsConfig from './config/https.config.js';
@@ -22,24 +23,17 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// what the stylesheet and favicon links in index.html carry as ?v= : the version and the
-// build's git sha (build-info.json, written by the docker build), so every release and every
-// rebuild is a new address for them - package.json alone for a development server
-function assetVersion() {
-  let version = '';
-  let sha = '';
-  try {
-    version = JSON.parse(fs.readFileSync(path.resolve(__dirname, './package.json'), 'utf-8')).version || '';
-  } catch { /* no package.json : no version */ }
-  try {
-    const buildInfo = JSON.parse(fs.readFileSync(path.resolve(__dirname, './build-info.json'), 'utf-8'));
-    version = buildInfo.version || version;
-    sha = buildInfo.gitSha || '';
-  } catch { /* build-info.json is only there in a docker build */ }
-  return [version, sha].filter(Boolean).join('-');
-}
+// the running build (build-info.json from the docker build, package.json otherwise) : the
+// stylesheet and favicon links in index.html carry version and sha as ?v=, so every release and
+// every rebuild is a new address for them, and every response names the sha in X-App-Build
+const build = readBuildInfo(__dirname);
+const assetVersion = () => [build.version, build.gitSha].filter(Boolean).join('-');
 // load the ansibleforms app
 async function start(){
+  // before the routes : every response, the api's included, names the server's build, so a tab
+  // left open across an upgrade learns it runs an older one (src/lib/appBuild.js, issue #660)
+  app.use(appBuildHeader(build.gitSha));
+
   await ansibleforms.load(app);
 
   if (getExpressionMode() === 'legacy') {
