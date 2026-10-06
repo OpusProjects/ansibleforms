@@ -20,9 +20,15 @@ const stored_jobsController = {
         const filtered = all.filter(s => s.form_name === req.query.form_name && s.username === username);
         return res.json(RestResult.list(filtered));
       } else {
-        // Return all stored jobs (for admin page management)
+        // The stored jobs page. Scoped exactly like findById, update and delete below :
+        // a settings user (admin) manages everyone's, any other user only sees their own.
+        // allowStoredJobs is on for every user by default, so returning every row here
+        // let any user read the stored field values of all other users - values the
+        // per-id read already refuses them.
+        const isAdmin = req.user.user.options?.showSettings;
         const all = await CrudModel.findAll('stored_jobs');
-        return res.json(RestResult.list(all));
+        const visible = isAdmin ? all : all.filter(s => s.username === username);
+        return res.json(RestResult.list(visible));
       }
     } catch (err) {
       Errors.ReturnError(res, err);
