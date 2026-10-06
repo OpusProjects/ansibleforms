@@ -348,10 +348,10 @@ async function azureGroups(payload, bodyGroups, groupfilter) {
  * The groups to trust.
  *
  * The provider's own claim wins whenever it is present, because it is inside the token we
- * signed. `req.body.groups` is whatever the browser chose to send - the client fetches
- * them from Graph/userinfo and filters them there - so it is used ONLY when the provider
- * returned none, and that fallback is logged: a caller can otherwise name any group and
- * getRolesAndOptions will grant the roles that match it.
+ * signed. `req.body.groups` is whatever the browser chose to send, so it is used ONLY
+ * when the provider returned none, and that fallback is logged: a caller can otherwise
+ * name any group and getRolesAndOptions will grant the roles that match it. Either way
+ * the caller passes the result through the provider's group filter (filterGroups).
  */
 function ssoGroups(payload, bodyGroups, type) {
   const fromToken = payload.groups;
