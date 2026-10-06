@@ -12,7 +12,7 @@
 /*                                                                */
 /******************************************************************/
 
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onBeforeUnmount } from 'vue';
 import axios from 'axios';
 import { toast } from 'vue-sonner';
 import { useI18n } from 'vue-i18n';
@@ -277,8 +277,26 @@ const timezone = computed({
 });
 const browserZone = Time.browserZone();
 const allZones = Time.zones().filter((z) => z !== 'UTC');
-// an example of how a time reads in the picked zone, under the picker
-const timezoneExample = computed(() => Time.format(new Date(), 'YYYY-MM-DD HH:mm') + ' ' + Time.zone());
+// the time now as AnsibleForms shows it in the picked zone, under the picker : it ticks
+// along while the page is open, and follows the picker at once
+const now = ref(new Date());
+const nowTimer = setInterval(() => (now.value = new Date()), 30000);
+onBeforeUnmount(() => clearInterval(nowTimer));
+const timezoneNow = computed(() => Time.format(now.value, 'YYYY-MM-DD HH:mm'));
+// the zone's offset from UTC now (summer time included), as UTC+02:00 ; UTC itself needs none
+const timezoneOffset = computed(() => {
+  const zone = Time.zone();
+  if (zone === 'UTC') return '';
+  try {
+    const part = new Intl.DateTimeFormat('en-US', { timeZone: zone, timeZoneName: 'longOffset' })
+      .formatToParts(now.value)
+      .find((p) => p.type === 'timeZoneName')?.value;
+    // 'GMT+02:00', or plain 'GMT' for a zone on UTC time
+    return part ? part.replace('GMT', 'UTC').replace(/^UTC$/, 'UTC+00:00') : '';
+  } catch {
+    return '';
+  }
+});
 
 function setFormsView(mode) {
   formsView.value = mode;
@@ -472,7 +490,16 @@ async function changePassword() {
                 </select>
               </div>
               <div class="form-text">{{ t('profilePage.timezoneHint') }}</div>
-              <div class="form-text fst-italic"><FaIcon icon="clock" class="me-1" />{{ timezoneExample }}</div>
+              <!-- the time now in the picked zone : how dates read across the app -->
+              <div class="af-tz-now mt-3">
+                <span class="af-tz-now-icon"><FaIcon icon="clock" /></span>
+                <span class="d-flex flex-column">
+                  <span class="af-tz-now-time">{{ timezoneNow }}</span>
+                  <small class="text-body-secondary"
+                    >{{ Time.zone() }}<template v-if="timezoneOffset"> · {{ timezoneOffset }}</template></small
+                  >
+                </span>
+              </div>
             </div>
           </div>
         </template>
@@ -708,6 +735,24 @@ $af-detail-line: 1.8rem;
   .af-chip {
     margin: 0;
   }
+}
+.af-tz-now {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.625rem 1rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  background-color: var(--bs-tertiary-bg);
+}
+.af-tz-now-icon {
+  font-size: 1.5rem;
+  color: var(--af-primary);
+}
+.af-tz-now-time {
+  font-size: 1.125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 .af-count {
   display: inline-block;
