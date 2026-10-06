@@ -1009,7 +1009,7 @@ export default {
     forceUnlockCare: 'Proceed with care and respect.',
     clickToForceUnlock: 'Click to force unlock',
     notLocked: 'Designer is not active',
-    notLockedHint: 'Toggle the lock above to start editing',
+    notLockedHint: 'Toggle the lock in the top-right corner to start editing',
     fileExplorer: 'File Explorer',
     search: 'Search',
     previewForm: 'Preview form',

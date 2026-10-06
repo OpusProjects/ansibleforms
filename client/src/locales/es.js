@@ -1018,7 +1018,7 @@ export default {
     forceUnlockCare: 'Proceda con cuidado y respeto.',
     clickToForceUnlock: 'Haga clic para forzar el desbloqueo',
     notLocked: 'El diseñador no está activo',
-    notLockedHint: 'Active el bloqueo arriba para empezar a editar',
+    notLockedHint: 'Active el bloqueo de la esquina superior derecha para empezar a editar',
     fileExplorer: 'Explorador de archivos',
     search: 'Buscar',
     previewForm: 'Vista previa del formulario',

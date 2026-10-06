@@ -1030,7 +1030,7 @@ export default {
     forceUnlockCare: 'Bitte vorsichtig und respektvoll vorgehen.',
     clickToForceUnlock: 'Klicken zum Erzwingen der Entsperrung',
     notLocked: 'Designer ist nicht aktiv',
-    notLockedHint: 'Schalten Sie die Sperre oben um, um mit der Bearbeitung zu beginnen',
+    notLockedHint: 'Schalten Sie die Sperre oben rechts um, um mit der Bearbeitung zu beginnen',
     fileExplorer: 'Datei-Explorer',
     search: 'Suchen',
     previewForm: 'Formularvorschau',
