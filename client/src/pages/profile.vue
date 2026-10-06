@@ -22,7 +22,7 @@ import Theme from '@/lib/Theme';
 import Helpers from '@/lib/Helpers';
 import TokenStorage from '@/lib/TokenStorage';
 import Profile from '@/lib/Profile';
-import { languages } from '@/config/languages';
+import { languages, fallbackLanguage } from '@/config/languages';
 import { jwtDecode } from 'jwt-decode';
 import Time from '@/lib/Time';
 
@@ -174,7 +174,7 @@ const permissionGroups = computed(() => {
     return { name: g.name, title: g.title(), options, allowed: options.filter((o) => o.value).length };
   }).filter((g) => g.options.length);
 });
-const currentLanguage = computed(() => languages.find((l) => l.code === locale.value) || languages[0]);
+const currentLanguage = computed(() => languages.find((l) => l.code === locale.value) || fallbackLanguage);
 
 const view = computed(() => VIEWS.find((v) => v.name === currentView.value));
 // how the account signs in : a readable name and an icon per login type
