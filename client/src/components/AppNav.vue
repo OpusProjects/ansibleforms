@@ -13,7 +13,7 @@ import Theme from '@/lib/Theme';
 import Helpers from '@/lib/Helpers';
 import State from '@/lib/State';
 import Profile from '@/lib/Profile';
-import { languages } from '@/config/languages';
+import { languages, fallbackLanguage } from '@/config/languages';
 import { applyDefaultLanguage } from '@/plugins/i18n';
 
 // INIT
@@ -129,7 +129,7 @@ const menu = computed(() => {
   return m;
 });
 
-const currentLanguage = computed(() => languages.find((l) => l.code === locale.value) || languages[0]);
+const currentLanguage = computed(() => languages.find((l) => l.code === locale.value) || fallbackLanguage);
 
 const helpMenu = computed(() => helpMenuOptions.value);
 

@@ -1,13 +1,17 @@
 // Canonical list of supported UI languages.
-// Used by AppNav (language switcher) and the settings page (default language).
+// Used by AppNav (language switcher) and the profile page (language).
+// Kept in alphabetical order of the label, the order the menus show them in.
 
 export const languages = [
+  { code: 'ca', label: 'Català', flag: '🏴' }, // no emoji for the Senyera; AppFlag draws it
+  { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
   { code: 'en', label: 'English', flag: '🇬🇧' },
-  { code: 'nl', label: 'Nederlands', flag: '🇳🇱' },
+  { code: 'es', label: 'Español', flag: '🇪🇸' },
   { code: 'fr', label: 'Français', flag: '🇫🇷' },
   { code: 'it', label: 'Italiano', flag: '🇮🇹' },
-  { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
-  { code: 'es', label: 'Español', flag: '🇪🇸' },
-  { code: 'ca', label: 'Català', flag: '🏴' }, // no emoji for the Senyera; AppFlag draws it
+  { code: 'nl', label: 'Nederlands', flag: '🇳🇱' },
   { code: 'pt', label: 'Português', flag: '🇵🇹' },
 ];
+
+// the language shown when the current one is not in the list : the i18n fallback
+export const fallbackLanguage = languages.find((l) => l.code === 'en');
