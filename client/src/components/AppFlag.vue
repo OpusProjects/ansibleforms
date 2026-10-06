@@ -24,6 +24,8 @@ const STRIPES = {
   fr: ['v', ['#002654', '#ffffff', '#ce1126']],
   it: ['v', ['#009246', '#ffffff', '#ce2b37']],
   es: ['h', ['#aa151b', '#f1bf00', '#f1bf00', '#aa151b']], // the middle band is twice as wide
+  // the Senyera: nine equal stripes, five yellow and four red, yellow at top and bottom
+  ca: ['h', ['#fcdd09', '#da121a', '#fcdd09', '#da121a', '#fcdd09', '#da121a', '#fcdd09', '#da121a', '#fcdd09']],
 };
 </script>
 

@@ -14,8 +14,9 @@ import fr from '../locales/fr.js';
 import it from '../locales/it.js';
 import de from '../locales/de.js';
 import es from '../locales/es.js';
+import ca from '../locales/ca.js';
 
-const messages = { en, nl, fr, it, de, es };
+const messages = { en, nl, fr, it, de, es, ca };
 const supportedLocales = Object.keys(messages);
 // `let`, with a setter, so the settings page can change DEFAULT_LANGUAGE without a restart.
 // The /api/v2/app/config route already reads process.env per request, so without this the

@@ -96,10 +96,10 @@ suite needs no database — it runs against the stubs in `server/tests/__mocks__
 
 ## Things that are easy to get wrong
 
-**Six locale files, always.** Every UI string goes through `t('key')`, and
-`client/src/locales/` holds `en`, `de`, `fr`, `it`, `es` and `nl`. They are at exact
+**Every locale file, always.** Every UI string goes through `t('key')`, and
+`client/src/locales/` holds `en`, `de`, `fr`, `it`, `es`, `nl` and `ca`. They are at exact
 parity: same keys, same `{placeholder}` tokens. Adding a string to one and not the others
-ships a missing translation. Server strings live in `server/src/locales/`, same six.
+ships a missing translation. Server strings live in `server/src/locales/`, same set.
 
 **Adding a page does not add a route.** `client/src/router/index.js` is hand-written, one
 entry per page with its own `beforeEnter` guard. The guard has to match the permission the
