@@ -2,6 +2,7 @@ import express from 'express';
 import ansibleforms from './src/app.js';
 import appConfig from './config/app.config.js';
 import { injectBaseUrl } from './src/lib/baseurl.js';
+import { staticCacheHeaders, injectAssetVersion } from './src/lib/staticCache.js';
 import { resolve } from 'path';
 import history from 'connect-history-api-fallback';
 import httpsConfig from './config/https.config.js';
@@ -20,6 +21,23 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+
+// what the stylesheet and favicon links in index.html carry as ?v= : the version and the
+// build's git sha (build-info.json, written by the docker build), so every release and every
+// rebuild is a new address for them - package.json alone for a development server
+function assetVersion() {
+  let version = '';
+  let sha = '';
+  try {
+    version = JSON.parse(fs.readFileSync(path.resolve(__dirname, './package.json'), 'utf-8')).version || '';
+  } catch { /* no package.json : no version */ }
+  try {
+    const buildInfo = JSON.parse(fs.readFileSync(path.resolve(__dirname, './build-info.json'), 'utf-8'));
+    version = buildInfo.version || version;
+    sha = buildInfo.gitSha || '';
+  } catch { /* build-info.json is only there in a docker build */ }
+  return [version, sha].filter(Boolean).join('-');
+}
 // load the ansibleforms app
 async function start(){
   await ansibleforms.load(app);
@@ -34,14 +52,19 @@ async function start(){
 
   // set the start directory to load our vue app (frontend/gui)
   const publicPath = resolve(__dirname, './views');
-  const staticConf = { maxAge: '1y', etag: false };
+  // only the content-hashed bundles under assets/ are cached for good, every other file is
+  // revalidated (src/lib/staticCache.js, issue #660) ; Last-Modified validates, the etag stays off
+  const staticConf = { etag: false, setHeaders: staticCacheHeaders(publicPath) };
 
   // load the built index.html once and rewrite its base tag to the configured
   // base url, so the app can be hosted under a subpath (issue #106)
   var indexHtml = null;
   const indexPath = path.join(publicPath, 'index.html');
   if (fs.existsSync(indexPath)) {
-    indexHtml = injectBaseUrl(fs.readFileSync(indexPath, 'utf-8'), appConfig.baseUrl);
+    indexHtml = injectAssetVersion(
+      injectBaseUrl(fs.readFileSync(indexPath, 'utf-8'), appConfig.baseUrl),
+      assetVersion()
+    );
   } else {
     logger.warning(`No index.html found in ${publicPath}, did you build the client?`);
   }

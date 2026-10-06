@@ -45,11 +45,13 @@ COPY ./server/src/lib/formEngine /app/server/src/lib/formEngine
 COPY ./scripts/generate-build-info.sh /tmp/generate-build-info.sh
 RUN chmod +x /tmp/generate-build-info.sh
 
+# Generate the client's build-info.json BEFORE the build, in client/ (not dist/, which vite
+# empties) : vite.config.mjs bakes it into the bundle, so the running client knows its own
+# build (issue #660). It is no longer served as a file.
+RUN /tmp/generate-build-info.sh . "$GIT_SHA" "$BUILD_TIME" "$VERSION"
+
 # build client
 RUN npm run build
-
-# Generate client build-info.json in dist folder
-RUN /tmp/generate-build-info.sh ./dist "$GIT_SHA" "$BUILD_TIME" "$VERSION"
 
 ######### prep server ##########
 

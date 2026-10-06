@@ -346,9 +346,9 @@ export default {
     sha: 'SHA',
     built: 'Construit',
     dirty: 'dirty',
-    cacheMismatchTitle: 'Incoherence de cache detectee !',
+    cacheMismatchTitle: 'Une version plus récente est déployée',
     cacheMismatchMsg:
-      'Les builds client et serveur ne correspondent pas. Veuillez effectuer un rechargement force (Ctrl+Shift+R ou Cmd+Shift+R).',
+      'Cette page utilise encore une build plus ancienne que le serveur. Rechargez la page pour obtenir la nouvelle version.',
   },
   common: {
     clear: 'Effacer',

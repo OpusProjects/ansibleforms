@@ -4,7 +4,7 @@
 # Usage: ./scripts/generate-build-info.sh <output-path> [git-sha] [build-time] [version]
 #
 # Arguments:
-#   output-path: Where to write build-info.json (e.g., ./server or ./client/dist)
+#   output-path: Where to write build-info.json (e.g., ./server or ./client, before vite build)
 #   git-sha:     (optional) Override git SHA (useful for Docker builds with build args)
 #   build-time:  (optional) Override build timestamp (useful for Docker builds)
 #   version:     (optional) The version this build reports, e.g. 6.4.0-rc.512.7. Written
