@@ -9,6 +9,7 @@ import ca from '@/locales/ca.js';
 import pt from '@/locales/pt.js';
 import ja from '@/locales/ja.js';
 import zh from '@/locales/zh.js';
+import pl from '@/locales/pl.js';
 import Helpers from '@/lib/Helpers';
 
 // Get language from cookie (set later from server default if no cookie exists)
@@ -26,6 +27,7 @@ const messages = {
   pt,
   ja,
   zh,
+  pl,
 };
 
 const i18n = createI18n({
