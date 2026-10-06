@@ -23,6 +23,7 @@ const STRIPES = {
   de: ['h', ['#000000', '#dd0000', '#ffce00']],
   fr: ['v', ['#002654', '#ffffff', '#ce1126']],
   it: ['v', ['#009246', '#ffffff', '#ce2b37']],
+  pl: ['h', ['#ffffff', '#dc143c']], // two equal stripes, white over red
   es: ['h', ['#aa151b', '#f1bf00', '#f1bf00', '#aa151b']], // the middle band is twice as wide
   // the Senyera: nine equal stripes, five yellow and four red, yellow at top and bottom
   ca: ['h', ['#fcdd09', '#da121a', '#fcdd09', '#da121a', '#fcdd09', '#da121a', '#fcdd09', '#da121a', '#fcdd09']],

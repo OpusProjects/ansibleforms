@@ -163,7 +163,7 @@
       **Security:** `X-Forwarded-For` is an ordinary request header that any client can send. Only trust proxies that are really in front of the application and that set or overwrite the header themselves, otherwise a client chooses the address the audit trail records. Never use `true` unless the application is reachable only through the proxy; prefer the number of proxies or their addresses.
   - name: DEFAULT_LANGUAGE
     type: string
-    allowed: ca, de, en, es, fr, it, nl, pt, ja, zh
+    allowed: ca, de, en, es, fr, it, nl, pl, pt, ja, zh
     short: Default language
     required: false
     description: |

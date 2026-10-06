@@ -36,7 +36,7 @@ Website PR:
 
 - [ ] Branch is named `<type>/<description>` and the title is a Conventional Commit that reads well as a changelog line
 - [ ] `CHANGELOG.md` is NOT edited - it is generated from the title on release
-- [ ] UI strings added to **all** locale files (`en`, `de`, `fr`, `it`, `es`, `nl`, `ca`, `pt`, `ja`, `zh`)
+- [ ] UI strings added to **all** locale files (`en`, `de`, `fr`, `it`, `es`, `nl`, `ca`, `pt`, `ja`, `zh`, `pl`)
 - [ ] New page has a router entry with a `beforeEnter` guard, and a matching sidebar `permission:`
 - [ ] New database column is in **both** the schema patch and `create_schema_and_tables.sql`, plus `SCHEMA_MANIFEST`
 - [ ] A new or changed table or column that holds configuration is covered by the config seed (`server/src/lib/seed-schema.js`, `seed.js`, `seed.md` in ansibleforms/website) - or the PR says why not
