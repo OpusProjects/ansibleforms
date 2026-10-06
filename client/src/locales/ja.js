@@ -5,6 +5,9 @@ export default {
     always: '常に',
   },
   nav: {
+    // the lock on the Designer link while someone holds the designer, in its tooltip
+    designerLockedByMe: 'デザイナーはあなたがロックしています',
+    designerLockedBy: 'デザイナーは {user} がロックしています',
     forms: 'フォーム',
     jobs: 'ジョブ',
     settings: '設定',

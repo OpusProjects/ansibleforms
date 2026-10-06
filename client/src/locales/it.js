@@ -5,6 +5,9 @@ export default {
     always: 'sempre',
   },
   nav: {
+    // the lock on the Designer link while someone holds the designer, in its tooltip
+    designerLockedByMe: 'Il designer è bloccato da te',
+    designerLockedBy: 'Il designer è bloccato da {user}',
     forms: 'Moduli',
     jobs: 'Job',
     settings: 'Impostazioni',

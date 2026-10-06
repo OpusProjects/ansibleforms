@@ -2,6 +2,7 @@
 import { ref, onMounted, onBeforeUnmount, computed, nextTick } from 'vue';
 import Form from '@/lib/Form';
 import Lock from '@/lib/Lock';
+import { useAppStore } from '@/stores/app';
 import Backup from '@/lib/Backup';
 import Profile from '@/lib/Profile';
 import YAML from 'yaml';
@@ -170,6 +171,7 @@ function editorFormat() {
 
 const route = useRoute();
 const router = useRouter();
+const store = useAppStore();
 
 const treeWidthPct = ref(25);
 function startResize(e) {
@@ -3358,6 +3360,8 @@ async function loadLock() {
   try {
     lock.value = await Lock.get();
     lockError.value = '';
+    // the header's Designer link shows the lock too : keep it in step with this poll
+    store.designerLock = lock.value;
   } catch (err) {
     if (err?.response?.status === 403 && err?.response?.data?.error) {
       lockError.value = err.response.data.error;

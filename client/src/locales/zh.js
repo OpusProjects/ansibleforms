@@ -5,6 +5,9 @@ export default {
     always: '始终',
   },
   nav: {
+    // the lock on the Designer link while someone holds the designer, in its tooltip
+    designerLockedByMe: '设计器已由您锁定',
+    designerLockedBy: '设计器已由 {user} 锁定',
     forms: '表单',
     jobs: '作业',
     settings: '设置',
