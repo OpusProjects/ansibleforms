@@ -10,6 +10,7 @@ import cors from "cors";
 import helmet from "helmet";
 import swaggerUi from "swagger-ui-express";
 import { jsonBody, urlencodedBody } from "./lib/bodyParsers.js";
+import { applyTrustProxy } from "./lib/trustProxy.js";
 import passport from "passport";
 
 // App configuration and utilities
@@ -79,6 +80,12 @@ const load = async (app) => {
   await init({ boot: true })
   await auth_azuread.initialize(); // we wait for the azuread to be ready
   await auth_oidc.initialize(); // we wait for the oidc to be ready
+
+  // which address req.ip - and so every audit row - names : the connection's peer unless
+  // TRUST_PROXY says which reverse proxies may report the client in X-Forwarded-For.
+  // Set on this app, not on the one index.js wraps it in for BASE_URL : req.ip asks the app
+  // handling the request, and with a base url that is still this one (see lib/trustProxy.js)
+  applyTrustProxy(app);
 
   // security headers with helmet
   app.use(helmet({

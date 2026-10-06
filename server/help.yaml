@@ -143,6 +143,24 @@
       Host the whole application (GUI, REST API and Swagger interface) under a URL subpath, typically behind a reverse proxy.
       For example with `BASE_URL=/ansibleforms`, the application is served under `https://host/ansibleforms/`.
       Note : when using an OAuth2 identity provider (Entra ID / OIDC), make sure the instance url in the provider settings includes the subpath, so the generated redirect uri matches.
+  - name: TRUST_PROXY
+    version: 7.4.0
+    type: string
+    allowed: 0, a number of proxies, true, or a comma-separated list of proxy addresses and CIDR ranges
+    short: Trusted reverse proxies
+    hint: Which reverse proxies may report the client address, so the audit trail records the client and not the proxy.
+    required: false
+    default: 0
+    description: |
+      Behind a reverse proxy (nginx, traefik, a kubernetes ingress, a load balancer) every connection comes from the proxy, so without this setting the audit trail records the proxy's address for every action.
+      Set it to tell the application which proxies it may believe when they report the real client address in the `X-Forwarded-For` header. It is passed to the Express `trust proxy` setting:
+
+      - `0` (default) : trust no proxy, the address of the connection is recorded
+      - a number, for example `1` : trust that many proxies in front of the application (1 = a single reverse proxy)
+      - a comma-separated list of proxy addresses and CIDR ranges, for example `10.0.0.5,172.16.0.0/12`, or the presets `loopback`, `linklocal` and `uniquelocal`
+      - `true` : trust every hop, the left-most `X-Forwarded-For` address is recorded
+
+      **Security:** `X-Forwarded-For` is an ordinary request header that any client can send. Only trust proxies that are really in front of the application and that set or overwrite the header themselves, otherwise a client chooses the address the audit trail records. Never use `true` unless the application is reachable only through the proxy; prefer the number of proxies or their addresses.
   - name: DEFAULT_LANGUAGE
     type: string
     allowed: ca, de, en, es, fr, it, nl, pt, ja, zh

@@ -9,6 +9,7 @@ import logger, { setLogLevel, setLogColor, rebuildSyslogTransport, rebuildFileTr
 import { setDefaultLocale } from './i18n.js';
 import { applySecureContext } from './httpsContext.js';
 import { rebuildBodyParsers } from './bodyParsers.js';
+import { applyTrustProxy, compileTrustProxy } from './trustProxy.js';
 import authConfig from '../../config/auth.config.js';
 import logConfig from '../../config/log.config.js';
 import ansibleConfig from '../../config/ansible.config.js';
@@ -162,6 +163,10 @@ const LIVE_CUSTOM = {
   // body-parser bakes the limit in at creation, so the pair is rebuilt behind the stable
   // middlewares app.js installed - no per-request cost, no restart
   API_BODY_LIMIT_MB: (v) => { appConfig.apiBodyLimitMb = parseInt(v, 10) || 50; return rebuildBodyParsers(); },
+  // express compiles 'trust proxy' when it is set and reads the compiled function per
+  // request, so setting it again on the running app is enough. Reads process.env, which
+  // applyLive has already updated. Returns false for a value it refused.
+  TRUST_PROXY: () => applyTrustProxy(),
   // mysql2 fixes connectionLimit at creation, so a new size means a new pool. Safe because a
   // transaction holds its own connection - see MySql.resizePool.
   DB_POOL_SIZE: (v) => mysql.resizePool(v),
@@ -280,6 +285,15 @@ export function validate(name, value, doc) {
   }
   if (name === 'LAUNCH_VALIDATION' && v !== '' && !['off', 'log', 'enforce'].includes(v.trim().toLowerCase())) {
     return 'LAUNCH_VALIDATION must be off, log or enforce';
+  }
+  // refused here rather than at the next start : an address express cannot parse would
+  // otherwise only be logged, and the audit trail would quietly keep naming the proxy
+  if (name === 'TRUST_PROXY' && v !== '') {
+    try {
+      compileTrustProxy(v);
+    } catch (e) {
+      return `TRUST_PROXY must be a number of proxies, true, false or a comma-separated list of addresses and CIDR ranges : ${e.message}`;
+    }
   }
   if (v.length > 4096) return `${name} is too long`;
   // A value documented as a regular expression is COMPILED by its consumer, and both of
