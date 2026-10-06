@@ -211,7 +211,7 @@
     default: "%PERSISTENT_FOLDER%/config.yaml"
     description: | 
       The config.yaml file contains application configuration (categories, roles, constants).  
-      This replaces the deprecated config.yaml file. Forms should now be stored in the forms/ folder.
+      Forms are not in this file : they are stored in the forms folder (FORMS_FOLDER_PATH).
   - name: CONFIG_SEED_PATH
     version: 6.3.0
     type: string
@@ -287,7 +287,7 @@
     type: string
     allowed: a valid directory path
     short: Backup path for form backups
-    default: "%PERSISTENT_FOLDER%/form_backups"
+    default: "%PERSISTENT_FOLDER%/forms_backups"
     description: | 
       When backups are made, they end up in this path    
   - name: OLD_BACKUP_DAYS
@@ -417,7 +417,7 @@
     hint: Hosts and CIDR ranges that REST expressions are allowed to reach.
     description: |
       Comma-separated list of hostnames and/or CIDR ranges that REST helper functions
-      (`fn.fnRestBasic`, `fn.fnRestAdvanced`, `fn.fnRestJwt`, `fn.fnRestNtlm`) are allowed to call.
+      (`fn.fnRestBasic`, `fn.fnRestAdvanced`, `fn.fnRestJwt`, `fn.fnRestJwtSecure`) are allowed to call.
 
       When set, **only** these destinations are allowed; everything else is blocked.
       When unset, no allow-list is applied (default behaviour, all hosts allowed).
@@ -438,7 +438,7 @@
     hint: Hosts and CIDR ranges that REST expressions may never reach.
     description: |
       Comma-separated list of hostnames and/or CIDR ranges that REST helper functions
-      (`fn.fnRestBasic`, `fn.fnRestAdvanced`, `fn.fnRestJwt`, `fn.fnRestNtlm`) must never call.
+      (`fn.fnRestBasic`, `fn.fnRestAdvanced`, `fn.fnRestJwt`, `fn.fnRestJwtSecure`) must never call.
 
       Wins over `REST_ALLOWED_HOSTS`. Useful to lock down dangerous targets like cloud
       metadata services or your internal admin UIs:
@@ -744,7 +744,7 @@
       description: Info message, just saying, nothing fancy
     - name: debug
       description: Debug message, if you really want to know more details
-    default: debug    
+    default: notice
     short: Console log level
     description: | 
       When you run ansibleforms, by default the application also logs to the console.  
@@ -763,7 +763,8 @@
     allowed: a valid IP or FQDN
     short: Syslog host
     version: 3.0.1
-    description: Setting the syslog settings, enables the logging to a syslog server
+    default: ""
+    description: Setting the syslog host enables the logging to a syslog server. Without it, nothing is sent to syslog.
   - name: LOG_SYSLOG_LEVEL
     type: string
     allowed: emerg, alert, crit, error, warning, notice, info, debug
@@ -843,7 +844,7 @@
     type: string
     allowed: free text
     short: App name
-    default: Ansible Forms
+    default: AnsibleForms
     version: 3.0.1
     description: The name of the application    
   - name: LOG_COLOR_ERROR
@@ -1066,13 +1067,13 @@
       Both used to inherit the generic 60 second command timeout, which no real database can honour.
       Raise it if a large database is cut short; a restore that is killed part way leaves the database
       partially replayed, because the dump drops and recreates each table in turn.
-- name: config.yml
+- name: config.yaml
   icon: fab,wpforms
   link: forms
   itemName: attribute
   description: |
     Ansible Forms reads the forms configuration from the main `config.yaml` file.   
-    The config.yaml file contains the `categories`, `roles`, `constants` and `forms`.  You can choose to put all the forms in the single config.yaml file, or, to make editing and source control easier, you can split the forms up and put then in separate files in the `forms` subdirectory.  Ansible Forms will merge them together.  Below are the 4 main attributes of the config.yaml file.
+    The config.yaml file contains the `categories`, `roles` and `constants`.  The forms themselves are not in it : each form lives in a file of its own in the `forms` folder (`FORMS_FOLDER_PATH`), or in a forms repository.  Below are the 3 main attributes of the config.yaml file.
   items:
   - name: categories
     type: array
@@ -1115,8 +1116,10 @@
       - showDesigner: The user can see the designer
       - showSettings: The user can see the settings page
       - showDebugButtons: The user can see the debug buttons on a form
-      - showExtraVars: The user can see the extravars on a form
+      - showExtravars: The user can see the extravars on a form
       - showLogs: The user can see the logs page
+      - showJobs: The user can see the jobs page. Default true.
+      - showArtifacts: The user can see the artifacts an AWX job returns. Default true.
       - extendedTokenExpiration: The user can request a token with a longer expiration time (for coding api purposes for example)  
       - showAllJobLogs: The user can see all job logs (not only his own) (Added in 5.0.9)
       - allowLogin: The user can login.
@@ -1179,50 +1182,6 @@
           VCENTER:
             fqdn: vcenter.demo.local  # reference it later as $(VCENTER.fqdn)
             ip: 172.16.0.2
-  - name: forms
-    type: array
-    allowed: valid form object
-    objectLink: forms/form
-    docsObjectLink: "#form-object"
-    moreExamplesLink: forms/form
-    short: Forms
-    description: | 
-      The forms are the core of Ansible Forms and describe all the nice forms.
-    examples: 
-    - name: Ansible Core Form
-      code: |
-        forms:
-          - name: Create a vm
-            roles:                                         # reference to roles defined earlier
-            - vmware
-            description: Create a virtual machine
-            help: |
-              This Form creates a virtual machine.  it will connect to `vcenter`.  This help is Markdown
-              so you can use **markdown** markup to highlight __certain words__.
-            showHelp: true                                 # show help on load
-            allowRelaunch: true                            # allow job relaunch for this form (default: true)
-            icon: computer                                 # a font awesome icon
-            categories:                                    # reference to categories defined earlier
-            - Demo
-            - Vmware/Linux                                 # Add to a subcategory using the `/` separator
-            tileClass: bg-success-subtle                   # a bootstrap background color style (https://getbootstrap.com/)
-            playbook: playbook_vm.yml                      # playbook to launch (only if type = ansible)
-            inventory: inventory.yml                       # optional ansible inventory file
-            check: false                                   # run in checkmode or not
-            diff: false                                    # show differences
-            verbose: false                                 # verbose output
-            keepExtravars: false                           # keep extravars json file
-            tags: vm,create                                # optional ansible tags (comma separated)
-            type: ansible                                  # type is awx or ansible
-            onSubmit:                                      # event handler on form submit
-              - clear: 0                                   # clear form after 0 seconds
-              - hide: 1                                    # hide form after 1 second
-            onFinish:                                      # event handler on job finished
-              - show: 2                                    # show the form after 2 seconds
-            fieldGroupClasses:                             # give fieldgroups a custom background
-              groupname1: bg-info-subtle
-              groupname2: bg-success-subtle    
-            fields:                                        # list of field objects 
   help:
     - name: Category
       icon: fas,folder-tree
@@ -1313,8 +1272,10 @@
           - showDesigner: The user can see the designer
           - showSettings: The user can see the settings page
           - showDebugButtons: The user can see the debug buttons on a form
-          - showExtraVars: The user can see the extravars on a form
+          - showExtravars: The user can see the extravars on a form
           - showLogs: The user can see the logs page
+          - showJobs: The user can see the jobs page. Default true.
+          - showArtifacts: The user can see the artifacts an AWX job returns. Default true.
           - extendedTokenExpiration: The user can request a token with a longer expiration time (for coding api purposes for example)  
           - showAllJobLogs: The user can see all job logs (not only his own) (Added in 5.0.9)
           - allowLogin: The user can login.
@@ -1675,37 +1636,38 @@
           examples:
           - name: Ansible Core Form
             code: |
-              forms:
-                - name: Create a vm
-                  roles:                                         # reference to roles defined earlier
-                  - vmware
-                  description: Create a virtual machine
-                  help: |
-                    This Form creates a virtual machine.  it will connect to `vcenter`.  This help is Markdown
-                    so you can use **markdown** markup to highlight __certain words__.
-                  showHelp: true                                 # show help on load
-                  icon: computer                                 # a font awesome icon
-                  categories:                                    # reference to categories defined earlier
-                  - Demo
-                  - Vmware/Linux                                 # Add to a subcategory using the `/` separator
-                  tileClass: bg-success-subtle                   # a bootstrap background color style (https://getbootstrap.com/)
-                  playbook: playbook_vm.yml                      # playbook to launch (only if type = ansible)
-                  inventory: inventory.yml                       # optional ansible inventory file
-                  check: false                                   # run in checkmode or not
-                  diff: false                                    # show differences
-                  verbose: false                                 # verbose output
-                  keepExtravars: false                           # keep extravars json file                  
-                  tags: vm,create                                # optional ansible tags (comma separated)
-                  type: ansible                                  # type is awx or ansible
-                  onSubmit:                                      # event handler on form submit
-                    - clear: 0                                   # clear form after 0 seconds
-                    - hide: 1                                    # hide form after 1 second
-                  onFinish:                                      # event handler on job finished
-                    - show: 2                                    # show the form after 2 seconds
-                  fieldGroupClasses:                             # give fieldgroups a custom background
-                    groupname1: bg-info-subtle
-                    groupname2: bg-success-subtle    
-                  fields:                                        # list of field objects 
+              - name: Create a vm
+                roles:                                         # reference to roles defined earlier
+                - vmware
+                description: Create a virtual machine
+                help: |
+                  This Form creates a virtual machine.  it will connect to `vcenter`.  This help is Markdown
+                  so you can use **markdown** markup to highlight __certain words__.
+                showHelp: true                                 # show help on load
+                icon: computer                                 # a font awesome icon
+                categories:                                    # reference to categories defined earlier
+                - Demo
+                - Vmware/Linux                                 # Add to a subcategory using the `/` separator
+                tileClass: bg-success-subtle                   # a bootstrap background color style (https://getbootstrap.com/)
+                playbook: playbook_vm.yml                      # playbook to launch (only if type = ansible)
+                inventory: inventory.yml                       # optional ansible inventory file
+                check: false                                   # run in checkmode or not
+                diff: false                                    # show differences
+                verbose: false                                 # verbose output
+                keepExtravars: false                           # keep extravars json file                  
+                tags: vm,create                                # optional ansible tags (comma separated)
+                type: ansible                                  # type is awx or ansible
+                onSubmit:                                      # event handler on form submit
+                  - clear: 0                                   # clear form after 0 seconds
+                  - hide: 1                                    # hide form after 1 second
+                onFinish:                                      # event handler on job finished
+                  - show: 2                                    # show the form after 2 seconds
+                fieldGroupClasses:                             # give fieldgroups a custom background
+                  groupname1: bg-info-subtle
+                  groupname2: bg-success-subtle    
+                fields:                                        # list of field objects
+                  - name: vm_name
+                    type: text
         - name: awx
           description: |
             Targets an Awx Template.  
@@ -1743,7 +1705,9 @@
                 fieldGroupClasses:                             # give fieldgroups a custom background
                   groupname1: bg-info-subtle
                   groupname2: bg-success-subtle    
-                fields:                                        # list of field objects      
+                fields:                                        # list of field objects
+                  - name: vm_name
+                    type: text
         - name: multistep
           description: |
             Executes multiple jobs sequentially.  
@@ -1777,7 +1741,9 @@
                 fieldGroupClasses:                             # give fieldgroups a custom background
                   groupname1: bg-info-subtle
                   groupname2: bg-success-subtle    
-                fields:                                        # list of field objects      
+                fields:                                        # list of field objects
+                  - name: vm_name
+                    type: text
         - name: subform
           description: |
             A reusable form fragment used as the per-row editor of a `list` field, or as the single-object editor of a `yaml` field with the `subform` property.  
@@ -1786,32 +1752,31 @@
           examples:
           - name: Address subform
             code: |
-              forms:
-                - name: Address
-                  type: subform
-                  fields:
-                    - name: street
-                      type: text
-                      label: Street
-                      required: true
-                    - name: city
-                      type: text
-                      label: City
-                      required: true
-                    - name: country
-                      type: text
-                      label: Country
-                      required: true
-                - name: My Main Form
-                  type: ansible
-                  playbook: site.yml
-                  roles:
-                    - Public
-                  fields:
-                    - name: addresses
-                      type: list
-                      label: Addresses
-                      subform: Address
+              - name: Address
+                type: subform
+                fields:
+                  - name: street
+                    type: text
+                    label: Street
+                    required: true
+                  - name: city
+                    type: text
+                    label: City
+                    required: true
+                  - name: country
+                    type: text
+                    label: Country
+                    required: true
+              - name: My Main Form
+                type: ansible
+                playbook: site.yml
+                roles:
+                  - Public
+                fields:
+                  - name: addresses
+                    type: list
+                    label: Addresses
+                    subform: Address
         short: Form type
         description: |
           Our form eventually sends extravars to a target.  That target can be an ansible-playbook, an awx-template, a multistep (a sequence of playbooks/templates), or a `subform` (a reusable form fragment used as the per-row editor of a `list` field or the single-object editor of a `yaml` field).
@@ -1820,16 +1785,25 @@
           code: |
             name: Create vm
             type: awx
+            roles:
+              - public
+            fields: []
             template: Create VM       
         - name: Run Delete VM playbook
           code: |
             name: Delete vm
             type: ansible
-            template: delete_vm.yaml
+            roles:
+              - public
+            fields: []
+            playbook: delete_vm.yaml
         - name: Run multistep job
           code: |
             name: Trigger awx job
             type: multistep
+            roles:
+              - public
+            fields: []
             steps:
             - name: Create vm
               type: awx
@@ -1853,11 +1827,16 @@
           code: |
             name: Helloworld
             type: awx
+            roles:
+              - public
+            fields: []
             template: Helloworld
         - name: Use dynamic template name
           code: |
             name: Foobar
             type: awx
+            roles:
+              - public
             template: HelloWorld
             fields:
               - name: __template__
@@ -1879,11 +1858,16 @@
           code: |
             name: Foobar
             type: ansible
+            roles:
+              - public
+            fields: []
             playbook: foobar.yaml  
         - name: Use dynamic playbook name
           code: |
             name: HelloWorld
             type: ansible
+            roles:
+              - public
             playbook: foobar.yaml
             fields:
               - name: __playbook__
@@ -1992,6 +1976,8 @@
           code: |
             name: Provision host
             type: ansible
+            roles:
+              - public
             playbook: provision.yml
             wizard:
               - subform: basics
@@ -2007,6 +1993,8 @@
           code: |
             name: Provision and verify host
             type: multistep
+            roles:
+              - public
             wizard:
               - subform: basics
                 title: Basics
@@ -2242,6 +2230,9 @@
             code: |
               - name: Create VM
                 type: ansible
+                roles:
+                  - public
+                fields: []
                 playbook: vm.yml
                 launchValidation: enforce
       - name: enableForChat
@@ -2265,6 +2256,9 @@
             code: |
               - name: Create a snapshot
                 type: ansible
+                roles:
+                  - public
+                fields: []
                 playbook: snapshot.yml
                 enableForChat: true
       - name: order
@@ -2499,7 +2493,7 @@
                 label: Your email
                 type: text
                 regex:
-                  expression: "^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$"
+                  expression: '^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$'
                   description: Please enter a valid email address
                 required: true
       help:
@@ -2542,12 +2536,18 @@
               code: |
                 name: Create vm
                 type: awx
+                roles:
+                  - public
+                fields: []
                 template: Create VM       
             - name: Run Ansible playbook
               code: |
                 name: Delete vm
                 type: ansible
-                template: delete_vm.yaml
+                roles:
+                  - public
+                fields: []
+                playbook: delete_vm.yaml
           - name: key
             type: string
             allowed: valid extravar reference
@@ -2561,6 +2561,8 @@
               code: |
                 name: Resize volume
                 type: multistep
+                roles:
+                  - public
                 steps:
                 - name: Create datastore
                   type: awx
@@ -2584,12 +2586,12 @@
                     model: vm.size
 
                 # the extravars of the above example will be somewhat like this :
-                datastore: 
-                    name: ds1
-                    size: 123
-                vm:        
-                    name: vm1
-                    size: 100
+                # datastore: 
+                #     name: ds1
+                #     size: 123
+                # vm:        
+                #     name: vm1
+                #     size: 100
 
                 # Step 1 will not receive the full set of extravars, due to the 'key: datastore'  
                 #        it will receive only 'name' (ds1) and 'size' (123) (the contents of key 'datastore')
@@ -2607,6 +2609,8 @@
               code: |
                 name: Create something
                 type: multistep
+                roles:
+                  - public
                 steps:
                 - name: Create
                   type: awx
@@ -2634,6 +2638,9 @@
               code: |
                 name: Resize volume
                 type: multistep
+                roles:
+                  - public
+                fields: []
                 steps:
                 - name: Send email
                   type: awx
@@ -2654,6 +2661,9 @@
               code: |
                 name: Resize volume
                 type: multistep
+                roles:
+                  - public
+                fields: []
                 steps:
                 - name: Load cmdb
                   type: awx
@@ -2793,6 +2803,8 @@
             code: |
               - name: Provision host
                 type: ansible
+                roles:
+                  - public
                 playbook: provision.yml
                 wizard:
                   - subform: basics
@@ -3119,6 +3131,8 @@
 
                     - name: Create customer
                       type: ansible
+                      roles:
+                        - public
                       playbook: customer.yaml
                       fields:
                         - name: name
@@ -3177,8 +3191,6 @@
                         - username
                         - email
                       expression: fn.fnRestBasic('get','https://api.example.com/users','','my_api_cred','')
-                      # add a refresh button (or auto-refresh, e.g. '30s')
-                      refresh: true
                 - name: Pre-populate a list from a database query
                   code: |
                     - name: servers
@@ -3705,6 +3717,25 @@
               
               **Since 6.0.3:** Supports placeholders for dynamic validation (e.g., `maxSize: "$(maxUploadSize)"`).
             with_types: file            
+          - name: accept
+            type: array
+            group: validation
+            allowed: File extensions or MIME types
+            with_types: file
+            short: File types the picker offers
+            description: |
+              The file types the file picker offers, as extensions (`.pdf`) or MIME types (`image/*`).  
+              It only filters the picker : a user can still choose another file. To refuse it, add a `regex` on the file name.
+            examples:
+            - name: Only pdf files
+              code: |
+                - name: report
+                  type: file
+                  accept:
+                    - .pdf
+                  regex:
+                    expression: 'pdf$'
+                    description: You can only upload pdf files
           - name: regex
             type: object
             group: validation
@@ -3719,19 +3750,19 @@
             - name: Validate email address
               code: |
                 regex:
-                  expression: "[a-z0-9]+@[a-z]+\.[a-z]{2,3}"
+                  expression: '[a-z0-9]+@[a-z]+\.[a-z]{2,3}'
                   description: Please type a valid email address
             - name: Strong password
               code: |
                 regex:
-                  expression: "(?=^.{8,}$)(?=.*\d)(?=.*[!@#$%^&*]+)(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$"
+                  expression: '(?=^.{8,}$)(?=.*\d)(?=.*[!@#$%^&*]+)(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$'
                   description: Must be complex (8 or longer ; uppercase ; lowercase ; numeric ; specials)
             - name: Only pdf files
               code: |
                 type: file
                 regex:
                   expression: "pdf$"
-                  descriptoin: You can only upload pdf files           
+                  description: You can only upload pdf files           
           - name: notIn
             type: object
             group: validation
@@ -3864,9 +3895,9 @@
                     type: number
                     model: disk[0].size
                   # the extravars of this example will be like this :
-                  disk:
-                  - name: mydisk
-                    size: 123
+                  # disk:
+                  # - name: mydisk
+                  #   size: 123
           - name: asCredential
             type: boolean
             default: false
@@ -3894,11 +3925,11 @@
                   # - inject credential details in extravars as 'vcenter_creds'
 
                   # the extravars will now contain something like this :
-                  vcenter_creds:
-                    user: admin
-                    password: T0pS3cr#t!
-                    host: vcenter1.domain.local
-                    port: 443
+                  # vcenter_creds:
+                  #   user: admin
+                  #   password: T0pS3cr#t!
+                  #   host: vcenter1.domain.local
+                  #   port: 443
           - name: outputObject
             type: boolean
             default: false
@@ -3947,23 +3978,25 @@
                 code: |
                   - name: numbers
                     type: enum
-                    expression: Array.from({length: 10}, (_, i) => i + 1)
+                    expression: "Array.from({length: 10}, (_, i) => i + 1)"
                     runLocal: true
               - name: Use the alias `local`
                 code: |
                   - name: uppercase
                     type: local
                     expression: "'test'.toUpperCase()"
-                    runLocal: true // this is default with type=local                  
-                    hide: true     // this is default with type=local
-                    output: false // this is default with type=local
+                    # with type local, these are the defaults :
+                    # runLocal: true
+                    # hide: true
+                    # output: false
               - name: Use the alias `local_out`
                 code: |
                   - name: uppercase
-                    type: local
+                    type: local_out
                     expression: "'test'.toUpperCase()"
-                    runLocal: true // this is default with type=local                  
-                    hide: true     // this is default with type=local
+                    # with type local_out, these are the defaults :
+                    # runLocal: true
+                    # hide: true
           - name: runLocal
             type: boolean
             group: data
@@ -4272,8 +4305,7 @@
                   query: SELECT name, id FROM users
                   columns:
                   - name
-                  placeholderColumn:
-                  - id
+                  placeholderColumn: id
                 - name: computername
                   type: expression
                   dbConfig: CMDB
@@ -4914,13 +4946,13 @@
         // - user : the ssh user
         // - host : the host
         // - command : the command to trigger by ssh
-        // - jq-expression : an optional jq-expression (https://jsplay.org)  
+        // - jq-expression : an optional jq-expression (https://jqplay.org)  
         //  
         // You must use 'known_hosts' and 'public-key' to setup non-interactive password-less authentication.
         // In the settings you can find the public-key and add your target-host to known_hosts
     - name: list files in a directory
       code: |
-        fn.fnLs('/tmp',{ resursive: true, regex: '.*\.log$', metadata: true })
+        fn.fnLs('/tmp',{ recursive: true, regex: '.*\.log$', metadata: true })
 
         // fn.fnLs(path,options)
         // - path : path to directory
@@ -4951,14 +4983,14 @@
 
         // fn.fnReadJsonFile(path,jq-expression)
         // - path : path to json file
-        // - jq-expression : an optional jq-expression (https://jsplay.org)
+        // - jq-expression : an optional jq-expression (https://jqplay.org)
     - name: read yaml file
       code: |
         fn.fnReadYamlFile('/tmp/file.yaml','.[].name')
 
         // fn.fnReadJsonFile(path,jq-expression)
         // - path : path to json file
-        // - jq-expression : an optional jq-expression (https://jsplay.org)
+        // - jq-expression : an optional jq-expression (https://jqplay.org)
     - name: rest api with basic authentication
       code: |
         fn.fnRestBasic(
@@ -4974,11 +5006,11 @@
         // output : a full json object coming from rest, json transformed with jq, result sorted and transformed by javascript.
 
         // fn.fnRestBasic(method,url,body,credentialname,jq-expression,sort-object)
-        // - method : get,post,put,patch,delete
+        // - method : get,post,put,delete
         // - url : url to restapi (can for example contain a placeholder like 'https://$(serverfield.fqdn)/api/'
         // - body : in case of post and put
         // - credential-name : it will lookup the credentials as you have saved in the gui
-        // - jq-expression : an optional jq-expression (https://jsplay.org)
+        // - jq-expression : an optional jq-expression (https://jqplay.org)
         // - sort object : a sort object to order the result
         // - hasBigInt : a boolean indicating if it should convert Int64 to string
     - name: rest api with token authentication
@@ -4996,11 +5028,11 @@
         // output : a full json object coming from rest, json transformed with jq, result sorted, first by age, then by name
 
         // fn.fnRestJwt(method,url,body,token,jq-expression,sort-object)
-        // - method : get,post,put,patch,delete
+        // - method : get,post,put,delete
         // - url : url to restapi (can for example contain a placeholder like 'https://$(serverfield.fqdn)/api/'
         // - body : in case of post and put
         // - token : it will be add as a Bearer Authorization header
-        // - jq-expression : an optional jq-expression (https://jsplay.org)
+        // - jq-expression : an optional jq-expression (https://jqplay.org)
         // - sort-object : a sort object to sort the result
         // - hasBigInt : a boolean indicating if it should convert Int64 to string
         // - tokenPrefix : a prefix, defaults to 'Bearer' (v5.0.0)
@@ -5019,11 +5051,11 @@
         // output : a full json object coming from rest, json transformed with jq, result sorted, first by age, then by name
 
         // fn.fnRestJwtSecure(method,url,body,token,jq-expression,sort-object)
-        // - method : get,post,put,patch,delete
+        // - method : get,post,put,delete
         // - url : url to restapi (can for example contain a placeholder like 'https://$(serverfield.fqdn)/api/'
         // - body : in case of post and put
         // - credential_name : Encrypted credential will be looked up.  The password will be the token.
-        // - jq-expression : an optional jq-expression (https://jsplay.org)
+        // - jq-expression : an optional jq-expression (https://jqplay.org)
         // - sort-object : a sort object to sort the result   
         // - hasBigInt : a boolean indicating if it should convert Int64 to string 
         // - tokenPrefix : a prefix, defaults to 'Bearer' (v5.0.0)
@@ -5043,11 +5075,11 @@
         // output : a full json object coming from rest, json transformed with jq, result sorted descending by name
 
         // fn.fnRestAdvanced(method,url,body,{myheader:'value'},jq-expression,sort-object)
-        // - method : get,post,put,patch,delete
+        // - method : get,post,put,delete
         // - url : url to restapi (can for example contain a placeholder like 'https://$(serverfield.fqdn)/api/'
         // - body : in case of post and put
         // - headers: an object of headers
-        // - jq-expression : an optional jq-expression (https://jsplay.org)
+        // - jq-expression : an optional jq-expression (https://jqplay.org)
         // - sort-object : a sorting object to order the results
         // - hasBigInt : a boolean indicating if it should convert Int64 to string
         // - raw : return data and response_headers  
@@ -5060,10 +5092,18 @@
       code: |
         fn.fnCredentials('credentialname_or_regex','fallback_credentialname_or_regex')
 
-        // Try to use `fnRestBasic` and `fnRestJwtSecured` if possible, this avoids passwords and tokens going over the network.
+        // Try to use `fnRestBasic` and `fnRestJwtSecure` if possible, this avoids passwords and tokens going over the network.
 
         // output : a credential object with all properties (username, password, host, port)
         // the exact name is tried first, then the name as a regex, then the fallback
+    - name: copy a value
+      code: |
+        fn.fnCopy($(other_field))
+
+        // output : the value, unchanged
+
+        // fn.fnCopy(input)
+        // - input : any value, for example the value of another field
     - name: sort an array
       code: |
         fn.fnSort(['a','b','z','q','c'],{'':{direction:'asc'}})
@@ -5088,14 +5128,14 @@
         {'':{direction:'desc'}} // sort a flat array descending      
     - name: run a json-query (jq) on an object
       code: |
-        fn.fnJq($(settings),'.mapping | keys',{name:{ignoreCase:true,direction:'desc'}})
+        fn.fnJq($(settings),'.mapping | keys')
 
-        // output : a full json object taken from another field called "settings", converted by jq, and sorted desc on property "name"
+        // output : a full json object taken from another field called "settings", converted by jq
 
-        // fn.fnJq(object, jq, sort-object)
+        // fn.fnJq(object, jq)
         // - object, for example read from rest or yaml file
-        // - jq-expression : an optional jq-expression (https://jsplay.org)
-        // - sort-object : a sorting object to order the results  
+        // - jq-expression : a jq-expression (https://jqplay.org)
+        // to sort the result, pass it to fn.fnSort
     - name: builtin jq functions
       description: |
         In all the data-fetching functions you have the option to add a json-query.  A powerfull language to manipulate a data object or array.  
@@ -5317,7 +5357,7 @@
         label: Select a datacenter
         default: __auto__         # default can be "__auto__" (first item) or "__all__" (all items) or "__none__" (no default)
         multiple: true
-        pctColumns
+        pctColumns:
         - capacity_pct
         outputObject: true
         required: true
@@ -5396,15 +5436,20 @@
       - name: vc_cred
         type: expression
         runLocal: true
+        asCredential: true
         expression: "'vcenter'"
       - name: ad_cred
         type: expression
         runLocal: true
+        asCredential: true
         expression: "'ad'"
 
       # Method 2 : using credentials form-property   
       name: myplaybook
       type: ansible
+      playbook: myplaybook.yaml
+      roles:
+        - public
       credentials:
         vc_cred: vcenter
         ad_cred: ad
