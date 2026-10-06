@@ -40,6 +40,10 @@ async function start(){
     logger.warning('[SECURITY] EXPRESSION_SANITIZER=legacy : server expressions use the 6.2.1 rules, which let any authenticated user run code on the server. Rewrite the expressions the log reports and go back to strict.');
   }
 
+  if (appConfig.encryptionSecretIsDefault) {
+    logger.warning('[SECURITY] ENCRYPTION_SECRET is not set. Stored passwords are encrypted with the default key, which is public in the source code. Set ENCRYPTION_SECRET before you store credentials : changing it later makes the existing ones unreadable.');
+  }
+
   if (authConfig.secretIsGenerated) {
     logger.warning('[SECURITY] JWT signing secret was auto-generated. All tokens will be invalidated on restart. Set the ACCESS_TOKEN_SECRET environment variable for persistent token signing.');
   }
