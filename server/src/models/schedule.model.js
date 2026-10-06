@@ -6,14 +6,102 @@ import yaml from 'yaml';
 import CrudModel from './crud.model.js';
 import mysql from './db.model.js';
 import cronService from '../services/cron.service.js';
+import Form from './form.model.js';
+import Errors from '../lib/errors.js';
 
 class Schedule extends CrudModel {
   static modelName = 'schedule';
 
   static async create(data) {
     logger.info(`Creating schedule ${data.name}`);
+    // `owner` is written by plan() alone. A request body that carries one is somebody
+    // choosing which user a schedule runs as - drop it, like the internal fields below.
+    delete data.owner
     return super.create(this.modelName, data);
   }
+
+  /**
+   * Plan a one-time run of a form : "Run later" for a user with allowPlannedJobs but
+   * without allowScheduledJobs.
+   *
+   * A schedule launches as the 'Schedule Service' user with the admin role, and its
+   * extra_vars are trusted as server-side configuration (reserved `__x__` keys are kept,
+   * no launch validation). That is right for allowScheduledJobs, which is an admin-level
+   * right, and exactly wrong for a planner : the form's role filter, the reserved-key
+   * strip and the `ansibleforms_user` a playbook asserts on would all be bypassed by
+   * waiting a minute. So a planned job is held to what launching the form right now
+   * would allow :
+   *   - one-time only, with a run_at ; no cron, nothing recurring ;
+   *   - only a form the user may run (Form.load with the user's roles), checked here ;
+   *   - verbose only with allowVerboseMode, as the launch controller checks it ;
+   *   - only the fields below are taken from the request - not status, state, output,
+   *     queue_id, and above all not owner ;
+   *   - `owner` records the user, and launch() runs the job AS that user, through the
+   *     same reserved-key strip and launch validation as a launch from the browser.
+   *
+   * @param {object} user the authenticated user (req.user.user)
+   * @param {object} data the request body
+   * @returns {Promise<number>} the id of the new schedule
+   * @throws {Errors.BadRequestError} no name or run_at, or extra_vars not a dictionary
+   * @throws {Errors.AccessDeniedError} no allowPlannedJobs, not one-time, a form the user may
+   *   not run, or verbose mode without allowVerboseMode
+   */
+  static async plan(user, data = {}) {
+    if (!user?.options?.allowPlannedJobs) {
+      throw new Errors.AccessDeniedError("You do not have permission to plan jobs.");
+    }
+    if (!data.one_time_run || data.cron) {
+      throw new Errors.AccessDeniedError("You can only plan a one-time run. Recurring schedules need the 'allowScheduledJobs' role option.");
+    }
+    if (!data.run_at) throw new Errors.BadRequestError("A planned job needs a run_at.");
+    if (!data.name) throw new Errors.BadRequestError("A planned job needs a name.");
+    const formName = data.form || '';
+    // the same role filter the launch applies. Form.load throws its own AccessDeniedError
+    // for a form that exists but is not this user's ; an unknown form comes back empty.
+    // Both answer the same, so planning does not reveal which forms exist.
+    const noAccess = new Errors.AccessDeniedError(`You do not have access to form '${formName}'`);
+    let formConfig;
+    try {
+      formConfig = await Form.load(user?.roles || [], formName);
+    } catch (err) {
+      if (err?.name === 'AccessDeniedError') throw noAccess;
+      throw err;
+    }
+    if (!formName || !formConfig?.forms?.length) throw noAccess;
+    let extravars;
+    try {
+      extravars = yaml.parse(data.extra_vars || '{}');
+    } catch (e) {
+      throw new Errors.BadRequestError(`Extra vars is not valid yaml : ${e.message}`);
+    }
+    if (extravars === null || extravars === undefined) extravars = {};
+    if (typeof extravars !== 'object' || Array.isArray(extravars)) {
+      throw new Errors.BadRequestError("Extra vars is not a valid dictionary.");
+    }
+    if (extravars.__verbose__ && !user?.options?.allowVerboseMode) {
+      throw new Errors.AccessDeniedError("You do not have permission to run jobs in verbose mode.");
+    }
+    // the identity the job will run as : what the token says now. No secrets in it.
+    const owner = {
+      id: user.id,
+      username: user.username,
+      type: user.type,
+      email: user.email,
+      groups: user.groups || [],
+      roles: user.roles || [],
+      options: user.options || {},
+    };
+    logger.info(`Planning a one-time run of form '${formName}' for ${user.username} at ${data.run_at}`);
+    return super.create(this.modelName, {
+      name: data.name,
+      form: formName,
+      one_time_run: true,
+      run_at: data.run_at,
+      extra_vars: data.extra_vars || '',
+      owner: JSON.stringify(owner),
+    });
+  }
+
   static async update(data, id) {
     // drop unwanted fields from update, used internal only
     // last_run, output, state, status, queue_id
@@ -21,6 +109,9 @@ class Schedule extends CrudModel {
     delete data.output
     delete data.state
     delete data.queue_id
+    // nobody re-assigns who a planned job runs as ; clearing it would turn it into an
+    // admin-level schedule
+    delete data.owner
     logger.info(`Updating schedule ${(data.name) ? data.name : id}`);
     return super.update(this.modelName, data, id);
   }
@@ -87,12 +178,25 @@ class Schedule extends CrudModel {
       if (typeof extravars !== 'object' || extravars === null || Array.isArray(extravars)) {
         throw new Error("Extra vars is not a valid dictionary.");
       }
-      user.id = 0;
-      user.username = 'Schedule Service';
-      user.type = 'schedule';
-      user.groups = [];
-      user.roles = ['admin'];
+      // A planned job (Schedule.plan) runs as the user who planned it ; anything else is
+      // an admin-level schedule and runs as the Schedule Service. A planned job whose
+      // owner cannot be read FAILS - falling back to the admin user would hand it exactly
+      // the rights plan() exists to keep from it.
+      const planned = !!schedule.owner;
+      if (planned) {
+        user = JSON.parse(schedule.owner);
+        if (!user || typeof user !== 'object' || !user.username) {
+          throw new Error("The user this job was planned for cannot be read.");
+        }
+      } else {
+        user.id = 0;
+        user.username = 'Schedule Service';
+        user.type = 'schedule';
+        user.groups = [];
+        user.roles = ['admin'];
+      }
       extravars.schedule = { ...schedule };
+      delete extravars.schedule.owner;
       delete extravars.schedule.output;
       delete extravars.schedule.status;
       delete extravars.schedule.state;
@@ -103,7 +207,12 @@ class Schedule extends CrudModel {
       // below was unreachable and a schedule whose playbook failed still read 'success'.
       // Report what is actually known: the job was STARTED, and name it so the operator
       // can follow it. The job's own status is the verdict on the run.
-      const launched = await Job.launch({ form, user, extravars });
+      //
+      // fromClient for a planned job : its extra_vars came from a request body, so they get
+      // the reserved-key strip and launch validation a launch from the browser gets.
+      // Job.launch loads the form with the owner's roles, so a role taken off the form
+      // since the planning is honoured too.
+      const launched = await Job.launch({ form, user, extravars, fromClient: planned });
       if (launched?.id) {
         output = `The schedule started job ${launched.id}.\nThis says the job was launched, not that it succeeded - open that job to see how it ended.`;
       } else {

@@ -197,7 +197,8 @@ const load = async (app) => {
   app.use(`/api/v2/secretstore`, cors(), authobj, Middleware.checkSettingsMiddleware, secretStoreRoutesv2);
   app.use(`/api/v2/awx`, cors(), authobj, Middleware.checkSettingsMiddleware, awxRoutesv2);
   app.use(`/api/v2/knownhosts`, cors(), authobj, Middleware.checkSettingsMiddleware, knownhostsRoutes);
-  app.use(`/api/v2/schedule`, cors(), authobj, Middleware.checkScheduledJobsMiddleware, scheduleRoutes);
+  // allowScheduledJobs for everything ; allowPlannedJobs only for creating a one-time run
+  app.use(`/api/v2/schedule`, cors(), authobj, Middleware.checkScheduleOrPlannedJobsMiddleware, scheduleRoutes);
   app.use(`/api/v2/stored-jobs`, cors(), authobj, Middleware.checkStoredJobsMiddleware, storedJobsRoutes);
 
   // backup/restore/list routes

@@ -12,5 +12,7 @@ CREATE TABLE `schedule` (
   `queue_id` INT DEFAULT 0,  
   `extra_vars` LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `output` LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  -- the user a planned job ("Run later") runs as ; NULL for an admin-level schedule
+  `owner` LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   UNIQUE KEY `uk_schedule_natural_key` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
