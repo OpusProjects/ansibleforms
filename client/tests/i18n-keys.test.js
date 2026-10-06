@@ -14,7 +14,7 @@ import { fileURLToPath } from 'url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(here, '..');
 
-const LANGS = ['en', 'de', 'fr', 'it', 'es', 'nl', 'ca'];
+const LANGS = ['en', 'de', 'fr', 'it', 'es', 'nl', 'ca', 'pt'];
 
 function flatten(obj, prefix = '', out = {}) {
   for (const [k, v] of Object.entries(obj)) {
@@ -68,7 +68,7 @@ describe('every translated key used in the source exists', () => {
     expect(missing).toEqual([]);
   });
 
-  it('and every en key exists in the other five locales', () => {
+  it('and every en key exists in all the other locales', () => {
     const gaps = [];
     for (const key of Object.keys(maps.en)) {
       for (const lang of LANGS.slice(1)) {

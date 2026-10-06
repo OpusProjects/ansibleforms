@@ -97,7 +97,7 @@ suite needs no database — it runs against the stubs in `server/tests/__mocks__
 ## Things that are easy to get wrong
 
 **Every locale file, always.** Every UI string goes through `t('key')`, and
-`client/src/locales/` holds `en`, `de`, `fr`, `it`, `es`, `nl` and `ca`. They are at exact
+`client/src/locales/` holds `en`, `de`, `fr`, `it`, `es`, `nl`, `ca` and `pt`. They are at exact
 parity: same keys, same `{placeholder}` tokens. Adding a string to one and not the others
 ships a missing translation. Server strings live in `server/src/locales/`, same set.
 

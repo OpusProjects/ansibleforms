@@ -39,6 +39,13 @@ const STRIPES = {
       <path d="M30,0 V40 M0,20 H60" stroke="#ffffff" stroke-width="12" />
       <path d="M30,0 V40 M0,20 H60" stroke="#c8102e" stroke-width="7" />
     </g>
+    <!-- portugal: green and red split at 2/5, with a simplified sphere and shield on the boundary -->
+    <g v-else-if="code === 'pt'">
+      <rect width="60" height="40" fill="#ff0000" />
+      <rect width="24" height="40" fill="#006600" />
+      <circle cx="24" cy="20" r="8" fill="none" stroke="#ffcc00" stroke-width="2.5" />
+      <rect x="21" y="16.5" width="6" height="7" rx="1" fill="#ffffff" stroke="#ff0000" stroke-width="1.2" />
+    </g>
     <!-- striped flags -->
     <g v-else-if="STRIPES[code]">
       <template v-for="(color, i) in STRIPES[code][1]" :key="i">
