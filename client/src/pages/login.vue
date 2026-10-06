@@ -41,10 +41,8 @@ const user = ref({
 const currentTheme = ref(Theme.load());
 const loading = ref(false);
 const azureAdEnabled = ref(false);
-const azureGroupfilter = ref('');
 const azureGraphUrl = ref('');
 const oidcEnabled = ref(false);
-const oidcGroupfilter = ref('');
 const oidcIssuer = ref('');
 
 // validation
@@ -78,19 +76,10 @@ function getGroupsAndLogin(token, url, type = 'azuread') {
   }
 }
 async function tokenLogin(token, allGroups, type = 'azuread') {
-  var validRegex = true;
-  var regex;
-  const groupfilter = type === 'azuread' ? azureGroupfilter.value : oidcGroupfilter.value;
-  try {
-    regex = new RegExp(groupfilter, 'g');
-  } catch (e) {
-    console.error('Identity Provider Group filter is not a valid regular expression');
-    validRegex = false;
-  }
-  if (validRegex && groupfilter && type !== 'azuread') {
-    // azuread : filtered by the server
-    allGroups = allGroups.filter((x) => x.match(regex));
-  }
+  // No group filter here : the server applies the provider's group filter to the groups
+  // it trusts (the claim in the handoff token), for Entra ID and OIDC alike. Filtering
+  // in the browser only ever touched the posted list, which the server ignores whenever
+  // the token carries a groups claim.
   const loginProvider = type === 'azuread' ? 'azureadoauth2' : 'oidc';
 
   try {
@@ -105,11 +94,9 @@ async function getSettings(token) {
     const result = await axios.get(`/api/v2/auth/settings`);
 
     azureAdEnabled.value = !!result.data.azureAdEnabled;
-    azureGroupfilter.value = result.data.azureGroupfilter;
     azureGraphUrl.value = result.data.azureGraphUrl;
 
     oidcEnabled.value = !!result.data.oidcEnabled;
-    oidcGroupfilter.value = result.data.oidcGroupfilter;
     oidcIssuer.value = result.data.oidcIssuer;
 
     if (token && azureAdEnabled.value) {
