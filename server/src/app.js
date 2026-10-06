@@ -187,8 +187,8 @@ const load = async (app) => {
   app.use(`/api/v2/settings`, cors(), authobj, Middleware.checkSettingsMiddleware, settingsRoutesv2);
   app.use(`/api/v2/health`, cors(), authobj, Middleware.checkSettingsMiddleware, healthRoutesv2);
   app.use(`/api/v2/audit`, cors(), authobj, Middleware.checkSettingsMiddleware, auditRoutesv2);
-  // custom logo ; reading is for all authenticated users (navbar), changing it is guarded in the routes
-  app.use(`/api/v2/logo`, cors(), authobj, logoRoutesv2);
+  // custom logo ; reading is public (header and login page), changing it is guarded in the routes
+  app.use(`/api/v2/logo`, cors(), logoRoutesv2);
   app.use(`/api/v2/sshkey`, cors(), authobj, Middleware.checkSettingsMiddleware, sshRoutesv2);
   app.use(`/api/v2/ldap`, cors(), authobj, Middleware.checkSettingsMiddleware, ldapRoutes);
   app.use(`/api/v2/chatsettings`, cors(), authobj, Middleware.checkSettingsMiddleware, chatSettingsRoutes);
