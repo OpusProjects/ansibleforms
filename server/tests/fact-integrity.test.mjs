@@ -285,7 +285,7 @@ describe("the default runner flag is cleared only once its row is stored", () =>
   // `name` carries a unique key - so creating a connection with a name that already
   // exists cleared the flag everywhere and then died with ER_DUP_ENTRY. Measured against
   // the live database: no record created AND zero rows holding the default, so every job
-  // targeting the default AAP failed until somebody set it again by hand. Since 7.2 AAP
+  // targeting the default AAP failed until somebody set it again by hand. Since 7.3 AAP
   // connections are runners (runner.model.js), which keep the same rule, per type.
   const src = readFileSync(path.join(here, "../src/models/runner.model.js"), "utf8");
 

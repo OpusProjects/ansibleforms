@@ -32,11 +32,11 @@ let schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_th
 vi.mock("../src/models/secretStore.model.js", () => ({
   default: { findAll: async () => storeState.stores },
 }));
-// the runners : one reachable RTE by default, the healthy case since 7.2
+// the runners : one reachable RTE by default, the healthy case since 7.3
 vi.mock("../src/models/runner.model.js", () => ({
   default: {
     findAll: async () => runnerState.runners,
-    check: async (runner) => { if (runnerState.error) throw new Error(runnerState.error); return { version: "7.2.0", name: runner.name }; },
+    check: async (runner) => { if (runnerState.error) throw new Error(runnerState.error); return { version: "7.3.0", name: runner.name }; },
   },
 }));
 vi.mock("../src/secrets/providers/index.js", () => ({
@@ -322,11 +322,11 @@ describe("health reports problems, not just ok", () => {
     };
     const r = await Health.check();
     assert.equal(statusOf(r, "database"), "error");
-    // every other check still reported (16 : runners joined in 7.2)
+    // every other check still reported (16 : runners joined in 7.3)
     assert.equal(r.checks.length, 16);
   });
 
-  // Since 7.2 jobs run on runners : none at all means no form can run a job
+  // Since 7.3 jobs run on runners : none at all means no form can run a job
   test("runners : none is a warning that says what to add", async () => {
     runnerState = { runners: [], error: null };
     const r = await Health.check();
@@ -348,7 +348,7 @@ describe("health reports problems, not just ok", () => {
     assert.match(checkOf(r, "runners").value, /2 of 2 runner\(s\) need attention : rte-1, aap/);
   });
 
-  // Since 7.2 the app runs no playbook itself (an RTE does), so it never asks for an ansible
+  // Since 7.3 the app runs no playbook itself (an RTE does), so it never asks for an ansible
   // version - even where one happens to be installed.
   test("there is no ansible row : the app does not run ansible-playbook", async () => {
     const saved = Cmd.executeSilentCommand;
@@ -551,7 +551,7 @@ describe("the database check names the engine, not just a version number", () =>
     const r = await Health.check();
     // version is the first row : it is what every support conversation opens with
     assert.equal(r.info[0].key, "version");
-    // no 'ansible' : the app runs no playbook since 7.2 (covered by its own test)
+    // no 'ansible' : the app runs no playbook since 7.3 (covered by its own test)
     for (const key of ["version", "baseUrl", "authentication", "retention", "mail", "logs", "uptime", "timezone", "node", "platform"]) {
       assert.ok(infoOf(r, key), `expected an info entry for ${key}`);
     }

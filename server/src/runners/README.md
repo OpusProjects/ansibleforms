@@ -1,6 +1,6 @@
 # Runners and the RTE
 
-Developer notes on where AnsibleForms runs a job. Since 7.2 the app runs nothing itself:
+Developer notes on where AnsibleForms runs a job. Since 7.3 the app runs nothing itself:
 every job runs on a **runner**, a row of the `runners` table with a type.
 
 | Type | Runs | What it is |
@@ -61,7 +61,7 @@ Three choices carry the design:
 | `rte/ansible-core.js` | The one place a playbook runs: `runAnsibleJob`, `buildAnsibleArgs` (no shell), `executeCommand` (process group, abort flag, output limit, job log). |
 | `models/runner.model.js` | The `runners` table: per-type validation, one default per type, masked secrets. |
 | `models/job.model.js` | `Job.launch`, `Job.continue` (approval), multistep, notifications, `Job.lastOrder`. |
-| `/Dockerfile.rte`, `/examples/rte/Dockerfile.minimal` | The published RTE image (everything the app image had before 7.2) and a minimal fork template. |
+| `/Dockerfile.rte`, `/examples/rte/Dockerfile.minimal` | The published RTE image (everything the app image had before 7.3) and a minimal fork template. |
 
 ### The runner contract
 
@@ -147,7 +147,7 @@ code and the schema.
    app's `ENCRYPTION_SECRET`, a name (`RTE_ID`) and a token (`RTE_TOKEN`).
 2. **Add it**: Connections > Runners > add, type *RTE*, its address and the same token.
    *Test connection* shows its version and ansible version. An AWX/AAP connection is a
-   runner of type *AWX* (a token, or *Use credentials* with a username and password); the 7.2
+   runner of type *AWX* (a token, or *Use credentials* with a username and password); the 7.3
    upgrade moves the existing AAP connections there.
 3. **Point forms at it**: `runner: <name>` on a form or a step (also in the designer's form
    settings), or tick *Default* on the runner.

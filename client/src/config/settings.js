@@ -1022,6 +1022,8 @@ export default function getSettings(t) {
     // Where a job runs : an RTE container (this image with AF_ROLE=rte) for playbooks,
     // AWX / AAP / Ascender for templates
     runners: {
+      // the page title is the menu entry's label (AppSidebar), so the two always match
+      pageTitle: t('sidebar.runners'),
       type: 'runner',
       label: t('settings.runners.label'),
       description: t('settings.runners.description'),
