@@ -9,4 +9,5 @@ export const languages = [
   { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
   { code: 'es', label: 'Español', flag: '🇪🇸' },
   { code: 'ca', label: 'Català', flag: '🏴' }, // no emoji for the Senyera; AppFlag draws it
+  { code: 'pt', label: 'Português', flag: '🇵🇹' },
 ];
