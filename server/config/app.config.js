@@ -67,6 +67,10 @@ var app_config = {
   lockPath: process.env.LOCK_PATH || path.resolve(__dirname + "/../persistent/ansibleForms.lock"),
   helpPath: path.resolve(__dirname + "/../help.yaml"),
   encryptionSecret: ((process.env.ENCRYPTION_SECRET || "undefinedvOVH6sdmpNWjRRIqCc7rdxs") + "vOVH6sdmpNWjRRIqCc7rdxs01lwHzfr3").substring(0, 32),
+  // without ENCRYPTION_SECRET the key above is the fallback in this public source : index.js
+  // warns at startup. The fallback itself stays - changing it would make every credential
+  // already stored with it unreadable.
+  encryptionSecretIsDefault: !process.env.ENCRYPTION_SECRET,
   homePath: process.env.HOME_PATH || os.homedir(),
   uploadPath: process.env.UPLOAD_PATH || path.resolve(__dirname + "/../persistent/uploads"),
   varsFilesPath: process.env.VARS_FILES_PATH || path.resolve(__dirname + "/../persistent/vars"),
