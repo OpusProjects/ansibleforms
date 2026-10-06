@@ -1,5 +1,5 @@
 // What this process runs (AF_ROLE), and the name it goes by among the other processes on
-// the same database (AF_NODE_ID).
+// the same database.
 //
 //   all (unset) : the web app and the worker in one process, the way AnsibleForms always ran
 //   app         : the web app and the API only - run as many as you like behind a load balancer
@@ -22,8 +22,9 @@ export const runsWeb = role === "all" || role === "app";
 // may run the background work, once it holds the worker lock
 export const runsWorker = role === "all" || role === "worker";
 
-// The name on this process's row in `nodes` and on the jobs it follows (jobs.tracker). A
-// restarted container keeps its hostname, so it finds its own jobs again ; a new pod gets a
-// new name, and the worker ends the jobs of a node that stopped answering.
-export const nodeId = String(process.env.AF_NODE_ID || "").trim()
-  || `${role === "all" ? "af" : role}-${os.hostname()}`;
+// The name on this process's row in `nodes`, on the jobs it follows (jobs.tracker) and, for an
+// RTE, on the jobs it runs (jobs.host) : <role>-<hostname>-<port>. Unique without a setting -
+// two processes on one machine listen on different ports - and the same after a restart, so a
+// restarted container finds its own jobs again. A new pod gets a new name, and the worker ends
+// the jobs of a node that stopped answering.
+export const nodeId = `${role === "all" ? "af" : role}-${os.hostname()}-${process.env.PORT || 8000}`;

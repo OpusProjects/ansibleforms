@@ -366,16 +366,6 @@
       for an app, with no web interface, scheduler or seed. An RTE needs the app's database
       settings (`DB_*`), the same `ENCRYPTION_SECRET`, and `RTE_TOKEN`. The app reaches it
       through a runner added under Connections > Runners.
-  - name: AF_NODE_ID
-    version: 7.3.0
-    type: string
-    short: The name of an app or worker process
-    default: <role>-<hostname>
-    description: |
-      The name this process goes by on the Status page and on the jobs it follows. When it
-      restarts it ends only the jobs carrying its own name ; the worker ends the jobs of a
-      node that stopped answering. Defaults to the role and the hostname, which is unique per
-      container.
   - name: RTE_TOKEN
     version: 7.3.0
     type: string

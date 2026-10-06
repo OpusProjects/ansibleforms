@@ -1,6 +1,6 @@
-// Every app, worker or combined process writes its row in `nodes` every HEARTBEAT_MS : who it
-// is (AF_NODE_ID), what it runs, which version, when it was last alive, and whether it holds
-// the worker lock - with the worker's scheduler counts, so any node's Status page can show
+// Every process - app, worker, combined or RTE - writes its row in `nodes` every HEARTBEAT_MS :
+// who it is (<role>-<hostname>-<port>, lib/role.js), what it runs, which version, when it was
+// last alive, and whether it holds the worker lock - with the worker's scheduler counts, so any node's Status page can show
 // them. The worker ends the jobs followed by a node that stopped answering (Job.abandonDeadNodes).
 import logger from "./logger.js";
 import mysql from "../models/db.model.js";

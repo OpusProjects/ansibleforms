@@ -33,10 +33,13 @@ One image, started in different roles (`AF_ROLE`):
   that loses the lock to another one stops, and its container restarts as the one waiting.
 - **The schema is the worker's.** On an empty database the worker creates it; app nodes wait for
   it. Only the worker patches the schema on an upgrade.
-- **Jobs are followed by the node that started them** (it tracks an AWX job, drives the steps of a
-  multistep form). When that node restarts it ends the jobs it was following; when it disappears,
-  the worker ends them after two minutes without a heartbeat. A job running on an RTE carries on
-  either way.
+- **Every container names itself** `<role>-<hostname>-<port>`: nothing to set. The Status page
+  lists them all, RTEs included.
+- **Jobs belong to a container.** A job running on an RTE belongs to that RTE; it carries on when
+  the app node that started it goes. Any other job (an AWX job, the steps of a multistep form)
+  belongs to the app node that started it. A container that restarts ends its own unfinished
+  jobs; one that disappears (a replaced pod) has them ended by the worker after two minutes
+  without a heartbeat.
 - **SIGHUP** on any node re-applies the config seed: an app node asks the worker to do it.
 - **Status** shows every node, its role and version, which one is the worker, and warns when the
   nodes run different versions.

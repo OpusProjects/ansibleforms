@@ -242,12 +242,15 @@ Job.abandonOwn = async function (tracker, { untracked = false } = {}) {
 };
 // The worker, every minute : the jobs of a node that stopped answering (its row in `nodes`
 // is older than NODE_DEAD_SECONDS, or gone) - a container that was replaced and will never
-// come back under the same name to clean up after itself.
+// come back under the same name to clean up after itself. A job belongs to the RTE running it
+// (jobs.host) when there is one - it carries on when the app node that started it goes - and
+// otherwise to the node following it (jobs.tracker).
 Job.abandonDeadNodes = async function (self = nodeId) {
+  const owner = "COALESCE(j.host, j.tracker)";
   const res = await mysql.do(
     "UPDATE AnsibleForms.`jobs` j set j.status='abandoned',j.abort_requested=0 " +
-    "where (j.status='running' or j.abort_requested) and j.host IS NULL and j.tracker IS NOT NULL and j.tracker<>? " +
-    "and NOT EXISTS (SELECT 1 FROM AnsibleForms.`nodes` n WHERE n.id=j.tracker AND n.last_seen > (NOW() - INTERVAL ? SECOND))",
+    `where (j.status='running' or j.abort_requested) and ${owner} IS NOT NULL and ${owner}<>? ` +
+    `and NOT EXISTS (SELECT 1 FROM AnsibleForms.\`nodes\` n WHERE n.id=${owner} AND n.last_seen > (NOW() - INTERVAL ? SECOND))`,
     [self, NODE_DEAD_SECONDS], true);
   return res.changedRows;
 };

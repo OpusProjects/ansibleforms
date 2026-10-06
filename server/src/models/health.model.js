@@ -256,13 +256,15 @@ async function nodesCheck() {
   const detail = nodes.map(n => ({
     id: n.id, role: n.role, version: n.version, worker: n.isWorker, lastSeenSecondsAgo: n.ageSeconds, self: n.self,
   }));
-  const versions = [...new Set(nodes.map(n => majorMinor(n.version)))];
+  // not the RTEs : they may run an older release on purpose, the contract decides (rte/contract.js)
+  const versions = [...new Set(nodes.filter(n => n.role !== 'rte').map(n => majorMinor(n.version)))];
   if (versions.length > 1) {
     return check('nodes', WARNING, `${nodes.length} nodes, versions ${versions.join(' and ')}`,
       { nodes: detail, reason: 'The nodes run different versions on one schema - finish the update' });
   }
   const workers = nodes.filter(n => n.isWorker).length;
-  return check('nodes', OK, `${nodes.length} node(s), ${workers} worker`, { nodes: detail });
+  const rtes = nodes.filter(n => n.role === 'rte').length;
+  return check('nodes', OK, `${nodes.length - rtes} node(s), ${workers} worker, ${rtes} RTE`, { nodes: detail });
 }
 
 // The dump tool is the one dependency that produces a convincing failure : the

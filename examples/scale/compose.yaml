@@ -25,18 +25,18 @@ services:
 
   app1:
     <<: *ansibleforms
-    environment: { AF_ROLE: app, AF_NODE_ID: app-1 }
+    environment: { AF_ROLE: app }
   app2:
     <<: *ansibleforms
-    environment: { AF_ROLE: app, AF_NODE_ID: app-2 }
+    environment: { AF_ROLE: app }
 
   # the background work ; worker2 waits and takes over when worker1 stops
   worker1:
     <<: *ansibleforms
-    environment: { AF_ROLE: worker, AF_NODE_ID: worker-1 }
+    environment: { AF_ROLE: worker }
   worker2:
     <<: *ansibleforms
-    environment: { AF_ROLE: worker, AF_NODE_ID: worker-2 }
+    environment: { AF_ROLE: worker }
 
   # runs the playbooks : add it under Connections > Runners (http://rte:8000, RTE_TOKEN)
   rte:
@@ -44,7 +44,7 @@ services:
     restart: unless-stopped
     depends_on: [db]
     env_file: .env
-    environment: { RTE_ID: rte-1, HTTPS: "0" }
+    environment: { HTTPS: "0" }
     volumes:
       - persistent:/app/dist/persistent
       - ssh:/root/.ssh

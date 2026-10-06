@@ -23,6 +23,7 @@ import appConfig from "../../config/app.config.js";
 import { runAnsibleJob, runnerIdentity } from "./ansible-core.js";
 import { RTE_CONTRACT } from "./contract.js";
 import { appVersion as version } from "../lib/version.js";
+import { startHeartbeat } from "../lib/nodes.js";
 
 
 // the jobs this process is running ; a job is only ever run by the RTE that claimed it
@@ -128,6 +129,9 @@ export async function startRte() {
 
   await waitForDatabase();
   await abandonOwnJobs();
+  // its row in `nodes` : the Status page lists it, and when it stops answering the worker ends
+  // the jobs it was running (Job.abandonDeadNodes) - a pod replaced under a new name included
+  startHeartbeat();
   // the same check, hourly : nothing of ours should still say 'running' after a day
   setInterval(() => {
     mysql.do(

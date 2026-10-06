@@ -47,17 +47,17 @@ describe("a starting process ends only the jobs it may", () => {
     assert.match(calls[0].sql, /\(tracker=\? or tracker IS NULL\)/);
   });
 
-  test("never a job an RTE claimed (host set) : that RTE ends its own", async () => {
+  test("a starting app node never ends a job an RTE runs (host set) : it carries on", async () => {
     await Job.abandonOwn("app-a");
-    await Job.abandonDeadNodes("worker-a");
-    for (const { sql } of calls) assert.match(sql, /host IS NULL/);
+    assert.match(calls[0].sql, /host IS NULL/);
   });
 
-  test("the dead-node sweep : followed by a node whose heartbeat stopped, never by the worker itself", async () => {
+  test("the dead-node sweep : the RTE running a job owns it, else the node following it", async () => {
     await Job.abandonDeadNodes("worker-a");
     const { sql, params } = calls[0];
-    assert.match(sql, /j\.tracker<>\?/);
-    assert.match(sql, /NOT EXISTS \(SELECT 1 FROM AnsibleForms.`nodes` n WHERE n\.id=j\.tracker AND n\.last_seen > \(NOW\(\) - INTERVAL \? SECOND\)\)/);
+    const owner = "COALESCE\\(j\\.host, j\\.tracker\\)";
+    assert.match(sql, new RegExp(`${owner}<>\\?`), "never the worker's own jobs");
+    assert.match(sql, new RegExp(`NOT EXISTS \\(SELECT 1 FROM AnsibleForms.\`nodes\` n WHERE n\\.id=${owner} AND n\\.last_seen > \\(NOW\\(\\) - INTERVAL \\? SECOND\\)\\)`));
     assert.equal(params[0], "worker-a");
     assert.ok(params[1] >= 60, "a node is given at least a minute of missed heartbeats");
   });
@@ -98,6 +98,12 @@ describe("the designer lock lives in the database", () => {
 });
 
 describe("AF_ROLE", () => {
+  test("every process names itself <role>-<hostname>-<port> : nothing to set", async () => {
+    const { nodeId } = await import("../src/lib/role.js");
+    const os = await import("os");
+    assert.equal(nodeId, `af-${os.hostname()}-${process.env.PORT || 8000}`);
+  });
+
   test("unset means all, as AnsibleForms always ran ; case and spaces do not matter", () => {
     assert.equal(currentRole({}), "all");
     assert.equal(currentRole({ AF_ROLE: "" }), "all");
