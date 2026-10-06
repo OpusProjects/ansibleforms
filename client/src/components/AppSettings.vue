@@ -82,7 +82,9 @@ defineProps({
         </template>
       </div>
       <slot name="tabs"></slot>
-      <div v-if="!bare" class="card" :class="{ 'tab-card-flush-card': $slots.tabs }">
+      <!-- the 16px under the last card : the action bar's margin when there is one, else the
+           card's own (the margin the designer also gives its card, so the two do not add up) -->
+      <div v-if="!bare" class="card" :class="{ 'tab-card-flush-card': $slots.tabs, 'af-page-end': !$slots.actions }">
         <div class="card-body">
           <slot></slot>
         </div>
@@ -114,6 +116,11 @@ h3 {
    the last one as under the designer's card and the forms tiles */
 .af-bare-content {
   padding-bottom: 1rem;
+}
+/* a page without an action bar (the jobs) : the same 16px under its card as the action bar
+   leaves under the others, instead of the card touching the bottom of the window */
+.af-page-end {
+  margin-bottom: 1rem;
 }
 .tab-card-flush-card {
   border-top-left-radius: 0;
