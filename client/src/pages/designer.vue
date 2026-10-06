@@ -6297,13 +6297,9 @@ onBeforeUnmount(() => {
           </template>
         </template>
         <template #default>
-          <div
-            v-if="lockLoading || (lock && !lock.free && !loaded)"
-            class="d-flex flex-column align-items-center justify-content-center py-5 text-muted"
-          >
-            <FaIcon icon="spinner" spin style="font-size: 2rem; opacity: 0.5" class="mb-3" />
-            <p class="mb-0">{{ t('designer.loading') }}...</p>
-          </div>
+          <!-- loading : the page's loading indicator, centered under the header like on the
+               other pages -->
+          <AppPageLoading v-if="lockLoading || (lock && !lock.free && !loaded)" />
           <div
             v-else-if="lock && lock.free"
             class="d-flex flex-column align-items-center justify-content-center py-5 text-muted"

@@ -9,6 +9,8 @@ const { t } = useI18n();
 
 const authenticated = ref(false);
 const formConfig = ref({});
+// true while the forms are loading : the page shows its loading indicator meanwhile
+const loading = ref(true);
 const search = ref('');
 const viewMode = ref('tiles'); // 'tiles' or 'list'
 
@@ -133,9 +135,14 @@ function getFormClass(form) {
 onMounted(async () => {
   authenticated.value = !!(await Profile.load());
   if (!authenticated.value) {
+    loading.value = false;
     return;
   }
-  formConfig.value = await Form.list();
+  try {
+    formConfig.value = await Form.list();
+  } finally {
+    loading.value = false;
+  }
   // restore view mode from cookie if present
   const vm = Helpers.getCookie('forms_view_mode');
   if (vm && (vm === 'tiles' || vm === 'list')) viewMode.value = vm;
@@ -164,6 +171,7 @@ onMounted(async () => {
       <p v-for="(e, i) in formConfig.errors" :key="'error' + i" class="mb-3 has-text-danger text-prewrap">{{ e }}</p>
     </template>
   </BsOffCanvas>
+  <AppPageLoading v-if="loading" />
   <div class="flex-shrink-0">
     <main class="d-flex flex-nowrap af-settings-layout">
       <div v-if="authenticated && forms" class="w-100 d-flex flex-column">
