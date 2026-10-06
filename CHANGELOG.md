@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.3.0](https://github.com/ansibleforms/ansibleforms/compare/7.2.0...7.3.0) (2026-10-06)
+
+
+### Added
+
+* group the audit and server logs in a Logs menu section ([#676](https://github.com/ansibleforms/ansibleforms/issues/676)) ([b7ecc38](https://github.com/ansibleforms/ansibleforms/commit/b7ecc3828990fd354c0d5a834c67f56b796a9df7))
+* move the scheduled and stored jobs into the jobs menu ([#669](https://github.com/ansibleforms/ansibleforms/issues/669)) ([f0e1208](https://github.com/ansibleforms/ansibleforms/commit/f0e12088c82f0cae45e423b2f82f15effe7bac28))
+* open a job on a page of its own ([#673](https://github.com/ansibleforms/ansibleforms/issues/673)) ([b4a1168](https://github.com/ansibleforms/ansibleforms/commit/b4a1168816c8589555214138e5d60940c7774e66))
+* show a centered loading indicator while the forms and the designer load ([#682](https://github.com/ansibleforms/ansibleforms/issues/682)) ([8a450e2](https://github.com/ansibleforms/ansibleforms/commit/8a450e2fb790f058a0e70aa8695b603060aecfce))
+* show the current time and offset of the picked time zone ([#680](https://github.com/ansibleforms/ansibleforms/issues/680)) ([54c374f](https://github.com/ansibleforms/ansibleforms/commit/54c374fdbb4eb0130cbfb357d2381154e31b9c2d))
+* show the logo on the login page ([#664](https://github.com/ansibleforms/ansibleforms/issues/664)) ([ed89a6f](https://github.com/ansibleforms/ansibleforms/commit/ed89a6f1a411176b1a984e09ef76b8ea2cc18dcc))
+* show the person's name for directory and SSO accounts ([#679](https://github.com/ansibleforms/ansibleforms/issues/679)) ([08ecf55](https://github.com/ansibleforms/ansibleforms/commit/08ecf55438b564c3b166e46df4b881f4f56a897d))
+* tell an open tab when a newer version is deployed ([#663](https://github.com/ansibleforms/ansibleforms/issues/663)) ([9d814fc](https://github.com/ansibleforms/ansibleforms/commit/9d814fcef5ab67ea9921107ec35565270e208585))
+
+
+### Fixed
+
+* center the counts in the forms menu ([#666](https://github.com/ansibleforms/ansibleforms/issues/666)) ([9511c60](https://github.com/ansibleforms/ansibleforms/commit/9511c601ea2c428a1f12d6b181dca6ac39b6bb42))
+* color the designer's folders yellow in every theme ([#681](https://github.com/ansibleforms/ansibleforms/issues/681)) ([d44d9d4](https://github.com/ansibleforms/ansibleforms/commit/d44d9d4a0691ee069f90fae3766f063dfb6ab4ca))
+* correct the settings help for 7.x syntax and the documented defaults ([#672](https://github.com/ansibleforms/ansibleforms/issues/672)) ([afe8c4d](https://github.com/ansibleforms/ansibleforms/commit/afe8c4dc3cdbadf8fce51eebabf48135e75f9e6a))
+* enlarge the separator in category titles ([#667](https://github.com/ansibleforms/ansibleforms/issues/667)) ([b8ea61a](https://github.com/ansibleforms/ansibleforms/commit/b8ea61a54a86f73b471917b2b87f85ffd648c153))
+* keep tab strips on one line and scroll them sideways ([#675](https://github.com/ansibleforms/ansibleforms/issues/675)) ([f976512](https://github.com/ansibleforms/ansibleforms/commit/f9765120337926a802a53aca50243baf994a800f))
+* keep the header on screen on long pages ([#665](https://github.com/ansibleforms/ansibleforms/issues/665)) ([24eb918](https://github.com/ansibleforms/ansibleforms/commit/24eb918b07e0ff40979ab9a276bef2dc8889683a))
+* open a job from anywhere in its row, with a pointer cursor ([#678](https://github.com/ansibleforms/ansibleforms/issues/678)) ([153a535](https://github.com/ansibleforms/ansibleforms/commit/153a5352ed8d7e29ceb748f5146e910a37bc731f))
+* point the designer's lock hint to the top-right corner ([#677](https://github.com/ansibleforms/ansibleforms/issues/677)) ([f9aff8f](https://github.com/ansibleforms/ansibleforms/commit/f9aff8fba6ca97c17adbcbc6dee2c5d7aa5924d4))
+* send logs to syslog only when LOG_SYSLOG_HOST is set ([#668](https://github.com/ansibleforms/ansibleforms/issues/668)) ([603ccf1](https://github.com/ansibleforms/ansibleforms/commit/603ccf19953da251b8789c0ea916fbba41d0a23c))
+* serve the client build and stylesheets without year-old caches ([#661](https://github.com/ansibleforms/ansibleforms/issues/661)) ([894ea92](https://github.com/ansibleforms/ansibleforms/commit/894ea9201769614c53b26cca677264b18d847362))
+
+
+### Changed
+
+* deprecate the hasApproval property, which has no effect ([#671](https://github.com/ansibleforms/ansibleforms/issues/671)) ([5a0aee7](https://github.com/ansibleforms/ansibleforms/commit/5a0aee7cca568a1ba354ca407558701fc974fd66))
+
+
+### Security
+
+* warn at startup when ENCRYPTION_SECRET is not set ([#670](https://github.com/ansibleforms/ansibleforms/issues/670)) ([c22a3c9](https://github.com/ansibleforms/ansibleforms/commit/c22a3c9a47f608a0ed3c1c18d24c6c5c096d9ef8))
+
 ## [7.2.0](https://github.com/ansibleforms/ansibleforms/compare/7.1.6...7.2.0) (2026-10-06)
 
 
