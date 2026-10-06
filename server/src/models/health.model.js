@@ -468,7 +468,9 @@ async function runnersCheck() {
     const base = { name: runner.name, type: runner.type, uri: runner.uri, isDefault: !!runner.is_default };
     try {
       const info = await Runner.check(runner);
-      return { ...base, status: OK, value: 'reachable', ...info };
+      // an RTE older than the app is fine while it speaks the same contract (rte/contract.js) :
+      // said, not warned about, or the row would be amber for every RTE nobody needed to touch
+      return { ...base, status: OK, value: info.olderRelease ? `reachable, ${info.version} (compatible)` : 'reachable', ...info };
     } catch (e) {
       return { ...base, status: ERROR, value: 'unreachable', reason: e.message || String(e) };
     }

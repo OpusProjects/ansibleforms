@@ -2,6 +2,7 @@
 // which reads the job, resolves its credentials and writes the output and the final status
 // to the database itself. This side only hands the job over and waits for it to end.
 // The RTE's address and token come from its row in the runners table.
+import { RTE_CONTRACT } from "../rte/contract.js";
 import axios from "axios";
 import https from "https";
 import fs from "fs";
@@ -17,7 +18,7 @@ const POLL_MS = 1000;
 // how often the RTE itself is asked about the job, in polls
 const ASK_RTE_EVERY = 30;
 
-// this app's version : an RTE must run the same major.minor, it shares the code and schema
+// this app's version : shown next to the RTE's, which may be older (see rte/contract.js)
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const appVersion = (() => {
   for (const file of ["../../build-info.json", "../../package.json"]) {
@@ -28,7 +29,13 @@ const appVersion = (() => {
   }
   return "unknown";
 })();
-const majorMinor = (v) => String(v || "").split(".").slice(0, 2).join(".");
+// is version a older than b (x.y.z, a prerelease suffix ignored) ?
+const older = (a, b) => {
+  const parts = (v) => String(v || "").split("-")[0].split(".").map((n) => parseInt(n, 10) || 0);
+  const [x, y] = [parts(a), parts(b)];
+  for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) < (y[i] || 0);
+  return false;
+};
 
 function client(runner) {
   const url = stripTrailingSlashes(runner.uri || "");
@@ -87,7 +94,10 @@ async function track(jobId, rte) {
   }
 }
 
-/** the RTE's health, with its version checked against ours */
+/**
+ * The RTE's health, with its contract checked against ours. Its release may differ from the
+ * app's : an RTE is updated when the contract changes, not with every app release.
+ */
 async function check(runner) {
   const rte = client(runner);
   let data;
@@ -96,9 +106,16 @@ async function check(runner) {
   } catch (err) {
     throw new Errors.BadRequestError(describe(err, rte.url));
   }
-  const details = { id: data?.id, version: data?.version, ansible: data?.ansible, running: data?.running?.length || 0, appVersion };
-  if (majorMinor(data?.version) !== majorMinor(appVersion)) {
-    throw new Errors.BadRequestError(`the RTE at ${rte.url} runs ${data?.version}, this app runs ${appVersion} : use the same release of both`);
+  const details = {
+    id: data?.id, version: data?.version, contract: data?.contract, ansible: data?.ansible,
+    running: data?.running?.length || 0, appVersion,
+    // compatible, and older than this app : nothing to do, worth knowing
+    olderRelease: older(data?.version, appVersion),
+  };
+  if (data?.contract !== RTE_CONTRACT) {
+    const theirs = data?.contract === undefined ? "no contract (a 7.3 preview build)" : `contract ${data.contract}`;
+    const what = (data?.contract || 0) < RTE_CONTRACT ? "update the RTE" : "update this app";
+    throw new Errors.BadRequestError(`the RTE at ${rte.url} (${data?.version}) speaks ${theirs}, this app (${appVersion}) needs contract ${RTE_CONTRACT} : ${what}`);
   }
   return details;
 }

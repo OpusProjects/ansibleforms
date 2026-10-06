@@ -133,13 +133,22 @@ All calls need `Authorization: Bearer <RTE_TOKEN>`.
 
 | Call | Answer |
 |---|---|
-| `GET /rte/v1/health` | `{ id, version, ansible, running: [jobIds] }` |
+| `GET /rte/v1/health` | `{ id, version, contract, ansible, running: [jobIds] }` |
 | `POST /rte/v1/jobs` `{ jobId }` | `202` accepted; `404` unknown job; `409` not running, or claimed by another runner |
 | `GET /rte/v1/jobs/:id` | `running`, `finished` (+ `jobStatus`), or `unknown` |
 | `POST /rte/v1/jobs/:id/cancel` | `202`; `409` when this RTE does not run it |
 
-The app refuses an RTE of another release (`major.minor`) on Test connection: it shares the
-code and the schema.
+### Updating an RTE
+
+An RTE does not have to follow every app release. The app and the RTE agree on a **contract**
+(`server/src/rte/contract.js`): the RTE API and what the RTE reads and writes in the database.
+As long as both speak the same contract, an RTE you tested and approved keeps working with newer
+app releases; Test connection and the Status page show its release next to the app's, in green.
+
+The contract number goes up only when a change would break older RTEs, and the release notes
+then say *RTEs must be updated*. Until you update them, Test connection refuses them with that
+reason and the Status page shows them in red. The RTE image is still published with every
+release, so its tags always match the app's.
 
 ## Using a runner, step by step
 

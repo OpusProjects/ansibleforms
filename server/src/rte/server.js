@@ -5,7 +5,7 @@
 // credentials and writes the output and the final status itself, with the same code the
 // only code that runs a playbook (ansible-core.js). The app only says "run job N".
 //
-//   GET  /rte/v1/health             version, ansible, id, running job ids
+//   GET  /rte/v1/health             version, contract, ansible, id, running job ids
 //   POST /rte/v1/jobs {jobId}       202 : accepted, runs in the background
 //   GET  /rte/v1/jobs/:id           running | finished | unknown
 //   POST /rte/v1/jobs/:id/cancel    stops it now (the abort flag in the database works too)
@@ -24,6 +24,7 @@ import mysql from "../models/db.model.js";
 import httpsConfig from "../../config/https.config.js";
 import appConfig from "../../config/app.config.js";
 import { runAnsibleJob, runnerIdentity } from "./ansible-core.js";
+import { RTE_CONTRACT } from "./contract.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const version = (() => {
@@ -160,6 +161,7 @@ export async function startRte() {
   api.get("/health", wrap(async (req, res) => res.json({
     id: runnerIdentity(),
     version,
+    contract: RTE_CONTRACT,
     ansible: await ansibleVersion(),
     running: [...activeJobs],
   })));
