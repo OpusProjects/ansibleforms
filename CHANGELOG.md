@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.2.0](https://github.com/ansibleforms/ansibleforms/compare/7.1.6...7.2.0) (2026-10-06)
+
+
+### Added
+
+* redesign the header, menus and page layouts ([#658](https://github.com/ansibleforms/ansibleforms/issues/658)) ([483c957](https://github.com/ansibleforms/ansibleforms/commit/483c957ef7f5270800a07fb97b93731b56fb0764))
+
 ## [7.1.6](https://github.com/ansibleforms/ansibleforms/compare/7.1.5...7.1.6) (2026-10-05)
 
 
