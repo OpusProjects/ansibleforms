@@ -184,5 +184,30 @@ export default {
       approveBy: "作业已获 {user} 批准，将继续执行。",
       rejectBy: "作业已被 {user} 拒绝。",
     },
+    // the subjects : "AnsibleForms '<form>' [<type>] (<id>) - <one of these>", and the
+    // approval one when the form gives no title
+    subject: {
+      approval: "AnsibleForms 审批请求",
+      event: {
+        launch: "已启动",
+        relaunch: "已重新运行",
+        delete: "已删除",
+        approve: "已批准",
+        reject: "已拒绝",
+      },
+      status: {
+        success: "成功",
+        failed: "失败",
+        aborted: "已中止",
+        rejected: "已拒绝",
+        abandoned: "已放弃",
+        warning: "警告",
+      },
+    },
+    // the test mail of the mail settings
+    test: {
+      subject: "测试邮件",
+      body: "<p>这是一封来自 AnsibleForms 的测试邮件。</p>",
+    },
   },
 }

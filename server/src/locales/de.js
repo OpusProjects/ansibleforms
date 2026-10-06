@@ -184,5 +184,30 @@ export default {
       approveBy: "Job wurde von {user} freigegeben und wird weiter ausgefuehrt.",
       rejectBy: "Job wurde von {user} abgelehnt.",
     },
+    // the subjects : "AnsibleForms '<form>' [<type>] (<id>) - <one of these>", and the
+    // approval one when the form gives no title
+    subject: {
+      approval: "AnsibleForms Freigabeanfrage",
+      event: {
+        launch: "Gestartet",
+        relaunch: "Neu gestartet",
+        delete: "Gelöscht",
+        approve: "Freigegeben",
+        reject: "Abgelehnt",
+      },
+      status: {
+        success: "Erfolgreich",
+        failed: "Fehlgeschlagen",
+        aborted: "Abgebrochen",
+        rejected: "Abgelehnt",
+        abandoned: "Verworfen",
+        warning: "Warnung",
+      },
+    },
+    // the test mail of the mail settings
+    test: {
+      subject: "Testnachricht",
+      body: "<p>Dies ist eine Testnachricht von AnsibleForms</p>",
+    },
   },
 }

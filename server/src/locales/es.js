@@ -184,5 +184,30 @@ export default {
       approveBy: "El trabajo ha sido aprobado por {user} y continuará la ejecución.",
       rejectBy: "El trabajo ha sido rechazado por {user}.",
     },
+    // the subjects : "AnsibleForms '<form>' [<type>] (<id>) - <one of these>", and the
+    // approval one when the form gives no title
+    subject: {
+      approval: "Solicitud de aprobación de AnsibleForms",
+      event: {
+        launch: "Lanzado",
+        relaunch: "Relanzado",
+        delete: "Eliminado",
+        approve: "Aprobado",
+        reject: "Rechazado",
+      },
+      status: {
+        success: "Correcto",
+        failed: "Fallido",
+        aborted: "Abortado",
+        rejected: "Rechazado",
+        abandoned: "Abandonado",
+        warning: "Advertencia",
+      },
+    },
+    // the test mail of the mail settings
+    test: {
+      subject: "Mensaje de prueba",
+      body: "<p>Este es un mensaje de prueba de AnsibleForms</p>",
+    },
   },
 }

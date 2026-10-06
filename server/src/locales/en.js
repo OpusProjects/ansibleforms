@@ -184,5 +184,30 @@ export default {
       approveBy: "Job has been approved by {user} and will continue execution.",
       rejectBy: "Job has been rejected by {user}.",
     },
+    // the subjects : "AnsibleForms '<form>' [<type>] (<id>) - <one of these>", and the
+    // approval one when the form gives no title
+    subject: {
+      approval: "AnsibleForms Approval Request",
+      event: {
+        launch: "Launched",
+        relaunch: "Relaunched",
+        delete: "Deleted",
+        approve: "Approved",
+        reject: "Rejected",
+      },
+      status: {
+        success: "Success",
+        failed: "Failed",
+        aborted: "Aborted",
+        rejected: "Rejected",
+        abandoned: "Abandoned",
+        warning: "Warning",
+      },
+    },
+    // the test mail of the mail settings
+    test: {
+      subject: "Test message",
+      body: "<p>This is a test message from AnsibleForms</p>",
+    },
   },
 }
