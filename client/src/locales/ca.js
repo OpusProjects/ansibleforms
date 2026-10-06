@@ -755,10 +755,11 @@ export default {
       usernameAttributeDesc:
         "Atribut LDAP que s'utilitza com a nom d'usuari d'inici de sessió (p. ex. sAMAccountName, uid).",
       groupsAttribute: 'Atribut de grups',
-      groupsAttributeDesc: "Atribut de l'usuari que llista els grups dels quals és membre (p. ex. memberOf).",
+      groupsAttributeDesc:
+        "Atribut de l'usuari que llista els grups dels quals és membre (p. ex. memberOf). Poseu-hi groups per utilitzar el resultat de la cerca de grups (Base de cerca de grups i Classe de grup).",
       groupsSearchBase: 'Base de cerca de grups',
       groupsSearchBaseDesc:
-        'DN base separat per a les cerques de grups. Deixa-ho buit per utilitzar la base de cerca principal.',
+        "DN base on la cerca de grups busca els grups que tenen l'usuari com a membre. La cerca només s'executa si també s'indica la Classe de grup, i desa el resultat a l'atribut groups, així que poseu groups com a Atribut de grups per utilitzar-lo. Deixeu-ho buit per ometre la cerca i llegir els grups de l'entrada de l'usuari (p. ex. memberOf).",
       groupClass: 'Classe de grup',
       groupClassDesc: "objectClass LDAP que s'utilitza per als grups (p. ex. groupOfNames, posixGroup).",
       groupMemberAttribute: 'Atribut de membre del grup',
@@ -994,9 +995,11 @@ export default {
       requiredPermissions: "Permisos d'API necessaris",
       delegatedUserRead: 'Delegated User.Read',
       delegatedGroupRead: 'Delegated GroupMember.Read.All',
-      requiredGroupClaims: 'Claims de grup necessaris',
-      securityGroups: 'Grups de seguretat',
-      accessSamAccount: 'Access > samAccountName',
+      groupMembership: 'Pertinença a grups',
+      groupsFromGraph:
+        "Es llegeix de Microsoft Graph en iniciar la sessió (pertinences directes i niades, pel nom visible). El claim groups del testimoni no s'utilitza, així que no cal configurar-lo.",
+      groupsRoleMapping:
+        'En un rol, indiqueu un grup com a azuread/ seguit del seu nom visible (p. ex. azuread/AF-Admins).',
       openIdHelp: "Ajuda d'Open ID",
       openIdNotice: 'Avís:',
       openIdTestedWith: "De moment, Open ID només s'ha provat amb Keycloak.",

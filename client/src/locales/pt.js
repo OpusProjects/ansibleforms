@@ -754,10 +754,11 @@ export default {
       usernameAttributeDesc:
         'Atributo LDAP usado como nome de utilizador de início de sessão (ex. sAMAccountName, uid).',
       groupsAttribute: 'Atributo de Grupos',
-      groupsAttributeDesc: 'Atributo do utilizador que lista as pertenças a grupos (ex. memberOf).',
+      groupsAttributeDesc:
+        'Atributo do utilizador que lista as pertenças a grupos (ex. memberOf). Defina-o como groups para usar o resultado da pesquisa de grupos (Base de Pesquisa de Grupos e Classe de Grupo).',
       groupsSearchBase: 'Base de Pesquisa de Grupos',
       groupsSearchBaseDesc:
-        'DN base separado para pesquisas de grupos. Deixe vazio para usar a base de pesquisa principal.',
+        'DN base onde a pesquisa de grupos procura os grupos que têm o utilizador como membro. A pesquisa só é executada se a Classe de Grupo também estiver definida, e guarda o resultado no atributo groups, por isso defina o Atributo de Grupos como groups para o usar. Deixe vazio para não pesquisar e ler os grupos da entrada do utilizador (ex. memberOf).',
       groupClass: 'Classe de Grupo',
       groupClassDesc: 'objectClass LDAP usada para os grupos (ex. groupOfNames, posixGroup).',
       groupMemberAttribute: 'Atributo de Membro do Grupo',
@@ -992,9 +993,11 @@ export default {
       requiredPermissions: 'Permissões de API Necessárias',
       delegatedUserRead: 'Delegated User.Read',
       delegatedGroupRead: 'Delegated GroupMember.Read.All',
-      requiredGroupClaims: 'Group Claims Necessárias',
-      securityGroups: 'Grupos de Segurança',
-      accessSamAccount: 'Access > samAccountName',
+      groupMembership: 'Pertença a Grupos',
+      groupsFromGraph:
+        'Lida do Microsoft Graph no início de sessão (pertenças diretas e aninhadas, pelo nome a apresentar). A claim groups do token não é usada, por isso não precisa de ser configurada.',
+      groupsRoleMapping:
+        'Num papel, indique um grupo como azuread/ seguido do seu nome a apresentar (ex. azuread/AF-Admins).',
       openIdHelp: 'Ajuda do Open ID',
       openIdNotice: 'Aviso:',
       openIdTestedWith: 'Até agora, o Open ID só foi testado com o Keycloak.',

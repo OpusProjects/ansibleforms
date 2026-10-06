@@ -751,9 +751,11 @@ export default {
       usernameAttribute: 'Gebruikersnaam attribuut',
       usernameAttributeDesc: 'LDAP-attribuut dat wordt gebruikt als inlognaam (bijv. sAMAccountName, uid).',
       groupsAttribute: 'Groepen attribuut',
-      groupsAttributeDesc: 'Gebruikersattribuut dat groepslidmaatschappen bevat (bijv. memberOf).',
+      groupsAttributeDesc:
+        'Gebruikersattribuut dat groepslidmaatschappen bevat (bijv. memberOf). Zet het op groups om het resultaat van de groepszoekopdracht (Groepen zoekbasis en Groep klasse) te gebruiken.',
       groupsSearchBase: 'Groepen zoekbasis',
-      groupsSearchBaseDesc: 'Aparte basis-DN voor groepszoekopdrachten. Laat leeg om de hoofdzoekbasis te gebruiken.',
+      groupsSearchBaseDesc:
+        'Basis-DN waaronder de groepszoekopdracht zoekt naar de groepen die de gebruiker als lid hebben. De zoekopdracht draait alleen als ook Groep klasse is ingevuld, en zet het resultaat in het attribuut groups; zet Groepen attribuut dus op groups om het te gebruiken. Laat leeg om niet te zoeken en de groepen uit de gebruikersentry te lezen (bijv. memberOf).',
       groupClass: 'Groep klasse',
       groupClassDesc: 'LDAP objectClass die wordt gebruikt voor groepen (bijv. groupOfNames, posixGroup).',
       groupMemberAttribute: 'Groepslid attribuut',
@@ -986,9 +988,11 @@ export default {
       requiredPermissions: 'Vereiste API machtigingen',
       delegatedUserRead: 'Delegated User.Read',
       delegatedGroupRead: 'Delegated GroupMember.Read.All',
-      requiredGroupClaims: 'Vereiste groepsclaims',
-      securityGroups: 'Beveiligingsgroepen',
-      accessSamAccount: 'Access > samAccountName',
+      groupMembership: 'Groepslidmaatschap',
+      groupsFromGraph:
+        'Wordt bij het aanmelden uit Microsoft Graph gelezen (directe en geneste lidmaatschappen, op weergavenaam). De groups-claim van het token wordt niet gebruikt en hoeft dus niet geconfigureerd te worden.',
+      groupsRoleMapping:
+        'Noem een groep in een rol als azuread/ gevolgd door de weergavenaam (bijv. azuread/AF-Admins).',
       openIdHelp: 'Open ID Hulp',
       openIdNotice: 'Let op:',
       openIdTestedWith: 'Open ID is tot nu toe alleen getest met Keycloak.',

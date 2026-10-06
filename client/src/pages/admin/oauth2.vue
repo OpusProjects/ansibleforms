@@ -74,10 +74,10 @@ onMounted(async () => {
                   <li>{{ t('admin.oauth2.delegatedUserRead') }}</li>
                   <li>{{ t('admin.oauth2.delegatedGroupRead') }}</li>
                 </ul>
-                <strong>{{ t('admin.oauth2.requiredGroupClaims') }}</strong>
+                <strong>{{ t('admin.oauth2.groupMembership') }}</strong>
                 <ul>
-                  <li>{{ t('admin.oauth2.securityGroups') }}</li>
-                  <li>{{ t('admin.oauth2.accessSamAccount') }}</li>
+                  <li>{{ t('admin.oauth2.groupsFromGraph') }}</li>
+                  <li>{{ t('admin.oauth2.groupsRoleMapping') }}</li>
                 </ul>
               </div>
             </div>
