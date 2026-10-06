@@ -285,7 +285,7 @@ const errorHandler = async function(err,req, res,_next) {
  * 6. The backend server receives the callback and uses passport to verify the returned payload.  it passes the payload to an authCallback function
  * 7. The authCallback function redirects the user back to the frontend with a HANDOFF token (/login?token=), signed by us : the claims the login needs, and for azuread the provider's access token sealed inside it (lib/ssoHandoff.js).
  * 8. The frontend posts the handoff token to the backend /auth/azureadoauth2/login (or /auth/oidc/login) endpoint.
- * 9. For azuread the backend opens the sealed access token and fetches the user's groups from Microsoft Graph, filtered with the provider's group filter (lib/azureGraph.js). For oidc the groups are a claim of the profile.
+ * 9. For azuread the backend opens the sealed access token and fetches the user's groups from Microsoft Graph, filtered with the provider's group filter (lib/azureGraph.js). For oidc the groups are a claim of the profile, filtered with the same group filter.
  * 10. The backend grabs more information from payload if needed (username,...) and assembles a user-object, the roles and options are added
  * 11. The backend converts the user object to json and signs it as a jwt token an returns it in the response
  * 12. The frontend grabs the token and stores it in the local storage, ready for jwt-bearer authentication
@@ -340,7 +340,7 @@ async function assertProviderEnabled(model, name) {
  * the client's list, as before.
  */
 async function azureGroups(payload, bodyGroups, groupfilter) {
-  if (!payload.at) return ssoGroups(payload, bodyGroups, 'azuread');
+  if (!payload.at) return filterGroups(ssoGroups(payload, bodyGroups, 'azuread'), groupfilter);
   const names = await fetchAzureGroups(openToken(payload.at), authConfig.azureGraphUrl);
   const kept = filterGroups(names, groupfilter);
   logger.debug(`azuread login: ${names.length} groups from Graph, ${kept.length} after the group filter`);
@@ -351,10 +351,10 @@ async function azureGroups(payload, bodyGroups, groupfilter) {
  * The groups to trust.
  *
  * The provider's own claim wins whenever it is present, because it is inside the token we
- * signed. `req.body.groups` is whatever the browser chose to send - the client fetches
- * them from Graph/userinfo and filters them there - so it is used ONLY when the provider
- * returned none, and that fallback is logged: a caller can otherwise name any group and
- * getRolesAndOptions will grant the roles that match it.
+ * signed. `req.body.groups` is whatever the browser chose to send, so it is used ONLY
+ * when the provider returned none, and that fallback is logged: a caller can otherwise
+ * name any group and getRolesAndOptions will grant the roles that match it. Either way
+ * the caller passes the result through the provider's group filter (filterGroups).
  */
 function ssoGroups(payload, bodyGroups, type) {
   const fromToken = payload.groups;
@@ -446,8 +446,15 @@ const oidcCallback = async function(req, res,next) {
 const oidcLogin = async function(req, res, _next) {
   try {
     const payload = verifyHandoff(req.body.token, 'oidc')
-    await assertProviderEnabled(OIDC, 'oidc')
-    const user = await extractOidcUser(payload, ssoGroups(payload, req.body.groups, 'oidc'))
+    const provider = await assertProviderEnabled(OIDC, 'oidc')
+    // The provider's group filter is applied HERE, on the groups we trust. It used to be
+    // applied only by the browser, to the list it posts - but ssoGroups ignores that list
+    // whenever the token carries a groups claim, so the filter had no effect at all and
+    // every group of the user ended up in the jwt. Same semantics as Entra ID and
+    // LDAP : a regular expression, an invalid one keeps every group and is logged.
+    const groups = filterGroups(ssoGroups(payload, req.body.groups, 'oidc'), provider.groupfilter)
+    logger.debug(`oidc login: ${groups.length} groups after the group filter`)
+    const user = await extractOidcUser(payload, groups)
     user.type = "oidc"
     const ro = await User.getRolesAndOptions(user.groups,user)
     user.roles = ro.roles
