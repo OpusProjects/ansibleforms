@@ -747,10 +747,11 @@ export default {
       usernameAttribute: 'ユーザー名属性',
       usernameAttributeDesc: 'ログインユーザー名として使用する LDAP 属性です (例: sAMAccountName、uid)。',
       groupsAttribute: 'グループ属性',
-      groupsAttributeDesc: '所属グループを列挙するユーザー属性です (例: memberOf)。',
+      groupsAttributeDesc:
+        '所属グループを列挙するユーザー属性です (例: memberOf)。グループ検索 (グループ検索ベースとグループクラス) の結果を使う場合は groups を指定してください。',
       groupsSearchBase: 'グループ検索ベース',
       groupsSearchBaseDesc:
-        'グループ検索用の別のベース DN です。メインの検索ベースを使用する場合は空欄にしてください。',
+        'ユーザーをメンバーとして含むグループを、グループ検索が探すベース DN です。検索はグループクラスも設定されている場合にのみ実行され、結果は属性 groups に格納されます。使用するにはグループ属性を groups に設定してください。空欄にすると検索は行われず、グループはユーザーエントリ (例: memberOf) から読み取られます。',
       groupClass: 'グループクラス',
       groupClassDesc: 'グループに使用する LDAP objectClass です (例: groupOfNames、posixGroup)。',
       groupMemberAttribute: 'グループメンバー属性',
@@ -977,9 +978,10 @@ export default {
       requiredPermissions: '必要な API のアクセス許可',
       delegatedUserRead: '委任された User.Read',
       delegatedGroupRead: '委任された GroupMember.Read.All',
-      requiredGroupClaims: '必要なグループ要求',
-      securityGroups: 'セキュリティグループ',
-      accessSamAccount: 'アクセス > samAccountName',
+      groupMembership: 'グループメンバーシップ',
+      groupsFromGraph:
+        'ログイン時に Microsoft Graph から読み取ります (直接および入れ子のメンバーシップ、表示名で)。トークンの groups 要求は使用されないため、構成する必要はありません。',
+      groupsRoleMapping: 'ロールでは、グループを azuread/ に続けて表示名で指定します (例: azuread/AF-Admins)。',
       openIdHelp: 'Open ID のヘルプ',
       openIdNotice: '注意:',
       openIdTestedWith: 'Open ID はこれまで Keycloak でのみテストされています。',

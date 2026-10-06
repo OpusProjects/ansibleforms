@@ -732,9 +732,11 @@ export default {
       usernameAttribute: '用户名属性',
       usernameAttributeDesc: '用作登录用户名的 LDAP 属性（例如 sAMAccountName、uid）。',
       groupsAttribute: '组属性',
-      groupsAttributeDesc: '列出所属组的用户属性（例如 memberOf）。',
+      groupsAttributeDesc:
+        '列出所属组的用户属性（例如 memberOf）。若要使用组搜索（组搜索基准和组类）的结果，请设置为 groups。',
       groupsSearchBase: '组搜索基准',
-      groupsSearchBaseDesc: '用于组搜索的单独基准 DN。留空则使用主搜索基准。',
+      groupsSearchBaseDesc:
+        '组搜索查找将该用户列为成员的组时所用的基准 DN。仅当同时设置了组类时才会执行搜索，搜索结果存放在属性 groups 中，因此要使用它，请将组属性设置为 groups。留空则不执行搜索，并从用户条目（例如 memberOf）读取组。',
       groupClass: '组类',
       groupClassDesc: '用于组的 LDAP objectClass（例如 groupOfNames、posixGroup）。',
       groupMemberAttribute: '组成员属性',
@@ -952,9 +954,10 @@ export default {
       requiredPermissions: '所需 API 权限',
       delegatedUserRead: '委托权限 User.Read',
       delegatedGroupRead: '委托权限 GroupMember.Read.All',
-      requiredGroupClaims: '所需组声明',
-      securityGroups: '安全组',
-      accessSamAccount: '访问 > samAccountName',
+      groupMembership: '组成员身份',
+      groupsFromGraph:
+        '登录时从 Microsoft Graph 读取（直接和嵌套的成员身份，按显示名称）。不使用令牌中的 groups 声明，因此无需配置。',
+      groupsRoleMapping: '在角色中，以 azuread/ 加组的显示名称来指定组（例如 azuread/AF-Admins）。',
       openIdHelp: 'Open ID 帮助',
       openIdNotice: '注意：',
       openIdTestedWith: 'Open ID 目前仅在 Keycloak 上测试过。',

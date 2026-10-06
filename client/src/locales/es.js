@@ -750,10 +750,11 @@ export default {
       usernameAttribute: 'Atributo de Nombre de Usuario',
       usernameAttributeDesc: 'Atributo LDAP usado como nombre de inicio de sesión (ej. sAMAccountName, uid).',
       groupsAttribute: 'Atributo de Grupos',
-      groupsAttributeDesc: 'Atributo de usuario que lista las membresías de grupo (ej. memberOf).',
+      groupsAttributeDesc:
+        'Atributo de usuario que lista las membresías de grupo (ej. memberOf). Póngalo en groups para usar el resultado de la búsqueda de grupos (Base de Búsqueda de Grupos y Clase de Grupo).',
       groupsSearchBase: 'Base de Búsqueda de Grupos',
       groupsSearchBaseDesc:
-        'DN base separado para búsquedas de grupos. Dejar vacío para usar la base de búsqueda principal.',
+        'DN base donde la búsqueda de grupos busca los grupos que tienen al usuario como miembro. La búsqueda solo se ejecuta si también se indica la Clase de Grupo, y guarda su resultado en el atributo groups, así que ponga groups como Atributo de Grupos para usarlo. Dejar vacío para omitir la búsqueda y leer los grupos de la entrada del usuario (ej. memberOf).',
       groupClass: 'Clase de Grupo',
       groupClassDesc: 'objectClass LDAP utilizada para grupos (ej. groupOfNames, posixGroup).',
       groupMemberAttribute: 'Atributo de Miembro de Grupo',
@@ -987,9 +988,11 @@ export default {
       requiredPermissions: 'Permisos de API Requeridos',
       delegatedUserRead: 'Delegado User.Read',
       delegatedGroupRead: 'Delegado GroupMember.Read.All',
-      requiredGroupClaims: 'Reclamaciones de Grupo Requeridas',
-      securityGroups: 'Grupos de Seguridad',
-      accessSamAccount: 'Acceso > samAccountName',
+      groupMembership: 'Pertenencia a Grupos',
+      groupsFromGraph:
+        'Se lee de Microsoft Graph al iniciar sesión (membresías directas y anidadas, por nombre para mostrar). El claim groups del token no se usa, así que no hace falta configurarlo.',
+      groupsRoleMapping:
+        'En un rol, indique un grupo como azuread/ seguido de su nombre para mostrar (ej. azuread/AF-Admins).',
       openIdHelp: 'Ayuda de Open ID',
       openIdNotice: 'Aviso:',
       openIdTestedWith: 'Open ID solo ha sido probado con Keycloak hasta ahora.',
