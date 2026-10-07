@@ -174,7 +174,9 @@ onMounted(() => {
     <div class="card form-signin w-100 m-auto">
       <div class="card-body">
         <div class="login-logo">
-          <img v-if="store.customLogo" :src="store.customLogo" alt="AnsibleForms" />
+          <!-- an uploaded logo ; not the server's built-in default, which is the light logo and
+               would replace the dark theme's own -->
+          <img v-if="store.customLogo && !store.logoIsDefault" :src="store.customLogo" alt="AnsibleForms" />
           <img v-else-if="currentTheme === 'dark'" :src="'img/logo_dark.svg'" alt="AnsibleForms" />
           <!-- the color theme's white logo is made for its colored header : the card is white -->
           <img v-else :src="'img/logo_light.svg'" alt="AnsibleForms" />
