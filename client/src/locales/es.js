@@ -317,6 +317,7 @@ export default {
     checkDisk: 'Espacio en disco',
     checkJobs: 'Trabajos',
     checkScheduler: 'Planificador',
+    checkNodes: 'Nodos',
     checkBackupTooling: 'Herramientas de copia de seguridad',
     checkLastBackup: 'Última copia de seguridad',
     checkDesignerLock: 'Bloqueo del diseñador',

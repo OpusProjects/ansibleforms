@@ -11,6 +11,10 @@ import Runner from './runner.model.js';
 import { checkStore } from '../secrets/providers/index.js';
 import { getSeedState } from '../lib/seed.js';
 import { getExpressionMode } from '../lib/expressionMode.js';
+import Lock from './lock.model.js';
+import { holdsWorkerLock } from '../lib/workerLock.js';
+import { listNodes } from '../lib/nodes.js';
+import { majorMinor } from '../lib/version.js';
 import net from 'net';
 import tls from 'tls';
 import logger from '../lib/logger.js';
@@ -196,40 +200,71 @@ async function authenticationFacts() {
   };
 }
 
-// The scheduler runs in-process. If the system tasks are missing, the nightly
+// The live worker's row in `nodes`, or null : the scheduler runs in the process holding the
+// worker lock, which may be another container than the one answering this page.
+async function liveWorker() {
+  const nodes = await listNodes().catch(() => []);
+  return nodes.find(n => n.isWorker && n.alive) || null;
+}
+
+// The scheduler runs in the worker. If the system tasks are missing, the nightly
 // backup, the token cleanup and the abandoned-job sweep are all silently not
 // happening - which looks exactly like a healthy instance from the outside.
 async function schedulerCheck() {
-  const system = cronService.jobs?.system
-  if (!system || system.size === 0) {
+  let described;
+  let where;
+  if (holdsWorkerLock()) {
+    described = cronService.describe();
+    where = 'this process';
+  } else {
+    const worker = await liveWorker();
+    if (!worker || !worker.info?.scheduler) {
+      return check('scheduler', ERROR, 'no worker', {
+        reason: 'No process holds the worker lock, so schedules, backups, repository syncs and cleanups are not running',
+        note: 'Start a worker (AF_ROLE=worker), or a process with AF_ROLE unset',
+      });
+    }
+    described = worker.info.scheduler;
+    where = worker.id;
+  }
+  const { counts, tasks } = described;
+  if (!counts?.system) {
     return check('scheduler', ERROR, 'not running', 'No system tasks are registered');
   }
-  const tasks = [];
-  for (const [name, task] of system.entries()) {
-    var next;
-    try { next = task.nextRun?.() || null; } catch { next = null; }
-    tasks.push({ name, nextRun: next ? new Date(next).toISOString() : null });
-  }
-  const counts = {
-    system: system.size,
-    schedules: cronService.jobs?.schedules?.size || 0,
-    repositories: cronService.jobs?.repositories?.size || 0,
-  };
   // A registered task is not a running one. croner returns a null next run for a task
   // that has been stopped or whose pattern has no future occurrence, and that is the
-  // only scheduler failure actually OBSERVABLE here: the empty-map branch above cannot
-  // be reached in practice, because app.js awaits init() - which registers these six
-  // tasks - before the http server ever listens, so a registration failure means there
-  // is no page to show the row on. This branch is what gives the row a real verdict:
-  // a nightly backup that silently stopped scheduling looks identical to a healthy
-  // instance from the outside, which is the whole reason this page exists.
+  // only scheduler failure actually OBSERVABLE here. This branch is what gives the row a
+  // real verdict: a nightly backup that silently stopped scheduling looks identical to a
+  // healthy instance from the outside, which is the whole reason this page exists.
   const dead = tasks.filter(t => !t.nextRun);
   if (dead.length > 0) {
-    return check('scheduler', ERROR, `${dead.length} of ${system.size} tasks will not run again`, {
-      counts, tasks, stopped: dead.map(t => t.name),
+    return check('scheduler', ERROR, `${dead.length} of ${counts.system} tasks will not run again`, {
+      counts, tasks, stopped: dead.map(t => t.name), worker: where,
     });
   }
-  return check('scheduler', OK, `${counts.system} system, ${counts.schedules} schedules`, { counts, tasks });
+  return check('scheduler', OK, `${counts.system} system, ${counts.schedules} schedules`,
+    { counts, tasks, worker: where, lastResync: described.lastResync || null });
+}
+
+// The processes on this database : app nodes, the worker (and one waiting), their versions.
+// Mixed versions mean a rolling update is under way or stuck - one schema, two codes.
+async function nodesCheck() {
+  const nodes = (await listNodes()).filter(n => n.alive);
+  if (nodes.length === 0) {
+    return check('nodes', WARNING, 'none seen', 'No process has written its heartbeat yet');
+  }
+  const detail = nodes.map(n => ({
+    id: n.id, role: n.role, version: n.version, worker: n.isWorker, lastSeenSecondsAgo: n.ageSeconds, self: n.self,
+  }));
+  // not the RTEs : they may run an older release on purpose, the contract decides (rte/contract.js)
+  const versions = [...new Set(nodes.filter(n => n.role !== 'rte').map(n => majorMinor(n.version)))];
+  if (versions.length > 1) {
+    return check('nodes', WARNING, `${nodes.length} nodes, versions ${versions.join(' and ')}`,
+      { nodes: detail, reason: 'The nodes run different versions on one schema - finish the update' });
+  }
+  const workers = nodes.filter(n => n.isWorker).length;
+  const rtes = nodes.filter(n => n.role === 'rte').length;
+  return check('nodes', OK, `${nodes.length - rtes} node(s), ${workers} worker, ${rtes} RTE`, { nodes: detail });
 }
 
 // The dump tool is the one dependency that produces a convincing failure : the
@@ -330,14 +365,14 @@ async function configSourceFacts() {
   };
 }
 
-// A stale lock file survives restarts and makes every config save, import and
+// A stale designer lock survives restarts and makes every config save, import and
 // export answer 423 with no other symptom.
 async function designerLockCheck() {
   // deliberately NOT Lock.status() : that goes through Lock.get(), which enforces
   // showDesigner, and health is a settings-level page
   try {
-    const raw = await fs.readFile(appConfig.lockPath, 'utf8');
-    const lock = yaml.parse(raw) || {};
+    const lock = await Lock.read();
+    if (lock === null) return check('designerLock', OK, 'free');
     const who = lock.username || 'unknown';
     // A held lock is the designer WORKING, not a fault, and warning on it turned this row
     // amber during ordinary use - which teaches people to ignore amber and so costs us the
@@ -356,7 +391,7 @@ async function designerLockCheck() {
     if (ageHours === null) {
       // Lock.set always writes a timestamp, so one without it is hand-written or corrupt
       return check('designerLock', WARNING, `held by ${who}, age unknown`,
-        { ...detail, reason: 'The lock file has no usable creation time' });
+        { ...detail, reason: 'The lock has no usable creation time' });
     }
     if (ageHours >= STALE_LOCK_HOURS) {
       return check('designerLock', WARNING, `held by ${who} for ${Math.floor(ageHours)}h`,
@@ -364,7 +399,7 @@ async function designerLockCheck() {
     }
     return check('designerLock', OK, `held by ${who}`, detail);
   } catch (e) {
-    if (e.code === 'ENOENT') return check('designerLock', OK, 'free');
+    if (e.code === 'ER_NO_SUCH_TABLE') return check('designerLock', OK, 'free');
     throw e;
   }
 }
@@ -648,7 +683,6 @@ async function writableCheck() {
     ['uploads', appConfig.uploadPath],
     ['vars', appConfig.varsFilesPath],
     ['repositories', appConfig.repoPath],
-    ['lock', path.dirname(appConfig.lockPath)],
     ['logs', logConfig.path],
   ].filter(([, dir]) => !!dir);
 
@@ -716,7 +750,9 @@ async function configSeedCheck() {
   }
   // Before anything read from disk : a failed reload means what is on disk is NOT what is
   // running, so reporting the file as healthy would describe configuration nobody applied.
-  const state = getSeedState();
+  // the worker applies the seed : its state, wherever this page is served from
+  let state = getSeedState();
+  if (!holdsWorkerLock()) state = (await liveWorker())?.info?.seed || state;
   if (state.failure) {
     return check('configSeed', ERROR, 'last reload failed',
       {
@@ -777,6 +813,7 @@ Health.check = async function () {
     safely('database', databaseCheck),
     safely('schema', schemaCheck),
     safely('scheduler', schedulerCheck),
+    safely('nodes', nodesCheck),
     safely('jobs', jobsCheck),
     safely('backupTooling', backupToolingCheck),
     safely('lastBackup', lastBackupCheck),

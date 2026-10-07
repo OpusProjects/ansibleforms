@@ -3,11 +3,9 @@
 // to the database itself. This side only hands the job over and waits for it to end.
 // The RTE's address and token come from its row in the runners table.
 import { RTE_CONTRACT } from "../rte/contract.js";
+import { appVersion } from "../lib/version.js";
 import axios from "axios";
 import https from "https";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
 import logger from "../lib/logger.js";
 import mysql from "../models/db.model.js";
 import Errors from "../lib/errors.js";
@@ -18,18 +16,8 @@ const POLL_MS = 1000;
 // how often the RTE itself is asked about the job, in polls
 const ASK_RTE_EVERY = 30;
 
-// this app's version : shown next to the RTE's, which may be older (see rte/contract.js)
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const appVersion = (() => {
-  for (const file of ["../../build-info.json", "../../package.json"]) {
-    try {
-      const v = JSON.parse(fs.readFileSync(path.resolve(__dirname, file), "utf8")).version;
-      if (v) return v;
-    } catch { /* next */ }
-  }
-  return "unknown";
-})();
-// is version a older than b (x.y.z, a prerelease suffix ignored) ?
+// is version a older than b (x.y.z, a prerelease suffix ignored) ? this app's version is shown
+// next to the RTE's, which may be older (see rte/contract.js)
 const older = (a, b) => {
   const parts = (v) => String(v || "").split("-")[0].split(".").map((n) => parseInt(n, 10) || 0);
   const [x, y] = [parts(a), parts(b)];

@@ -5,6 +5,7 @@ import NodeCache from 'node-cache';
 import crudConfigs from '../../config/crud.config.js';
 import mysql from './db.model.js';
 import { assertValidCron } from '../lib/cronValidate.js';
+import { bump } from '../lib/epochs.js';
 
 // Per-model cache objects
 const caches = {};
@@ -23,6 +24,24 @@ class CrudModel {
       caches[modelName] = new NodeCache({ stdTTL: config.cacheTTL || 3600, checkperiod: (config.cacheTTL || 3600) * 0.5 });
     }
     return caches[modelName];
+  }
+
+  // This process's cached rows of a model, dropped. What another process wrote reaches here
+  // through the epochs (lib/epochs.js), which call this ; nothing else needs it.
+  static flushLocal(modelName) {
+    caches[modelName]?.flushAll();
+  }
+
+  static flushAllLocal() {
+    for (const cache of Object.values(caches)) cache.flushAll();
+  }
+
+  // A row of this model changed : this process's cache is dropped now, every other
+  // process's within a few seconds (the epoch named after the model), and the worker
+  // re-reads its cron registry when it is a schedule or a repository.
+  static changed(modelName) {
+    CrudModel.flushLocal(modelName);
+    bump(modelName);
   }
 
   static getSelectFields(modelName, { hideHidden = false } = {}) {
@@ -224,7 +243,9 @@ class CrudModel {
     const fieldValues = this.getFieldValues(modelName, data);
     const sql = `INSERT INTO ${config.table} SET ?`;
     const res = await mysql.do(sql, fieldValues);
-    // No cache flush needed on create; new record isn't cached yet
+    // nothing of a new row is cached here yet, but other processes care that it exists
+    // (the worker registers a new schedule's cron)
+    bump(modelName);
     return res.insertId || null;
   }
 
@@ -251,6 +272,7 @@ class CrudModel {
       // schedule, ...). Flushing clears the entries and keeps the one live instance.
       cache.flushAll(); // clear entire cache for simplicity
     }
+    bump(modelName);
     return res.affectedRows > 0;
   }
 
@@ -273,6 +295,7 @@ class CrudModel {
       const naturalKey = config.fields.find(f => f.isNaturalKey)?.name || 'name';
       if (record && record[naturalKey]) cache.del(`name:${record[naturalKey]}`);
     }
+    bump(modelName);
     return res.affectedRows > 0;
   }
 }

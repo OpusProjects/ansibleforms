@@ -166,7 +166,16 @@ class Schedule extends CrudModel {
     // two instances sharing a database) and the cron trigger's own check. The row stayed
     // 'queued' for the whole run, so the processor's next pass - 10 seconds later - saw
     // the same queued schedule and launched it again.
-    await super.update(this.modelName, { state: 'running' }, id);
+    //
+    // And a CONDITIONAL claim : only a schedule still 'queued' is taken, so two processes
+    // reading the same queued row launch it once - the one whose update matched.
+    const claimed = await mysql.do(
+      "UPDATE AnsibleForms.`schedule` SET state='running' WHERE id=? AND state='queued'", [id], true);
+    if (!claimed?.affectedRows) {
+      logger.info(`Schedule ${id} is no longer queued, another process launched it`);
+      return;
+    }
+    CrudModel.changed(this.modelName);
 
     try {
       // All of this is inside the try now. It used to run before it, so a schedule whose

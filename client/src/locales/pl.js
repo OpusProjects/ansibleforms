@@ -317,6 +317,7 @@ export default {
     checkDisk: 'Miejsce na dysku',
     checkJobs: 'Zadania',
     checkScheduler: 'Harmonogram zadań',
+    checkNodes: 'Węzły',
     checkRunners: 'Runnery',
     checkBackupTooling: 'Narzędzia kopii zapasowych',
     checkLastBackup: 'Ostatnia kopia zapasowa',

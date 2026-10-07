@@ -16,7 +16,6 @@ import passport from "passport";
 // App configuration and utilities
 import Middleware from "./lib/middleware.js";
 import logger from "./lib/logger.js";
-import init from "./init/index.js";
 import appConfig from "../config/app.config.js";
 
 // Authentication strategies
@@ -75,9 +74,7 @@ const swaggerDocumentV2 = JSON.parse(fs.readFileSync(path.join(__dirname, "swagg
 
 // start the app
 const load = async (app) => {
-  // first time run of the app
-  // from now on, it's async => we wait for mysql to be ready
-  await init({ boot: true })
+  // the database and the worker's bootstrap come first (app-start.js)
   await auth_azuread.initialize(); // we wait for the azuread to be ready
   await auth_oidc.initialize(); // we wait for the oidc to be ready
 

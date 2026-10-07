@@ -24,6 +24,8 @@ import { dispatch } from "../runners/orchestrator.js";
 import { getRunner } from "../runners/index.js";
 import Runner from "./runner.model.js";
 import { stripTrailingSlashes } from "../lib/url.js";
+import { nodeId } from "../lib/role.js";
+import { NODE_DEAD_SECONDS } from "../lib/nodes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -209,7 +211,9 @@ var Job = function (job) {
 Job.create = async function (record) {
   // create job
   logger.notice(`Creating job`);
-  const res = await mysql.do("INSERT INTO AnsibleForms.`jobs` set ?", record);
+  // the node that follows this job (tracks it on its runner, drives its steps) : when that
+  // node restarts or dies, its jobs are ended rather than left 'running' for good
+  const res = await mysql.do("INSERT INTO AnsibleForms.`jobs` set ?", { tracker: nodeId, ...record });
   return res.insertId;
 };
 Job.abandon = async function (all = false) {
@@ -224,6 +228,30 @@ Job.abandon = async function (all = false) {
     sql = sql + "and (start < (NOW() - INTERVAL 1 DAY))"; // remove jobs that are 1 day old
   }
   const res = await mysql.do(sql);
+  return res.changedRows;
+};
+// At a process start : the jobs this node followed died with its previous run. `untracked`
+// adds the jobs no node follows (started before 7.3) ; only the worker's start passes it, so
+// they are swept once per database, not by every app node that starts.
+Job.abandonOwn = async function (tracker, { untracked = false } = {}) {
+  const res = await mysql.do(
+    "UPDATE AnsibleForms.`jobs` set status='abandoned',abort_requested=0 where (status='running' or abort_requested) and host IS NULL and (tracker=?" +
+      (untracked ? " or tracker IS NULL" : "") + ")",
+    [tracker]);
+  return res.changedRows;
+};
+// The worker, every minute : the jobs of a node that stopped answering (its row in `nodes`
+// is older than NODE_DEAD_SECONDS, or gone) - a container that was replaced and will never
+// come back under the same name to clean up after itself. A job belongs to the RTE running it
+// (jobs.host) when there is one - it carries on when the app node that started it goes - and
+// otherwise to the node following it (jobs.tracker).
+Job.abandonDeadNodes = async function (self = nodeId) {
+  const owner = "COALESCE(j.host, j.tracker)";
+  const res = await mysql.do(
+    "UPDATE AnsibleForms.`jobs` j set j.status='abandoned',j.abort_requested=0 " +
+    `where (j.status='running' or j.abort_requested) and ${owner} IS NOT NULL and ${owner}<>? ` +
+    `and NOT EXISTS (SELECT 1 FROM AnsibleForms.\`nodes\` n WHERE n.id=${owner} AND n.last_seen > (NOW() - INTERVAL ? SECOND))`,
+    [self, NODE_DEAD_SECONDS], true);
   return res.changedRows;
 };
 Job.resetAbortRequested = async function (id) {
@@ -999,8 +1027,9 @@ Job.continue = async function ({ form, user, credentials = {}, extravars = {}, j
   // interleaved output, and jobs.pid overwritten by whichever started second, so a later
   // abort killed only one of them. Job.abort already uses this pattern.
   const claimed = await mysql.do(
-    "UPDATE AnsibleForms.`jobs` SET status='running' WHERE id=? AND status='approve'",
-    [jobid]
+    // and the node continuing it follows it from here
+    "UPDATE AnsibleForms.`jobs` SET status='running', tracker=? WHERE id=? AND status='approve'",
+    [nodeId, jobid]
   );
   if (!claimed.affectedRows) {
     logger.warning(`Job ${jobid} is no longer awaiting approval, not continuing`);

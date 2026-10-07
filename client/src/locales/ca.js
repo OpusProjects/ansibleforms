@@ -319,6 +319,7 @@ export default {
     checkDisk: 'Espai en disc',
     checkJobs: 'Tasques',
     checkScheduler: 'Planificador',
+    checkNodes: 'Nodes',
     checkRunners: 'Runners',
     checkBackupTooling: 'Eines de còpia de seguretat',
     checkLastBackup: 'Darrera còpia de seguretat',

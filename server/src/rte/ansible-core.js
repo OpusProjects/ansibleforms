@@ -6,7 +6,6 @@
 // The approval gate is NOT here : a job reaches an RTE only once it may run
 // (runners/orchestrator.js, in the app).
 import fs from "fs";
-import os from "os";
 import path from "path";
 import { spawn } from "child_process";
 import logger from "../lib/logger.js";
@@ -19,14 +18,11 @@ import Repository from "../models/repository.model.js";
 import Credential from "../models/credential.model.v2.js";
 import mysql from "../models/db.model.js";
 import Job from "../models/job.model.js";
+import { nodeId } from "../lib/role.js";
 
-/**
- * This RTE's name, stored in jobs.host on the jobs it claims : rte-<hostname>-<port>. Unique
- * without a setting - two RTEs on one machine listen on different ports - and the same after a
- * restart, so a restarted RTE finds and ends the jobs it was running.
- */
+/** this RTE's name, stored in jobs.host on the jobs it claims : rte-<hostname>-<port> (lib/role.js) */
 export function runnerIdentity() {
-  return `rte-${os.hostname()}-${appConfig.port}`;
+  return nodeId;
 }
 
 /** the folder the playbook runs from : the playbooks repository, else ANSIBLE_PATH, plus the sub path */

@@ -1,5 +1,7 @@
-// The app : the web interface, the API and everything around it. Started by index.js in the
-// app role (AF_ROLE unset or 'app') ; an RTE (AF_ROLE=rte) never loads this module.
+// The app : the web interface, the API and everything around it. Started by index.js with
+// AF_ROLE unset (the app and the worker in one process, as AnsibleForms always ran) or
+// AF_ROLE=app (the web app only, next to a worker - several may run behind a load balancer).
+// A worker or an RTE never loads this module.
 import express from 'express';
 import ansibleforms from './app.js';
 import appConfig from '../config/app.config.js';
@@ -14,6 +16,14 @@ import authConfig from '../config/auth.config.js';
 import logger from './lib/logger.js';
 import { reloadConfigSeed } from './lib/seed.js';
 import { getExpressionMode } from './lib/expressionMode.js';
+import { ROLE, runsWorker, nodeId } from './lib/role.js';
+import { holdsWorkerLock, tryWorkerLock, keepWorkerLock } from './lib/workerLock.js';
+import { bump } from './lib/epochs.js';
+import { waitForDatabase } from './init/index.js';
+import { runWorker, stopLostWorker } from './init/worker.js';
+import { startCluster } from './init/cluster.js';
+import Job from './models/job.model.js';
+import Schema from './models/schema.model.js';
 import https from 'https';
 import http from 'http';
 import fs from 'fs';
@@ -36,6 +46,47 @@ export async function startApp(){
   // before the routes : every response, the api's included, names the server's build, so a tab
   // left open across an upgrade learns it runs an older one (src/lib/appBuild.js, issue #660)
   app.use(appBuildHeader(build.gitSha));
+
+  // Several app nodes must sign and accept the same tokens : a secret generated per process
+  // makes every node refuse what another one signed - a login that works one request in two
+  if (ROLE === 'app' && authConfig.secretIsGenerated) {
+    const message = 'AF_ROLE=app needs ACCESS_TOKEN_SECRET, the same on every app node : refusing to start';
+    logger.error(message);
+    console.error(message);
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    process.exit(1);
+  }
+
+  await waitForDatabase();
+  let worker = false;
+  if (runsWorker) {
+    // AF_ROLE unset : this process is the worker too - unless another one already is, then it
+    // serves the web app only and takes over the background work when that one stops
+    worker = await tryWorkerLock();
+    if (worker) {
+      await runWorker();
+    } else {
+      logger.warning('Another process holds the worker lock : this one serves the web app and takes over the background work when that process stops');
+    }
+    keepWorkerLock({ onAcquired: runWorker, onLost: stopLostWorker });
+  }
+  if (!runsWorker && appConfig.allowSchemaCreation) {
+    // An app node next to a worker, on an empty database : the worker is creating the schema.
+    // Starting before it has would only fail on missing tables (the jobs sweep below, the
+    // login providers). With ALLOW_SCHEMA_CREATION=0 nobody creates it automatically, so the
+    // app starts and offers the schema page instead.
+    while (await Schema.isEmpty().catch(() => true)) {
+      logger.notice('The database holds no AnsibleForms tables yet : waiting for the worker to create the schema');
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+    }
+  }
+  if (!worker) {
+    // the jobs this node followed before it restarted (the worker's start does this too)
+    Job.abandonOwn(nodeId)
+      .then((changed) => { if (changed) logger.warning(`Abandoned ${changed} jobs this node followed before it restarted`); })
+      .catch((err) => logger.error('Failed to abandon jobs : ' + (err.message || err)));
+  }
+  await startCluster();
 
   await ansibleforms.load(app);
 
@@ -135,6 +186,12 @@ export async function startApp(){
   // the terminal does to a foreground process. That is the trade every daemon makes, and the
   // alternative here is a signal that kills an instance which may be running playbooks.
   process.on('SIGHUP', () => {
+    // an app node next to a worker : the worker applies the seed, told through the database
+    if (!holdsWorkerLock()) {
+      logger.notice('SIGHUP : asking the worker to re-apply the config seed');
+      bump('seed');
+      return;
+    }
     // never awaited : a signal handler that blocks would hold the event loop while the seed
     // clones a repository, and reloadConfigSeed reports its own outcome to the log either way
     reloadConfigSeed({ force: true, trigger: 'SIGHUP' })

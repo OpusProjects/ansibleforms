@@ -14,11 +14,25 @@ import Audit from '../models/audit.model.js';
 import { reloadConfigSeed } from '../lib/seed.js';
 import logConfig from '../../config/log.config.js';
 import dayjs from 'dayjs';
+import { forgetOldNodes } from '../lib/nodes.js';
+import { nodeId } from '../lib/role.js';
+
+// the cron registry is re-read from the database this often even without a change notice
+// (lib/epochs.js), in case one was missed
+const RESYNC_SAFETY_MS = 5 * 60 * 1000;
+
+const scheduleSignature = (oneTimeRun, cron, runAt) =>
+  `${oneTimeRun}|${cron || ''}|${runAt ? new Date(runAt).getTime() : ''}`;
 
 /**
  * Centralized Cron Service
  * Manages all scheduled tasks for repositories and schedules
  * Uses the application timezone from LOG_TZ (via log.config.js)
+ *
+ * It runs in the worker only (the process holding the worker lock) : `active` turns on when
+ * the worker starts it (initializeAll). Until then every add/remove is a no-op, so the
+ * controllers can call it in any process - in an app node the change reaches the worker
+ * through the database (resync, on the change notice of lib/epochs.js).
  */
 class CronService {
   constructor() {
@@ -27,6 +41,14 @@ class CronService {
       schedules: new Map(),
       system: new Map() // For maintenance tasks
     };
+    // what each registered entry was built from, so a resync only touches what changed
+    this.signatures = {
+      repositories: new Map(),
+      schedules: new Map(),
+    };
+    this.active = false;
+    this.lastResync = null;
+    this.safetyTimer = null;
     this.timezone = logConfig.tz;
     logger.info(`Cron service initialized with timezone: ${this.timezone}`);
   }
@@ -49,6 +71,7 @@ class CronService {
    * Add or update a repository cron job
    */
   addRepository(name, cronExpression) {
+    if (!this.active) return;
     try {
       // Remove existing job if any
       this.removeRepository(name);
@@ -105,6 +128,7 @@ class CronService {
 
       task.resume();
       this.jobs.repositories.set(name, task);
+      this.signatures.repositories.set(name, cronExpression);
       logger.info(`Added cron job for repository: ${name} with schedule: ${cronExpression}`);
     } catch (err) {
       logger.error(`Failed to add repository cron job for ${name}:`, err);
@@ -115,6 +139,7 @@ class CronService {
    * Remove a repository cron job
    */
   removeRepository(name) {
+    this.signatures.repositories.delete(name);
     const task = this.jobs.repositories.get(name);
     if (task) {
       task.stop();
@@ -127,6 +152,7 @@ class CronService {
    * Add or update a schedule cron job
    */
   addSchedule(id, name, cronExpression, oneTimeRun, runAt) {
+    if (!this.active) return;
     try {
       // Remove existing job if any
       this.removeSchedule(id);
@@ -163,6 +189,7 @@ class CronService {
 
         task.resume();
         this.jobs.schedules.set(id, task);
+        this.signatures.schedules.set(id, scheduleSignature(oneTimeRun, cronExpression, runAt));
         logger.info(`Added one-time schedule job for: ${name} (ID: ${id}) to run at: ${runAt}`);
       } else if (oneTimeRun === 0 && cronExpression && cronExpression.trim() !== '') {
         // Recurring cron schedule
@@ -198,6 +225,7 @@ class CronService {
 
         task.resume();
         this.jobs.schedules.set(id, task);
+        this.signatures.schedules.set(id, scheduleSignature(oneTimeRun, cronExpression, runAt));
         logger.info(`Added cron job for schedule: ${name} (ID: ${id}) with schedule: ${cronExpression}`);
       }
     } catch (err) {
@@ -209,6 +237,7 @@ class CronService {
    * Remove a schedule cron job
    */
   removeSchedule(id) {
+    this.signatures.schedules.delete(id);
     const task = this.jobs.schedules.get(id);
     if (task) {
       task.stop();
@@ -218,42 +247,66 @@ class CronService {
   }
 
   /**
-   * Initialize all cron jobs from database
+   * Initialize all cron jobs from database : the worker's start. From here on the registry
+   * follows the database (resync).
    */
   async initializeAll() {
     logger.info('Initializing all cron jobs from database...');
+    this.active = true;
+    await this.resync();
+    if (!this.safetyTimer) {
+      this.safetyTimer = setInterval(() => {
+        this.resync().catch((err) => logger.error('Cron resync failed:', err));
+      }, RESYNC_SAFETY_MS);
+      this.safetyTimer.unref?.();
+    }
+    logger.info('Cron service initialization complete');
+  }
 
+  /**
+   * Make the registry match the database : add what is new, rebuild what changed, drop what
+   * is gone. A schedule or repository changed on any app node, or by the seed, gets here.
+   */
+  async resync() {
+    if (!this.active) return;
     try {
-      // Initialize repositories
       const repositories = await mysql.do(
         "SELECT name, cron FROM AnsibleForms.`repositories` WHERE cron<>''",
         undefined,
         true
       );
-      repositories.forEach(repo => {
-        this.addRepository(repo.name, repo.cron);
-      });
-      logger.info(`Initialized ${repositories.length} repository cron jobs`);
+      const wanted = new Map(repositories.map(r => [r.name, r.cron]));
+      for (const name of [...this.jobs.repositories.keys()]) {
+        if (!wanted.has(name)) this.removeRepository(name);
+      }
+      for (const [name, cron] of wanted) {
+        if (this.signatures.repositories.get(name) !== cron) this.addRepository(name, cron);
+      }
+      logger.debug(`Repository cron jobs in sync : ${this.jobs.repositories.size}`);
     } catch (err) {
-      logger.error('Failed to initialize repository cron jobs:', err);
+      logger.error('Failed to sync the repository cron jobs:', err);
     }
 
     try {
-      // Initialize schedules
       const schedules = await mysql.do(
         "SELECT id, name, one_time_run, cron, run_at FROM AnsibleForms.`schedule` WHERE (one_time_run=0 AND cron<>'') OR (one_time_run=1 AND run_at IS NOT NULL)",
         undefined,
         true
       );
-      schedules.forEach(schedule => {
-        this.addSchedule(schedule.id, schedule.name, schedule.cron, schedule.one_time_run, schedule.run_at);
-      });
-      logger.info(`Initialized ${schedules.length} schedule cron jobs`);
+      const wanted = new Map(schedules.map(r => [r.id, r]));
+      for (const id of [...this.jobs.schedules.keys()]) {
+        if (!wanted.has(id)) this.removeSchedule(id);
+      }
+      for (const [id, r] of wanted) {
+        if (this.signatures.schedules.get(id) !== scheduleSignature(r.one_time_run, r.cron, r.run_at)) {
+          this.addSchedule(r.id, r.name, r.cron, r.one_time_run, r.run_at);
+        }
+      }
+      logger.debug(`Schedule cron jobs in sync : ${this.jobs.schedules.size}`);
     } catch (err) {
-      logger.error('Failed to initialize schedule cron jobs:', err);
+      logger.error('Failed to sync the schedule cron jobs:', err);
     }
-
-    logger.info('Cron service initialization complete');
+    this.lastResync = new Date();
   }
 
   /**
@@ -262,6 +315,9 @@ class CronService {
    */
   async initializeSystemTasks(Job, Token, BackupModel, appConfig) {
     logger.info('Initializing system maintenance tasks...');
+    // never twice : a replaced task that is not stopped keeps firing next to its successor
+    this.jobs.system.forEach((task) => task.stop());
+    this.jobs.system.clear();
 
     // 1. Abandoned jobs cleanup - runs every hour
     const abandonedJobsTask = new Cron('0 * * * *', {
@@ -280,6 +336,25 @@ class CronService {
     });
     this.jobs.system.set('abandonedJobs', abandonedJobsTask);
     logger.info('Initialized abandoned jobs cleanup (hourly)');
+
+    // 1b. The jobs of an app node that stopped answering - every minute. The node that follows
+    // a job (jobs.tracker) ends it itself when it restarts, but a replaced container comes back
+    // under another name, or not at all.
+    const deadNodesTask = new Cron('* * * * *', {
+      timezone: this.timezone,
+      protect: true
+    }, async () => {
+      try {
+        const changed = await Job.abandonDeadNodes(nodeId);
+        if (changed > 0) {
+          logger.warning(`Abandoned ${changed} jobs followed by a node that stopped answering`);
+        }
+      } catch (err) {
+        logger.error('Failed to abandon the jobs of stopped nodes:', err);
+      }
+    });
+    this.jobs.system.set('deadNodes', deadNodesTask);
+    logger.info('Initialized the stopped-node job sweep (every minute)');
 
     // 2. Token cleanup - runs daily at 3:00 AM
     const tokenCleanupTask = new Cron('0 3 * * *', {
@@ -448,6 +523,13 @@ class CronService {
       } catch (err) {
         logger.error('Failed to cleanup expired stored jobs:', err);
       }
+      // and the rows of nodes gone for a day
+      try {
+        const forgotten = await forgetOldNodes();
+        if (forgotten > 0) logger.info(`Forgot ${forgotten} node(s) not seen for a day`);
+      } catch (err) {
+        logger.error('Failed to forget old nodes:', err);
+      }
     });
     this.jobs.system.set('storedJobsCleanup', storedJobsCleanupTask);
     logger.info('Initialized stored jobs cleanup (daily at 4:00 AM)');
@@ -511,14 +593,24 @@ class CronService {
   }
 
   /**
-   * Get status of all active cron jobs
+   * What the Status page shows about the scheduler. The worker publishes it with its node row
+   * (lib/nodes.js), so an app node can show it too.
    */
-  getStatus() {
+  describe() {
+    const tasks = [];
+    for (const [name, task] of this.jobs.system.entries()) {
+      var next;
+      try { next = task.nextRun?.() || null; } catch { next = null; }
+      tasks.push({ name, nextRun: next ? new Date(next).toISOString() : null });
+    }
     return {
-      repositories: Array.from(this.jobs.repositories.keys()),
-      datasources: Array.from(this.jobs.datasources.keys()),
-      schedules: Array.from(this.jobs.schedules.keys()),
-      system: Array.from(this.jobs.system.keys())
+      counts: {
+        system: this.jobs.system.size,
+        schedules: this.jobs.schedules.size,
+        repositories: this.jobs.repositories.size,
+      },
+      tasks,
+      lastResync: this.lastResync ? this.lastResync.toISOString() : null,
     };
   }
 }

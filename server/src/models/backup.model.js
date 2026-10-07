@@ -12,6 +12,7 @@ import yaml from 'yaml';
 import dotenv from 'dotenv';
 import Errors from '../lib/errors.js';
 import logger from '../lib/logger.js';
+import { bump } from '../lib/epochs.js';
 
 /**
  * Wrap a value for a POSIX shell as a single-quoted string.
@@ -462,6 +463,8 @@ class BackupModel {
       );
     }
     await this.restoreFormsAndFolder(restoreFolder);
+    // every process drops what it had cached of the replaced rows (lib/epochs.js)
+    bump('restore');
     return { message: 'Restore completed', restoreFolder };
   }
 

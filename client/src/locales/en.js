@@ -317,6 +317,7 @@ export default {
     checkDisk: 'Disk space',
     checkJobs: 'Jobs',
     checkScheduler: 'Scheduler',
+    checkNodes: 'Nodes',
     checkBackupTooling: 'Backup tooling',
     checkLastBackup: 'Last backup',
     checkDesignerLock: 'Designer lock',
