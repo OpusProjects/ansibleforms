@@ -17,7 +17,9 @@ import logger from './lib/logger.js';
 import { reloadConfigSeed } from './lib/seed.js';
 import { getExpressionMode } from './lib/expressionMode.js';
 import { ROLE, runsWorker, nodeId } from './lib/role.js';
-import { holdsWorkerLock, tryWorkerLock, keepWorkerLock, workerLockMiss } from './lib/workerLock.js';
+import { holdsWorkerLock, tryWorkerLock, keepWorkerLock, workerLockMiss, releaseWorkerLock } from './lib/workerLock.js';
+import { onShutdown } from './lib/shutdown.js';
+import cronService from './services/cron.service.js';
 import { bump } from './lib/epochs.js';
 import { waitForDatabase } from './init/index.js';
 import { runWorker, stopLostWorker } from './init/worker.js';
@@ -85,6 +87,8 @@ export async function startApp(){
   }
 
   await waitForDatabase();
+  // closed last on a stop (lib/shutdown.js runs the closers last-registered first)
+  onShutdown('database', () => mysql.end());
   // before the worker's start : a change another node makes while this one bootstraps (a slow
   // seed, a clone) must reach it, and the first read of the change notices is the baseline
   await startCluster();
@@ -101,6 +105,10 @@ export async function startApp(){
       logger.warning('Another process holds the worker lock : this one serves the web app and takes over the background work when that process stops');
     }
     keepWorkerLock({ onAcquired: runWorker, onLost: stopLostWorker });
+    // released at once on a stop, so a waiting worker takes over without waiting for the
+    // database to notice a dead socket
+    onShutdown('worker lock', () => releaseWorkerLock());
+    onShutdown('scheduler', () => cronService.stopAll());
   }
   if (!worker) {
     // not the worker (an app node, or a second AF_ROLE unset process) : the schema is the
@@ -199,6 +207,11 @@ export async function startApp(){
 
   // start the webserver and listen on the port we choose
   httpServer.listen(appConfig.port,  () => logger.notice(`App running on port ${appConfig.port}!`));
+  // first on a stop : no new requests, and the idle keep-alive connections go
+  onShutdown('web server', () => new Promise((resolve) => {
+    httpServer.close(() => resolve());
+    httpServer.closeIdleConnections?.();
+  }));
 
 
   // SIGHUP re-applies the config seed : the unix idiom for "re-read your configuration", and

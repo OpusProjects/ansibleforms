@@ -18,7 +18,10 @@ import httpsConfig from "../../config/https.config.js";
 import appConfig from "../../config/app.config.js";
 import { nodeId } from "../lib/role.js";
 import { appVersion } from "../lib/version.js";
-import { holdsWorkerLock, keepWorkerLock } from "../lib/workerLock.js";
+import { holdsWorkerLock, keepWorkerLock, releaseWorkerLock } from "../lib/workerLock.js";
+import { onShutdown } from "../lib/shutdown.js";
+import cronService from "../services/cron.service.js";
+import mysql from "../models/db.model.js";
 import { reloadConfigSeed } from "../lib/seed.js";
 import { waitForDatabase } from "../init/index.js";
 import { startCluster } from "../init/cluster.js";
@@ -38,6 +41,7 @@ function startHealthServer() {
   // a port that is taken is fatal : a worker that works but answers no healthcheck is restarted
   // over and over, and loses the lock each time
   server.on("error", (err) => die(`Worker : cannot listen on port ${port} : ${err.message}`));
+  onShutdown("health server", () => new Promise((resolve) => server.close(() => resolve())));
   server.listen(port, () => logger.notice(`Worker '${nodeId}' ${appVersion} listening on ${httpsConfig.https ? "https" : "http"} port ${port}`));
 }
 
@@ -48,8 +52,9 @@ export async function startWorker() {
   if (appConfig.encryptionSecretIsDefault) {
     logger.warning('[SECURITY] ENCRYPTION_SECRET is not set. The worker stores and reads credentials (the config seed) with the default key, which is public in the source code : set the same ENCRYPTION_SECRET as the app nodes.');
   }
-  startHealthServer();
   await waitForDatabase();
+  onShutdown("database", () => mysql.end());
+  startHealthServer();
   await startCluster();
   // the jobs this worker followed before it restarted (schedule launches it tracked) : ended now,
   // also when it comes back as the worker waiting for the lock
@@ -61,6 +66,8 @@ export async function startWorker() {
     onWaiting: () => logger.notice("Another process holds the worker lock : waiting to take over when it stops"),
     onLost: stopLostWorker,
   });
+  onShutdown("worker lock", () => releaseWorkerLock());
+  onShutdown("scheduler", () => cronService.stopAll());
 
   // SIGHUP re-applies the config seed (see app-start.js) - when this is the worker at work
   process.on("SIGHUP", () => {

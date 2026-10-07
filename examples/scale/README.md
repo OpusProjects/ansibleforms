@@ -51,8 +51,9 @@ One image, started in different roles (`AF_ROLE`):
 
 - The **chat assistant** keeps its conversations in the memory of one app node: use sticky
   sessions (nginx `ip_hash` here), or a single app node.
-- The **log viewer** shows the log of the node that answers. Send the logs somewhere central
-  instead (`docker logs`, your log collector).
+- **Logs** stay in each container (`LOG_PATH` off the shared volume, as in `.env.example`):
+  several processes rotating one file lose lines. The log viewer shows the log of the node that
+  answers; send the logs somewhere central for the whole picture (`docker logs`, a log collector).
 - **Galera and group replication** do not share the worker lock between database nodes: point
   every worker at the same database node.
 - Settings changed on the settings page are written to the managed `.env` on the shared volume

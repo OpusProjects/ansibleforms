@@ -26,8 +26,24 @@ beforeEach(() => {
   lockRow = null;
   mysql.do = async (sql, params) => {
     calls.push({ sql, params });
+    // the designer_lock row : one row, its data the holder as JSON
+    const holderIs = (u, t) => lockRow && (() => { try { const d = JSON.parse(lockRow.data); return d.username === u && d.type === t; } catch { return false; } })();
+    if (/^INSERT IGNORE INTO AnsibleForms.`designer_lock`/.test(sql)) {
+      if (lockRow) return { affectedRows: 0 };
+      lockRow = { data: params[1] };
+      return { affectedRows: 1 };
+    }
+    if (/^UPDATE AnsibleForms.`designer_lock` SET data=\?, created=NOW\(\) WHERE id=\? AND JSON_UNQUOTE/.test(sql)) {
+      if (!holderIs(params[2], params[3])) return { affectedRows: 0 };
+      lockRow = { data: params[0] };
+      return { affectedRows: 1 };
+    }
+    if (/^DELETE FROM AnsibleForms.`designer_lock` WHERE id=\? AND JSON_UNQUOTE/.test(sql)) {
+      if (!holderIs(params[1], params[2])) return { affectedRows: 0 };
+      lockRow = null;
+      return { affectedRows: 1 };
+    }
     if (/^DELETE FROM AnsibleForms.`designer_lock`/.test(sql)) { const had = !!lockRow; lockRow = null; return { affectedRows: had ? 1 : 0 }; }
-    if (/^INSERT INTO AnsibleForms.`designer_lock`/.test(sql)) { lockRow = { data: params[1] }; return { affectedRows: 1 }; }
     if (/^SELECT data FROM AnsibleForms.`designer_lock`/.test(sql)) return lockRow ? [lockRow] : [];
     return { changedRows: 0, affectedRows: 0 };
   };
@@ -89,6 +105,29 @@ describe("the designer lock lives in the database", () => {
     await Lock.delete(user);
     assert.equal(await Lock.isHeld(), false);
     assert.equal((await Lock.delete(user)).deleted, false, "deleting a free lock is idempotent");
+  });
+
+  test("exclusive : a held lock is refused to another user with 423, and kept", async () => {
+    appConfig.showDesigner = true;
+    await Lock.set(user);
+    await assert.rejects(Lock.set(bob), (e) => e.status === 423 && /locked by alice/.test(e.message));
+    assert.equal((await Lock.status(user)).match, true, "alice still holds it");
+  });
+
+  test("the holder taking it again refreshes it", async () => {
+    appConfig.showDesigner = true;
+    await Lock.set(user);
+    await Lock.set(user);
+    assert.equal((await Lock.status(user)).match, true);
+  });
+
+  test("onlyMine never releases somebody else's lock", async () => {
+    appConfig.showDesigner = true;
+    await Lock.set(bob);
+    assert.equal((await Lock.delete(user, { onlyMine: true })).deleted, false);
+    assert.equal((await Lock.status(bob)).match, true, "bob keeps it");
+    await Lock.delete(bob, { onlyMine: true });
+    assert.equal(await Lock.isHeld(), false);
   });
 
   test("an unreadable lock is still held, by somebody unknown", async () => {

@@ -11,11 +11,15 @@
 import './src/load-env.js';
 import { currentRole, ROLES } from './src/lib/role.js';
 
+import { installShutdown } from './src/lib/shutdown.js';
+
 const role = currentRole();
 if (!ROLES.includes(role)) {
   console.error(`AF_ROLE='${process.env.AF_ROLE}' is not one of ${ROLES.join(', ')} : refusing to start`);
   process.exit(1);
 }
+// SIGTERM / SIGINT : each role registers what it closes (src/lib/shutdown.js)
+installShutdown();
 if (role === 'rte') {
   const { startRte } = await import('./src/rte/server.js');
   await startRte();
