@@ -15,7 +15,7 @@
 /*                                                                */
 /******************************************************************/
 
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 
 const route = useRoute();
@@ -81,11 +81,35 @@ function openActiveSection() {
     save();
   }
 }
-onMounted(openActiveSection);
 watch(() => route.path, openActiveSection);
+
+// The scroll position too : following a link remounts the menu at its top, so the item just
+// clicked could leave the screen. Kept for the browser tab only (sessionStorage), and put
+// back before the new page is painted.
+const panel = ref(null);
+const scrollKey = () => props.storageKey + '_scroll';
+
+function saveScroll() {
+  try {
+    sessionStorage.setItem(scrollKey(), String(panel.value?.scrollTop || 0));
+  } catch (e) {
+    // storage disabled : the menu opens at its top
+  }
+}
+
+onMounted(async () => {
+  openActiveSection();
+  await nextTick();
+  try {
+    const top = Number(sessionStorage.getItem(scrollKey()) || 0);
+    if (panel.value && top > 0) panel.value.scrollTop = top;
+  } catch (e) {
+    // storage disabled : the menu opens at its top
+  }
+});
 </script>
 <template>
-  <div class="af-sidebar d-flex flex-column p-3 bg-body-tertiary">
+  <div ref="panel" class="af-sidebar d-flex flex-column p-3 bg-body-tertiary" @scroll.passive="saveScroll">
     <!-- 16px under the divider before a section title ; an untitled list sets its own
          space instead (see the list below) -->
     <div
