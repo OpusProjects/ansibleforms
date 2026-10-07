@@ -249,6 +249,14 @@
   padding-right: 2rem; // the same room on the right as between the sidebar and the content
   column-gap: 2rem; // room between the sidebar and the content
 }
+// The page next to the sidebar may shrink below the width of its content. A flex item
+// does not by default (min-width: auto), so content that scrolls on its own made the page
+// wider than the window instead of scrolling inside it : the settings page's tab strip
+// (1954px wide at 1900px, its Save button cut off) and the awx workflow of a job page
+// (2200px, the job's buttons and output cut off).
+.af-settings-layout > .section {
+  min-width: 0;
+}
 
 // The forms page's category list behaves like the settings sidebar : the same panel
 // color, pinned below the header, one screen high and scrolling on its own. On a phone
