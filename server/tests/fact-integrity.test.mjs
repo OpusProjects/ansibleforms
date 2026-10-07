@@ -124,14 +124,15 @@ describe("every tree-touching repository operation claims the lock first", () =>
   });
 
   test("it claims before touching the tree", () => {
-    const claim = fn.indexOf("set status = 'running'");
+    // every claim goes through Repository.claim (status = 'running', with its node and time)
+    const claim = fn.indexOf("Repository.claim(name)");
     const rm = fn.indexOf("Repo.delete(name)");
     assert.ok(claim > -1, "no claim at all");
     assert.ok(claim < rm, "the claim must come before the rm -rf");
   });
 
   test("the claim is taken after the managed guard, so a refused delete leaves it alone", () => {
-    assert.ok(fn.indexOf("assertNotManaged") < fn.indexOf("set status = 'running'"));
+    assert.ok(fn.indexOf("assertNotManaged") < fn.indexOf("Repository.claim(name)"));
   });
 
   test("the tree removal is awaited", () => {

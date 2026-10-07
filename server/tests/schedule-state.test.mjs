@@ -31,7 +31,7 @@ vi.mock("../src/models/job.model.js", () => ({
 vi.mock("../src/models/db.model.js", () => ({
   default: {
     do: async (sql) => {
-      if (/SET state='running' WHERE id=\? AND state='queued'/.test(sql)) {
+      if (/SET state='running',.* WHERE id=\? AND state='queued'/.test(sql)) {
         if (row.state !== "queued") return { affectedRows: 0 };
         row.state = "running";
         writes.push("running");

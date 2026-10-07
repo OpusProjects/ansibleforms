@@ -6,6 +6,10 @@ import yaml from 'yaml';
 import CrudModel from './crud.model.js';
 import mysql from './db.model.js';
 import cronService from '../services/cron.service.js';
+import { nodeId, NODE_DEAD_SECONDS } from '../lib/role.js';
+
+// a schedule launch older than this is released whatever its node says
+const LAUNCH_MAX_MINUTES = 10;
 import Form from './form.model.js';
 import Errors from '../lib/errors.js';
 
@@ -153,6 +157,21 @@ class Schedule extends CrudModel {
     logger.info(`Queued schedule ${id}`);
   }
 
+  // Back to idle, the launches nobody will finish : the node launching it stopped answering, it
+  // is older than LAUNCH_MAX_MINUTES (a launch only hands the job over, it takes seconds), or -
+  // atStart, the worker's start - its own and those from before 7.5. A launch an app node is
+  // doing right now is left alone.
+  static async releaseStale({ atStart = false } = {}) {
+    const res = await mysql.do(
+      "UPDATE AnsibleForms.`schedule` s SET s.state='idle', s.claim_node=NULL WHERE s.state='running' AND (" +
+        "(s.claim_node IS NOT NULL AND NOT EXISTS (SELECT 1 FROM AnsibleForms.`nodes` n WHERE n.id = s.claim_node AND n.last_seen > (NOW() - INTERVAL ? SECOND)))" +
+        " OR s.claim_since < (NOW() - INTERVAL ? MINUTE)" +
+        (atStart ? " OR s.claim_node = ? OR s.claim_node IS NULL" : "") + ")",
+      atStart ? [NODE_DEAD_SECONDS, LAUNCH_MAX_MINUTES, nodeId] : [NODE_DEAD_SECONDS, LAUNCH_MAX_MINUTES], true);
+    if (res?.affectedRows) CrudModel.changed(this.modelName);
+    return res?.affectedRows || 0;
+  }
+
   static async launch(id) {
     let status = "success";
     let output;
@@ -169,8 +188,11 @@ class Schedule extends CrudModel {
     //
     // And a CONDITIONAL claim : only a schedule still 'queued' is taken, so two processes
     // reading the same queued row launch it once - the one whose update matched.
+    // It names the node that launches it : a node that goes away mid-launch (an app node handling
+    // POST /schedule/:id/launch during a deploy) would otherwise leave it 'running', and the
+    // queue processor refuses to start anything while one is (Schedule.releaseStale).
     const claimed = await mysql.do(
-      "UPDATE AnsibleForms.`schedule` SET state='running' WHERE id=? AND state='queued'", [id], true);
+      "UPDATE AnsibleForms.`schedule` SET state='running', claim_node=?, claim_since=NOW() WHERE id=? AND state='queued'", [nodeId, id], true);
     if (!claimed?.affectedRows) {
       logger.info(`Schedule ${id} is no longer queued, another process launched it`);
       return;

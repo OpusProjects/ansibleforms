@@ -266,24 +266,24 @@ const initOnce = async function({ boot = false } = {}){
       logger.error("Failed to abandon jobs : " + err)
     })
 
-    logger.info("Checking stale repository locks")
-    // awaited : the boot clone/pull below now use the atomic status='running'
-    // claim, so a stale 'running' must be cleared first or they'd be rejected.
-    // Safe with several app nodes : only the worker runs this, and a clone or pull
-    // started on an app node (a designer refresh) is over long before a worker restarts.
+    logger.info("Checking stale repository claims")
+    // awaited : the boot clone/pull below use the atomic status='running' claim, so a
+    // stale one must be released first or they'd be rejected. Only the stale ones : this
+    // worker's own from before it restarted, those of nodes that went away, and those from
+    // before 7.5 - an app node's live claim (a designer sync) is left alone.
     try {
-      const reset = await Repository.resetStaleLocks()
-      if(reset) logger.warning(`Reset ${reset} stale repository lock(s)`)
+      const reset = await Repository.releaseStaleClaims({ atStart: true })
+      if(reset) logger.warning(`Released ${reset} stale repository claim(s)`)
     } catch(err) {
-      logger.error("Failed to reset stale repository locks : " + err)
+      logger.error("Failed to release stale repository claims : " + err)
     }
   }
 
   // Declarative config seed (CONFIG_SEED_PATH).
   //
-  // It MUST come after resetStaleLocks and before the cron/rebase bootstrap below.
+  // It MUST come after releaseStaleClaims and before the cron/rebase bootstrap below.
   // Creating a seeded repository fires Repository.clone WITHOUT awaiting it, and that
-  // clone takes the atomic status='running' claim. Run earlier, resetStaleLocks then
+  // clone takes the atomic status='running' claim. Run earlier, the release then
   // wiped the claim of a clone that was still running - marking a healthy repository
   // 'failed' and letting the rebase_on_start block start a SECOND git process in the
   // same directory. In this position the claim survives, so that block is correctly
@@ -341,25 +341,6 @@ const initOnce = async function({ boot = false } = {}){
 
   // the schedules : a queue in the database, processed one at a time
 
-  /**
-   * Nothing can still be running: this process has just started, and it holds the worker
-   * lock, so no other process runs the queue. A row left at 'running' is the remains of a crash or a kill during
-   * a launch, and since the check below refuses to dequeue anything while one is
-   * 'running', leaving it would disable every scheduled run until somebody edited the
-   * database by hand. Same reasoning as the abandoned-jobs sweep.
-   */
-  async function releaseStaleRunning(table){
-    try{
-      const res = await mysql.do(`UPDATE AnsibleForms.\`${table}\` SET state='idle' WHERE state='running'`)
-      if(res?.changedRows > 0){
-        logger.warning(`Released ${res.changedRows} ${table}(s) left at 'running' by a previous run`)
-      }
-    }catch(e){
-      logger.error(`Failed to release stale running ${table}s : ` + e)
-    }
-  }
-  const releaseStaleRunningSchedules = () => releaseStaleRunning('schedule')
-
   async function checkSchedules(){
     try{
       // logger.info("Checking schedules")
@@ -389,9 +370,13 @@ const initOnce = async function({ boot = false } = {}){
     }
   }
 
-  // Initial call to start the process, after clearing anything a crash left behind
-  // (the expired stored jobs are swept by the system task at 4:00, cron.service.js)
-  releaseStaleRunningSchedules().finally(() => setTimeout(checkSchedules,10000))
+  // Initial call to start the process, after releasing what a crash left 'running' : the
+  // check above refuses to dequeue anything while one is, so leaving it would disable every
+  // scheduled run (the expired stored jobs are swept by the system task at 4:00, cron.service.js)
+  Schedule.releaseStale({ atStart: true })
+    .then((released) => { if (released) logger.warning(`Released ${released} schedule(s) left at 'running' by a previous run`) })
+    .catch((e) => logger.error("Failed to release stale running schedules : " + e))
+    .finally(() => setTimeout(checkSchedules,10000))
 
   return schemaIsReady
 }

@@ -352,9 +352,19 @@ class CronService {
       } catch (err) {
         logger.error('Failed to abandon the jobs of stopped nodes:', err);
       }
+      // and the claims they held : a repository left 'running' refuses every pull and save, a
+      // schedule left 'running' stops the whole queue
+      try {
+        const repos = await Repository.releaseStaleClaims();
+        if (repos > 0) logger.warning(`Released ${repos} repository claim(s) held by a node that stopped answering`);
+        const schedules = await Schedule.releaseStale();
+        if (schedules > 0) logger.warning(`Released ${schedules} schedule launch(es) held by a node that stopped answering`);
+      } catch (err) {
+        logger.error('Failed to release the claims of stopped nodes:', err);
+      }
     });
     this.jobs.system.set('deadNodes', deadNodesTask);
-    logger.info('Initialized the stopped-node job sweep (every minute)');
+    logger.info('Initialized the stopped-node sweep (every minute)');
 
     // 2. Token cleanup - runs daily at 3:00 AM
     const tokenCleanupTask = new Cron('0 3 * * *', {
