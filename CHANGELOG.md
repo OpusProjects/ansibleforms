@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.4.0](https://github.com/ansibleforms/ansibleforms/compare/7.3.0...7.4.0) (2026-10-07)
+
+
+### Added
+
+* add Catalan as a language ([#686](https://github.com/ansibleforms/ansibleforms/issues/686)) ([1166384](https://github.com/ansibleforms/ansibleforms/commit/11663848eb5ef7b448051fb0aa808d4d8387daad))
+* add Japanese as a language ([#688](https://github.com/ansibleforms/ansibleforms/issues/688)) ([d9411ff](https://github.com/ansibleforms/ansibleforms/commit/d9411ff9ca383a8b8e73603bb035a82cced2cba9))
+* add Polish as a language ([#704](https://github.com/ansibleforms/ansibleforms/issues/704)) ([19893c5](https://github.com/ansibleforms/ansibleforms/commit/19893c5b045ff049017487e920a39d819e0b4f26))
+* add Portuguese as a language ([#685](https://github.com/ansibleforms/ansibleforms/issues/685)) ([1ce760d](https://github.com/ansibleforms/ansibleforms/commit/1ce760dd6a64f74776f73bcb74b82c56606add2c))
+* add Simplified Chinese as a language ([#689](https://github.com/ansibleforms/ansibleforms/issues/689)) ([f6bc79c](https://github.com/ansibleforms/ansibleforms/commit/f6bc79cb1dab3f04ae7073b028ef6448da35cfd6))
+* list the languages in alphabetical order ([#687](https://github.com/ansibleforms/ansibleforms/issues/687)) ([11a9064](https://github.com/ansibleforms/ansibleforms/commit/11a9064186c476b16e540b216477cd53ed875f6f))
+* record the client address behind a reverse proxy (TRUST_PROXY) ([#695](https://github.com/ansibleforms/ansibleforms/issues/695)) ([351865f](https://github.com/ansibleforms/ansibleforms/commit/351865fded27e6f0e36df45c1bd6c1e76ec2bdb2))
+* search forms and pages from the header ([#683](https://github.com/ansibleforms/ansibleforms/issues/683)) ([6806460](https://github.com/ansibleforms/ansibleforms/commit/68064604fc3399c3f5475b9910121c4c50de3cd0))
+* show each page's description in a popover next to its title ([#707](https://github.com/ansibleforms/ansibleforms/issues/707)) ([d41b602](https://github.com/ansibleforms/ansibleforms/commit/d41b6027516c348ace93c55d7337258a47cd6844))
+* show on the header's Designer link who holds the designer lock ([#710](https://github.com/ansibleforms/ansibleforms/issues/710)) ([eeebac5](https://github.com/ansibleforms/ansibleforms/commit/eeebac5448cc41ad22276d43e637489a58023071))
+
+
+### Fixed
+
+* center the spinner shown while signing out ([#712](https://github.com/ansibleforms/ansibleforms/issues/712)) ([06eade7](https://github.com/ansibleforms/ansibleforms/commit/06eade76de074b0147ebc881c5b32a5a07aba46f))
+* correct the ldap group search and entra id group hints ([#691](https://github.com/ansibleforms/ansibleforms/issues/691)) ([0c8caf6](https://github.com/ansibleforms/ansibleforms/commit/0c8caf68a0a61759f7a21d7b9afc6ab7ff14d335))
+* leave the same space under the card on pages without an action bar ([#709](https://github.com/ansibleforms/ansibleforms/issues/709)) ([59c87a8](https://github.com/ansibleforms/ansibleforms/commit/59c87a85657a8f0306f9cae79f961463ea3036cf))
+* let users with allowPlannedJobs run a form later ([#696](https://github.com/ansibleforms/ansibleforms/issues/696)) ([ceb08bb](https://github.com/ansibleforms/ansibleforms/commit/ceb08bbee21d6e57492af6d8df855402157928e4))
+* name the user in job event emails in the email's language ([#692](https://github.com/ansibleforms/ansibleforms/issues/692)) ([6942d30](https://github.com/ansibleforms/ansibleforms/commit/6942d30b1312e4cbfdee86f46968d07eaed70555))
+* **oidc:** apply the group filter to the groups in the token ([#690](https://github.com/ansibleforms/ansibleforms/issues/690)) ([b16edd7](https://github.com/ansibleforms/ansibleforms/commit/b16edd710b29fae7a81c85fe8c507417e3914c65))
+* show counted texts in each language's plural forms ([#706](https://github.com/ansibleforms/ansibleforms/issues/706)) ([7803766](https://github.com/ansibleforms/ansibleforms/commit/7803766579e154c34cb9c42a531136a0a3717e62))
+* show each theme's own logo while no custom logo is uploaded ([#711](https://github.com/ansibleforms/ansibleforms/issues/711)) ([9a55e37](https://github.com/ansibleforms/ansibleforms/commit/9a55e37d95bf73c44fb3343798cea71027d44082))
+* stop the running step when a multistep job is aborted ([#697](https://github.com/ansibleforms/ansibleforms/issues/697)) ([f48b73e](https://github.com/ansibleforms/ansibleforms/commit/f48b73eb04ffcae9c2ebd005cdc0491e560f8112))
+* translate the subjects of the job and test emails ([#698](https://github.com/ansibleforms/ansibleforms/issues/698)) ([bec81b1](https://github.com/ansibleforms/ansibleforms/commit/bec81b1abc8c1c7045018e4e90bee5a3bcdfa3ae))
+
+
+### Security
+
+* only send the designer lock holder's name and lock time ([#708](https://github.com/ansibleforms/ansibleforms/issues/708)) ([ec58540](https://github.com/ansibleforms/ansibleforms/commit/ec58540af9be603e8125484a586337ab04a78852))
+* only show users their own stored jobs ([#693](https://github.com/ansibleforms/ansibleforms/issues/693)) ([bf8bb98](https://github.com/ansibleforms/ansibleforms/commit/bf8bb980f1f4c08c0cbe6c7ad92963d4e1e454a4))
+* stop other users from deleting a job awaiting approval ([#694](https://github.com/ansibleforms/ansibleforms/issues/694)) ([c37ba71](https://github.com/ansibleforms/ansibleforms/commit/c37ba71df036d7d2f54e1b669e382948d0f2ab80))
+
 ## [7.3.0](https://github.com/ansibleforms/ansibleforms/compare/7.2.0...7.3.0) (2026-10-06)
 
 
