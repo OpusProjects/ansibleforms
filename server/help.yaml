@@ -346,6 +346,26 @@
       The trail is append-only, so without a sweep it grows for ever; a daily task at 3:30 AM
       removes entries older than this.
       Set to 0 to keep everything.
+  - name: AF_ROLE
+    version: 7.3.0
+    type: string
+    allowed: app, rte
+    short: What this process runs
+    default: app
+    description: |
+      `app` (the default) is AnsibleForms itself. `rte` starts the same image as a runtime
+      environment : a small API that runs playbooks for an app, with no web interface,
+      scheduler or seed. An RTE needs the app's database settings (`DB_*`), the same
+      `ENCRYPTION_SECRET`, and `RTE_TOKEN`. The app reaches it through a runner added under
+      Connections > Runners.
+  - name: RTE_TOKEN
+    version: 7.3.0
+    type: string
+    allowed: at least 16 characters
+    short: The token between an app and its RTE
+    description: |
+      On an RTE (`AF_ROLE=rte`) : the bearer token every call must carry ; the RTE refuses to
+      start without one. The app stores the same token on the runner (Connections > Runners).
   - name: JOB_RETENTION_DAYS
     version: 6.3.0
     type: number
@@ -713,10 +733,13 @@
   - name: PROCESS_MAX_BUFFER
     type: number
     allowed: a valid number
-    short: Maximum buffer size
+    short: Maximum playbook output per stream (RTE)
     default: 1024 * 1024
     description: |
-      The maximum buffer size for the process execution.  If you have large output, you might want to increase this value.
+      Read by an RTE (`AF_ROLE=rte`) : a playbook whose output on one stream passes this many
+      bytes is stopped. If you have large output, raise it. Since 7.3 the app runs no playbook
+      itself, so set this in the RTE container's environment ; it is not editable on the
+      Settings page.
     version: 5.0.8
   - name: LOG_LEVEL
     type: string
@@ -981,10 +1004,12 @@
   - name: ANSIBLE_PATH
     type: string
     allowed: a valid path
-    short: The path of the ansible playbooks (local instance)
+    short: Where an RTE finds the playbooks
     default: "%PERSISTENT_FOLDER%/playbooks"
     description: |
-      Ansible Forms can have a local ansible instance.  This path says where the playbooks are.
+      Read by an RTE (`AF_ROLE=rte`) : the folder its playbooks run from when no repository is
+      marked for playbooks. Since 7.3 the app runs no playbook itself, so set this in the RTE
+      container's environment ; it is not editable on the Settings page.
   - name: REGEX_FILTER_JOB_OUTPUT
     type: string
     allowed: an escaped regular expression
@@ -1036,7 +1061,7 @@
     short: The prefix for the AWX API
     default: /api/v2
     description: |
-      Ansible Forms can connect to an AWX instance.  This is the prefix of the API, which is typically `/api/v2`.
+      The prefix of the AWX / AAP API on the runners of type awx, typically `/api/v2`.
   - name: NAV_HOME_LABEL
     type: string
     version: 5.1.0
@@ -1650,7 +1675,8 @@
         choices:
         - name: ansible
           description: | 
-            Targets an Ansible Core playbook.  
+            Targets an Ansible playbook, run on a runner of type rte (Connections > Runners),
+            named with `runner:` or the default one. Since 7.3 AnsibleForms runs no playbook itself.
           examples:
           - name: Ansible Core Form
             code: |
@@ -1688,8 +1714,8 @@
                     type: text
         - name: awx
           description: |
-            Targets an Awx Template.  
-            The AWX Connection token must be set in the settings.
+            Targets a job or workflow template on AWX / Ansible Automation Platform / Ascender :
+            a runner of type awx (Connections > Runners), named with `runner:` or the default one.
           examples:
           - name: Awx Form
             code: |
@@ -2074,16 +2100,44 @@
             
           **Note** : You can also dynamically set the scm branch by using a field called `__scmBranch__`.  It must be sent as extravar.  If this extravar is found it will overwrite the static `scm_branch`.  
           **Note** : If you use multistep and you want to dynamically set every step, use the `key` property and `model` property to create separate extravars per step.
+      - name: runner
+        type: string
+        with_types: ansible, awx
+        group: workflow
+        version: 7.3.0
+        allowed: the name of a runner (Connections > Runners)
+        short: Where the job runs
+        description: |
+          The runner that runs this form's job : a runner of type rte (a runtime environment
+          container) for a playbook, a runner of type awx (AWX / Ansible Automation Platform /
+          Ascender) for a template. Runners are added under Connections > Runners.
+          Without this property the default runner of the matching type is used ; without a
+          default the job fails and says how to add one. Since 7.3 AnsibleForms runs no
+          playbook itself.
+        examples:
+        - name: Run on the vmware runtime
+          code: |
+            - name: Create a vm
+              type: ansible
+              playbook: create_vm.yaml
+              runner: rte-vmware
+        - name: Run a template on a named AAP
+          code: |
+            - name: Deploy
+              type: awx
+              template: deploy
+              runner: aap-prod
       - name: awx
         type: string
         with_types: awx
         group: workflow
         version: 6.0.0
-        allowed: name of awx instance
-        short: Add awx instance to your template
+        allowed: name of a runner of type awx
+        short: Deprecated alias of runner
         description: |
-          From now on you can have multiple AWX instances.
-          The database will be updated during upgrade but you will need to set your current AWX instance to default.
+          **Deprecated since 7.3, removed in 8.** Use `runner`. AWX/AAP connections are runners
+          of type awx since 7.3 (Connections > Runners) ; the upgrade moves the existing ones
+          there. `awx: <name>` still names that runner, with a warning in the log.
        
           
           **Note** : you can also set these dynamically by using a field called `__awx__`.   It must be sent as extravar.  If this extravar is found it will overwrite the static awx.  
@@ -2541,11 +2595,10 @@
             choices:
             - name: ansible
               description: | 
-                Targets an Ansible Core playbook.  
+                Targets an Ansible playbook, run on a runner of type rte (Connections > Runners).
             - name: awx
               description: |
-                Targets an Awx Template.  
-                The AWX Connection token must be set in the settings.
+                Targets a job or workflow template on a runner of type awx (Connections > Runners).
             short: Step type
             description: | 
               Every step can be an ansible-playbook or an awx-template
@@ -5279,11 +5332,11 @@
     description: |
       AnsibleForms can display a **job-specific log file** alongside the Ansible output, making it easy to track the progress of long-running custom modules that would otherwise produce no visible feedback during execution.
 
-      > **Note:** This feature only works for direct Ansible jobs. AWX / Ansible Tower jobs are not supported.
+      > **Note:** This feature works for playbooks run on a runner of type rte. AWX / AAP templates are not supported.
 
       **How it works:**
-      - During a job run, AnsibleForms watches for a log file at a well-known path inside the playbook folder
-      - When the job is retrieved (or polled), the contents of the log file are read and returned alongside the normal output
+      - During a job run, the RTE watches for a log file at a well-known path inside the playbook folder
+      - Every 2 seconds, when the file changed, and once more when the playbook ends, the RTE stores its contents on the job ; the file is then removed (since 7.3)
       - The log file is displayed in a separate **Logfile** panel below the main Ansible output, with full ANSI colour support
 
       **Log file path convention:**
@@ -5300,7 +5353,7 @@
       **Responsibilities of the playbook / module developer:**
       - **Create** the log file (and its `.joblogs/` directory) at the start of the operation
       - **Write** meaningful progress messages as the operation proceeds
-      - **Delete** the file when it is no longer needed (e.g. at the start of a new run to avoid stale data)
+      - Deleting it is not needed : the RTE removes it once the playbook ended (it is kept on the job)
 
       **ANSI colour coding is supported.**  
       You can use standard ANSI escape codes (e.g. `\033[92m` for green, `\033[91m` for red) in your log messages and they will be rendered as colours in the UI. This is ideal for distinguishing success, warning, and error states at a glance.

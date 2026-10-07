@@ -130,7 +130,13 @@ export function searchPages(t, options) {
       link: '/admin/knownHosts',
       permission: 'showSettings',
     },
-    { title: t('sidebar.aap'), section: settings, icon: 'fac,ansible', link: '/admin/aap', permission: 'showSettings' },
+    {
+      title: t('sidebar.runners'),
+      section: settings,
+      icon: 'rocket',
+      link: '/admin/runners',
+      permission: 'showSettings',
+    },
     {
       title: t('sidebar.repositories'),
       section: settings,

@@ -91,13 +91,16 @@ refuses when `server/package.json` at that tag names another version.
 
 ## The base image
 
-`ghcr.io/ansibleforms/base-server` holds node, python, ansible and the os packages. It is
+`ghcr.io/ansibleforms/base-server` holds node, python, ansible and the os packages. The RTE
+(`Dockerfile.rte`), which runs the playbooks, builds from it. The app (`Dockerfile`) does not:
+it needs only node, git, ssh, the mariadb client and ytt, and builds from the official
+`node:24-bookworm-slim` image (pinned by digest, moved by Dependabot). base-server is
 built in [ansibleforms/base-images](https://github.com/ansibleforms/base-images) and
 versioned by date (`2026.10.05`, plus `latest`), independent of the application.
 
 - **Build it:** in base-images, a merged change to `base-server/` publishes a new build, or
   Actions → **Build** → Run workflow rebuilds it with fresh packages.
-- **Use it:** the application `Dockerfile` pins the base by digest, so a new base changes
+- **Use it:** `Dockerfile.rte` pins the base by digest, so a new base changes
   nothing until the pin moves. Dependabot opens a `build(deps): bump base-server` pull
   request for that. Build a release candidate of it to test the app on the new base, then
   merge it. Retitle it `fix(base): ...` if the update should appear in the changelog.

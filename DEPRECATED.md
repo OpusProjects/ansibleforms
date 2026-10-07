@@ -8,6 +8,19 @@ Removed in 8.0.0. Each logs a warning when it is used.
 | `vault_path` on a credential (API, seed) | `secret_store` + `secret_ref` | 7.1.0 |
 | `POST /api/v2/config/vault/check`, `GET /api/v2/config/vault/mounts` | `POST /api/v2/secretstore/{id}/check`, `GET /api/v2/secretstore/{id}/mounts` | 7.1.0 |
 | `hasApproval` on a form or a step (it has no effect) | `approval` | 7.3.0 |
+| `awx: <name>` on a form | `runner: <name>` (an AWX connection is a runner of type `awx`) | 7.3.0 |
+| the config seed's `awx:` section | `runners:` items with `type: awx` | 7.3.0 |
+
+## Changed in 7.3.0 - read before upgrading
+
+7.3 runs playbooks on runners: the app no longer runs `ansible-playbook` itself.
+
+| What changed | What to do |
+|---|---|
+| playbooks no longer run inside the AnsibleForms container | start an RTE (the `ansibleforms-rte` image), add it under Connections > Runners and mark it as default, or name it on the form with `runner:` |
+| `ANSIBLE_PATH`, `PROCESS_MAX_BUFFER` are read by the RTE, not the app | set them in the RTE container's environment |
+| the app image is node only: no ansible, python or collections | anything you added to the app image for playbooks goes into your RTE image (fork `Dockerfile.rte`) |
+| the `awx` table, `/api/v2/awx` and the A.A.P. page are gone | nothing : the upgrade moves every AWX/AAP connection to Runners (type `awx`) |
 
 ## Removed in 7.0.0
 
@@ -27,7 +40,6 @@ replaces each item and how to move over while still on 6.5.
 | `enableLogin` (role option) | `allowLogin` | 6.3.0 |
 | datasources and data schemas (their tables are dropped), the AnsibleForms Galaxy collection | none - an import runs as a playbook of your own | 7.0.0 |
 
-6.x keeps getting patch releases from the `release/6.x` branch.
 
 ## Deprecating something
 

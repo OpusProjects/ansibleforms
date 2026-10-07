@@ -224,7 +224,7 @@ defineExpose({
     <template #actions>
       <!-- the action bar holds buttons only : the 'isAction' checkbox row that
                  used to render here reached nothing, because the only fields carrying
-                 that flag live in the aap and oauth2_providers blocks, and both of
+                 that flag live in the runners and oauth2_providers blocks, and both of
                  those pages use AppAdminMulti, which never had this slot -->
       <BsButton
         v-for="action in actions"

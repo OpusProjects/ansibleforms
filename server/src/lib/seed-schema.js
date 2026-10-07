@@ -20,6 +20,8 @@ const strOrInt = { type: ["string", "integer"] };
 // unattended at startup, so a misspelled key must be an error the operator sees
 // immediately, not a value that is silently dropped.
 
+// Deprecated since 7.3, removed in 8 : the section for AWX connections. Its items are
+// runners of type awx now (foldAwxIntoRunners) ; the shape is still validated as it was.
 const awxItem = {
   type: "object",
   additionalProperties: false,
@@ -87,6 +89,40 @@ const secretStoreItem = {
     extra: { type: ["object", "string"] },
   },
 };
+
+// Where a job runs : an RTE (type rte, `token` is its RTE_TOKEN) or AWX/AAP/Ascender
+// (type awx : a token, or use_credentials with username and password)
+const runnerItem = {
+  type: "object",
+  additionalProperties: false,
+  required: ["name", "type", "uri"],
+  properties: {
+    name: str,
+    type: { type: "string", enum: ["rte", "awx"] },
+    description: str,
+    uri: str,
+    token: str,
+    use_credentials: bool,
+    username: str,
+    password: str,
+    ignore_certs: bool,
+    ca_bundle: str,
+    is_default: bool,
+  },
+};
+
+/**
+ * The `awx:` section as runners of type awx : a seed written before 7.3 keeps working
+ * (deprecated, removed in 8). Returns a new document ; the warning is the caller's.
+ */
+export function foldAwxIntoRunners(doc) {
+  if (!doc?.awx) return doc;
+  const { awx, ...rest } = doc;
+  const runners = rest.runners ? { ...rest.runners } : { items: [] };
+  runners.items = [...(runners.items || []), ...(awx.items || []).map((item) => ({ ...item, type: "awx" }))];
+  if (awx.prune && runners.prune === undefined) runners.prune = awx.prune;
+  return { ...rest, runners };
+}
 
 const oauth2Item = {
   type: "object",
@@ -243,6 +279,7 @@ export const seedSchema = {
     version: { type: "integer", enum: [1] },
     awx: listSection(awxItem),
     secret_stores: listSection(secretStoreItem),
+    runners: listSection(runnerItem),
     credentials: listSection(credentialItem),
     oauth2: listSection(oauth2Item),
     repositories: listSection(repositoryItem),
@@ -259,7 +296,7 @@ const validator = ajv.compile(seedSchema);
 // typo here : the second entry silently wins the upsert while the first is counted
 // as declared, so a prune would spare a record nobody can see in the file.
 function assertUniqueNames(doc) {
-  for (const key of ["awx", "credentials", "oauth2", "repositories"]) {
+  for (const key of ["runners", "secret_stores", "credentials", "oauth2", "repositories"]) {
     const items = doc[key]?.items;
     if (!Array.isArray(items)) continue;
     const seen = new Set();
@@ -282,9 +319,16 @@ function assertUniqueNames(doc) {
  * this, same as the duplicate-name rule.
  */
 function assertSingletonFlags(doc) {
-  const awx = (doc.awx?.items || []).filter((i) => i.is_default);
-  if (awx.length > 1) {
-    throw new Error(`Seed file declares is_default on more than one awx entry : ${awx.map((i) => i.name).sort().join(", ")}`);
+  // one default runner per type : the default rte for playbooks, the default awx for templates
+  const defaultsByType = {};
+  for (const item of doc.runners?.items || []) {
+    if (!item.is_default) continue;
+    (defaultsByType[item.type] = defaultsByType[item.type] || []).push(item.name);
+  }
+  for (const [type, names] of Object.entries(defaultsByType)) {
+    if (names.length > 1) {
+      throw new Error(`Seed file declares is_default on more than one runner of type ${type} : ${names.sort().join(", ")}`);
+    }
   }
   const byProvider = {};
   for (const item of doc.oauth2?.items || []) {
@@ -313,8 +357,10 @@ export function validateSeed(doc) {
       .join(" ; ");
     throw new Error(`Seed file validation failed : ${details}`);
   }
-  assertUniqueNames(doc);
-  assertSingletonFlags(doc);
+  // the deprecated awx: items count as runners for the cross-item rules
+  const folded = foldAwxIntoRunners(doc);
+  assertUniqueNames(folded);
+  assertSingletonFlags(folded);
   return true;
 }
 

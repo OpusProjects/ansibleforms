@@ -12,7 +12,6 @@ import { rebuildBodyParsers } from './bodyParsers.js';
 import { applyTrustProxy, compileTrustProxy } from './trustProxy.js';
 import authConfig from '../../config/auth.config.js';
 import logConfig from '../../config/log.config.js';
-import ansibleConfig from '../../config/ansible.config.js';
 
 // Editing environment variables from the settings page.
 //
@@ -145,9 +144,6 @@ const LIVE_CUSTOM = {
   LOG_COLOR_NOTICE: (v) => setLogColor('notice', v),
   LOG_COLOR_INFO: (v) => setLogColor('info', v),
   LOG_COLOR_DEBUG: (v) => setLogColor('debug', v),
-  // job.model reads ansibleConfig.path at call time (lines 609, 1815), but the value lives
-  // in ansible.config, not appConfig - so it needs a setter rather than a LIVE map entry
-  ANSIBLE_PATH: (v) => { ansibleConfig.path = v; },
   // getTimestamp() reads loggerConfig.tz inside the function, so every log line already
   // picks up a change - it only needed logConfig updating. (An earlier pass wrongly called
   // this captured in the formatter's closure ; it is not.)

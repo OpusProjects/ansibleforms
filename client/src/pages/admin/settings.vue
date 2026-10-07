@@ -103,15 +103,7 @@ const envGroupOrder = [
     key: 'jobs',
     label: () => t('settings.settingsPage.envGroupJobs'),
     icon: 'fac,ansible',
-    exact: [
-      'ANSIBLE_PATH',
-      'PROCESS_MAX_BUFFER',
-      'REGEX_FILTER_JOB_OUTPUT',
-      'UPLOAD_PATH',
-      'UPLOAD_MAX_GB',
-      'VARS_FILES_PATH',
-      'AWX_API_PREFIX',
-    ],
+    exact: ['REGEX_FILTER_JOB_OUTPUT', 'UPLOAD_PATH', 'UPLOAD_MAX_GB', 'VARS_FILES_PATH', 'AWX_API_PREFIX'],
   },
   {
     key: 'formsConfig',
@@ -184,7 +176,10 @@ function envHelp(e) {
 // served index.html has the base path baked into it, so every page already open would break.
 // Showing it on a page of editable settings would only offer an edit that cannot work; it is
 // reported as a fact on the Status page instead.
-const OWNED_ELSEWHERE = /^VAULT_|^BASE_URL$/;
+// AF_ROLE and RTE_* describe which process this is and where its RTE lives : set in the
+// environment of the container, not edited from inside the app. ANSIBLE_PATH and
+// PROCESS_MAX_BUFFER are read by an RTE only : since 7.3 the app runs no playbook itself.
+const OWNED_ELSEWHERE = /^VAULT_|^BASE_URL$|^AF_ROLE$|^RTE_|^ANSIBLE_PATH$|^PROCESS_MAX_BUFFER$/;
 
 const envGroups = computed(() => {
   if (!env.value || !Array.isArray(env.value)) return [];

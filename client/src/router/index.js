@@ -21,7 +21,6 @@ const schema = () => import('@/pages/schema.vue');
 const error = () => import('@/pages/error.vue');
 
 // admin
-const aap = () => import('@/pages/admin/aap.vue');
 const credentials = () => import('@/pages/admin/credentials.vue');
 const oauth2 = () => import('@/pages/admin/oauth2.vue');
 const groups = () => import('@/pages/admin/groups.vue');
@@ -36,6 +35,7 @@ const storedJobs = () => import('@/pages/admin/stored-jobs.vue');
 const settings = () => import('@/pages/admin/settings.vue');
 const status = () => import('@/pages/admin/status.vue');
 const secretStores = () => import('@/pages/admin/secretStores.vue');
+const runners = () => import('@/pages/admin/runners.vue');
 const audit = () => import('@/pages/admin/audit.vue');
 const categories = () => import('@/pages/admin/categories.vue');
 const roles = () => import('@/pages/admin/roles.vue');
@@ -128,7 +128,6 @@ const routes = [
   { path: '/:pathMatch(.*)*', name: '/unknown', component: unknown },
 
   // admin routes
-  { path: '/admin/aap', name: '/admin/aap', component: aap, beforeEnter: checkSettings },
   { path: '/admin/credentials', name: '/admin/credentials', component: credentials, beforeEnter: checkSettings },
   { path: '/admin/oauth2', name: '/admin/oauth2', component: oauth2, beforeEnter: checkSettings },
   { path: '/admin/groups', name: '/admin/groups', component: groups, beforeEnter: checkSettings },
@@ -155,6 +154,8 @@ const routes = [
   { path: '/admin/status', name: '/admin/status', component: status, beforeEnter: checkSettings },
   // /api/v2/secretstore is behind checkSettingsMiddleware, so the guard matches
   { path: '/admin/secretStores', name: '/admin/secretStores', component: secretStores, beforeEnter: checkSettings },
+  // /api/v2/runner is behind checkSettingsMiddleware, so the guard matches
+  { path: '/admin/runners', name: '/admin/runners', component: runners, beforeEnter: checkSettings },
   // GET /api/v2/audit is mounted behind checkSettingsMiddleware, so the guard matches
   { path: '/admin/audit', name: '/admin/audit', component: audit, beforeEnter: checkSettings },
 ];

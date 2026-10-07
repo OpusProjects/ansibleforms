@@ -23,12 +23,21 @@ vi.mock("../src/models/db.model.js", () => ({
   default: { do: async (sql, vars) => { queries.push(sql); return await dbHandler(sql, vars); } },
 }));
 let storeState = { stores: [], info: null, error: null };
+let runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000", is_default: 1 }], error: null };
+  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000", is_default: 1 }], error: null };
 let ldapRow = null;
 // a fully patched schema by default, matching the mocked manifest above
 let schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
 // the secret stores : rows from the model, the connection test from the provider registry
 vi.mock("../src/models/secretStore.model.js", () => ({
   default: { findAll: async () => storeState.stores },
+}));
+// the runners : one reachable RTE by default, the healthy case since 7.3
+vi.mock("../src/models/runner.model.js", () => ({
+  default: {
+    findAll: async () => runnerState.runners,
+    check: async (runner) => { if (runnerState.error) throw new Error(runnerState.error); return { version: "7.3.0", name: runner.name }; },
+  },
 }));
 vi.mock("../src/secrets/providers/index.js", () => ({
   checkStore: async () => { if (storeState.error) throw new Error(storeState.error); return storeState.info; },
@@ -100,6 +109,7 @@ beforeEach(async () => {
   await fs.mkdir(appConfig.repoPath, { recursive: true });
   await fs.mkdir(appConfig.backupPath, { recursive: true });
   storeState = { stores: [], info: null, error: null };
+  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000", is_default: 1 }], error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {
@@ -222,6 +232,7 @@ describe("health reports problems, not just ok", () => {
 
   test("a failed repository is an error and healthy ones are counted", async () => {
     storeState = { stores: [], info: null, error: null };
+  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000", is_default: 1 }], error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {
@@ -302,6 +313,7 @@ describe("health reports problems, not just ok", () => {
 
   test("a database failure becomes that row's error, not a broken page", async () => {
     storeState = { stores: [], info: null, error: null };
+  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000", is_default: 1 }], error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {
@@ -310,22 +322,45 @@ describe("health reports problems, not just ok", () => {
     };
     const r = await Health.check();
     assert.equal(statusOf(r, "database"), "error");
-    // every other check still reported (14 since the secrets check was removed)
-    assert.equal(r.checks.length, 15);
+    // every other check still reported (16 : runners joined in 7.3)
+    assert.equal(r.checks.length, 16);
   });
 
-  // An AWX/AAP-only instance has no local ansible and does not need one, so the row is
-  // omitted rather than reading 'not installed' for ever.
-  test("the ansible row is absent when there is no local ansible", async () => {
+  // Since 7.3 jobs run on runners : none at all means no form can run a job
+  test("runners : none is a warning that says what to add", async () => {
+    runnerState = { runners: [], error: null };
+    const r = await Health.check();
+    assert.equal(statusOf(r, "runners"), "warning");
+    assert.match(checkOf(r, "runners").detail.reason, /Connections > Runners/);
+  });
+
+  test("runners : no default RTE is a warning, playbook forms without runner: would fail", async () => {
+    runnerState = { runners: [{ name: "rte-1", type: "rte" }, { name: "aap", type: "awx", is_default: 1 }], error: null };
+    const r = await Health.check();
+    assert.equal(statusOf(r, "runners"), "warning");
+    assert.equal(checkOf(r, "runners").value, "no default RTE");
+  });
+
+  test("runners : an unreachable one is an error naming it", async () => {
+    runnerState = { runners: [{ name: "rte-1", type: "rte" }, { name: "aap", type: "awx" }], error: "the RTE at http://rte:8000 is unreachable : ECONNREFUSED" };
+    const r = await Health.check();
+    assert.equal(statusOf(r, "runners"), "error");
+    assert.match(checkOf(r, "runners").value, /2 of 2 runner\(s\) need attention : rte-1, aap/);
+  });
+
+  // Since 7.3 the app runs no playbook itself (an RTE does), so it never asks for an ansible
+  // version - even where one happens to be installed.
+  test("there is no ansible row : the app does not run ansible-playbook", async () => {
     const saved = Cmd.executeSilentCommand;
+    const asked = [];
     Cmd.executeSilentCommand = async (cmd) => {
-      if (String(cmd?.command || '').startsWith('ansible-playbook')) throw new Error('command not found');
-      return 'mock-output';
+      asked.push(String(cmd?.command || ''));
+      return 'ansible-playbook [core 2.17.9]';
     };
     try {
       const r = await Health.check();
-      assert.equal(infoOf(r, "ansible"), undefined, "no ansible row when the tool is missing");
-      // and the rest of the block is unaffected
+      assert.equal(infoOf(r, "ansible"), undefined);
+      assert.equal(asked.some((c) => c.startsWith('ansible-playbook')), false, "ansible is never called");
       assert.ok(infoOf(r, "version"), "other info rows still present");
     } finally {
       Cmd.executeSilentCommand = saved;
@@ -467,7 +502,7 @@ describe("health reports problems, not just ok", () => {
     // runtime moved to `info` because they have no failing value.
     assert.deepEqual(keys, [
       "backupTooling", "configSeed", "database", "designerLock", "disk", "expressions",
-      "jobs", "lastBackup", "ldap", "repositories", "scheduler", "schema", "secretStores", "storage", "writable",
+      "jobs", "lastBackup", "ldap", "repositories", "runners", "scheduler", "schema", "secretStores", "storage", "writable",
     ]);
     // and every info entry is status-free by construction
     assert.ok(r.info.length > 0);
@@ -478,6 +513,7 @@ describe("health reports problems, not just ok", () => {
 describe("the database check names the engine, not just a version number", () => {
   test("MySQL is identified from @@version_comment", async () => {
     storeState = { stores: [], info: null, error: null };
+  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000", is_default: 1 }], error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {
@@ -493,6 +529,7 @@ describe("the database check names the engine, not just a version number", () =>
 
   test("MariaDB is identified, and the suffix is not repeated", async () => {
     storeState = { stores: [], info: null, error: null };
+  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000", is_default: 1 }], error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {
@@ -514,8 +551,7 @@ describe("the database check names the engine, not just a version number", () =>
     const r = await Health.check();
     // version is the first row : it is what every support conversation opens with
     assert.equal(r.info[0].key, "version");
-    // 'ansible' is not listed : the global Cmd mock returns an empty version, which is
-    // the no-local-ansible case, and that row is omitted (covered by its own test)
+    // no 'ansible' : the app runs no playbook since 7.3 (covered by its own test)
     for (const key of ["version", "baseUrl", "authentication", "retention", "mail", "logs", "uptime", "timezone", "node", "platform"]) {
       assert.ok(infoOf(r, key), `expected an info entry for ${key}`);
     }
@@ -550,6 +586,7 @@ describe("the checks added after the first release round", () => {
 
   test("a job stuck in running is a warning", async () => {
     storeState = { stores: [], info: null, error: null };
+  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000", is_default: 1 }], error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {

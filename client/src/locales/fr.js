@@ -157,8 +157,8 @@ export default {
     credentials: 'Identifiants',
     ssh: 'SSH',
     knownHosts: 'Hotes connus',
-    aap: 'AAP',
     secretStores: 'Coffres de secrets',
+    runners: 'Runners',
     repositories: 'Depots',
     schedules: 'Planifications',
     storedJobs: 'Jobs enregistres',
@@ -172,10 +172,6 @@ export default {
     // to the raw action string, which is also always shown underneath.
     actionLabels: {
       auth_login: 'Connexion',
-      awx_create: 'Connexion A.A.P. créée',
-      awx_update: 'Connexion A.A.P. modifiée',
-      awx_delete: 'Connexion A.A.P. supprimée',
-      awx_check_create: 'Connexion A.A.P. testée',
       backup_create: 'Sauvegarde créée',
       backup_delete: 'Sauvegarde supprimée',
       backup_restore: 'Sauvegarde restaurée',
@@ -190,6 +186,10 @@ export default {
       secretstore_update: 'Coffre de secrets mis à jour',
       secretstore_delete: 'Coffre de secrets supprimé',
       secretstore_check_create: 'Connexion au coffre de secrets testée',
+      runner_create: 'Runner créé',
+      runner_update: 'Runner mis à jour',
+      runner_delete: 'Runner supprimé',
+      runner_check_create: 'Connexion au runner testée',
       expression_create: 'Expression évaluée',
       forms_repos_pull_create: 'Dépôt de formulaires récupéré',
       forms_repos_sync_create: 'Dépôt de formulaires synchronisé',
@@ -307,7 +307,6 @@ export default {
     sectionInfo: 'Informations',
     infoVersion: "Version d'AnsibleForms",
     infoBaseUrl: 'Servi sous',
-    infoAnsible: "Version d'Ansible",
     infoDatabase: 'Base de données',
     infoDatabaseHost: 'Hôte de la base de données',
     infoConfigSource: 'Source de configuration',
@@ -329,6 +328,7 @@ export default {
     checkRepositories: 'Dépôts',
     checkConfigSeed: 'Seed de configuration',
     checkSecretStores: 'Coffres de secrets',
+    checkRunners: 'Runners',
     checkExpressions: 'Expressions serveur',
     checkLdap: 'LDAP',
     checkStorage: 'Stockage des tâches',
@@ -639,6 +639,21 @@ export default {
       runAtHelp: 'Date et heure pour executer ce job une seule fois',
       extraVarsHelp: 'Aucun formulaire ne permet de fournir les variables supplementaires, vous devez les ajouter ici.',
     },
+    runners: {
+      label: 'Runner',
+      description:
+        "Où les jobs s'exécutent : des conteneurs d'environnement d'exécution (RTE) pour les playbooks (l'image AnsibleForms avec AF_ROLE=rte), et AWX / Ansible Automation Platform / Ascender pour les templates.",
+      editRunner: 'Modifier le runner',
+      deleteRunner: 'Supprimer le runner',
+      nameHelp: 'Un formulaire désigne le runner par ce nom : runner: <nom>.',
+      type: 'Type',
+      isDefault: 'Par défaut',
+      isDefaultHelp:
+        "Le défaut de son type : les formulaires playbook sans runner s'exécutent sur le RTE par défaut, les formulaires template sur l'AWX par défaut. Sans défaut, un tel job échoue. Le premier runner d'un type devient son défaut.",
+      uriHelp: 'RTE : où il écoute, ex. https://rte-vmware:8000. AWX : son adresse, ex. https://aap.example.com.',
+      tokenHelp: 'RTE : son RTE_TOKEN. AWX : un jeton API, ou cochez Utiliser des identifiants.',
+      useCredentials: 'Utiliser des identifiants',
+    },
     secretStores: {
       label: 'Coffre de secrets',
       description:
@@ -778,14 +793,6 @@ export default {
       groupFilter: 'Filtre de groupe',
       groupFilterDesc:
         'Expression reguliere comparee au nom du groupe. Laisser vide pour conserver tous les groupes. Seuls les groupes correspondants sont conserves, et ce sont eux que voient le mappage des roles, le champ __user__ dans les formulaires et le playbook.',
-    },
-    aap: {
-      label: 'Ansible Automation Platform',
-      description: 'Connexion à AWX ou Ansible Automation Platform pour exécuter des modèles de tâches.',
-      editCredential: "Modifier l'identifiant",
-      deleteCredential: "Supprimer l'identifiant",
-      useCredentials: 'Utiliser des identifiants',
-      isDefault: 'Est par defaut',
     },
     mail: {
       label: 'Parametres mail',
@@ -1177,6 +1184,8 @@ export default {
     formType: 'Type de formulaire',
     formDescription: 'Description',
     formPlaybook: 'Playbook',
+    formRunner: 'Runner',
+    formRunnerHelp: "Le nom d'un runner (Connections > Runners). Vide : le runner par défaut de son type.",
     formTemplate: 'Modèle',
     formInventory: 'Inventaire',
     formTags: 'Tags',

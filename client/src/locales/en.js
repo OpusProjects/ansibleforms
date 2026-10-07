@@ -152,8 +152,8 @@ export default {
     credentials: 'Credentials',
     ssh: 'SSH',
     knownHosts: 'Known Hosts',
-    aap: 'AAP',
     secretStores: 'Secret stores',
+    runners: 'Runners',
     repositories: 'Repositories',
     schedules: 'Schedules',
     storedJobs: 'Stored Jobs',
@@ -167,10 +167,6 @@ export default {
     // to the raw action string, which is also always shown underneath.
     actionLabels: {
       auth_login: 'Sign-in',
-      awx_create: 'A.A.P. connection created',
-      awx_update: 'A.A.P. connection updated',
-      awx_delete: 'A.A.P. connection deleted',
-      awx_check_create: 'A.A.P. connection tested',
       backup_create: 'Backup created',
       backup_delete: 'Backup deleted',
       backup_restore: 'Backup restored',
@@ -185,6 +181,10 @@ export default {
       secretstore_update: 'Secret store updated',
       secretstore_delete: 'Secret store deleted',
       secretstore_check_create: 'Secret store connection tested',
+      runner_create: 'Runner created',
+      runner_update: 'Runner updated',
+      runner_delete: 'Runner deleted',
+      runner_check_create: 'Runner connection tested',
       expression_create: 'Expression evaluated',
       forms_repos_pull_create: 'Forms repository pulled',
       forms_repos_sync_create: 'Forms repository synchronised',
@@ -302,7 +302,6 @@ export default {
     sectionInfo: 'Information',
     infoVersion: 'AnsibleForms version',
     infoBaseUrl: 'Served under',
-    infoAnsible: 'Ansible version',
     infoDatabase: 'Database',
     infoDatabaseHost: 'Database host',
     infoConfigSource: 'Configuration source',
@@ -324,6 +323,7 @@ export default {
     checkRepositories: 'Repositories',
     checkConfigSeed: 'Config seed',
     checkSecretStores: 'Secret stores',
+    checkRunners: 'Runners',
     checkExpressions: 'Server expressions',
     checkLdap: 'LDAP',
     checkStorage: 'Job storage',
@@ -630,6 +630,21 @@ export default {
       runAtHelp: 'The date and time to run this job once',
       extraVarsHelp: 'No form to provide the extra vars, you must add them here.',
     },
+    runners: {
+      label: 'Runner',
+      description:
+        'Where jobs run : runtime environment (RTE) containers for playbooks (the AnsibleForms image with AF_ROLE=rte), and AWX / Ansible Automation Platform / Ascender for templates.',
+      editRunner: 'Edit Runner',
+      deleteRunner: 'Delete Runner',
+      nameHelp: 'A form refers to the runner by this name : runner: <name>.',
+      type: 'Type',
+      isDefault: 'Default',
+      isDefaultHelp:
+        'The default of its type : playbook forms that name no runner run on the default RTE, template forms on the default AWX. Without a default such a job fails. The first runner of a type becomes its default.',
+      uriHelp: 'RTE : where it listens, e.g. https://rte-vmware:8000. AWX : its address, e.g. https://aap.example.com.',
+      tokenHelp: 'RTE : its RTE_TOKEN. AWX : an API token, or tick Use credentials.',
+      useCredentials: 'Use credentials',
+    },
     secretStores: {
       label: 'Secret Store',
       description:
@@ -766,14 +781,6 @@ export default {
       groupFilter: 'Group Filter',
       groupFilterDesc:
         'Regular expression matched against the group name. Leave empty to keep every group. Only matching groups are kept, and they are what the role mapping, the __user__ field in forms and the playbook all see.',
-    },
-    aap: {
-      label: 'Ansible Automation Platform',
-      description: 'Connect to AWX or Ansible Automation Platform to run job templates.',
-      editCredential: 'Edit Credential',
-      deleteCredential: 'Delete Credential',
-      useCredentials: 'Use credentials',
-      isDefault: 'Is Default',
     },
     mail: {
       label: 'Mail Settings',
@@ -1156,6 +1163,8 @@ export default {
     formType: 'Form type',
     formDescription: 'Description',
     formPlaybook: 'Playbook',
+    formRunner: 'Runner',
+    formRunnerHelp: 'The name of a runner (Connections > Runners). Empty : the default runner of its type.',
     formTemplate: 'Template',
     formInventory: 'Inventory',
     formTags: 'Tags',

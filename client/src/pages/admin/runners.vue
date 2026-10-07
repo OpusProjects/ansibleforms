@@ -18,7 +18,7 @@ async function test_connection(item) {
     if (!tests.value[item.id]) {
       try {
         tests.value[item.id] = t('admin.testing');
-        const result = await axios.post(`/api/v2/awx/${item.id}/check`, {}, TokenStorage.getAuthentication());
+        const result = await axios.post(`/api/v2/runner/${item.id}/check`, {}, TokenStorage.getAuthentication());
         toast.success(result.data.result);
       } catch (err) {
         toast.error(Helpers.parseAxiosResponseError(err, t('admin.connectionFailed')));
@@ -41,11 +41,11 @@ onMounted(async () => {
 <template>
   <AppNav />
   <div class="flex-shrink-0">
-    <main class="d-flex flex-nowrap af-settings-layout">
+    <main class="d-flex flex-nowrap container-xxl">
       <AppSidebar />
       <AppAdminMulti
         v-if="authenticated"
-        :settings="settings.aap"
+        :settings="settings.runners"
         @test="test_connection"
         :busyItems="tests"
         :apiVersion="2"

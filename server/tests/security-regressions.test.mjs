@@ -34,7 +34,9 @@ describe("the client cannot choose what a job actually runs", () => {
   // keep the caller away from; combined with the upload endpoint it was arbitrary code.
   const RESERVED = ["__playbook__", "__playbookSubPath__", "__inventory__", "__tags__",
                     "__limit__", "__credentials__", "__ansibleCredentials__",
-                    "__vaultCredentials__", "__keepExtravars__", "__awxCredentials__"];
+                    "__vaultCredentials__", "__keepExtravars__", "__awxCredentials__",
+                    // where the job runs : a caller must not pick another runner (7.3)
+                    "__runner__", "__awx__"];
 
   for (const key of RESERVED) {
     test(`${key} supplied by the client is removed`, () => {

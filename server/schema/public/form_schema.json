@@ -151,6 +151,9 @@
             "playbook": {
               "not": {}
             },
+            "runner": {
+              "not": {}
+            },
             "vaultCredentials": {
               "not": {}
             },
@@ -216,6 +219,9 @@
               "not": {}
             },
             "playbookSubPath": {
+              "not": {}
+            },
+            "runner": {
               "not": {}
             },
             "template": {
@@ -1382,6 +1388,9 @@
               "awx": {
                 "type": "string"
               },
+              "runner": {
+                "type": "string"
+              },
               "abortable": {
                 "type": "boolean"
               },
@@ -1569,6 +1578,9 @@
           "type": "string"
         },
         "awx": {
+          "type": "string"
+        },
+        "runner": {
           "type": "string"
         },
         "credentials": {
@@ -4353,6 +4365,9 @@
               "playbook": {
                 "not": {}
               },
+              "runner": {
+                "not": {}
+              },
               "vaultCredentials": {
                 "not": {}
               },
@@ -4418,6 +4433,9 @@
                 "not": {}
               },
               "playbookSubPath": {
+                "not": {}
+              },
+              "runner": {
                 "not": {}
               },
               "template": {
@@ -5584,6 +5602,9 @@
                 "awx": {
                   "type": "string"
                 },
+                "runner": {
+                  "type": "string"
+                },
                 "abortable": {
                   "type": "boolean"
                 },
@@ -5771,6 +5792,9 @@
             "type": "string"
           },
           "awx": {
+            "type": "string"
+          },
+          "runner": {
             "type": "string"
           },
           "credentials": {

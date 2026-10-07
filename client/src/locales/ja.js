@@ -152,7 +152,7 @@ export default {
     credentials: '認証情報',
     ssh: 'SSH',
     knownHosts: '既知のホスト',
-    aap: 'AAP',
+    runners: 'ランナー',
     secretStores: 'シークレットストア',
     repositories: 'リポジトリ',
     schedules: 'スケジュール',
@@ -167,10 +167,10 @@ export default {
     // to the raw action string, which is also always shown underneath.
     actionLabels: {
       auth_login: 'サインイン',
-      awx_create: 'A.A.P. 接続を作成',
-      awx_update: 'A.A.P. 接続を更新',
-      awx_delete: 'A.A.P. 接続を削除',
-      awx_check_create: 'A.A.P. 接続をテスト',
+      runner_create: 'ランナーを作成',
+      runner_update: 'ランナーを更新',
+      runner_delete: 'ランナーを削除',
+      runner_check_create: 'ランナーの接続をテスト',
       backup_create: 'バックアップを作成',
       backup_delete: 'バックアップを削除',
       backup_restore: 'バックアップを復元',
@@ -302,7 +302,6 @@ export default {
     sectionInfo: '情報',
     infoVersion: 'AnsibleForms のバージョン',
     infoBaseUrl: '公開パス',
-    infoAnsible: 'Ansible のバージョン',
     infoDatabase: 'データベース',
     infoDatabaseHost: 'データベースホスト',
     infoConfigSource: '設定のソース',
@@ -318,6 +317,7 @@ export default {
     checkDisk: 'ディスク容量',
     checkJobs: 'ジョブ',
     checkScheduler: 'スケジューラー',
+    checkRunners: 'ランナー',
     checkBackupTooling: 'バックアップツール',
     checkLastBackup: '最終バックアップ',
     checkDesignerLock: 'デザイナーのロック',
@@ -767,13 +767,21 @@ export default {
       groupFilterDesc:
         'グループ名と照合する正規表現です。すべてのグループを残す場合は空欄にしてください。一致したグループだけが残り、ロールのマッピング、フォームの __user__ フィールド、playbook のすべてにはそのグループだけが見えます。',
     },
-    aap: {
-      label: 'Ansible Automation Platform',
-      description: 'ジョブテンプレートを実行するために、AWX または Ansible Automation Platform に接続します。',
-      editCredential: '認証情報を編集',
-      deleteCredential: '認証情報を削除',
-      useCredentials: '認証情報を使用',
+    runners: {
+      label: 'ランナー',
+      description:
+        'ジョブの実行場所 : プレイブック用のランタイム環境 (RTE) コンテナー (AF_ROLE=rte の AnsibleForms イメージ)、およびテンプレート用の AWX / Ansible Automation Platform / Ascender。',
+      editRunner: 'ランナーを編集',
+      deleteRunner: 'ランナーを削除',
+      nameHelp: 'フォームはこの名前でランナーを参照します : runner: <name>。',
+      type: '種類',
       isDefault: '既定',
+      isDefaultHelp:
+        'その種類の既定 : ランナーを指定しないプレイブックのフォームは既定の RTE で、テンプレートのフォームは既定の AWX で実行されます。既定がない場合、そのジョブは失敗します。ある種類の最初のランナーがその既定になります。',
+      uriHelp:
+        'RTE : 待ち受けるアドレス (例 https://rte-vmware:8000)。AWX : そのアドレス (例 https://aap.example.com)。',
+      tokenHelp: 'RTE : その RTE_TOKEN。AWX : API トークン、または「認証情報を使用」をオン。',
+      useCredentials: '認証情報を使用',
     },
     mail: {
       label: 'メール設定',
@@ -1154,6 +1162,8 @@ export default {
     formType: 'フォームの種類',
     formDescription: '説明',
     formPlaybook: 'Playbook',
+    formRunner: 'ランナー',
+    formRunnerHelp: 'ランナーの名前 (接続 > ランナー)。空 : その種類の既定のランナー。',
     formTemplate: 'テンプレート',
     formInventory: 'インベントリ',
     formTags: 'タグ',

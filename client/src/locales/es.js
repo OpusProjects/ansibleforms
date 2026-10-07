@@ -152,8 +152,8 @@ export default {
     credentials: 'Credenciales',
     ssh: 'SSH',
     knownHosts: 'Hosts Conocidos',
-    aap: 'AAP',
     secretStores: 'Almacenes de secretos',
+    runners: 'Runners',
     repositories: 'Repositorios',
     schedules: 'Programaciones',
     storedJobs: 'Trabajos Almacenados',
@@ -167,10 +167,6 @@ export default {
     // to the raw action string, which is also always shown underneath.
     actionLabels: {
       auth_login: 'Inicio de sesión',
-      awx_create: 'Conexión A.A.P. creada',
-      awx_update: 'Conexión A.A.P. actualizada',
-      awx_delete: 'Conexión A.A.P. eliminada',
-      awx_check_create: 'Conexión A.A.P. probada',
       backup_create: 'Copia de seguridad creada',
       backup_delete: 'Copia de seguridad eliminada',
       backup_restore: 'Copia de seguridad restaurada',
@@ -185,6 +181,10 @@ export default {
       secretstore_update: 'Almacén de secretos actualizado',
       secretstore_delete: 'Almacén de secretos eliminado',
       secretstore_check_create: 'Conexión al almacén de secretos probada',
+      runner_create: 'Runner creado',
+      runner_update: 'Runner actualizado',
+      runner_delete: 'Runner eliminado',
+      runner_check_create: 'Conexión con el runner probada',
       expression_create: 'Expresión evaluada',
       forms_repos_pull_create: 'Repositorio de formularios actualizado',
       forms_repos_sync_create: 'Repositorio de formularios sincronizado',
@@ -302,7 +302,6 @@ export default {
     sectionInfo: 'Información',
     infoVersion: 'Versión de AnsibleForms',
     infoBaseUrl: 'Servido en',
-    infoAnsible: 'Versión de Ansible',
     infoDatabase: 'Base de datos',
     infoDatabaseHost: 'Host de la base de datos',
     infoConfigSource: 'Origen de la configuración',
@@ -324,6 +323,7 @@ export default {
     checkRepositories: 'Repositorios',
     checkConfigSeed: 'Seed de configuración',
     checkSecretStores: 'Almacenes de secretos',
+    checkRunners: 'Runners',
     checkExpressions: 'Expresiones del servidor',
     checkLdap: 'LDAP',
     checkStorage: 'Almacenamiento de trabajos',
@@ -631,6 +631,21 @@ export default {
       runAtHelp: 'La fecha y hora para ejecutar este trabajo una sola vez',
       extraVarsHelp: 'Sin formulario para proporcionar las variables extra, debe agregarlas aquí.',
     },
+    runners: {
+      label: 'Runner',
+      description:
+        'Dónde se ejecutan los jobs : contenedores de entorno de ejecución (RTE) para los playbooks (la imagen de AnsibleForms con AF_ROLE=rte), y AWX / Ansible Automation Platform / Ascender para las plantillas.',
+      editRunner: 'Editar runner',
+      deleteRunner: 'Eliminar runner',
+      nameHelp: 'Un formulario se refiere al runner con este nombre : runner: <nombre>.',
+      type: 'Tipo',
+      isDefault: 'Predeterminado',
+      isDefaultHelp:
+        'El predeterminado de su tipo : los formularios de playbook sin runner se ejecutan en el RTE predeterminado, los de plantilla en el AWX predeterminado. Sin predeterminado, ese job falla. El primer runner de un tipo se convierte en su predeterminado.',
+      uriHelp: 'RTE : dónde escucha, ej. https://rte-vmware:8000. AWX : su dirección, ej. https://aap.example.com.',
+      tokenHelp: 'RTE : su RTE_TOKEN. AWX : un token de API, o marque Usar credenciales.',
+      useCredentials: 'Usar credenciales',
+    },
     secretStores: {
       label: 'Almacén de secretos',
       description:
@@ -769,14 +784,6 @@ export default {
       groupFilter: 'Filtro de Grupo',
       groupFilterDesc:
         'Expresion regular comparada con el nombre del grupo. Dejar vacio para conservar todos los grupos. Solo se conservan los grupos que coinciden, y son los que ven el mapeo de roles, el campo __user__ en los formularios y el playbook.',
-    },
-    aap: {
-      label: 'Plataforma de Automatización de Ansible',
-      description: 'Conexión a AWX o Ansible Automation Platform para ejecutar plantillas de trabajo.',
-      editCredential: 'Editar Credencial',
-      deleteCredential: 'Eliminar Credencial',
-      useCredentials: 'Usar credenciales',
-      isDefault: 'Es Predeterminado',
     },
     mail: {
       label: 'Configuración de Correo',
@@ -1165,6 +1172,8 @@ export default {
     formType: 'Tipo de formulario',
     formDescription: 'Descripción',
     formPlaybook: 'Playbook',
+    formRunner: 'Runner',
+    formRunnerHelp: 'El nombre de un runner (Connections > Runners). Vacío : el runner predeterminado de su tipo.',
     formTemplate: 'Plantilla',
     formInventory: 'Inventario',
     formTags: 'Etiquetas',

@@ -152,8 +152,8 @@ export default {
     credentials: 'Inloggegevens',
     ssh: 'SSH',
     knownHosts: 'Known Hosts',
-    aap: 'AAP',
     secretStores: 'Secret stores',
+    runners: 'Runners',
     repositories: 'Repositories',
     schedules: 'Planner',
     storedJobs: 'Opgeslagen invoer',
@@ -167,10 +167,6 @@ export default {
     // to the raw action string, which is also always shown underneath.
     actionLabels: {
       auth_login: 'Aanmelding',
-      awx_create: 'A.A.P.-verbinding aangemaakt',
-      awx_update: 'A.A.P.-verbinding bijgewerkt',
-      awx_delete: 'A.A.P.-verbinding verwijderd',
-      awx_check_create: 'A.A.P.-verbinding getest',
       backup_create: 'Back-up aangemaakt',
       backup_delete: 'Back-up verwijderd',
       backup_restore: 'Back-up teruggezet',
@@ -185,6 +181,10 @@ export default {
       secretstore_update: 'Secret store bijgewerkt',
       secretstore_delete: 'Secret store verwijderd',
       secretstore_check_create: 'Secret store verbinding getest',
+      runner_create: 'Runner aangemaakt',
+      runner_update: 'Runner bijgewerkt',
+      runner_delete: 'Runner verwijderd',
+      runner_check_create: 'Runner verbinding getest',
       expression_create: 'Expressie geëvalueerd',
       forms_repos_pull_create: 'Formulieren-repository opgehaald',
       forms_repos_sync_create: 'Formulieren-repository gesynchroniseerd',
@@ -302,7 +302,6 @@ export default {
     sectionInfo: 'Informatie',
     infoVersion: 'AnsibleForms-versie',
     infoBaseUrl: 'Aangeboden onder',
-    infoAnsible: 'Ansible-versie',
     infoDatabase: 'Database',
     infoDatabaseHost: 'Databasehost',
     infoConfigSource: 'Configuratiebron',
@@ -324,6 +323,7 @@ export default {
     checkRepositories: 'Repositories',
     checkConfigSeed: 'Configuratie-seed',
     checkSecretStores: 'Secret stores',
+    checkRunners: 'Runners',
     checkExpressions: 'Serverexpressies',
     checkLdap: 'LDAP',
     checkStorage: 'Joböpslag',
@@ -632,6 +632,21 @@ export default {
       runAtHelp: 'De datum en tijd om deze taak eenmalig uit te voeren',
       extraVarsHelp: 'Geen formulier om de extra vars te voorzien, u moet ze hier toevoegen.',
     },
+    runners: {
+      label: 'Runner',
+      description:
+        'Waar jobs draaien : runtime environment (RTE) containers voor playbooks (het AnsibleForms image met AF_ROLE=rte), en AWX / Ansible Automation Platform / Ascender voor templates.',
+      editRunner: 'Runner bewerken',
+      deleteRunner: 'Runner verwijderen',
+      nameHelp: 'Een formulier verwijst met deze naam naar de runner : runner: <naam>.',
+      type: 'Type',
+      isDefault: 'Standaard',
+      isDefaultHelp:
+        "De standaard van zijn type : playbook-formulieren zonder runner draaien op de standaard RTE, template-formulieren op de standaard AWX. Zonder standaard faalt zo'n job. De eerste runner van een type wordt automatisch de standaard.",
+      uriHelp: 'RTE : waar hij luistert, bv. https://rte-vmware:8000. AWX : zijn adres, bv. https://aap.example.com.',
+      tokenHelp: 'RTE : zijn RTE_TOKEN. AWX : een API-token, of vink Credentials gebruiken aan.',
+      useCredentials: 'Credentials gebruiken',
+    },
     secretStores: {
       label: 'Secret Store',
       description:
@@ -771,14 +786,6 @@ export default {
       groupFilter: 'Groepfilter',
       groupFilterDesc:
         'Reguliere expressie die wordt vergeleken met de groepsnaam. Laat leeg om alle groepen te behouden. Alleen overeenkomende groepen worden behouden, en die zijn wat de rolkoppeling, het __user__ veld in formulieren en de playbook zien.',
-    },
-    aap: {
-      label: 'Ansible Automation Platform',
-      description: 'Verbind met AWX of Ansible Automation Platform om jobtemplates uit te voeren.',
-      editCredential: 'Inloggegevens bewerken',
-      deleteCredential: 'Inloggegevens verwijderen',
-      useCredentials: 'Inloggegevens gebruiken',
-      isDefault: 'Is standaard',
     },
     mail: {
       label: 'Mail instellingen',
@@ -1166,6 +1173,8 @@ export default {
     formType: 'Formuliertype',
     formDescription: 'Beschrijving',
     formPlaybook: 'Playbook',
+    formRunner: 'Runner',
+    formRunnerHelp: 'De naam van een runner (Connections > Runners). Leeg : de standaard runner van zijn type.',
     formTemplate: 'Sjabloon',
     formInventory: 'Inventaris',
     formTags: 'Tags',

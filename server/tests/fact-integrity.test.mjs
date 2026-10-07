@@ -280,18 +280,19 @@ describe("hasChanges does not invent a clean working tree", () => {
   });
 });
 
-describe("the default AAP flag is cleared only once its row is stored", () => {
+describe("the default runner flag is cleared only once its row is stored", () => {
   // preProcess used to clear is_default on every unmanaged row BEFORE the insert, and
   // `name` carries a unique key - so creating a connection with a name that already
   // exists cleared the flag everywhere and then died with ER_DUP_ENTRY. Measured against
   // the live database: no record created AND zero rows holding the default, so every job
-  // targeting the default AAP failed until somebody set it again by hand.
-  const src = readFileSync(path.join(here, "../src/models/awx.model.js"), "utf8");
+  // targeting the default AAP failed until somebody set it again by hand. Since 7.3 AAP
+  // connections are runners (runner.model.js), which keep the same rule, per type.
+  const src = readFileSync(path.join(here, "../src/models/runner.model.js"), "utf8");
 
-  test("preProcess no longer writes", () => {
-    const fn = src.slice(src.indexOf("static async preProcess"), src.indexOf("static async clearOtherDefaults"));
+  test("the check before the write only refuses, it never writes", () => {
+    const fn = src.slice(src.indexOf("static async assertDefaultAllowed"), src.indexOf("static async clearOtherDefaults"));
     assert.match(fn, /AccessDeniedError/, "it must still REFUSE a managed holder");
-    assert.doesNotMatch(fn, /UPDATE AnsibleForms\.`awx` SET is_default = 0/,
+    assert.doesNotMatch(fn, /UPDATE AnsibleForms\.`runners` SET is_default = 0/,
       "the blanket clear must not run before the insert");
   });
 

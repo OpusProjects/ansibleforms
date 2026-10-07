@@ -1,142 +1,16 @@
-import express from 'express';
-import ansibleforms from './src/app.js';
-import appConfig from './config/app.config.js';
-import { injectBaseUrl } from './src/lib/baseurl.js';
-import { staticCacheHeaders, injectAssetVersion } from './src/lib/staticCache.js';
-import { readBuildInfo, appBuildHeader } from './src/lib/appBuild.js';
-import { resolve } from 'path';
-import history from 'connect-history-api-fallback';
-import httpsConfig from './config/https.config.js';
-import { registerHttpsServer } from './src/lib/httpsContext.js';
-import authConfig from './config/auth.config.js';
-import logger from './src/lib/logger.js';
-import { reloadConfigSeed } from './src/lib/seed.js';
-import { getExpressionMode } from './src/lib/expressionMode.js';
-import https from 'https';
-import http from 'http';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const app = express();
-
-// the running build (build-info.json from the docker build, package.json otherwise) : the
-// stylesheet and favicon links in index.html carry version and sha as ?v=, so every release and
-// every rebuild is a new address for them, and every response names the sha in X-App-Build
-const build = readBuildInfo(__dirname);
-const assetVersion = () => [build.version, build.gitSha].filter(Boolean).join('-');
-// load the ansibleforms app
-async function start(){
-  // before the routes : every response, the api's included, names the server's build, so a tab
-  // left open across an upgrade learns it runs an older one (src/lib/appBuild.js, issue #660)
-  app.use(appBuildHeader(build.gitSha));
-
-  await ansibleforms.load(app);
-
-  if (getExpressionMode() === 'legacy') {
-    logger.warning('[SECURITY] EXPRESSION_SANITIZER=legacy : server expressions use the 6.2.1 rules, which let any authenticated user run code on the server. Rewrite the expressions the log reports and go back to strict.');
-  }
-
-  if (appConfig.encryptionSecretIsDefault) {
-    logger.warning('[SECURITY] ENCRYPTION_SECRET is not set. Stored passwords are encrypted with the default key, which is public in the source code. Set ENCRYPTION_SECRET before you store credentials : changing it later makes the existing ones unreadable.');
-  }
-
-  if (authConfig.secretIsGenerated) {
-    logger.warning('[SECURITY] JWT signing secret was auto-generated. All tokens will be invalidated on restart. Set the ACCESS_TOKEN_SECRET environment variable for persistent token signing.');
-  }
-
-  // set the start directory to load our vue app (frontend/gui)
-  const publicPath = resolve(__dirname, './views');
-  // only the content-hashed bundles under assets/ are cached for good, every other file is
-  // revalidated (src/lib/staticCache.js, issue #660) ; Last-Modified validates, the etag stays off
-  const staticConf = { etag: false, setHeaders: staticCacheHeaders(publicPath) };
-
-  // load the built index.html once and rewrite its base tag to the configured
-  // base url, so the app can be hosted under a subpath (issue #106)
-  var indexHtml = null;
-  const indexPath = path.join(publicPath, 'index.html');
-  if (fs.existsSync(indexPath)) {
-    indexHtml = injectAssetVersion(
-      injectBaseUrl(fs.readFileSync(indexPath, 'utf-8'), appConfig.baseUrl),
-      assetVersion()
-    );
-  } else {
-    logger.warning(`No index.html found in ${publicPath}, did you build the client?`);
-  }
-  const serveIndex = (req, res) => {
-    res.setHeader('Cache-Control', 'no-cache, must-revalidate');
-    if (indexHtml) {
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.send(indexHtml);
-    } else {
-      res.sendFile(indexPath);
-    }
-  };
-
-  // allow browser history
-  app.use(`/`, history()); // this order is important, it must be before the static files middleware
-
-  // serve the (rewritten) index.html with no-cache
-  app.use((req, res, next) => {
-    if (req.method === 'GET' && (req.path === '/' || req.path.endsWith('index.html'))) {
-      return serveIndex(req, res);
-    }
-    next();
-  });
-  app.use("/", express.static(publicPath, staticConf));
-
-  // Catchall for unmatched routes (after static and API)
-  app.get(/(.*)/, serveIndex);
-
-  // when a base url is set, mount the whole app under the subpath
-  var rootApp = app;
-  if (appConfig.baseUrl) {
-    rootApp = express();
-    // redirect the root and the subpath without trailing slash, for convenience
-    // note : the exact path check matters, express also matches the trailing slash variant
-    rootApp.get('/', (req, res) => res.redirect(`${appConfig.baseUrl}/`));
-    rootApp.get(appConfig.baseUrl, (req, res, next) => {
-      if (req.path !== appConfig.baseUrl) return next();
-      res.redirect(`${appConfig.baseUrl}/${req.originalUrl.slice(req.path.length)}`);
-    });
-    rootApp.use(appConfig.baseUrl, app);
-  }
-
-  // choose whether to start https or http server
-  let httpServer;
-  logger.notice(`Serving static files from ${publicPath}`);
-  logger.notice(`Exposing app under ${appConfig.baseUrl || '/'}`);
-  if (httpsConfig.https) {
-    logger.notice("Running https !");
-    const credentials = { key: httpsConfig.httpsKey, cert: httpsConfig.httpsCert };
-    httpServer = https.createServer(credentials, rootApp);
-    // lets the settings page reload the certificate without a restart
-    registerHttpsServer(httpServer);
-  } else {
-    logger.notice("Running http !");
-    httpServer = http.createServer(rootApp);
-  }
-
-  // start the webserver and listen on the port we choose
-  httpServer.listen(appConfig.port,  () => logger.notice(`App running on port ${appConfig.port}!`));
-
-}
-
-// SIGHUP re-applies the config seed : the unix idiom for "re-read your configuration", and
-// the one way in that needs no credentials and no reachable port, which is what makes it
-// worth having from inside a container (`kubectl exec ... -- kill -HUP 1`).
+// One image, two roles :
+//   AF_ROLE unset or 'app' : AnsibleForms itself (src/app-start.js)
+//   AF_ROLE=rte            : a runtime environment that runs playbooks for an app (src/rte/server.js)
+// Each role loads only its own modules, so an RTE never loads the web app and the app never
+// loads the code that runs ansible-playbook.
 //
-// Node's default action for SIGHUP is to TERMINATE, so installing this changes what closing
-// the terminal does to a foreground process. That is the trade every daemon makes, and the
-// alternative here is a signal that kills an instance which may be running playbooks.
-process.on('SIGHUP', () => {
-  // never awaited : a signal handler that blocks would hold the event loop while the seed
-  // clones a repository, and reloadConfigSeed reports its own outcome to the log either way
-  reloadConfigSeed({ force: true, trigger: 'SIGHUP' })
-    .catch((err) => logger.error('SIGHUP config seed reload failed : ' + (err.message || err)));
-});
+// The environment (.env files) first, for both roles : the config modules read it at import.
+import './src/load-env.js';
 
-start()
+if (process.env.AF_ROLE === 'rte') {
+  const { startRte } = await import('./src/rte/server.js');
+  await startRte();
+} else {
+  const { startApp } = await import('./src/app-start.js');
+  await startApp();
+}

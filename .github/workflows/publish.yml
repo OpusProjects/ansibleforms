@@ -1,6 +1,8 @@
 name: Publish
 
-# Builds and pushes the application image. Called by release.yml when a release is created
+# Builds and pushes the two images : the application (ansibleforms, Dockerfile) and the
+# runtime environment that runs its playbooks (ansibleforms-rte, Dockerfile.rte), with the
+# same tags. Called by release.yml when a release is created
 # and by rc.yml for a release candidate. "Run workflow" re-publishes an existing release tag,
 # for when a push failed half way. The tags are the list in installation.md (Image
 # tags) of ansibleforms/website - change that list and this together, never one of them :
@@ -112,6 +114,14 @@ jobs:
           tags="${tags#,}"
           echo "list=$tags" >> "$GITHUB_OUTPUT"
           echo "$tags" | tr ',' '\n'
+          # the RTE : the same tags on its own image name
+          rte=""
+          for n in $names; do
+            rte="$rte,$ghcr-rte:$n"
+          done
+          rte="${rte#,}"
+          echo "rte=$rte" >> "$GITHUB_OUTPUT"
+          echo "$rte" | tr ',' '\n'
 
       - uses: docker/setup-buildx-action@v4
 
@@ -134,8 +144,22 @@ jobs:
             GIT_SHA=${{ steps.v.outputs.sha_short }}
             BUILD_TIME=${{ steps.v.outputs.build_time }}
             VERSION=${{ env.VERSION }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=app
+          cache-to: type=gha,mode=max,scope=app
+
+      - name: Build and push the RTE
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile.rte
+          push: true
+          tags: ${{ steps.tags.outputs.rte }}
+          build-args: |
+            GIT_SHA=${{ steps.v.outputs.sha_short }}
+            BUILD_TIME=${{ steps.v.outputs.build_time }}
+            VERSION=${{ env.VERSION }}
+          cache-from: type=gha,scope=rte
+          cache-to: type=gha,mode=max,scope=rte
 
       - name: Summary
         run: |
@@ -144,6 +168,7 @@ jobs:
             echo ""
             echo '```'
             echo "${{ steps.tags.outputs.list }}" | tr ',' '\n'
+            echo "${{ steps.tags.outputs.rte }}" | tr ',' '\n'
             echo '```'
             echo ""
             echo "from \`$(git rev-parse HEAD)\`"

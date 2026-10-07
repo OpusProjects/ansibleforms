@@ -79,6 +79,26 @@ CREATE TABLE `secret_stores` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_AnsibleForms_secret_stores_natural_key` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- keep in sync with create_runners_table.sql, which the upgrade patch uses
+DROP TABLE IF EXISTS `runners`;
+CREATE TABLE `runners` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(250) NOT NULL,
+  `type` varchar(20) NOT NULL,
+  `description` text DEFAULT NULL,
+  `uri` varchar(500) NOT NULL,
+  `token` text DEFAULT NULL,
+  `username` varchar(250) DEFAULT NULL,
+  `password` text DEFAULT NULL,
+  `use_credentials` tinyint(4) DEFAULT 0,
+  `ignore_certs` tinyint(4) DEFAULT 0,
+  `ca_bundle` text DEFAULT NULL,
+  `is_default` tinyint(4) DEFAULT 0,
+  `managed` tinyint(4) DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_AnsibleForms_runners_natural_key` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 -- create ldap table
 DROP TABLE IF EXISTS `ldap`;
 CREATE TABLE `ldap` (
@@ -120,24 +140,6 @@ CREATE TABLE `chat_settings` (
   `ignore_certs` tinyint(4) DEFAULT 0,
   `managed` tinyint(4) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
--- create awx table
-DROP TABLE IF EXISTS `awx`;
-CREATE TABLE `awx` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(250) NOT NULL,
-  `description` text DEFAULT NULL,
-  `is_default` tinyint(1) DEFAULT 0,
-  `uri` varchar(250) NOT NULL,
-  `username` varchar(250) NOT NULL,
-  `token` text NOT NULL,
-  `password` text NOT NULL,
-  `use_credentials` tinyint(4) DEFAULT NULL,
-  `ignore_certs` tinyint(4) DEFAULT NULL,
-  `ca_bundle` text DEFAULT NULL,
-  `managed` tinyint(4) DEFAULT 0,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_AnsibleForms_awx_natural_key` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 -- create job_output and jobs tables
 DROP TABLE IF EXISTS `job_output`;
 DROP TABLE IF EXISTS `jobs`;
@@ -165,6 +167,8 @@ CREATE TABLE `jobs` (
   `raw_form_data` longtext DEFAULT NULL,
   `pid` int(11) DEFAULT NULL,
   `host` varchar(255) DEFAULT NULL,
+  `runner` varchar(250) DEFAULT NULL,
+  `job_log` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`),
   -- the retention sweep selects on (parent_id, status, end) ; without this it full
   -- scans the largest table in the schema on every batch. Keep in sync with the
