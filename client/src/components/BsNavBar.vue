@@ -12,6 +12,7 @@
 /*                                                                */
 /******************************************************************/
 
+import { computed } from 'vue';
 import { useAppStore } from '@/stores/app';
 
 defineProps({
@@ -21,15 +22,19 @@ defineProps({
   },
 });
 
-// a custom logo (uploaded in the admin panel) replaces the default themed logo
+// a custom logo (uploaded in the admin panel) replaces the default themed logo. The server
+// also answers with its built-in default (isDefault) when none was uploaded : that one is the
+// light theme's logo, so it must not stand in for the dark and color themes' own logos (the
+// color theme's has white lettering for its colored header)
 const store = useAppStore();
+const customLogo = computed(() => (store.logoIsDefault ? null : store.customLogo));
 </script>
 
 <template>
   <nav class="navbar navbar-expand-md af-header">
     <div class="container-fluid af-header-inner">
       <router-link class="navbar-brand af-brand" to="/">
-        <img class="logo my-auto" v-if="store.customLogo" :src="store.customLogo" />
+        <img class="logo my-auto" v-if="customLogo" :src="customLogo" />
         <img class="logo my-auto" v-else-if="currentTheme === 'dark'" :src="'img/logo_dark.svg'" />
         <img class="logo my-auto" v-else-if="currentTheme === 'light'" :src="'img/logo_light.svg'" />
         <img class="logo my-auto" v-else :src="'img/logo_color.svg'" />
