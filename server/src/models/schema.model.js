@@ -541,7 +541,8 @@ const SCHEMA_MANIFEST = {
     patchVersion7: { tables: ['secret_stores', 'runners', 'nodes', 'cache_epochs', 'designer_lock'],
                      columns: ['schedule.owner', 'credentials.secret_store', 'credentials.secret_ref', 'settings.vault_env_imported_at', 'jobs.runner',
                                'runners.username', 'runners.password', 'runners.use_credentials', 'jobs.job_log',
-                               'jobs.tracker'] },
+                               'jobs.tracker', 'repositories.claim_node', 'repositories.claim_since',
+                               'schedule.claim_node', 'schedule.claim_since'] },
   },
 };
 
@@ -862,6 +863,12 @@ async function patchVersion7(messages, success, failed) {
     await checkPromise(addTable(table, sql.toString()), messages, success, failed);
   }
   await checkPromise(addColumn("jobs", "tracker", "varchar(250)", true, "NULL"), messages, success, failed);
+  // who holds a repository's or a schedule's 'running' claim, and since when : a claim left by a
+  // node that went away is released by the worker (Repository.releaseStaleClaims, Schedule.releaseStale)
+  for (const table of ["repositories", "schedule"]) {
+    await checkPromise(addColumn(table, "claim_node", "varchar(250)", true, "NULL"), messages, success, failed);
+    await checkPromise(addColumn(table, "claim_since", "datetime", true, "NULL"), messages, success, failed);
+  }
 }
 
 // Idempotent by its WHERE clause : a row is copied once, and never over a store chosen since

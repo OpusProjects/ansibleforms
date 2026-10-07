@@ -34,7 +34,7 @@ vi.mock("../src/models/job.model.js", () => ({
 // same queued schedule launch it once) : here it is always this test's to take
 vi.mock("../src/models/db.model.js", () => ({
   default: {
-    do: async (sql) => (/SET state='running' WHERE id=\? AND state='queued'/.test(sql) ? { affectedRows: 1 } : []),
+    do: async (sql) => (/SET state='running',.* WHERE id=\? AND state='queued'/.test(sql) ? { affectedRows: 1 } : []),
     tryDo: async () => [],
   },
 }));

@@ -247,6 +247,9 @@ CREATE TABLE `repositories` (
   `use_for_vars_files` tinyint(4) DEFAULT 0,
   `cron` varchar(50) DEFAULT NULL,
   `status` varchar(50) DEFAULT NULL,
+  -- who holds the status='running' claim and since when (models/repository.model.js claim)
+  `claim_node` varchar(250) DEFAULT NULL,
+  `claim_since` datetime DEFAULT NULL,
   `output` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `head` varchar(50) DEFAULT NULL,    
   `rebase_on_start` tinyint(4) DEFAULT NULL,
@@ -264,6 +267,9 @@ CREATE TABLE `schedule` (
   `status` VARCHAR(50) DEFAULT NULL,
   `last_run` DATETIME DEFAULT NULL,
   `state` VARCHAR(50) DEFAULT NULL,
+  -- who launches it (state='running') and since when (models/schedule.model.js launch)
+  `claim_node` varchar(250) DEFAULT NULL,
+  `claim_since` datetime DEFAULT NULL,
   `queue_id` INT DEFAULT 0,  
   `extra_vars` LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `output` LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
