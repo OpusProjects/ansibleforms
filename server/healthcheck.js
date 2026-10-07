@@ -1,20 +1,25 @@
-// The image's HEALTHCHECK (see Dockerfile) : healthy when /api/v2/version, which needs no login,
-// answers 200 on this container. The certificate is not checked : HTTPS=1 serves the
-// app's own, usually self-signed, one.
+// The image's HEALTHCHECK (see Dockerfile) : healthy when this container's app answers.
+//   HTTPS=0 : /api/v2/version, which needs no login, answers 200
+//   HTTPS=1 : the port takes a connection. The certificate is usually self-signed and names the
+//             host, not 127.0.0.1, so checking it here would fail a healthy app - and switching
+//             the check off would teach code that certificates may be ignored.
 import http from "http";
-import https from "https";
+import net from "net";
 import { normalizeBaseUrl } from "./src/lib/baseurl.js";
 
-const client = process.env.HTTPS == "1" ? https : http;
-const request = client.get(
-  {
-    host: "127.0.0.1",
-    port: process.env.PORT || 8000,
-    path: `${normalizeBaseUrl(process.env.BASE_URL)}/api/v2/version`,
-    rejectUnauthorized: false,
-    timeout: 4000,
-  },
-  (res) => process.exit(res.statusCode === 200 ? 0 : 1),
-);
-request.on("timeout", () => request.destroy());
-request.on("error", () => process.exit(1));
+const port = Number(process.env.PORT || 8000);
+const fail = () => process.exit(1);
+setTimeout(fail, 4500).unref();
+
+if (process.env.HTTPS == "1") {
+  const socket = net.connect(port, "127.0.0.1", () => {
+    socket.end();
+    process.exit(0);
+  });
+  socket.on("error", fail);
+} else {
+  http
+    .get({ host: "127.0.0.1", port, path: `${normalizeBaseUrl(process.env.BASE_URL)}/api/v2/version` },
+      (res) => process.exit(res.statusCode === 200 ? 0 : 1))
+    .on("error", fail);
+}
