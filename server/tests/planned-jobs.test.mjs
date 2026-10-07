@@ -30,6 +30,15 @@ vi.mock("../src/models/job.model.js", () => ({
   launchValidationMode: (formObj) => formObj?.launchValidation || "off",
 }));
 
+// Schedule.launch claims the row with one conditional statement (two processes reading the
+// same queued schedule launch it once) : here it is always this test's to take
+vi.mock("../src/models/db.model.js", () => ({
+  default: {
+    do: async (sql) => (/SET state='running' WHERE id=\? AND state='queued'/.test(sql) ? { affectedRows: 1 } : []),
+    tryDo: async () => [],
+  },
+}));
+
 vi.mock("../src/services/cron.service.js", () => ({
   default: { removeSchedule: () => {}, addSchedule: () => {} },
 }));

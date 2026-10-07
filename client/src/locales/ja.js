@@ -317,6 +317,7 @@ export default {
     checkDisk: 'ディスク容量',
     checkJobs: 'ジョブ',
     checkScheduler: 'スケジューラー',
+    checkNodes: 'ノード',
     checkRunners: 'ランナー',
     checkBackupTooling: 'バックアップツール',
     checkLastBackup: '最終バックアップ',

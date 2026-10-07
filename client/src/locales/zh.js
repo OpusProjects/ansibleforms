@@ -313,6 +313,7 @@ export default {
     checkDisk: '磁盘空间',
     checkJobs: '作业',
     checkScheduler: '调度器',
+    checkNodes: '节点',
     checkRunners: '运行器',
     checkBackupTooling: '备份工具',
     checkLastBackup: '上次备份',
