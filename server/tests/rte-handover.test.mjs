@@ -89,6 +89,15 @@ describe("the hand-over", () => {
     assert.match(ended[0].line, /unreachable : ECONNABORTED/);
   });
 
+  test("no answer, and the RTE already ran and ended it : its success stands, no second end", async () => {
+    // a short playbook : claimed, run, ended - and the RTE clears jobs.host at the end
+    postAnswer = async () => { row.status = "success"; row.host = null; return noAnswer(); };
+    const ok = await rte.launch({ jobId: 7, runner });
+    assert.equal(ok, true);
+    assert.equal(row.status, "success", "a lost answer must not turn a success into failed");
+    assert.equal(ended.length, 0, "no second end line, no second mail");
+  });
+
   test("no answer, but the RTE claimed it : the app follows the job, it never fails a running one", async () => {
     postAnswer = async () => { row.host = "rte-1-8000"; setTimeout(() => { row.status = "success"; }, 50); return noAnswer(); };
     const ok = await rte.launch({ jobId: 7, runner });

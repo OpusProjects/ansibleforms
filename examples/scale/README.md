@@ -47,6 +47,13 @@ One image, started in different roles (`AF_ROLE`):
 - **Status** shows every node, its role and version, which one is the worker, and warns when the
   nodes run different versions.
 
+## Upgrading
+
+Upgrade the **worker first**, then the app nodes. The worker patches the schema; an app node of
+the new version waits until the schema is patched (it logs what it is waiting for), so app nodes
+upgraded first stay unready until the worker follows - the old ones keep serving meanwhile. RTEs
+can follow at any time while they speak the same contract (`server/src/rte/contract.js`).
+
 ## Limits
 
 - The **chat assistant** keeps its conversations in the memory of one app node: use sticky

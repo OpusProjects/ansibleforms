@@ -13,7 +13,8 @@ import Errors from '../lib/errors.js';
 // file.
 const LOCK_ID = 1;
 // the row's holder is this user (data is the holder as JSON)
-const HOLDER_IS = "JSON_UNQUOTE(JSON_EXTRACT(data, '$.username'))=? AND JSON_UNQUOTE(JSON_EXTRACT(data, '$.type'))=?";
+// (JSON_VALID first : MySQL raises an error on JSON_EXTRACT of text that is not JSON)
+const HOLDER_IS = "JSON_VALID(data) AND JSON_UNQUOTE(JSON_EXTRACT(data, '$.username'))=? AND JSON_UNQUOTE(JSON_EXTRACT(data, '$.type'))=?";
 
 //lock object create
 var Lock=function(){

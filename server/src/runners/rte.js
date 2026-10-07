@@ -48,6 +48,10 @@ function describe(err, url) {
 }
 
 async function failJob(jobId, message) {
+  // only a job still running : the RTE may have ended it already (a short playbook that
+  // finished while the app waited for an answer), and its end - a success too - stands
+  const status = await dbStatus(jobId).catch(() => "running");
+  if (status !== "running") return status === "success";
   await Job.endJobStatus(jobId, (await Job.lastOrder(jobId)) + 1, "stderr", "failed", `[ERROR]: ${message}`);
   // an abort asked meanwhile is answered by this end : a later abort must not be refused
   await Job.resetAbortRequested(jobId).catch(() => {});
@@ -131,6 +135,8 @@ export default {
       // the RTE refused it (4xx) : it is not running. No answer at all (a timeout, a reset
       // connection) may come after the RTE claimed and started it : then follow it, never
       // fail a job that is running
+      // The RTE clears jobs.host when the playbook ends, so a job that ran and finished
+      // within the wait looks unclaimed : its status says it ran (failJob leaves it alone)
       if (err?.response || !(await claimedBy(jobId).catch(() => null))) {
         return failJob(jobId, describe(err, rte.url));
       }

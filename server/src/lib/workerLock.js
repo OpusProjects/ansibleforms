@@ -32,6 +32,7 @@ let lastMiss = null;
 // the connection seen holding the lock, and since when : a holder that never goes away while no
 // worker heartbeats is a dead host's session
 let suspect = { id: null, since: 0 };
+let lastTakeoverWarning = 0;
 
 export function holdsWorkerLock() {
   return held;
@@ -85,6 +86,11 @@ export async function tryWorkerLock() {
 // MaxScale) can keep this connection alive across a failover while the lock went with the old
 // backend, and `SELECT 1` would answer for the connection, not for the lock.
 async function stillMine() {
+  // the connection was dropped already (the database went away) : not ours until taken again
+  if (!conn) {
+    held = false;
+    return false;
+  }
   try {
     const [rows] = await query("SELECT IS_USED_LOCK(?) = CONNECTION_ID() AS mine", [WORKER_LOCK]);
     if (rows?.[0]?.mine === 1) return true;
@@ -116,8 +122,16 @@ async function takeFromDeadHolder() {
     await query(`KILL ${Number(holder)}`);
     suspect = { id: null, since: 0 };
   } catch (e) {
-    // no nodes table yet, or KILL refused (another database user) : keep waiting
-    logger.debug(`Could not check the worker lock holder : ${e.message || e}`);
+    // no nodes table yet, or KILL refused (another database user) : keep waiting - and say so
+    // once the holder has been suspect for long enough, or nobody ever learns why no worker
+    // takes over
+    const overdue = suspect.id != null && Date.now() - suspect.since >= NODE_DEAD_SECONDS * 1000;
+    if (overdue && Date.now() - lastTakeoverWarning > 10 * 60 * 1000) {
+      lastTakeoverWarning = Date.now();
+      logger.warning(`The worker lock holder (connection ${suspect.id}) may be dead, but it cannot be taken over : ${e.message || e}`);
+    } else {
+      logger.debug(`Could not check the worker lock holder : ${e.message || e}`);
+    }
   }
 }
 

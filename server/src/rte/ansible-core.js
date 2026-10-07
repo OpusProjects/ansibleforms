@@ -366,6 +366,9 @@ export function executeCommand(cmd, jobid, counter) {
       // add exit eventlistener to the process to handle status update
       child.on("exit", async function (data) {
         if (!settle()) return;
+        // first : ansible-playbook is gone, nothing reads them any more, and the database
+        // calls below can stall or be cut short by a stop
+        removeExtravarsFiles();
         // the log as the playbook left it, before the job ends
         await syncJobLog(true);
         // Clear the PID and host from the database as the process has ended
@@ -422,7 +425,6 @@ export function executeCommand(cmd, jobid, counter) {
             resolve(true);
           }
         }
-        removeExtravarsFiles();
       });
       // add error eventlistener to the process; set failed
       child.on("error", async function (data) {

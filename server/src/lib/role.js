@@ -32,3 +32,9 @@ export const nodeId = `${role === "all" ? "af" : role}-${os.hostname()}-${proces
 // a node whose heartbeat (lib/nodes.js, every 10 s) is older than this is gone : the worker ends
 // its jobs, and a worker lock it still holds is taken from it (lib/workerLock.js)
 export const NODE_DEAD_SECONDS = 120;
+
+// How long this process has run, in whole seconds, rounded down : "a claim older than this" -
+// measured with the database's clock on both sides - was taken before this process started.
+export function uptimeSeconds() {
+  return Math.floor(process.uptime());
+}
