@@ -22,10 +22,24 @@ const { default: logger } = await import("../src/lib/logger.js");
 /*****************************************************************/
 var jobRow = {};
 var outputs = [];
+var nextOutputId = 1;
 mysql.do = async function (sql, params) {
   if (sql.includes("INSERT INTO AnsibleForms.`job_output`")) {
-    outputs.push({ ...params[0] });
-    return { insertId: outputs.length };
+    const row = { id: nextOutputId++, ...params[0] };
+    outputs.push(row);
+    return { insertId: row.id };
+  }
+  // the increment-issue path : the last stored row
+  if (sql.includes("DELETE FROM AnsibleForms.`job_output` WHERE job_id=? ORDER BY `order` DESC LIMIT 1")) {
+    const last = [...outputs].sort((a, b) => b.order - a.order || b.id - a.id)[0];
+    outputs = outputs.filter((o) => o !== last);
+    return { affectedRows: 1 };
+  }
+  // Job.replaceTrackedOutput : the stdout chunks the final stdout replaces (issue #735)
+  if (sql.includes("DELETE FROM AnsibleForms.`job_output` WHERE job_id=? AND output_type='stdout'")) {
+    const [, fromOrder, keepId] = params;
+    outputs = outputs.filter((o) => !(o.output_type == "stdout" && o.order >= fromOrder && o.id != keepId));
+    return { affectedRows: 1 };
   }
   if (sql.includes("UPDATE AnsibleForms.`jobs` set abort_requested=0")) {
     jobRow.abort_requested = 0;
