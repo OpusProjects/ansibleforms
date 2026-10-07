@@ -22,6 +22,7 @@ import httpsConfig from "../../config/https.config.js";
 import appConfig from "../../config/app.config.js";
 import { runAnsibleJob, runnerIdentity } from "./ansible-core.js";
 import { RTE_CONTRACT } from "./contract.js";
+import { onShutdown } from "../lib/shutdown.js";
 import { appVersion as version } from "../lib/version.js";
 import { startHeartbeat } from "../lib/nodes.js";
 
@@ -141,6 +142,7 @@ export async function startRte() {
     logger.warning('[SECURITY] ENCRYPTION_SECRET is not set. This RTE decrypts credentials with the default key, which is public in the source code : set the same ENCRYPTION_SECRET as the app.');
   }
   await waitForDatabase();
+  onShutdown("database", () => mysql.end());
   await abandonOwnJobs();
   // its row in `nodes` : the Status page lists it, and when it stops answering the worker ends
   // the jobs it was running (Job.abandonDeadNodes) - a pod replaced under a new name included
@@ -186,6 +188,9 @@ export async function startRte() {
     console.error(`RTE : cannot listen on port ${port} : ${err.message}`);
     process.exit(1);
   });
+  // a stop : no new jobs. A playbook still running ends with the container ; this RTE abandons
+  // it when it comes back under the same name, the worker when it does not
+  onShutdown("server", () => new Promise((resolve) => server.close(() => resolve())));
   server.listen(port, () => {
     logger.notice(`RTE '${runnerIdentity()}' ${version} listening on ${httpsConfig.https ? "https" : "http"} port ${port}`);
   });

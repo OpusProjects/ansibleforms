@@ -38,5 +38,10 @@ WORKDIR /app/dist
 COPY --from=builder /app/server/. ./
 COPY ./server/ansible.cfg /etc/ansible/ansible.cfg
 
+# tini as PID 1 : it hands SIGTERM to node and reaps the ansible workers a playbook leaves behind
+RUN apt-get update && apt-get install -y --no-install-recommends tini && rm -rf /var/lib/apt/lists/*
+
 ENV AF_ROLE=rte
-ENTRYPOINT ["node", "./index.js"]
+# the port takes a connection (server/healthcheck.js) ; its API answers only with the token
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD ["node", "./healthcheck.js"]
+ENTRYPOINT ["/usr/bin/tini", "--", "node", "./index.js"]

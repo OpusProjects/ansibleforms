@@ -41,14 +41,14 @@ describe.each([
     const fin = fn.indexOf("finally");
     assert.ok(fin > -1, "the release must not sit on the success path only");
     assert.match(fn.slice(fin), /if\s*\(\s*lockAcquired\s*\)/);
-    assert.match(fn.slice(fin), /Lock\.delete\(user\)/);
+    assert.match(fn.slice(fin), /Lock\.delete\(user, \{ onlyMine: true \}\)/, "only its own lock : never one a designer took meanwhile");
   });
 
   test("it releases only what it acquired", () => {
     // Lock.delete must be reachable only under the lockAcquired test
     const guard = fn.indexOf("if(lockAcquired)") >= 0 ? fn.indexOf("if(lockAcquired)")
                                                       : fn.indexOf("if (lockAcquired)");
-    assert.ok(guard > -1 && guard < fn.indexOf("Lock.delete(user)"),
+    assert.ok(guard > -1 && guard < fn.indexOf("Lock.delete(user"),
       "an unguarded release would drop a designer's own lock mid-session");
   });
 });

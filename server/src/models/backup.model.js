@@ -14,6 +14,13 @@ import Errors from '../lib/errors.js';
 import logger from '../lib/logger.js';
 import { bump } from '../lib/epochs.js';
 
+// The tables that describe the running processes, not the configuration : which nodes are up,
+// what changed between them (lib/epochs.js), who holds the designer. A restore must not bring
+// back gone nodes, an old designer lock or old change counters - so they are not dumped, and a
+// restore leaves the live ones as they are.
+const RUNTIME_TABLES = ['nodes', 'cache_epochs', 'designer_lock']
+  .map((t) => `--ignore-table=AnsibleForms.${t}`).join(' ');
+
 /**
  * Wrap a value for a POSIX shell as a single-quoted string.
  *
@@ -381,12 +388,12 @@ class BackupModel {
     }
     await fs.mkdir(backupFolder, { recursive: true });
     try {
-      const dumpCmd = `${appConfig.mysqldumpCommand} -h ${shQuote(dbHost)} -u${shQuote(dbUser)} -p${shQuote(dbPassword)} -P ${shQuote(dbPort)} ${shQuote(dbName)} > "${backupFile}"`;
+      const dumpCmd = `${appConfig.mysqldumpCommand} -h ${shQuote(dbHost)} -u${shQuote(dbUser)} -p${shQuote(dbPassword)} -P ${shQuote(dbPort)} ${RUNTIME_TABLES} ${shQuote(dbName)} > "${backupFile}"`;
       const cmdObj = {
         command: dumpCmd,
         directory: process.cwd(),
         description: `Database backup to ${backupFile}`,
-        maskedCommand: `${appConfig.mysqldumpCommand} -h ${shQuote(dbHost)} -u${shQuote(dbUser)} -p'*****' -P ${shQuote(dbPort)} ${shQuote(dbName)} > "${backupFile}"`
+        maskedCommand: `${appConfig.mysqldumpCommand} -h ${shQuote(dbHost)} -u${shQuote(dbUser)} -p'*****' -P ${shQuote(dbPort)} ${RUNTIME_TABLES} ${shQuote(dbName)} > "${backupFile}"`
       };
       // explicit timeout : the default is 60s, which no real database can dump in
       await Cmd.executeSilentCommand(cmdObj, true, false, appConfig.backupCommandTimeoutSeconds);

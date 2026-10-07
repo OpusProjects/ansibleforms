@@ -16,7 +16,7 @@ ARG YTT_SHA256_ARM64=fed073d52b780a88ce506e68c44f33cedede2dad3d5f4fbe07a2833e45d
 ARG TARGETARCH=amd64
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends git openssh-client mariadb-client procps ca-certificates curl \
+ && apt-get install -y --no-install-recommends git openssh-client mariadb-client procps ca-certificates curl tini \
  && case "$TARGETARCH" in \
       amd64) sum="$YTT_SHA256_AMD64" ;; \
       arm64) sum="$YTT_SHA256_ARM64" ;; \
@@ -131,4 +131,6 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 CMD ["node", "./healthcheck.js"]
 
 # Use js files to run the application
-ENTRYPOINT ["node", "./index.js"]
+# tini as PID 1 : it hands SIGTERM to node (which stops cleanly, src/lib/shutdown.js) and reaps
+# the git and ssh processes the app leaves behind, which node as PID 1 never does
+ENTRYPOINT ["/usr/bin/tini", "--", "node", "./index.js"]

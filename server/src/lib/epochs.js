@@ -25,8 +25,12 @@ export function onEpoch(name, fn) {
 // never the write that caused it.
 export function bump(name) {
   return Promise.resolve()
+    // never backwards, and never back to a value a process saw : a restore of an older dump
+    // once set a counter back, and the bump after it landed on the value every node already
+    // had - so none of them dropped their caches. The clock in milliseconds is always ahead.
     .then(() => mysql.tryDo(
-      "INSERT INTO AnsibleForms.`cache_epochs` (name, version) VALUES (?, 1) ON DUPLICATE KEY UPDATE version = version + 1",
+      "INSERT INTO AnsibleForms.`cache_epochs` (name, version) VALUES (?, ROUND(UNIX_TIMESTAMP(NOW(3)) * 1000)) " +
+        "ON DUPLICATE KEY UPDATE version = GREATEST(version + 1, ROUND(UNIX_TIMESTAMP(NOW(3)) * 1000))",
       [name],
     ))
     .catch((e) => logger.debug(`Could not bump the '${name}' epoch : ${e.message || e}`));

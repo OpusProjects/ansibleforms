@@ -332,7 +332,7 @@ const restore = async function(req,res){
       // it before this call and expects to keep it
       if(lockAcquired){
         try{
-          await Lock.delete(user)
+          await Lock.delete(user, { onlyMine: true })
         }catch(err){
           logger.error(`Failed to release the designer lock after the restore : ${helpers.getError(err)}`)
         }
@@ -397,7 +397,7 @@ const save = async function(req,res){
       // release ONLY when we took it, exactly as restore() does
       if(lockAcquired){
         try{
-          await Lock.delete(user)
+          await Lock.delete(user, { onlyMine: true })
         }catch(err){
           logger.error(`Failed to release the designer lock after the save : ${helpers.getError(err)}`)
         }
