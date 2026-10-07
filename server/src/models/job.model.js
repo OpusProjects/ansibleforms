@@ -231,7 +231,7 @@ Job.abandon = async function (all = false) {
   return res.changedRows;
 };
 // At a process start : the jobs this node followed died with its previous run. `untracked`
-// adds the jobs no node follows (started before 7.3) ; only the worker's start passes it, so
+// adds the jobs no node follows (started before 7.5) ; only the worker's start passes it, so
 // they are swept once per database, not by every app node that starts.
 Job.abandonOwn = async function (tracker, { untracked = false } = {}) {
   const res = await mysql.do(

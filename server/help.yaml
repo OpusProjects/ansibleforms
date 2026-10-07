@@ -299,7 +299,7 @@
     hint: No longer used - the designer lock is kept in the database.
     default: "%PERSISTENT_FOLDER%/ansibleForms.lock"
     description: |
-      Deprecated since 7.3.0 and ignored : the designer lock (who is editing the forms) is kept
+      Deprecated since 7.5.0 and ignored : the designer lock (who is editing the forms) is kept
       in the database, so every app node sees the same lock. Removed in 8.0.0.
   - name: FORMS_BACKUP_PATH
     version: 4.0.3
@@ -348,7 +348,7 @@
       removes entries older than this.
       Set to 0 to keep everything.
   - name: AF_ROLE
-    version: 7.3.0
+    version: 7.5.0
     type: string
     allowed: all, app, worker, rte
     short: What this process runs
@@ -367,7 +367,7 @@
       settings (`DB_*`), the same `ENCRYPTION_SECRET`, and `RTE_TOKEN`. The app reaches it
       through a runner added under Connections > Runners.
   - name: RTE_TOKEN
-    version: 7.3.0
+    version: 7.5.0
     type: string
     allowed: at least 16 characters
     short: The token between an app and its RTE
@@ -745,7 +745,7 @@
     default: 1024 * 1024
     description: |
       Read by an RTE (`AF_ROLE=rte`) : a playbook whose output on one stream passes this many
-      bytes is stopped. If you have large output, raise it. Since 7.3 the app runs no playbook
+      bytes is stopped. If you have large output, raise it. Since 7.5 the app runs no playbook
       itself, so set this in the RTE container's environment ; it is not editable on the
       Settings page.
     version: 5.0.8
@@ -1016,7 +1016,7 @@
     default: "%PERSISTENT_FOLDER%/playbooks"
     description: |
       Read by an RTE (`AF_ROLE=rte`) : the folder its playbooks run from when no repository is
-      marked for playbooks. Since 7.3 the app runs no playbook itself, so set this in the RTE
+      marked for playbooks. Since 7.5 the app runs no playbook itself, so set this in the RTE
       container's environment ; it is not editable on the Settings page.
   - name: REGEX_FILTER_JOB_OUTPUT
     type: string
@@ -1684,7 +1684,7 @@
         - name: ansible
           description: | 
             Targets an Ansible playbook, run on a runner of type rte (Connections > Runners),
-            named with `runner:` or the default one. Since 7.3 AnsibleForms runs no playbook itself.
+            named with `runner:` or the default one. Since 7.5 AnsibleForms runs no playbook itself.
           examples:
           - name: Ansible Core Form
             code: |
@@ -2112,7 +2112,7 @@
         type: string
         with_types: ansible, awx
         group: workflow
-        version: 7.3.0
+        version: 7.5.0
         allowed: the name of a runner (Connections > Runners)
         short: Where the job runs
         description: |
@@ -2120,7 +2120,7 @@
           container) for a playbook, a runner of type awx (AWX / Ansible Automation Platform /
           Ascender) for a template. Runners are added under Connections > Runners.
           Without this property the default runner of the matching type is used ; without a
-          default the job fails and says how to add one. Since 7.3 AnsibleForms runs no
+          default the job fails and says how to add one. Since 7.5 AnsibleForms runs no
           playbook itself.
         examples:
         - name: Run on the vmware runtime
@@ -2143,8 +2143,8 @@
         allowed: name of a runner of type awx
         short: Deprecated alias of runner
         description: |
-          **Deprecated since 7.3, removed in 8.** Use `runner`. AWX/AAP connections are runners
-          of type awx since 7.3 (Connections > Runners) ; the upgrade moves the existing ones
+          **Deprecated since 7.5, removed in 8.** Use `runner`. AWX/AAP connections are runners
+          of type awx since 7.5 (Connections > Runners) ; the upgrade moves the existing ones
           there. `awx: <name>` still names that runner, with a warning in the log.
        
           
@@ -5344,7 +5344,7 @@
 
       **How it works:**
       - During a job run, the RTE watches for a log file at a well-known path inside the playbook folder
-      - Every 2 seconds, when the file changed, and once more when the playbook ends, the RTE stores its contents on the job ; the file is then removed (since 7.3)
+      - Every 2 seconds, when the file changed, and once more when the playbook ends, the RTE stores its contents on the job ; the file is then removed (since 7.5)
       - The log file is displayed in a separate **Logfile** panel below the main Ansible output, with full ANSI colour support
 
       **Log file path convention:**

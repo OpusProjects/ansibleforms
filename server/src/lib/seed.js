@@ -383,7 +383,7 @@ export async function applyConfigSeed({ schemaIsReady = true } = {}) {
   doc = interpolateEnv(doc);
   validateSeed(doc);
   if (doc.awx) {
-    logger.warning("The config seed's awx: section is deprecated since 7.3 and removed in 8 : declare those connections under runners: with type: awx");
+    logger.warning("The config seed's awx: section is deprecated since 7.5 and removed in 8 : declare those connections under runners: with type: awx");
     doc = foldAwxIntoRunners(doc);
   }
 

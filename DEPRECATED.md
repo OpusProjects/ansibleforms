@@ -8,13 +8,13 @@ Removed in 8.0.0. Each logs a warning when it is used.
 | `vault_path` on a credential (API, seed) | `secret_store` + `secret_ref` | 7.1.0 |
 | `POST /api/v2/config/vault/check`, `GET /api/v2/config/vault/mounts` | `POST /api/v2/secretstore/{id}/check`, `GET /api/v2/secretstore/{id}/mounts` | 7.1.0 |
 | `hasApproval` on a form or a step (it has no effect) | `approval` | 7.3.0 |
-| `awx: <name>` on a form | `runner: <name>` (an AWX connection is a runner of type `awx`) | 7.3.0 |
-| the config seed's `awx:` section | `runners:` items with `type: awx` | 7.3.0 |
-| `LOCK_PATH` (no longer read) | nothing: the designer lock is kept in the database | 7.3.0 |
+| `awx: <name>` on a form | `runner: <name>` (an AWX connection is a runner of type `awx`) | 7.5.0 |
+| the config seed's `awx:` section | `runners:` items with `type: awx` | 7.5.0 |
+| `LOCK_PATH` (no longer read) | nothing: the designer lock is kept in the database | 7.5.0 |
 
-## Changed in 7.3.0 - read before upgrading
+## Changed in 7.5.0 - read before upgrading
 
-7.3 runs playbooks on runners: the app no longer runs `ansible-playbook` itself.
+7.5 runs playbooks on runners: the app no longer runs `ansible-playbook` itself.
 
 | What changed | What to do |
 |---|---|

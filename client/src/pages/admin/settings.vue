@@ -178,8 +178,8 @@ function envHelp(e) {
 // reported as a fact on the Status page instead.
 // AF_ROLE and RTE_* describe which process this is and where its RTE lives : set in
 // the environment of the container, not edited from inside the app. LOCK_PATH is no longer read
-// (the designer lock is in the database since 7.3). ANSIBLE_PATH and
-// PROCESS_MAX_BUFFER are read by an RTE only : since 7.3 the app runs no playbook itself.
+// (the designer lock is in the database since 7.5). ANSIBLE_PATH and
+// PROCESS_MAX_BUFFER are read by an RTE only : since 7.5 the app runs no playbook itself.
 const OWNED_ELSEWHERE = /^VAULT_|^BASE_URL$|^AF_ROLE$|^LOCK_PATH$|^RTE_|^ANSIBLE_PATH$|^PROCESS_MAX_BUFFER$/;
 
 const envGroups = computed(() => {

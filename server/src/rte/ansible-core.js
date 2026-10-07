@@ -1,6 +1,6 @@
 // The one place a playbook runs : the RTE (AF_ROLE=rte, src/rte/server.js) calls
 // runAnsibleJob with nothing but a job id. Everything it needs is in the jobs row and the
-// database (credentials, secret stores). The app never imports this module : since 7.3 it
+// database (credentials, secret stores). The app never imports this module : since 7.5 it
 // runs no playbook itself.
 //
 // The approval gate is NOT here : a job reaches an RTE only once it may run
