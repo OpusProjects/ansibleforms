@@ -53,7 +53,7 @@ export async function waitForDatabase() {
 /**
  * @returns {Promise<boolean>} whether the schema is ready
  * @param {object} [opts]
- * @param {boolean} [opts.boot] True only on the application boot path (app.js). A seed
+ * @param {boolean} [opts.boot] True only on the worker's start (init/worker.js). A seed
  *   failure is FATAL there - the process must not come up misconfigured. It must NOT be
  *   fatal when init() is re-entered from POST /api/v2/schema, because process.exit()
  *   inside a request handler kills the server in response to an API call - and that

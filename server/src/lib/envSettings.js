@@ -108,7 +108,6 @@ const LIVE = {
   // multer's destination callback dereferences this per upload (the SIZE cap does not -
   // see the UPLOAD_MAX_GB note above)
   UPLOAD_PATH: { key: 'uploadPath', parse: v => v },
-  LOCK_PATH: { key: 'lockPath', parse: v => v },
 };
 
 // Read straight from process.env at call time by their consumer rather than captured into
@@ -183,7 +182,7 @@ const LIVE_CUSTOM = {
 // value but does NOT move what is already there, which is the part worth warning about.
 export const RELOCATES = new Set([
   'BACKUP_PATH', 'FORMS_BACKUP_PATH', 'CONFIG_PATH', 'FORMS_FOLDER_PATH',
-  'FORMS_STAGING_PATH', 'REPO_PATH', 'UPLOAD_PATH', 'VARS_FILES_PATH', 'LOG_PATH', 'LOCK_PATH',
+  'FORMS_STAGING_PATH', 'REPO_PATH', 'UPLOAD_PATH', 'VARS_FILES_PATH', 'LOG_PATH',
 ]);
 
 export function classify(name) {

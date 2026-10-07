@@ -381,9 +381,9 @@ Job.abort = async function (user, id) {
   return res;
 };
 /**
- * Flags one running job for abort and, when its playbook runs on this host, stops it
- * right away. The flag is what actually counts : the runner of the job - here or on
- * another host - polls it and stops the playbook (or cancels the AWX job) itself.
+ * Flags one running job for abort and asks its runner to cancel it right away (an RTE stops
+ * the playbook, AWX cancels its job). The flag is what actually counts : the runner polls it
+ * and stops the job itself if the direct cancel did not reach it.
  * No access check here - callers do that (Job.abort, and the multistep runner for its
  * own steps).
  *

@@ -21,7 +21,7 @@ as the old local runs: it is the same code.
 ## The idea in one picture
 
 ```
- browser ──▶ app (AF_ROLE=app)                           RTE (AF_ROLE=rte)
+ browser ──▶ app (AF_ROLE unset or app)                 RTE (AF_ROLE=rte)
              │ Job.launch ─▶ orchestrator                 │
              │               ├─ approval gate             │
              │               └─ runner.launch(ctx)        │
@@ -102,8 +102,11 @@ so steps can name different runners.
 3. `resolveRunner` picks the runner; `jobs.runner` records it.
 4. The app writes `ok: [Running on RTE <name> (<url>)]`, posts the job id, and polls the row
    once a second until the status is final. The RTE claims the job
-   (`UPDATE jobs SET host=<its name> WHERE id=? AND status='running' AND host IS NULL`), then runs
-   `runAnsibleJob(jobId)`.
+   (`UPDATE jobs SET host=<its name> WHERE id=? AND status='running' AND job_type='ansible' AND
+   (host IS NULL OR host=<its name>)` - a repeated call is harmless, an AWX job or a multistep is
+   never taken), then runs `runAnsibleJob(jobId)`. The app sends its contract with the job id; an
+   RTE of another contract refuses it. When the POST gets no answer, the app follows the job if
+   the RTE claimed it, and fails it only if not.
 5. Output: every chunk becomes a `job_output` row; `order` continues from `MAX(order)` in the
    database (`Job.lastOrder`), so two writers (app then RTE) never collide. A
    `.joblogs/job_log_<id>.log` the playbook writes is stored in `jobs.job_log` every 2 seconds
@@ -124,10 +127,16 @@ ends `aborted`.
 jobs. The name needs no setting: two RTEs on one machine listen on different ports, and a
 restarted RTE keeps its name.
 
-- App start (and hourly): abandons jobs left `running` that no RTE claimed (`host IS NULL`).
-  An RTE job carries on when the app restarts.
-- RTE start (and hourly for jobs older than a day): abandons only the jobs carrying its own
-  name.
+Every process writes a heartbeat in `nodes` (RTEs too). A job belongs to the RTE running it
+(`jobs.host`), otherwise to the app node or worker that started it (`jobs.tracker`).
+
+- App node or worker start: abandons the jobs it followed itself (`tracker` = its name, no
+  `host`). An RTE job carries on when the app restarts.
+- RTE start: abandons the jobs carrying its own name. Hourly: those older than a day, except
+  what it is running right now.
+- The worker, every minute: abandons the jobs of any node (RTE or app) whose heartbeat is two
+  minutes old - a pod replaced under a new name included - and releases the repository and
+  schedule claims those nodes held. Hourly: jobs older than a day that nobody owns.
 
 ## The RTE API
 
@@ -178,7 +187,7 @@ In dev the `dev:rte` script uses `dev-rte-token-not-a-secret`; never outside a d
 
 | Variable | Where | Meaning |
 |---|---|---|
-| `AF_ROLE` | RTE | `app` (default) or `rte` |
+| `AF_ROLE` | RTE | `rte` (set in the image); the app is `all` (unset), `app` or `worker` - see [examples/scale](../../../examples/scale) |
 | `RTE_TOKEN` | RTE | the token every call must carry; the app holds the same value on the runner row |
 | `DB_*`, `ENCRYPTION_SECRET` | RTE | the app's own values |
 | `ANSIBLE_PATH`, `PROCESS_MAX_BUFFER`, `REPO_PATH`, `HOME_PATH`, `UPLOAD_PATH` | RTE | where its playbooks, repositories, SSH key and uploads are |
@@ -219,9 +228,14 @@ Customers make it their own by forking `Dockerfile.rte` (the full flavour) or
 
 ## Security
 
-- Only the app talks to an RTE: every call carries the runner's token, anything else is 401.
-  The RTE has no users, no login and no web pages; `HTTPS=1` works as for the app. Keep it off
-  the public network.
+- Every call to an RTE carries the runner's token; anything else is 401. Nothing else restricts
+  who may call it - no address list, no client certificate - so keep it off the public network.
+  The RTE has no users, no login and no web pages; `HTTPS=1` works as for the app (with the
+  app's template certificate unless you mount your own: tick *Ignore certificates* on the
+  runner, or give it the CA).
+- Runners are edited by users with settings access, not only admins: such a user can point the
+  default RTE elsewhere. A fake RTE receives job ids only and cannot write the database; the app
+  fails the job once it answers `unknown` twice.
 - Even with the token the API can only start a job that already exists and is `running`,
   report its status, cancel it, and answer health. It cannot create jobs, read credentials or
   return output.
@@ -233,20 +247,20 @@ Customers make it their own by forking `Dockerfile.rte` (the full flavour) or
 - The RTE uses its own disk for playbooks, repositories, the SSH key and uploads: mount the
   app's folders, or run it on the same machine. (Planned: SSH key and known_hosts in the
   database, the RTE cloning the playbooks repository itself.)
-- A form's `playbookSubPath` must exist on the RTE; a missing folder shows as
-  `ENOENT ... extravars_<id>.json`.
+- A form's `playbookSubPath` must exist on the RTE; a missing folder fails the job with the
+  folder's name and what to mount.
 - A different `ENCRYPTION_SECRET` on the RTE is not detected yet: credentials would decrypt to
   garbage (aes-256-ctr has no integrity check).
-- A multistep job whose app restarts mid-run is abandoned (the step loop lives in the app); a
-  step already handed to an RTE still finishes.
+- A multistep job, and an AWX job, are followed by the app node that started them: when that
+  node goes, the job is abandoned (within two minutes on a cluster, at its restart otherwise).
+  A step already handed to an RTE still finishes; an AWX job goes on in AWX.
 
 ## Later
 
 Semaphore and Rundeck adapters; `findDefault` by capability once a second playbook-capable
-type exists; a worker role (`AF_ROLE=worker`: scheduler, repository sync, job tracking) so the
-app can run replicas, with the designer lock moved to the database. No Redis: access tokens are
-stateless JWTs (`ACCESS_TOKEN_SECRET` identical on every node), refresh tokens are in the
-`tokens` table, sessions are `cookie-session`.
+type exists; following multistep and AWX jobs from the worker, so they survive the app node that
+started them. (The worker role and several app nodes exist since 7.5: see
+[examples/scale](../../../examples/scale).)
 
 ## Tests
 
@@ -257,5 +271,9 @@ stateless JWTs (`ACCESS_TOKEN_SECRET` identical on every node), refresh tokens a
   password on stdin, the output limit.
 - `tests/awx-workflow.test.mjs` - AWX tracking against a fake AWX, incl. the 405 cancel.
 - `tests/runner-model.test.mjs` - per-type validation and default, masked secrets.
-- `tests/schema-patch8.test.mjs` - the awx table moving into runners.
+- `tests/schema-awx-to-runners.test.mjs` - the awx table moving into runners.
+- `tests/rte-server.test.mjs` - the RTE API : the token, which jobs it takes, the contract.
+- `tests/rte-handover.test.mjs` - the app's side : a refusal, a lost answer, the contract sent.
+- `tests/rte-contract.test.mjs` - an RTE accepted by contract, not by release.
+- `tests/worker-lock.test.mjs`, `tests/node-scope.test.mjs` - one worker, who ends whose jobs.
 - `tests/health.test.mjs`, `tests/config-seed.test.mjs` - the runners check and seed section.

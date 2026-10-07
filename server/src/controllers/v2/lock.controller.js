@@ -4,7 +4,7 @@ import Lock from '../../models/lock.model.js';
 import Errors from '../../lib/errors.js';
 import i18n from '../../lib/i18n.js';
 
-// The lock file is a copy of the user who took the lock : their roles, groups, options
+// The lock (a database row) is a copy of the user who took the lock : their roles, groups, options
 // and email as well as their name. The status goes to every designer user, who only needs
 // to see who holds it and since when - the rest stays on the server.
 const LOCK_FIELDS = ['username', 'type', 'displayName', 'created'];
