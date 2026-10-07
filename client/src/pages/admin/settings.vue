@@ -103,13 +103,7 @@ const envGroupOrder = [
     key: 'jobs',
     label: () => t('settings.settingsPage.envGroupJobs'),
     icon: 'fac,ansible',
-    exact: [
-      'REGEX_FILTER_JOB_OUTPUT',
-      'UPLOAD_PATH',
-      'UPLOAD_MAX_GB',
-      'VARS_FILES_PATH',
-      'AWX_API_PREFIX',
-    ],
+    exact: ['REGEX_FILTER_JOB_OUTPUT', 'UPLOAD_PATH', 'UPLOAD_MAX_GB', 'VARS_FILES_PATH', 'AWX_API_PREFIX'],
   },
   {
     key: 'formsConfig',
