@@ -5,6 +5,9 @@ export default {
     always: 'always',
   },
   nav: {
+    // the lock on the Designer link while someone holds the designer, in its tooltip
+    designerLockedByMe: 'The designer is locked by you',
+    designerLockedBy: 'The designer is locked by {user}',
     forms: 'Forms',
     jobs: 'Jobs',
     settings: 'Settings',

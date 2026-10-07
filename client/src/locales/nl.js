@@ -5,6 +5,9 @@ export default {
     always: 'altijd',
   },
   nav: {
+    // the lock on the Designer link while someone holds the designer, in its tooltip
+    designerLockedByMe: 'De ontwerper is door u vergrendeld',
+    designerLockedBy: 'De ontwerper is vergrendeld door {user}',
     forms: 'Formulieren',
     jobs: 'Taken',
     settings: 'Instellingen',

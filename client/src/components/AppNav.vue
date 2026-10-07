@@ -73,6 +73,9 @@ function refreshApprovals() {
   State.refreshApprovals().catch(() => {
     // not logged in (any more) or the server is down : the next page load tells
   });
+  // the designer lock on the Designer link, on the same minute (the designer page itself
+  // refreshes it every few seconds while it is open)
+  State.refreshDesignerLock();
 }
 onMounted(() => {
   refreshApprovals();
@@ -106,6 +109,17 @@ const profileMenu = computed(() => [
 
 // COMPUTED
 
+// the designer lock, for the lock on the Designer link : null when nobody holds it
+const designerLockIndicator = computed(() => {
+  const status = store.designerLock;
+  if (!status || status.free || !status.lock) return null;
+  if (status.match) {
+    return { icon: 'lock', class: 'af-lock-mine', title: t('nav.designerLockedByMe') };
+  }
+  const who = status.lock.displayName || status.lock.username || '?';
+  return { icon: 'lock', class: 'af-lock-other', title: t('nav.designerLockedBy', { user: who }) };
+});
+
 const menu = computed(() => {
   // Clone menuOptions to avoid mutating the original array
   let m = menuOptions.value.map((item) => ({ ...item }));
@@ -126,6 +140,10 @@ const menu = computed(() => {
   if (!store?.profile?.options?.showDesigner) {
     m = m.filter((m) => m.link != '/designer');
   }
+  // a lock on the Designer link while someone holds the designer : one color for the user
+  // themselves, another for someone else, and who in its tooltip
+  const designer = m.find((x) => x.link == '/designer');
+  if (designer && designerLockIndicator.value) designer.indicator = designerLockIndicator.value;
   return m;
 });
 

@@ -5,6 +5,9 @@ export default {
     always: 'toujours',
   },
   nav: {
+    // the lock on the Designer link while someone holds the designer, in its tooltip
+    designerLockedByMe: 'Le concepteur est verrouillé par vous',
+    designerLockedBy: 'Le concepteur est verrouillé par {user}',
     forms: 'Formulaires',
     jobs: 'Jobs',
     settings: 'Parametres',

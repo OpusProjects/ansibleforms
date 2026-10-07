@@ -63,6 +63,23 @@ var State = {
     store.approvals = res?.data || 0;
   },
 
+  // who holds the designer lock, for the lock icon on the header's Designer link ; only for
+  // a user who sees the designer (the lock api answers 403 to the others)
+  async refreshDesignerLock() {
+    const store = useAppStore();
+    if (!store.profile?.options?.showDesigner) {
+      store.designerLock = null;
+      return;
+    }
+    try {
+      const res = await axios.get('/api/v2/lock', TokenStorage.getAuthentication());
+      store.designerLock = res?.data || null;
+    } catch (err) {
+      // the designer is disabled, or the server is down : no icon rather than a wrong one
+      store.designerLock = null;
+    }
+  },
+
   // Check the schema and see what's missing.
   async checkDatabase() {
     // create timestamp to add to api call to prevent caching

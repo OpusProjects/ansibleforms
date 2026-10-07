@@ -23,6 +23,9 @@ export const useAppStore = defineStore('app', () => {
   const serverBuild = ref(null);
   const clientBuild = ref(null);
   const approvals = ref(0);
+  // the designer lock as /api/v2/lock answers it ({ free } or { lock, match }) : the lock icon
+  // on the header's Designer link ; null while unknown or for a user without the designer
+  const designerLock = ref(null);
   const errorMessage = ref('');
   const schemaData = ref(null);
   const chatEnabled = ref(false); // ENABLE_CHAT and a configured provider (/api/v2/app/config)
@@ -50,6 +53,7 @@ export const useAppStore = defineStore('app', () => {
     serverBuild,
     clientBuild,
     approvals,
+    designerLock,
     errorMessage,
     schemaData,
     chatEnabled,
