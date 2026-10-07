@@ -29,6 +29,25 @@ const AWX_TIMEOUT_MS = 60000;
 // polls in a row that may fail before the job is given up
 const AWX_MAX_RETRIES = 10;
 
+// Above STDOUT_MAX_BYTES_DISPLAY (1 MB by default), AWX refuses the display formats of a
+// job's stdout : it answers 200 with this placeholder instead of the log (issue #733). The
+// stdout is read in a download format, which has no such limit ; the placeholder is still
+// recognized, so it can never be taken for the log.
+const AWX_STDOUT_TOO_LARGE = /^Standard Output too large to display \(\d+ bytes\)/;
+
+/**
+ * Tells whether a stdout answer is AWX's "too large to display" placeholder.
+ *
+ * Args:
+ *   text (string): what AWX returned for the stdout.
+ *
+ * Returns:
+ *   boolean: true for the placeholder.
+ */
+export function isStdoutTooLarge(text) {
+  return typeof text === "string" && AWX_STDOUT_TOO_LARGE.test(text);
+}
+
 export function getAuthorization(awx) {
   const headers = awx.use_credentials
     ? { Authorization: `Basic ${Buffer.from(`${awx.username}:${awx.password}`).toString("base64")}` }
@@ -389,6 +408,8 @@ Awx.trackJob = async function (
   var message;
   // prepare axiosConfig
   const axiosConfig = getAuthorization(awxConfig);
+  // the stdout of this job was too large to display : told the user once already
+  var toldTooLarge = false;
   for (;;) {
   logger.info(`searching for job with id ${job.id}`);
   try {
@@ -404,9 +425,19 @@ Awx.trackJob = async function (
 
         var incrementIssue = false;
         var output = o;
-        // AWX has no incremental output, so we always need to substract previous output
-        // we substract the previous output
-        if (output && previousoutput) {
+        // AWX's "too large to display" placeholder (issue #733). The download format that
+        // getJobTextOutput reads is not limited, so AWX should never send it ; should one
+        // still do, it is no log and is never diffed - as the display format's answer it took
+        // the increment-issue path, deleted the last stored chunk and wrote nothing from then
+        // on. Say once why the log stops, keep what is stored, and keep polling.
+        const tooLarge = isStdoutTooLarge(o);
+        if (tooLarge) {
+          output = "";
+          if (!toldTooLarge) {
+            await Job.printJobOutput(o, "stderr", jobid, ++counter);
+            toldTooLarge = true;
+          }
+        } else if (output && previousoutput) {
           // does the previous output fit in the new
           if (output.includes(previousoutput)) {
             output = output.substring(previousoutput.length);
@@ -467,8 +498,10 @@ Awx.trackJob = async function (
             // next poll (was: recurse) - previousoutput becomes the second last
             job = j;
             ++counter;
-            previousoutput2 = previousoutput;
-            previousoutput = o;
+            if (!tooLarge) {
+              previousoutput2 = previousoutput;
+              previousoutput = o;
+            }
             lastrun = j.finished;
             retryCount = 0;
             continue;
@@ -514,8 +547,12 @@ Awx.trackJob = async function (
             // is the reliable reference, so it is the one carried forward.
             job = j;
             ++counter;
-            previousoutput2 = incrementIssue ? previousoutput2 : previousoutput;
-            previousoutput = o;
+            // a placeholder poll changes nothing : the next real output is diffed against
+            // the last real one
+            if (!tooLarge) {
+              previousoutput2 = incrementIssue ? previousoutput2 : previousoutput;
+              previousoutput = o;
+            }
             lastrun = j.finished;
             retryCount = 0;
             continue;
@@ -761,9 +798,13 @@ Awx.getJobTextOutput = async function (awx, job) {
     }
     // prepare axiosConfig
     const axiosConfig = getAuthorization(awxConfig);
+    // txt_download, not txt : the display formats are refused above AWX's
+    // STDOUT_MAX_BYTES_DISPLAY (1 MB by default) with a placeholder instead of the log
+    // (issue #733), the download formats are not limited. Below the limit both return the
+    // same plain text, in the same time.
     const axiosResult = await axios.get(
-      awxConfig.uri + job.related.stdout + "?format=txt",
-      axiosConfig
+      awxConfig.uri + job.related.stdout + "?format=txt_download",
+      { ...axiosConfig, responseType: "text" }
     );
     return axiosResult.data;
   }
