@@ -406,6 +406,9 @@ Awx.trackJob = async function (
   const awxConfig = awx;
   if (!awxConfig) throw new Errors.ApiError("No AWX runner given");
   var message;
+  // the order of the first row this tracking can write : the rows from here on are the
+  // stdout chunks that the final stdout replaces when the job has ended
+  const firstOrder = counter;
   // prepare axiosConfig
   const axiosConfig = getAuthorization(awxConfig);
   // the stdout of this job was too large to display : told the user once already
@@ -508,6 +511,13 @@ Awx.trackJob = async function (
           }
         } else {
           if (j.finished && lastrun) {
+            // the job has ended, so its stdout is final. AWX assembles a running job's
+            // stdout from its events, which land slightly out of order, so the chunks cut
+            // from it while it ran can miss or repeat a line (issue #735) : store the final
+            // stdout once, in their place - never the too-large placeholder
+            if (o && !isStdoutTooLarge(o)) {
+              await Job.replaceTrackedOutput(jobid, firstOrder, o);
+            }
             if (j.status === "successful") {
               await Job.endJobStatus(
                 jobid,
