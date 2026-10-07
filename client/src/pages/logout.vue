@@ -53,7 +53,9 @@ if (userType == 'oidc') {
 }
 </script>
 <template>
-  <div class="d-flex align-items-center py-4 bg-body-tertiary login vh-100">
+  <!-- centered both ways, where the sign-in card appears next : the spinner sat on the left
+       edge, the inner box being only as wide as the spinner -->
+  <div class="d-flex align-items-center justify-content-center py-4 bg-body-tertiary login vh-100">
     <div class="d-flex justify-content-center">
       <div class="spinner-border" role="status">
         <span class="visually-hidden">Logging out...</span>
