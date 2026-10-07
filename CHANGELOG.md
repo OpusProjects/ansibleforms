@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.5.1](https://github.com/ansibleforms/ansibleforms/compare/7.5.0...7.5.1) (2026-10-07)
+
+
+### Fixed
+
+* keep an RTE's result after a lost answer, and let force unlock take the designer lock again ([#730](https://github.com/ansibleforms/ansibleforms/issues/730)) ([5d02476](https://github.com/ansibleforms/ansibleforms/commit/5d02476996595ef2f449740f19cbaac380c05734))
+* keep credentials off disk and out of the log, and end jobs that lose their runner ([#724](https://github.com/ansibleforms/ansibleforms/issues/724)) ([2a75e00](https://github.com/ansibleforms/ansibleforms/commit/2a75e00151b644b596491285b4aedb289543fc92))
+* keep the settings and job pages within the window when their content is wide ([#731](https://github.com/ansibleforms/ansibleforms/issues/731)) ([b88931c](https://github.com/ansibleforms/ansibleforms/commit/b88931cc42a73a64a514fef27fafc16ce1b2eb69))
+* make the designer lock exclusive, stop cleanly on SIGTERM, and keep runtime tables out of backups ([#727](https://github.com/ansibleforms/ansibleforms/issues/727)) ([9fd2061](https://github.com/ansibleforms/ansibleforms/commit/9fd2061d4b0a38765af29c8ad5582741d0afa6ca))
+* read AWX job logs as a download, so a log over 1 MB is not lost ([#734](https://github.com/ansibleforms/ansibleforms/issues/734)) ([0ec4383](https://github.com/ansibleforms/ansibleforms/commit/0ec43836a03bb7c5f49d379947f923919309fc5d))
+* release the repository and schedule claims of a node that went away ([#726](https://github.com/ansibleforms/ansibleforms/issues/726)) ([8f30683](https://github.com/ansibleforms/ansibleforms/commit/8f306835107a5286600b4dcfda11afeaa8dfc6c6))
+* start the page scrollbar below the header ([#732](https://github.com/ansibleforms/ansibleforms/issues/732)) ([4d6796c](https://github.com/ansibleforms/ansibleforms/commit/4d6796c58d3eb90837c807f7fe60d507c3570025))
+* store an AWX job's final log once it ends, so no line is lost or repeated ([#737](https://github.com/ansibleforms/ansibleforms/issues/737)) ([7821d9b](https://github.com/ansibleforms/ansibleforms/commit/7821d9b5c46cbc047aab3ab0be2520a4380ce077))
+* take over the worker lock from a dead host, and never hold it doing nothing ([#725](https://github.com/ansibleforms/ansibleforms/issues/725)) ([1a94213](https://github.com/ansibleforms/ansibleforms/commit/1a94213c39b5a1b1a0b7890cca093d0aa3b43acd))
+
 ## [7.5.0](https://github.com/ansibleforms/ansibleforms/compare/7.4.0...7.5.0) (2026-10-07)
 
 
