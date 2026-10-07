@@ -415,6 +415,32 @@ async function cancelOnRunner(id) {
   const impl = getRunner(row.type);
   if (impl.cancel) await impl.cancel({ jobId: id, runner: row });
 }
+/**
+ * Replaces the stdout a tracker stored while a job ran with the job's final, complete stdout.
+ *
+ * The final stdout is written first, at the order of the first tracked row, and only then
+ * are the chunks it replaces deleted, so the job never shows an empty log in between. Only
+ * stdout rows are replaced : the error lines written meanwhile (an abort request, a notice)
+ * stay.
+ *
+ * Args:
+ *   jobId (number): the job.
+ *   fromOrder (number): the order of the first row the tracker could have written.
+ *   output (string): the final stdout.
+ *
+ * Returns:
+ *   Promise<void>: settles once the stdout is replaced.
+ */
+Job.replaceTrackedOutput = async function (jobId, fromOrder, output) {
+  if (!output) return;
+  const res = await mysql.do("INSERT INTO AnsibleForms.`job_output` set ?;", [
+    { output, output_type: "stdout", job_id: jobId, order: fromOrder },
+  ]);
+  await mysql.do(
+    "DELETE FROM AnsibleForms.`job_output` WHERE job_id=? AND output_type='stdout' AND `order`>=? AND id<>?",
+    [jobId, fromOrder, res.insertId]
+  );
+};
 Job.deleteOutput = async function (record) {
   // delete last output
   await mysql.do(
