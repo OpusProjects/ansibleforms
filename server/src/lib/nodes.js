@@ -4,13 +4,13 @@
 // them. The worker ends the jobs followed by a node that stopped answering (Job.abandonDeadNodes).
 import logger from "./logger.js";
 import mysql from "../models/db.model.js";
-import { ROLE, nodeId } from "./role.js";
+import { ROLE, nodeId, NODE_DEAD_SECONDS } from "./role.js";
 import { appVersion } from "./version.js";
 import { holdsWorkerLock } from "./workerLock.js";
 
 const HEARTBEAT_MS = 10000;
-// a node not seen for this long is gone : its jobs are abandoned
-export const NODE_DEAD_SECONDS = 120;
+// a node not seen for this long is gone : its jobs are abandoned (defined in lib/role.js)
+export { NODE_DEAD_SECONDS };
 
 const startedAt = new Date();
 let workerInfo = () => null;

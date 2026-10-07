@@ -343,7 +343,24 @@ export async function applyChat(declared, summary) {
  * Applies the seed file when CONFIG_SEED_PATH is set. Returns a summary, or null when
  * no seed is configured. Throws on anything wrong : the caller treats that as fatal.
  */
-export async function applyConfigSeed({ schemaIsReady = true } = {}) {
+// One apply at a time : the boot, the reload poll and SIGHUP each find-then-create per
+// section, so two at once could create the same row twice. Each waits for the one before.
+let seedRun = Promise.resolve();
+function oneAtATime(fn) {
+  const run = seedRun.then(fn, fn);
+  seedRun = run.catch(() => {});
+  return run;
+}
+
+export function applyConfigSeed(opts) {
+  return oneAtATime(() => applySeedNow(opts));
+}
+
+export function reloadConfigSeed(opts) {
+  return oneAtATime(() => reloadSeedNow(opts));
+}
+
+async function applySeedNow({ schemaIsReady = true } = {}) {
   const seedPath = appConfig.configSeedPath;
   if (!seedPath) return null;
 
@@ -476,7 +493,7 @@ function recordFailure(hash, err, trigger) {
  *   applied   - re-applied, with the summary
  *   failed    - threw ; the previous configuration is kept
  */
-export async function reloadConfigSeed({ force = false, trigger = "poll" } = {}) {
+async function reloadSeedNow({ force = false, trigger = "poll" } = {}) {
   const seedPath = appConfig.configSeedPath;
   if (!seedPath) return { status: "off" };
 
@@ -502,7 +519,7 @@ export async function reloadConfigSeed({ force = false, trigger = "poll" } = {})
 
   logger.notice(`Config seed re-apply triggered (${trigger})`);
   try {
-    const summary = await applyConfigSeed();
+    const summary = await applySeedNow();
     return { status: "applied", summary };
   } catch (e) {
     return recordFailure(hash, e, trigger);

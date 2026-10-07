@@ -32,7 +32,6 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import init from "../init/index.js";
-import { runsWorker } from "../lib/role.js";
 import { holdsWorkerLock } from "../lib/workerLock.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -53,12 +52,12 @@ class Schema {
    */
   static _cachedOk = null;
 
-  // Checks the schema, and patches it - but only in a process that may run the worker
-  // (AF_ROLE unset or worker) : an app node (AF_ROLE=app) only checks, so it never runs DDL
-  // next to the worker patching the same tables.
+  // Checks the schema, and patches it - but only in the process holding the worker lock : any
+  // other (an app node, or a second AF_ROLE unset process waiting for the lock) only checks, so
+  // it never runs DDL next to the worker patching the same tables.
   static async hasSchema() {
     if (Schema._cachedOk) return Schema._cachedOk;
-    const result = await checkAll({ patch: runsWorker });
+    const result = await checkAll({ patch: holdsWorkerLock() });
     Schema._cachedOk = result;
     return result;
   }

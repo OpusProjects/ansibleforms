@@ -23,6 +23,8 @@ import { reloadConfigSeed } from "../lib/seed.js";
 import { waitForDatabase } from "../init/index.js";
 import { startCluster } from "../init/cluster.js";
 import { runWorker, stopLostWorker } from "../init/worker.js";
+import { die } from "../lib/die.js";
+import Job from "../models/job.model.js";
 
 function startHealthServer() {
   const app = express();
@@ -33,6 +35,9 @@ function startHealthServer() {
   const server = httpsConfig.https
     ? https.createServer({ key: httpsConfig.httpsKey, cert: httpsConfig.httpsCert }, app)
     : http.createServer(app);
+  // a port that is taken is fatal : a worker that works but answers no healthcheck is restarted
+  // over and over, and loses the lock each time
+  server.on("error", (err) => die(`Worker : cannot listen on port ${port} : ${err.message}`));
   server.listen(port, () => logger.notice(`Worker '${nodeId}' ${appVersion} listening on ${httpsConfig.https ? "https" : "http"} port ${port}`));
 }
 
@@ -40,9 +45,17 @@ export async function startWorker() {
   process.on("unhandledRejection", (reason) => logger.error("Unhandled promise rejection: ", reason));
   process.on("uncaughtException", (err) => logger.error("Uncaught exception: ", err));
 
+  if (appConfig.encryptionSecretIsDefault) {
+    logger.warning('[SECURITY] ENCRYPTION_SECRET is not set. The worker stores and reads credentials (the config seed) with the default key, which is public in the source code : set the same ENCRYPTION_SECRET as the app nodes.');
+  }
   startHealthServer();
   await waitForDatabase();
   await startCluster();
+  // the jobs this worker followed before it restarted (schedule launches it tracked) : ended now,
+  // also when it comes back as the worker waiting for the lock
+  Job.abandonOwn(nodeId)
+    .then((changed) => { if (changed) logger.warning(`Abandoned ${changed} jobs this worker followed before it restarted`); })
+    .catch((err) => logger.error("Failed to abandon jobs : " + (err.message || err)));
   keepWorkerLock({
     onAcquired: runWorker,
     onWaiting: () => logger.notice("Another process holds the worker lock : waiting to take over when it stops"),

@@ -17,6 +17,7 @@ import Token from "../models/token.model.js";
 import { applyConfigSeed } from "../lib/seed.js";
 import { importVaultFromEnvOnce } from "../secrets/importVaultEnv.js";
 import { nodeId } from "../lib/role.js";
+import { die } from "../lib/die.js";
 
 // The worker's start : the database bootstrap and every background task. It runs only in the
 // process holding the worker lock (lib/workerLock.js) - AF_ROLE unset, or a worker - so
@@ -59,7 +60,16 @@ export async function waitForDatabase() {
  *   endpoint is unauthenticated while the database has no accounts. There the failure is
  *   thrown so the caller answers with an error instead.
  */
-const init = async function({ boot = false } = {}){
+// One run at a time in a process : the worker's schema retry, POST /api/v2/schema and the boot
+// can each ask for it. A second caller waits for the run in progress and gets its result,
+// rather than patching the schema and applying the seed next to it.
+let initRun = null;
+const init = function(opts = {}){
+  if (!initRun) initRun = initOnce(opts).finally(() => { initRun = null; });
+  return initRun;
+};
+
+const initOnce = async function({ boot = false } = {}){
 
 
   let adminGroupId = undefined;
@@ -221,21 +231,14 @@ const init = async function({ boot = false } = {}){
 
   logger.info("All database records are checked")
 
-  // Refusing to start is only useful if the REASON survives. winston's file transport is
-  // asynchronous, so process.exit() truncates whatever it has not written yet - which
-  // loses precisely the one line that explains a crash-looping container. Verified: three
-  // deliberately broken seeds logged "Applying config seed" and then died silently.
-  // stderr is what `kubectl logs` and `docker logs` show, so the reason goes there too,
-  // and the short wait gives the file transport a chance to catch up.
+  // Refusing to start says why on stderr too (lib/die.js) - but only at boot : never exit the
+  // process for an API call (POST /api/v2/schema re-enters init), throw instead
   async function refuseToStart(message){
-    logger.error(message)
     if(!boot){
-      // not the boot path : never exit the process for an API call
+      logger.error(message)
       throw new Error(message)
     }
-    console.error(message)
-    await new Promise(resolve => setTimeout(resolve, 250))
-    process.exit(1)
+    await die(message)
   }
 
   logger.info("Checking ssh keys")

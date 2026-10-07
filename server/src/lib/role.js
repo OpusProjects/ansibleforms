@@ -28,3 +28,7 @@ export const runsWorker = role === "all" || role === "worker";
 // restarted container finds its own jobs again. A new pod gets a new name, and the worker ends
 // the jobs of a node that stopped answering.
 export const nodeId = `${role === "all" ? "af" : role}-${os.hostname()}-${process.env.PORT || 8000}`;
+
+// a node whose heartbeat (lib/nodes.js, every 10 s) is older than this is gone : the worker ends
+// its jobs, and a worker lock it still holds is taken from it (lib/workerLock.js)
+export const NODE_DEAD_SECONDS = 120;
