@@ -48,19 +48,19 @@ const NEEDS = {
 };
 
 // `awx: <name>` on a form is the 7.x way of naming the AWX connection : an alias of
-// `runner: <name>` since 7.3, removed in 8. Said once per name, not on every job.
+// `runner: <name>` since 7.5, removed in 8. Said once per name, not on every job.
 const warnedAwxAlias = new Set();
 function warnAwxAlias(name) {
   if (warnedAwxAlias.has(name)) return;
   warnedAwxAlias.add(name);
-  logger.warning(`Form property awx: '${name}' is deprecated since 7.3 and removed in 8 : use runner: '${name}'`);
+  logger.warning(`Form property awx: '${name}' is deprecated since 7.5 and removed in 8 : use runner: '${name}'`);
 }
 
 /**
  * Where a job runs. A form names a runner with `runner: <name>` (extravar __runner__ ;
  * `awx: <name>` is a deprecated alias) ; without one, the default runner of the type the
  * job needs : rte for a playbook, awx for a template. Without that the job fails : since
- * 7.3 the app runs nothing itself.
+ * 7.5 the app runs nothing itself.
  * Returns { impl, row } : the runner implementation and its row.
  */
 export async function resolveRunner({ jobType, extravars }) {

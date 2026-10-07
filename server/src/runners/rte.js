@@ -101,7 +101,7 @@ async function check(runner) {
     olderRelease: older(data?.version, appVersion),
   };
   if (data?.contract !== RTE_CONTRACT) {
-    const theirs = data?.contract === undefined ? "no contract (a 7.3 preview build)" : `contract ${data.contract}`;
+    const theirs = data?.contract === undefined ? "no contract (a preview build)" : `contract ${data.contract}`;
     const what = (data?.contract || 0) < RTE_CONTRACT ? "update the RTE" : "update this app";
     throw new Errors.BadRequestError(`the RTE at ${rte.url} (${data?.version}) speaks ${theirs}, this app (${appVersion}) needs contract ${RTE_CONTRACT} : ${what}`);
   }

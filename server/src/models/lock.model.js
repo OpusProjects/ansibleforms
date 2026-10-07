@@ -9,7 +9,7 @@ import mysql from "./db.model.js";
 import Errors from '../lib/errors.js';
 
 // The designer lock : who is editing the forms. It lives in the database (one row, id 1) since
-// 7.3 ; before, it was the file LOCK_PATH, which every app node saw only when they shared that
+// 7.5 ; before, it was the file LOCK_PATH, which every app node saw only when they shared that
 // file. Taking it over from somebody else is allowed (the designer asks first), so a set
 // replaces the row rather than refusing when it is held.
 const LOCK_ID = 1;

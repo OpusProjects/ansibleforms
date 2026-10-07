@@ -252,7 +252,7 @@ const init = async function({ boot = false } = {}){
     Form.initBackupFolder()
 
     // the jobs this process followed before it restarted, and the jobs nobody follows (from
-    // before 7.3, when no job named its node). A job another app node follows is left alone :
+    // before 7.5, when no job named its node). A job another app node follows is left alone :
     // that node is alive, or the worker's dead-node sweep ends it (Job.abandonDeadNodes).
     logger.info("Checking old jobs")
     Job.abandonOwn(nodeId, { untracked: true })
