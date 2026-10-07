@@ -240,6 +240,11 @@
   min-height: 12rem;
   overflow: auto;
 }
+// the card clips its scrolling body to its rounded corners : the scrollbar otherwise fills
+// the top-right corner over the card's border
+.af-fill-page > main > .section > .container-fluid > .card {
+  overflow: hidden;
+}
 // The settings pages (admin/* and the server log) use the full width : the sidebar sits
 // against the left edge and the content keeps only a small gap on the right, so wide
 // screens are not wasted on centred margins (the tab strip fits on one row there)

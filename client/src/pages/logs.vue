@@ -202,6 +202,9 @@ onUnmounted(() => {
    area), so the log itself only has to keep long lines from widening the page. */
 #scroller {
   overflow-wrap: anywhere;
+  /* the line numbers' grey column from the card's left border, and the lines from its top
+     and bottom : the card body's padding taken back */
+  margin: calc(-1 * var(--bs-card-spacer-y)) 0 calc(-1 * var(--bs-card-spacer-y)) calc(-1 * var(--bs-card-spacer-x));
 }
 </style>
 <route lang="yaml">
