@@ -21,6 +21,27 @@
     #app:has(> .af-fill-page){
       height: 100vh;
     }
+    /* a page with the header : the header stays at the top of the window and only #app,
+       the box under it, scrolls - so the scrollbar starts below the header instead of
+       running over it. The header is fixed, so it is not clipped or scrolled by #app.
+       Pages without it (login, error) keep the window scrolling as before. */
+    #app:has(> .af-header){
+      position: fixed;
+      inset: var(--af-header-offset) 0 0 0;
+      min-height: 0;
+      height: auto;
+      overflow-y: auto;
+    }
+    /* it takes the focus for the keyboard scrolling (App.vue) : no focus ring for that */
+    #app:focus{
+      outline: none;
+    }
+    #app > .af-header{
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+    }
   </style>
   <script>
     // resolve the public login background images against the base tag, so they

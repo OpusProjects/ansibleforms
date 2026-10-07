@@ -151,6 +151,22 @@ async function login() {
   await State.init(router, route);
 }
 
+// The page scrolls in #app, below the header (index.html), not in the window. The keys that
+// scroll a page (Page Down, Space, the arrows) go to the focused element, or to the window
+// when nothing has the focus - and the window no longer scrolls. So #app takes the focus
+// after each page change, unless something else has it already (a field, a button) ;
+// tabindex -1 lets it take it without becoming a stop for the Tab key, and a click
+// anywhere in the content gives it the focus again.
+function focusScrollArea() {
+  const app = document.getElementById('app');
+  if (!app) return;
+  app.tabIndex = -1;
+  if (document.activeElement === document.body || document.activeElement === null) {
+    app.focus({ preventScroll: true });
+  }
+}
+router.afterEach(() => setTimeout(focusScrollArea));
+
 onMounted(async () => {
   console.log('App is mounted');
   Theme.load();
@@ -160,6 +176,7 @@ onMounted(async () => {
   console.log('Router is ready');
   await checkDatabase();
   console.log('Database check complete');
+  focusScrollArea();
 });
 </script>
 

@@ -73,7 +73,8 @@ function backToJobs() {
   router.push({ path: '/jobs', query: route.query });
 }
 // a job's page and the list open at the top
-watch(isJobPage, () => window.scrollTo({ top: 0 }));
+// to the top when a job opens or closes : the page scrolls in #app, below the header
+watch(isJobPage, () => document.getElementById('app')?.scrollTo({ top: 0 }));
 
 // ─── DataTable-style state (sort / per-column filter / column visibility) ──
 const columnDefs = computed(() => [

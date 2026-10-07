@@ -285,7 +285,7 @@
   min-width: 300px;
   @media (min-width: 768px) {
     position: sticky;
-    top: var(--af-header-offset);
+    top: 0; // the top of the scrolling area (#app), which starts below the header
     align-self: flex-start;
     height: calc(100vh - var(--af-header-offset));
     overflow-y: auto;

@@ -162,13 +162,14 @@ watch(() => route.path, openActiveSection);
   </div>
 </template>
 <style scoped>
-/* the menu scrolls on its own, independent of the page : it sticks below the header
-   and is exactly one screen high, so a long page never drags the menu along */
+/* the menu scrolls on its own, independent of the page : it sticks to the top of the
+   scrolling area (#app, which starts below the header) and is exactly one screen high
+   minus the header, so a long page never drags the menu along */
 .af-sidebar {
   width: 300px; /* the same width as the forms page category list (.af-forms-sidebar) */
   flex-shrink: 0;
   position: sticky;
-  top: var(--af-header-offset);
+  top: 0;
   align-self: flex-start;
   height: calc(100vh - var(--af-header-offset));
   overflow-y: auto;
