@@ -1649,7 +1649,7 @@ Multistep.launch = async function ({
     if (!approved) {
       await Job.sendApprovalNotification(approval, extravars, jobid);
       await Job.printJobOutput(
-        `APPROVE [${form}] ${"*".repeat(69 - form.length)}`,
+        `APPROVE [${form}] ${"*".repeat(Math.max(0, 69 - String(form).length))}`,
         "stdout",
         jobid,
         counter + 1
@@ -1726,7 +1726,7 @@ Multistep.launch = async function ({
             logger.notice("Approve needed for " + step.name);
             await Job.sendApprovalNotification(step.approval, extravars, jobid);
             await Job.printJobOutput(
-              `APPROVE [${step.name}] ${"*".repeat(69 - step.name.length)}`,
+              `APPROVE [${step.name}] ${"*".repeat(Math.max(0, 69 - String(step.name).length))}`,
               "stdout",
               jobid,
               ++counter

@@ -73,13 +73,20 @@ async function abandonOwnJobs() {
 async function acceptJob(req, res) {
   const jobId = parseInt(req.body?.jobId, 10);
   if (!Number.isInteger(jobId) || jobId <= 0) return res.status(400).json({ error: "jobId is required" });
-  const rows = await mysql.do("SELECT status FROM AnsibleForms.`jobs` WHERE id=?", [jobId]);
+  // the app says which contract it speaks (rte/contract.js) ; an app of another contract would
+  // read and write the job differently, so the job is refused rather than run half right
+  if (req.body?.contract !== undefined && req.body.contract !== RTE_CONTRACT) {
+    return res.status(409).json({ error: `this RTE speaks contract ${RTE_CONTRACT}, the app contract ${req.body.contract} : run the same contract on both` });
+  }
+  const rows = await mysql.do("SELECT status, job_type FROM AnsibleForms.`jobs` WHERE id=?", [jobId]);
   if (!rows.length) return res.status(404).json({ error: `job ${jobId} does not exist` });
   if (rows[0].status !== "running") return res.status(409).json({ error: `job ${jobId} is ${rows[0].status}, not running` });
+  // an RTE runs playbooks : never claim an AWX job or a multistep, whose tracker drives them
+  if (rows[0].job_type !== "ansible") return res.status(409).json({ error: `job ${jobId} is a ${rows[0].job_type || "?"} job, not a playbook` });
   // the claim : one runner per job, and a repeated call is harmless
   const me = runnerIdentity();
   const claim = await mysql.do(
-    "UPDATE AnsibleForms.`jobs` SET host=? WHERE id=? AND status='running' AND (host IS NULL OR host=?)",
+    "UPDATE AnsibleForms.`jobs` SET host=? WHERE id=? AND status='running' AND job_type='ansible' AND (host IS NULL OR host=?)",
     [me, jobId, me]
   );
   if (!claim.affectedRows) return res.status(409).json({ error: `job ${jobId} is claimed by another runner` });
@@ -118,6 +125,9 @@ async function cancelJob(req, res) {
   return res.status(202).json({ jobId, status: "cancelling" });
 }
 
+// the handlers, for the tests
+export { acceptJob, jobStatus, cancelJob, activeJobs, bearer };
+
 export async function startRte() {
   const token = process.env.RTE_TOKEN || "";
   if (token.length < 16) {
@@ -127,16 +137,22 @@ export async function startRte() {
   process.on("unhandledRejection", (reason) => logger.error(`RTE : unhandled rejection : ${reason?.stack || reason}`));
   process.on("uncaughtException", (err) => logger.error(`RTE : uncaught exception : ${err?.stack || err}`));
 
+  if (appConfig.encryptionSecretIsDefault) {
+    logger.warning('[SECURITY] ENCRYPTION_SECRET is not set. This RTE decrypts credentials with the default key, which is public in the source code : set the same ENCRYPTION_SECRET as the app.');
+  }
   await waitForDatabase();
   await abandonOwnJobs();
   // its row in `nodes` : the Status page lists it, and when it stops answering the worker ends
   // the jobs it was running (Job.abandonDeadNodes) - a pod replaced under a new name included
   startHeartbeat();
-  // the same check, hourly : nothing of ours should still say 'running' after a day
+  // the same check, hourly : nothing of ours should still say 'running' after a day - except
+  // what this RTE is running right now, which ends by itself
   setInterval(() => {
+    const running = [...activeJobs];
     mysql.do(
-      "UPDATE AnsibleForms.`jobs` SET status='abandoned', abort_requested=0 WHERE status='running' AND host=? AND start < (NOW() - INTERVAL 1 DAY)",
-      [runnerIdentity()]
+      "UPDATE AnsibleForms.`jobs` SET status='abandoned', abort_requested=0 WHERE status='running' AND host=? AND start < (NOW() - INTERVAL 1 DAY)" +
+        (running.length ? " AND id NOT IN (?)" : ""),
+      running.length ? [runnerIdentity(), running] : [runnerIdentity()]
     ).catch((e) => logger.error(`RTE : hourly cleanup failed : ${e.message}`));
   }, 3600 * 1000).unref();
 
@@ -165,6 +181,11 @@ export async function startRte() {
   const server = httpsConfig.https
     ? https.createServer({ key: httpsConfig.httpsKey, cert: httpsConfig.httpsCert }, app)
     : http.createServer(app);
+  // a port that is taken is fatal : an RTE that heartbeats but listens nowhere looks alive
+  server.on("error", (err) => {
+    console.error(`RTE : cannot listen on port ${port} : ${err.message}`);
+    process.exit(1);
+  });
   server.listen(port, () => {
     logger.notice(`RTE '${runnerIdentity()}' ${version} listening on ${httpsConfig.https ? "https" : "http"} port ${port}`);
   });
