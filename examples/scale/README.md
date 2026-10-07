@@ -29,10 +29,13 @@ One image, started in different roles (`AF_ROLE`):
 ## How it behaves
 
 - **One worker at a time.** The worker holds the database lock `ansibleforms_worker`. When it
-  stops, the database releases the lock and a waiting worker takes it within 10 seconds. A worker
-  that loses the lock to another one stops, and its container restarts as the one waiting.
-- **The schema is the worker's.** On an empty database the worker creates it; app nodes wait for
-  it. Only the worker patches the schema on an upgrade.
+  stops, the database releases the lock and a waiting worker takes it within 10 seconds. When its
+  host dies without a goodbye (power, a crashed node), the database would keep the lock for hours:
+  a waiting worker ends that session once no worker has written a heartbeat for two minutes, and
+  takes over. A worker that loses the lock to another one stops, and its container restarts as
+  the one waiting. A worker whose start fails stops too, so it never holds the lock doing nothing.
+- **The schema is the worker's.** On an empty database the worker creates it, and on an upgrade it
+  patches it; app nodes wait until both are done, and say in their log what is still missing.
 - **Every container names itself** `<role>-<hostname>-<port>`: nothing to set. The Status page
   lists them all, RTEs included.
 - **Jobs belong to a container.** A job running on an RTE belongs to that RTE; it carries on when

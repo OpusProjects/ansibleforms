@@ -3,6 +3,7 @@
 // the same process also serves the web app.
 import logger from "../lib/logger.js";
 import init, { sleep } from "./index.js";
+import { die } from "../lib/die.js";
 
 const SCHEMA_RETRY_MS = 30000;
 
@@ -30,9 +31,5 @@ export async function runWorker() {
 // Another process holds the worker lock now : stop, rather than run every background task
 // twice. A container restarts, and comes back as the process waiting for the lock.
 export async function stopLostWorker() {
-  const message = "Another process took the worker lock : stopping, so the background work never runs twice";
-  logger.error(message);
-  console.error(message);
-  await sleep(250);
-  process.exit(1);
+  await die("Another process took the worker lock : stopping, so the background work never runs twice");
 }

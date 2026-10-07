@@ -17,13 +17,16 @@ import logger from './lib/logger.js';
 import { reloadConfigSeed } from './lib/seed.js';
 import { getExpressionMode } from './lib/expressionMode.js';
 import { ROLE, runsWorker, nodeId } from './lib/role.js';
-import { holdsWorkerLock, tryWorkerLock, keepWorkerLock } from './lib/workerLock.js';
+import { holdsWorkerLock, tryWorkerLock, keepWorkerLock, workerLockMiss } from './lib/workerLock.js';
 import { bump } from './lib/epochs.js';
 import { waitForDatabase } from './init/index.js';
 import { runWorker, stopLostWorker } from './init/worker.js';
 import { startCluster } from './init/cluster.js';
 import Job from './models/job.model.js';
-import Schema from './models/schema.model.js';
+import Schema, { SCHEMA_MANIFEST } from './models/schema.model.js';
+import mysql from './models/db.model.js';
+import { missingFromManifest } from './lib/schemaCompleteness.js';
+import { die } from './lib/die.js';
 import https from 'https';
 import http from 'http';
 import fs from 'fs';
@@ -41,6 +44,34 @@ const app = express();
 // every rebuild is a new address for them, and every response names the sha in X-App-Build
 const build = readBuildInfo(__dirname);
 const assetVersion = () => [build.version, build.gitSha].filter(Boolean).join('-');
+/**
+ * Waits until the worker has created the schema and patched it to this version : serving 7.5 code
+ * over a schema the worker could not patch yet fails on missing tables, while the old check -
+ * "not empty" - said all was well. Says what is missing every minute. With ALLOW_SCHEMA_CREATION=0
+ * an empty database is nobody's to create automatically, so the app starts and offers the
+ * schema page instead.
+ */
+async function waitForTheWorkersSchema() {
+  for (let attempt = 0; ; attempt++) {
+    let reason = null;
+    try {
+      if (await Schema.isEmpty()) {
+        if (!appConfig.allowSchemaCreation) return;
+        reason = 'the database holds no AnsibleForms tables yet';
+      } else {
+        const m = await missingFromManifest(SCHEMA_MANIFEST, mysql);
+        const missing = [...m.missingTables, ...m.missingColumns];
+        if (missing.length) reason = `the schema lacks ${missing.slice(0, 5).join(', ')}${missing.length > 5 ? ` and ${missing.length - 5} more` : ''}`;
+      }
+    } catch (e) {
+      reason = `the schema cannot be checked (${e.message || e})`;
+    }
+    if (!reason) return;
+    if (attempt % 12 === 0) logger.notice(`Waiting for the worker to create or patch the schema : ${reason}`);
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+  }
+}
+
 // load the ansibleforms app
 export async function startApp(){
   // before the routes : every response, the api's included, names the server's build, so a tab
@@ -50,14 +81,13 @@ export async function startApp(){
   // Several app nodes must sign and accept the same tokens : a secret generated per process
   // makes every node refuse what another one signed - a login that works one request in two
   if (ROLE === 'app' && authConfig.secretIsGenerated) {
-    const message = 'AF_ROLE=app needs ACCESS_TOKEN_SECRET, the same on every app node : refusing to start';
-    logger.error(message);
-    console.error(message);
-    await new Promise((resolve) => setTimeout(resolve, 250));
-    process.exit(1);
+    await die('AF_ROLE=app needs ACCESS_TOKEN_SECRET, the same on every app node : refusing to start');
   }
 
   await waitForDatabase();
+  // before the worker's start : a change another node makes while this one bootstraps (a slow
+  // seed, a clone) must reach it, and the first read of the change notices is the baseline
+  await startCluster();
   let worker = false;
   if (runsWorker) {
     // AF_ROLE unset : this process is the worker too - unless another one already is, then it
@@ -65,29 +95,22 @@ export async function startApp(){
     worker = await tryWorkerLock();
     if (worker) {
       await runWorker();
+    } else if (workerLockMiss() === 'unreachable') {
+      logger.warning('Could not ask the database for the worker lock : this process serves the web app and keeps trying');
     } else {
       logger.warning('Another process holds the worker lock : this one serves the web app and takes over the background work when that process stops');
     }
     keepWorkerLock({ onAcquired: runWorker, onLost: stopLostWorker });
   }
-  if (!runsWorker && appConfig.allowSchemaCreation) {
-    // An app node next to a worker, on an empty database : the worker is creating the schema.
-    // Starting before it has would only fail on missing tables (the jobs sweep below, the
-    // login providers). With ALLOW_SCHEMA_CREATION=0 nobody creates it automatically, so the
-    // app starts and offers the schema page instead.
-    while (await Schema.isEmpty().catch(() => true)) {
-      logger.notice('The database holds no AnsibleForms tables yet : waiting for the worker to create the schema');
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-    }
-  }
   if (!worker) {
+    // not the worker (an app node, or a second AF_ROLE unset process) : the schema is the
+    // worker's to create and to patch
+    await waitForTheWorkersSchema();
     // the jobs this node followed before it restarted (the worker's start does this too)
     Job.abandonOwn(nodeId)
       .then((changed) => { if (changed) logger.warning(`Abandoned ${changed} jobs this node followed before it restarted`); })
       .catch((err) => logger.error('Failed to abandon jobs : ' + (err.message || err)));
   }
-  await startCluster();
-
   await ansibleforms.load(app);
 
   if (getExpressionMode() === 'legacy') {
