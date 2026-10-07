@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.5.0](https://github.com/ansibleforms/ansibleforms/compare/7.4.0...7.5.0) (2026-10-07)
+
+
+### Added
+
+* playbooks run on runners, and awx is a runner type ([#713](https://github.com/ansibleforms/ansibleforms/issues/713)) ([d4efa63](https://github.com/ansibleforms/ansibleforms/commit/d4efa631e9ec5fe70e79c21e38b6e5588b6e982c))
+* run a worker next to several app nodes ([#714](https://github.com/ansibleforms/ansibleforms/issues/714)) ([dda52e8](https://github.com/ansibleforms/ansibleforms/commit/dda52e89e372a172d3f6dccec3058d778c2d2226))
+
 ## [7.4.0](https://github.com/ansibleforms/ansibleforms/compare/7.3.0...7.4.0) (2026-10-07)
 
 
