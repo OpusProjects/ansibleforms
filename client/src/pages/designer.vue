@@ -4141,6 +4141,15 @@ async function unLock() {
   action.value = 'forceUnlock';
   nextAction.value = async (proceed) => {
     resetAction();
+    if (!proceed) return;
+    // the server takes the lock only when it is free (another user's answers 423), so a
+    // force unlock releases the other user's lock first, then takes it
+    try {
+      await Lock.release();
+    } catch (err) {
+      toast.error(err.message);
+      return;
+    }
     await setLock(proceed);
   };
 }

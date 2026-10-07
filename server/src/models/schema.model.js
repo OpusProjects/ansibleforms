@@ -514,7 +514,9 @@ const SCHEMA_MANIFEST = {
     // table a patch ever made is NOT the same as the expected schema - listing them here
     // made this check report a false error on a perfectly healthy database.
     patchVersion5: { tables: ['repositories', 'schedule'],
-                     columns: ['users.email', 'azuread.groupfilter', 'jobs.awx_id',
+                     // not azuread.groupfilter : its patch is commented out below, and an app node
+                     // waits for every column listed here (app-start.js)
+                     columns: ['users.email', 'jobs.awx_id',
                                'settings.forms_yaml', 'repositories.branch', 'jobs.awx_artifacts',
                                'jobs.abort_requested'] },
     // One entry per patch function, and there is one patch function per MAJOR version -

@@ -33,12 +33,12 @@ beforeEach(() => {
       lockRow = { data: params[1] };
       return { affectedRows: 1 };
     }
-    if (/^UPDATE AnsibleForms.`designer_lock` SET data=\?, created=NOW\(\) WHERE id=\? AND JSON_UNQUOTE/.test(sql)) {
+    if (/^UPDATE AnsibleForms.`designer_lock` SET data=\?, created=NOW\(\) WHERE id=\? AND JSON_VALID\(data\) AND JSON_UNQUOTE/.test(sql)) {
       if (!holderIs(params[2], params[3])) return { affectedRows: 0 };
       lockRow = { data: params[0] };
       return { affectedRows: 1 };
     }
-    if (/^DELETE FROM AnsibleForms.`designer_lock` WHERE id=\? AND JSON_UNQUOTE/.test(sql)) {
+    if (/^DELETE FROM AnsibleForms.`designer_lock` WHERE id=\? AND JSON_VALID\(data\) AND JSON_UNQUOTE/.test(sql)) {
       if (!holderIs(params[1], params[2])) return { affectedRows: 0 };
       lockRow = null;
       return { affectedRows: 1 };

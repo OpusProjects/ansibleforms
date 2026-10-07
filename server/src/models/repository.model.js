@@ -9,7 +9,7 @@ import fse from "fs-extra";
 import appConfig from "../../config/app.config.js";
 import CrudModel from './crud.model.js';
 import { bump } from '../lib/epochs.js';
-import { nodeId, NODE_DEAD_SECONDS } from '../lib/role.js';
+import { nodeId, NODE_DEAD_SECONDS, uptimeSeconds } from '../lib/role.js';
 
 // a repository claim older than this is released whatever its node says : no clone, pull or
 // sync runs for that long, so it is the remains of one that hung
@@ -656,7 +656,9 @@ class Repository extends CrudModel {
   // Release the claims nobody will release any more, marking those repositories 'failed' :
   //   - the node holding it stopped answering (no heartbeat for NODE_DEAD_SECONDS)
   //   - it is older than CLAIM_MAX_HOURS : no git operation takes that long
-  //   - atStart (the worker's start) : its own, and any without a node (taken before 7.5)
+  //   - atStart (the worker's start) : its own from before this process started (a process
+  //     that takes the lock later must not release the save or pull it is doing right now),
+  //     and any without a node (taken before 7.5.1)
   // A claim an app node holds right now is left alone - the worker used to reset every claim
   // at its start, letting a second git process into a working tree an app node was writing.
   static async releaseStaleClaims({ atStart = false } = {}) {
@@ -664,8 +666,8 @@ class Repository extends CrudModel {
       "update AnsibleForms.`repositories` r set r.status = 'failed', r.claim_node = NULL where r.status = 'running' and (" +
         "(r.claim_node IS NOT NULL and NOT EXISTS (SELECT 1 FROM AnsibleForms.`nodes` n WHERE n.id = r.claim_node AND n.last_seen > (NOW() - INTERVAL ? SECOND)))" +
         " or r.claim_since < (NOW() - INTERVAL ? HOUR)" +
-        (atStart ? " or r.claim_node = ? or r.claim_node IS NULL" : "") + ")",
-      atStart ? [NODE_DEAD_SECONDS, CLAIM_MAX_HOURS, nodeId] : [NODE_DEAD_SECONDS, CLAIM_MAX_HOURS])
+        (atStart ? " or (r.claim_node = ? and r.claim_since < (NOW() - INTERVAL ? SECOND)) or r.claim_node IS NULL" : "") + ")",
+      atStart ? [NODE_DEAD_SECONDS, CLAIM_MAX_HOURS, nodeId, uptimeSeconds()] : [NODE_DEAD_SECONDS, CLAIM_MAX_HOURS])
     return result.affectedRows || 0
   }
 
