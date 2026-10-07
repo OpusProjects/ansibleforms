@@ -14,7 +14,7 @@ function getTimestamp() {
 
 /** what the approval line names : the playbook or the template */
 function approvalLabel(jobType, extravars) {
-  return jobType === "awx" ? extravars?.__template__ : extravars?.__playbook__;
+  return String((jobType === "awx" ? extravars?.__template__ : extravars?.__playbook__) ?? "?");
 }
 
 /**
@@ -25,7 +25,7 @@ export async function approvalGate({ jobId, jobType, extravars, approval }) {
   const label = approvalLabel(jobType, extravars);
   await Job.sendApprovalNotification(approval, extravars, jobId);
   await Job.printJobOutput(
-    `APPROVE [${label}] ${"*".repeat(69 - label.length)}`,
+    `APPROVE [${label}] ${"*".repeat(Math.max(0, 69 - label.length))}`,
     "stdout",
     jobId,
     (await Job.lastOrder(jobId)) + 1

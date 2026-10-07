@@ -49,7 +49,15 @@ function describe(err, url) {
 
 async function failJob(jobId, message) {
   await Job.endJobStatus(jobId, (await Job.lastOrder(jobId)) + 1, "stderr", "failed", `[ERROR]: ${message}`);
+  // an abort asked meanwhile is answered by this end : a later abort must not be refused
+  await Job.resetAbortRequested(jobId).catch(() => {});
   return false;
+}
+
+// did an RTE take the job ? its claim writes jobs.host
+async function claimedBy(jobId) {
+  const rows = await mysql.do("SELECT host FROM AnsibleForms.`jobs` WHERE id=?", [jobId], true);
+  return rows?.[0]?.host || null;
 }
 
 async function dbStatus(jobId) {
@@ -118,9 +126,15 @@ export default {
     // written before the hand-over, never after : from then on the RTE writes the output
     await Job.printJobOutput(`ok: [Running on RTE ${runner.name} (${rte.url})]`, "stdout", jobId, (await Job.lastOrder(jobId)) + 1);
     try {
-      await rte.http.post("/jobs", { jobId });
+      await rte.http.post("/jobs", { jobId, contract: RTE_CONTRACT });
     } catch (err) {
-      return failJob(jobId, describe(err, rte.url));
+      // the RTE refused it (4xx) : it is not running. No answer at all (a timeout, a reset
+      // connection) may come after the RTE claimed and started it : then follow it, never
+      // fail a job that is running
+      if (err?.response || !(await claimedBy(jobId).catch(() => null))) {
+        return failJob(jobId, describe(err, rte.url));
+      }
+      logger.warning(`Job ${jobId} : no answer from the RTE at ${rte.url}, but it claimed the job : following it`);
     }
     return track(jobId, rte);
   },

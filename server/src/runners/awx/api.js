@@ -7,6 +7,7 @@ import yaml from "yaml";
 import logger from "../../lib/logger.js";
 import Errors from "../../lib/errors.js";
 import appConfig from "../../../config/app.config.js";
+import { safeParse } from "../../lib/safejson.js";
 // a cycle (job.model imports the orchestrator, which reaches this module) ; Job is only
 // used when a job runs, long after both modules have loaded
 import Job from "../../models/job.model.js";
@@ -23,11 +24,31 @@ export function getHttpsAgent(awx) {
 }
 
 // basic auth with a user and password, or a bearer token
+// every AWX call : a connection that hangs must fail and reach the retries, not wait for ever
+const AWX_TIMEOUT_MS = 60000;
+// polls in a row that may fail before the job is given up
+const AWX_MAX_RETRIES = 10;
+
 export function getAuthorization(awx) {
   const headers = awx.use_credentials
     ? { Authorization: `Basic ${Buffer.from(`${awx.username}:${awx.password}`).toString("base64")}` }
     : { Authorization: `Bearer ${awx.token}` };
-  return { headers, httpsAgent: getHttpsAgent(awx) };
+  return { headers, httpsAgent: getHttpsAgent(awx), timeout: AWX_TIMEOUT_MS };
+}
+
+// AWX stopped answering while a job was followed : end ours, rather than leave it 'running'
+// until the daily sweep. The job in AWX may well go on.
+// an error thrown after the job was ended : who catches it must not end it again
+function jobEnded(err) {
+  err.jobEnded = true;
+  return err;
+}
+
+async function lostContact(jobid, counter, job, message) {
+  const line = `[ERROR]: lost contact with AWX while following AWX job ${job?.id} (${message}) : it may still be running, check it in AWX`;
+  await Job.resetAbortRequested(jobid).catch(() => {});
+  await Job.endJobStatus(jobid, counter, "stderr", "failed", line);
+  return line;
 }
 
 /** proves the connection works : it lists the job templates the credentials can see */
@@ -127,9 +148,10 @@ Awx.launch = async function (
     return true;
   } catch (err) {
     message = "failed to launch awx template " + template + "\n" + err.message;
-    // any error, we just end the job, no need to throw an error.
-    await Job.endJobStatus(jobid, counter + 1, "stdout", "failed", message);
-    throw new Errors.ApiError(message);
+    // ended once : launchTemplate ends the job itself before it throws, and a second end wrote
+    // a second last line and sent a second "failed" mail
+    if (!err.jobEnded) await Job.endJobStatus(jobid, counter + 1, "stdout", "failed", message);
+    throw jobEnded(new Errors.ApiError(message));
   }
 };
 Awx.launchTemplate = async function (
@@ -239,7 +261,8 @@ Awx.launchTemplate = async function (
   }
 
   logger.notice("Running template : " + template.name);
-  logger.info("extravars : " + extravars);
+  // the names only : the values hold the credentials mapped into the template
+  logger.info("extravars : " + Object.keys(safeParse(extravars) || {}).join(", "));
   logger.info("inventory : " + inventory);
   logger.info("execution_environment : " + executionEnvironment);
   logger.info("instance_groups : " + instanceGroups);
@@ -255,7 +278,7 @@ Awx.launchTemplate = async function (
     message = `Failed to launch, no launch attribute found for template ${template.name}`;
     logger.error(message);
     await Job.endJobStatus(jobid, counter + 1, "stderr", "failed", message);
-    throw new Errors.ConflictError(message);
+    throw jobEnded(new Errors.ConflictError(message));
   } else {
     // prepare axiosConfig
     const axiosConfig = getAuthorization(awxConfig);
@@ -301,7 +324,7 @@ Awx.launchTemplate = async function (
           `Failed to launch template ${template.name}. ${error}`
         );
       }
-      throw new Errors.ApiError(message);
+      throw jobEnded(new Errors.ApiError(message));
     }
 
     // get awx job (= remote job !!)
@@ -502,8 +525,8 @@ Awx.trackJob = async function (
         message = err.toString();
         logger.error(message);
         retryCount++;
-        if (retryCount == 10) {
-          return Promise.resolve(message);
+        if (retryCount >= AWX_MAX_RETRIES) {
+          return lostContact(jobid, counter + 1, job, message);
         } else {
           logger.warning(`Retrying jobid ${jobid} [${retryCount}]`);
           await delay(1000);
@@ -515,8 +538,8 @@ Awx.trackJob = async function (
       message = `could not find job with id ${job.id}`;
       logger.error(message);
       retryCount++;
-      if (retryCount == 10) {
-        return Promise.resolve(message);
+      if (retryCount >= AWX_MAX_RETRIES) {
+        return lostContact(jobid, counter + 1, job, message);
       } else {
         logger.warning(`Retrying jobid ${jobid} [${retryCount}]`);
         await delay(1000);
@@ -526,7 +549,7 @@ Awx.trackJob = async function (
     }
   } catch (e) {
     logger.error("Failed to track job : ", e);
-    return e.message;
+    return lostContact(jobid, counter + 1, job, e.message);
   }
   }
 };
@@ -585,151 +608,140 @@ Awx.trackWorkflowJob = async function (
   const awxConfig = awx;
   if (!awxConfig) throw new Errors.ApiError("No AWX runner given");
   const axiosConfig = getAuthorization(awxConfig);
-  try {
-    // get workflow job info
-    const axiosResult = await axios.get(awxConfig.uri + job.url, axiosConfig);
-    var j = axiosResult.data;
-    if (!j) throw new Error(`could not find workflow job with id ${job.id}`);
-    logger.debug(`awx workflow job status : ` + j.status);
-    // get the workflow nodes
-    const nodes = await Awx.getWorkflowNodes(awx, j);
-    // store the workflow graph json, the client uses this to visualize the workflow
-    const workflowJson = JSON.stringify({
-      id: j.id,
-      name: j.name,
-      status: j.status,
-      nodes,
-    });
-    if (workflowJson != previousWorkflowJson) {
-      await Job.update({ awx_workflow: workflowJson }, jobid);
-    }
-    // dump the output of the nodes that just finished (in completion order)
-    const finishedStatuses = ["successful", "failed", "error", "canceled"];
-    const finishedNodes = nodes.filter(
-      (n) =>
-        n.job &&
-        finishedStatuses.includes(n.status) &&
-        !printedNodeIds.includes(n.id)
-    );
-    for (const node of finishedNodes) {
-      var nodeOutput = "";
-      try {
-        // get the child job (job, project_update, workflow_approval, ...) and grab its output
-        const childResult = await axios.get(
-          awxConfig.uri + node.job_url,
-          axiosConfig
-        );
-        nodeOutput =
-          (await Awx.getJobTextOutput(awx, childResult.data)) || "";
-      } catch (e) {
-        logger.warning(
-          `Failed to get output of workflow node ${node.name} : ${e.message}`
-        );
+  for (;;) {
+    try {
+      // get workflow job info
+      const axiosResult = await axios.get(awxConfig.uri + job.url, axiosConfig);
+      var j = axiosResult.data;
+      if (!j) throw new Error(`could not find workflow job with id ${job.id}`);
+      logger.debug(`awx workflow job status : ` + j.status);
+      // get the workflow nodes
+      const nodes = await Awx.getWorkflowNodes(awx, j);
+      // store the workflow graph json, the client uses this to visualize the workflow
+      const workflowJson = JSON.stringify({
+        id: j.id,
+        name: j.name,
+        status: j.status,
+        nodes,
+      });
+      if (workflowJson != previousWorkflowJson) {
+        await Job.update({ awx_workflow: workflowJson }, jobid);
       }
-      const banner = workflowStatusLine(
-        "WORKFLOW NODE",
-        node.name,
-        node.status,
-        true
+      // dump the output of the nodes that just finished (in completion order)
+      const finishedStatuses = ["successful", "failed", "error", "canceled"];
+      const finishedNodes = nodes.filter(
+        (n) =>
+          n.job &&
+          finishedStatuses.includes(n.status) &&
+          !printedNodeIds.includes(n.id)
       );
-      await Job.printJobOutput(
-        `${banner}\n${nodeOutput}`.trim(),
-        "stdout",
-        jobid,
-        ++counter
-      );
-      printedNodeIds.push(node.id);
-    }
-    // check for abort request
-    const abort_requested = await Job.isAbortRequested(jobid);
-    if (abort_requested) {
-      await Job.printJobOutput("Abort requested", "stderr", jobid, ++counter);
-      try {
-        // we try to abort the workflow job
-        await Awx.abortJob(awx, j.id, true);
-        await Job.resetAbortRequested(jobid);
-        await Job.endJobStatus(
-          jobid,
-          ++counter,
-          "stderr",
-          "aborted",
-          "Aborted workflow job"
-        );
-        return "Aborted workflow job";
-      } catch (error) {
-        // 405 : AWX is cancelling already (the abort sent the cancel straight away)
-        if (error instanceof Errors.ConflictError) {
-          await Job.resetAbortRequested(jobid);
-          await Job.endJobStatus(jobid, ++counter, "stderr", "aborted", "Aborted workflow job");
-          return "Aborted workflow job";
+      for (const node of finishedNodes) {
+        var nodeOutput = "";
+        try {
+          // get the child job (job, project_update, workflow_approval, ...) and grab its output
+          const childResult = await axios.get(
+            awxConfig.uri + node.job_url,
+            axiosConfig
+          );
+          nodeOutput =
+            (await Awx.getJobTextOutput(awx, childResult.data)) || "";
+        } catch (e) {
+          logger.warning(
+            `Failed to get output of workflow node ${node.name} : ${e.message}`
+          );
         }
-        // abort failed... , revert abort request
+        const banner = workflowStatusLine(
+          "WORKFLOW NODE",
+          node.name,
+          node.status,
+          true
+        );
         await Job.printJobOutput(
-          "Abort request denied, reverting abort request",
-          "stderr",
+          `${banner}\n${nodeOutput}`.trim(),
+          "stdout",
           jobid,
           ++counter
         );
-        await Job.resetAbortRequested(jobid);
+        printedNodeIds.push(node.id);
       }
-    }
-    if (j.finished) {
-      // print a summary of all the nodes with their status
-      var summary = [workflowStatusLine("WORKFLOW", j.name, j.status, true)];
-      nodes.forEach((node) => {
-        summary.push(workflowStatusLine("WORKFLOW NODE", node.name, node.status));
-      });
-      await Job.printJobOutput(summary.join("\n"), "stdout", jobid, ++counter);
-      if (j.status === "successful") {
-        await Job.endJobStatus(
-          jobid,
-          ++counter,
-          "stdout",
-          "success",
-          `Successfully completed workflow ${j.name}`
-        );
-        return true;
-      } else {
-        // if error, end with status (aborted or failed)
-        var status = "failed";
-        var message = `Workflow ${j.name} completed with status ${j.status}`;
-        if (j.status == "canceled") {
-          status = "aborted";
-          message = `Workflow ${j.name} was aborted`;
+      // check for abort request
+      const abort_requested = await Job.isAbortRequested(jobid);
+      if (abort_requested) {
+        await Job.printJobOutput("Abort requested", "stderr", jobid, ++counter);
+        try {
+          // we try to abort the workflow job
+          await Awx.abortJob(awx, j.id, true);
+          await Job.resetAbortRequested(jobid);
+          await Job.endJobStatus(
+            jobid,
+            ++counter,
+            "stderr",
+            "aborted",
+            "Aborted workflow job"
+          );
+          return "Aborted workflow job";
+        } catch (error) {
+          // 405 : AWX is cancelling already (the abort sent the cancel straight away)
+          if (error instanceof Errors.ConflictError) {
+            await Job.resetAbortRequested(jobid);
+            await Job.endJobStatus(jobid, ++counter, "stderr", "aborted", "Aborted workflow job");
+            return "Aborted workflow job";
+          }
+          // abort failed... , revert abort request
+          await Job.printJobOutput(
+            "Abort request denied, reverting abort request",
+            "stderr",
+            jobid,
+            ++counter
+          );
           await Job.resetAbortRequested(jobid);
         }
-        await Job.endJobStatus(jobid, ++counter, "stderr", status, message);
-        return message;
       }
-    }
-    // not finished, try again
-    await delay(1000);
-    return await Awx.trackWorkflowJob(
-      awx,
-      j,
-      jobid,
-      ++counter,
-      printedNodeIds,
-      workflowJson
-    );
-  } catch (err) {
-    const message = err.toString();
-    logger.error(message);
-    retryCount++;
-    if (retryCount == 10) {
-      return Promise.resolve(message);
-    } else {
+      if (j.finished) {
+        // print a summary of all the nodes with their status
+        var summary = [workflowStatusLine("WORKFLOW", j.name, j.status, true)];
+        nodes.forEach((node) => {
+          summary.push(workflowStatusLine("WORKFLOW NODE", node.name, node.status));
+        });
+        await Job.printJobOutput(summary.join("\n"), "stdout", jobid, ++counter);
+        if (j.status === "successful") {
+          await Job.endJobStatus(
+            jobid,
+            ++counter,
+            "stdout",
+            "success",
+            `Successfully completed workflow ${j.name}`
+          );
+          return true;
+        } else {
+          // if error, end with status (aborted or failed)
+          var status = "failed";
+          var message = `Workflow ${j.name} completed with status ${j.status}`;
+          if (j.status == "canceled") {
+            status = "aborted";
+            message = `Workflow ${j.name} was aborted`;
+            await Job.resetAbortRequested(jobid);
+          }
+          await Job.endJobStatus(jobid, ++counter, "stderr", status, message);
+          return message;
+        }
+      }
+      // not finished, try again : a loop, not a call per second, so a workflow that runs for
+      // hours does not hold one stack frame (and its node list) for every poll
+      await delay(1000);
+      job = j;
+      counter++;
+      previousWorkflowJson = workflowJson;
+      retryCount = 0;
+    } catch (err) {
+      const message = err.toString();
+      logger.error(message);
+      retryCount++;
+      if (retryCount >= AWX_MAX_RETRIES) {
+        return lostContact(jobid, counter + 1, job, message);
+      }
       logger.warning(`Retrying jobid ${jobid} [${retryCount}]`);
       await delay(1000);
-      return await Awx.trackWorkflowJob(
-        awx,
-        job,
-        jobid,
-        counter,
-        printedNodeIds,
-        previousWorkflowJson,
-        retryCount
-      );
     }
   }
 };
@@ -769,7 +781,7 @@ Awx.findJobTemplateByName = async function (awx, name) {
     awxConfig.uri +
       appConfig.awxApiPrefix +
       "/job_templates/?name=" +
-      encodeURI(name),
+      encodeURIComponent(name),
     axiosConfig
   );
   var job_template = axiosResult.data.results.find(function (x) {
@@ -784,7 +796,7 @@ Awx.findJobTemplateByName = async function (awx, name) {
       awxConfig.uri +
         appConfig.awxApiPrefix +
         "/workflow_job_templates/?name=" +
-        encodeURI(name),
+        encodeURIComponent(name),
       axiosConfig
     );
     job_template = axiosResult.data.results.find(function (x) {
@@ -812,7 +824,7 @@ Awx.findCredentialByName = async function (awx, name) {
     awxConfig.uri +
       appConfig.awxApiPrefix +
       "/credentials/?name=" +
-      encodeURI(name),
+      encodeURIComponent(name),
     axiosConfig
   );
   var credential = axiosResult.data.results.find(function (x) {
@@ -842,7 +854,7 @@ Awx.findExecutionEnvironmentByName = async function (awx, name) {
       awxConfig.uri +
         appConfig.awxApiPrefix +
         "/execution_environments/?name=" +
-        encodeURI(name),
+        encodeURIComponent(name),
       axiosConfig
     );
   } catch (error) {
@@ -874,7 +886,7 @@ Awx.findInstanceGroupByName = async function (awx, name) {
       awxConfig.uri +
         appConfig.awxApiPrefix +
         "/instance_groups/?name=" +
-        encodeURI(name),
+        encodeURIComponent(name),
       axiosConfig
     );
   } catch (error) {
@@ -925,7 +937,7 @@ Awx.findInventoryByName = async function (awx, name) {
       awxConfig.uri +
         appConfig.awxApiPrefix +
         "/inventories/?name=" +
-        encodeURI(name),
+        encodeURIComponent(name),
       axiosConfig
     );
   } catch (error) {

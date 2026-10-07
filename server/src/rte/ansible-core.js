@@ -40,13 +40,9 @@ export async function resolvePlaybookDirectory(playbookSubPath = "") {
  * needs quoting ; the vault password is not among them (it goes in on stdin).
  */
 export function buildAnsibleArgs(extravars, { extravarsFileName, hiddenExtravarsFileName, vaultPassword = "" }) {
-  // ansible can have multiple inventories ; the main one is listed twice, as it always
-  // was - ansible reads an inventory once however often it is named
+  // ansible can have multiple inventories : one -i per entry. A list used to be passed joined
+  // as well (-i a,b), which ansible reads as a HOST list - adding hosts named after the files
   const inventory = [];
-  const invent = extravars?.__inventory__;
-  if (invent) {
-    inventory.push(invent);
-  }
   if (extravars["__inventory__"]) {
     [].concat(extravars["__inventory__"]).forEach((item) => {
       if (typeof item == "string") {
@@ -205,26 +201,55 @@ export function executeCommand(cmd, jobid, counter) {
   var hiddenExtravarsFileName = cmd.hiddenExtravarsFileName;
   var keepExtravars = cmd.keepExtravars;
   var task = cmd.task;
-  const ac = new AbortController();
   // the abort flag lives in the database (Job.abort sets it), so whoever runs the process
   // - this host or another - notices it here and stops the playbook itself
   let killed = false;
   let abortPoll = null;
   let syncJobLog = async () => {};
 
+  // the extravars files hold the resolved credentials : removed on every way out, once
+  var filepath;
+  var he_filepath;
+  const removeExtravarsFiles = () => {
+    for (const [file, keep] of [[filepath, keepExtravars], [he_filepath, false]]) {
+      if (!file || keep) continue;
+      try {
+        fs.unlinkSync(file);
+      } catch (e) {
+        if (e.code !== "ENOENT") logger.error(`[Job ${jobid}] Could not remove ${file} : ${e.message}`);
+      }
+    }
+    filepath = undefined;
+    he_filepath = undefined;
+  };
+
   // execute the procces
   return new Promise((resolve, reject) => {
+    // a spawn error fires `error` and then `close`, never `exit` ; a failing kill can fire
+    // `error` after `exit`. Whichever comes first ends the job, the other is ignored.
+    let settled = false;
+    const settle = () => {
+      if (settled) return false;
+      settled = true;
+      clearInterval(abortPoll);
+      return true;
+    };
     logger.debug(`${description}, ${directory} > ${Helpers.logSafe([file, ...args].join(" "))}`);
     try {
+      // the playbook folder is a mount or a repository on the RTE : say so, rather than fail
+      // writing the extravars file into a folder that is not there
+      if (!directory || !fs.existsSync(directory)) {
+        throw new Error(`the playbook folder ${directory || "(none)"} does not exist on RTE ${runnerIdentity()} : mount the playbooks or the repository there, or set ANSIBLE_PATH`);
+      }
       if (extravarsFileName) {
         logger.debug(`Storing extravars to file ${extravarsFileName}`);
-        var filepath = path.join(directory, extravarsFileName);
+        filepath = path.join(directory, extravarsFileName);
         fs.writeFileSync(filepath, extravars);
 
         logger.debug(
           `Storing hidden extravars to file ${hiddenExtravarsFileName}`
         );
-        var he_filepath = path.join(directory, hiddenExtravarsFileName);
+        he_filepath = path.join(directory, hiddenExtravarsFileName);
         fs.writeFileSync(he_filepath, hiddenExtravars);
       } else {
         logger.warning("No filename was given");
@@ -235,7 +260,6 @@ export function executeCommand(cmd, jobid, counter) {
       // in its own process group, so stopping it stops ansible-playbook and all its workers.
       var child = spawn(file, args, {
         cwd: directory,
-        signal: ac.signal,
         detached: true,
       });
       child.stdout.setEncoding("utf8");
@@ -308,15 +332,6 @@ export function executeCommand(cmd, jobid, counter) {
           });
       }
 
-      // capture the abort event, logging only
-      ac.signal.addEventListener(
-        "abort",
-        () => {
-          logger.warning("Operator aborted the process");
-        },
-        { once: true }
-      );
-
       // add output eventlistener to the process to save output
       child.stdout.on("data", function (data) {
         countOutput("stdout", data);
@@ -350,7 +365,7 @@ export function executeCommand(cmd, jobid, counter) {
 
       // add exit eventlistener to the process to handle status update
       child.on("exit", async function (data) {
-        clearInterval(abortPoll);
+        if (!settle()) return;
         // the log as the playbook left it, before the job ends
         await syncJobLog(true);
         // Clear the PID and host from the database as the process has ended
@@ -407,17 +422,12 @@ export function executeCommand(cmd, jobid, counter) {
             resolve(true);
           }
         }
-        if (extravarsFileName && !keepExtravars) {
-          logger.debug(`Removing extavars file ${filepath}`);
-          fs.unlinkSync(filepath);
-        }
-        if (hiddenExtravarsFileName) {
-          fs.unlinkSync(he_filepath);
-        }
+        removeExtravarsFiles();
       });
       // add error eventlistener to the process; set failed
       child.on("error", async function (data) {
-        clearInterval(abortPoll);
+        if (!settle()) return;
+        removeExtravarsFiles();
         await syncJobLog(true);
         // Clear the PID and host from the database as the process has errored
         logger.debug(`[Job ${jobid}] Process with PID ${child.pid} encountered an error`);
@@ -433,17 +443,21 @@ export function executeCommand(cmd, jobid, counter) {
           "failed",
           `${task} failed : ` + data
         );
+        reject(data);
       });
     } catch (e) {
-      clearInterval(abortPoll);
+      if (!settle()) return;
+      removeExtravarsFiles();
       Job.endJobStatus(
         jobid,
         ++counter,
         "stderr",
         "failed",
-        `${task} failed : ` + e
-      );
-      reject();
+        `[ERROR]: ${task} failed : ${e.message || e}`
+      )
+        .catch((err) => logger.error(`[Job ${jobid}] Failed to end the job : ${err.message}`))
+        // rejected once the end is written : whoever waits on the run sees the job ended
+        .finally(() => reject(e));
     }
   });
 }

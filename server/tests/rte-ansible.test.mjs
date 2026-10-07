@@ -130,9 +130,16 @@ describe("the ansible-playbook arguments", () => {
     }, files);
     assert.deepEqual(args, [
       "-e", "@e.json", "-e", "@he_e.json",
-      "-i", "hosts,extra", "-i", "hosts", "-i", "extra",
+      "-i", "hosts", "-i", "extra",
       "-t", "a,b", "--check", "--diff", "-vvv", "--limit", "web*", "site.yml",
     ]);
+  });
+
+  test("each inventory once : a list is never joined into a host list", () => {
+    const one = core.buildAnsibleArgs({ __playbook__: "p.yml", __inventory__: "hosts" }, files).args;
+    assert.deepEqual(one.filter((a, i) => one[i - 1] === "-i"), ["hosts"]);
+    const adhoc = core.buildAnsibleArgs({ __playbook__: "p.yml", __inventory__: "web1,web2," }, files).args;
+    assert.deepEqual(adhoc.filter((a, i) => adhoc[i - 1] === "-i"), ["web1,web2,"], "a host list the form meant stays one");
   });
 
   test("a value with quotes and spaces stays one argument", () => {
@@ -188,6 +195,45 @@ describe("a playbook job runs from its jobs row", () => {
   });
 });
 
+describe("every way out removes the files holding the credentials, and ends the job once", () => {
+  const endLines = () => outputs.filter((o) => /failed|finished/.test(o.output || ""));
+
+  test("ansible-playbook missing (a spawn error : error and close, never exit)", async () => {
+    row({ __playbook__: "site.yml", __credentials__: { dbcred: "db" } });
+    const done = core.runAnsibleJob({ jobId: 11 });
+    await new Promise((r) => setTimeout(r, 20));
+    child.emit("error", Object.assign(new Error("spawn ansible-playbook ENOENT"), { code: "ENOENT" }));
+    child.emit("close", -2);
+    const ok = await done;
+    assert.equal(ok, false, "the run settles - before, it never did and the RTE listed the job as running for ever");
+    assert.equal(jobRow.status, "failed");
+    assert.equal(fs.existsSync(path.join(dir, "extravars_11.json")), false, "the resolved credentials are not left on disk");
+    assert.equal(fs.existsSync(path.join(dir, "he_extravars_11.json")), false);
+    assert.equal(endLines().length, 1);
+  });
+
+  test("an error after the exit (a kill that failed) does not end the job a second time", async () => {
+    row({ __playbook__: "site.yml" });
+    const done = core.runAnsibleJob({ jobId: 11 });
+    await new Promise((r) => setTimeout(r, 20));
+    child.emit("exit", 0);
+    await done;
+    child.emit("error", new Error("kill ESRCH"));
+    await new Promise((r) => setTimeout(r, 20));
+    assert.equal(jobRow.status, "success");
+    assert.equal(endLines().length, 1);
+  });
+
+  test("a playbook folder missing on the RTE says so, instead of failing on the extravars file", async () => {
+    row({ __playbook__: "site.yml", __playbookSubPath__: "not/mounted" });
+    const ok = await core.runAnsibleJob({ jobId: 11 });
+    assert.equal(ok, false);
+    assert.equal(spawned.length, 0, "nothing ran");
+    assert.equal(jobRow.status, "failed");
+    assert.ok(outputs.some((o) => /playbook folder .*not\/mounted does not exist on RTE/.test(o.output)), "the line names the folder and what to do");
+  });
+});
+
 describe("the job log a playbook writes", () => {
   test("is stored on the job while it runs and at the end, then the file goes", async () => {
     vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
@@ -230,6 +276,14 @@ describe("the approval gate", () => {
     assert.ok(jobRow.end);
     assert.equal(outputs[0].output, `APPROVE [site.yml] ${"*".repeat(69 - "site.yml".length)}`);
     assert.equal(approvalMails.length, 1);
+  });
+
+  test("a playbook path longer than the APPROVE line still halts for approval", async () => {
+    const playbook = "playbooks/vmware/provisioning/create-virtual-machine-from-template-with-disks.yml";
+    row({ __playbook__: playbook });
+    await dispatch({ jobId: 11, jobType: "ansible", extravars: { __playbook__: playbook }, approval: { roles: ["admin"] } });
+    assert.equal(jobRow.status, "approve", "a RangeError here left the job running for ever");
+    assert.equal(outputs[0].output, `APPROVE [${playbook}] `);
   });
 
   test("an approved job goes to its runner", async () => {
