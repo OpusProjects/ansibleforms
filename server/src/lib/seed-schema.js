@@ -20,7 +20,7 @@ const strOrInt = { type: ["string", "integer"] };
 // unattended at startup, so a misspelled key must be an error the operator sees
 // immediately, not a value that is silently dropped.
 
-// Deprecated since 7.5, removed in 8 : the section for AWX connections. Its items are
+// Deprecated since 7, removed in 8 : the section for AWX connections. Its items are
 // runners of type awx now (foldAwxIntoRunners) ; the shape is still validated as it was.
 const awxItem = {
   type: "object",
@@ -59,7 +59,7 @@ const credentialItem = {
     // carrying them here at all : the store's name and the place in it
     secret_store: str,
     secret_ref: str,
-    // deprecated since 7.1, removed in 8 : the same as secret_store 'vault' + secret_ref
+    // deprecated since 7, removed in 8 : the same as secret_store 'vault' + secret_ref
     vault_path: str,
   },
 };
@@ -112,7 +112,7 @@ const runnerItem = {
 };
 
 /**
- * The `awx:` section as runners of type awx : a seed written before 7.5 keeps working
+ * The `awx:` section as runners of type awx : a seed written before 7 keeps working
  * (deprecated, removed in 8). Returns a new document ; the warning is the caller's.
  */
 export function foldAwxIntoRunners(doc) {

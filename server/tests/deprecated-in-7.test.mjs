@@ -1,5 +1,5 @@
 // hasApproval is accepted by the schema on a form and on a step, but nothing reads it, so a
-// form that sets it gets no approval point from it. Deprecated in 7.3.0 and removed in 8.0.0
+// form that sets it gets no approval point from it. Deprecated in 7.0.0 and removed in 8.0.0
 // (DEPRECATED.md) : until then a form that uses it still validates, and the log says so.
 import { describe, test, expect, vi, beforeEach } from "vitest";
 
@@ -25,15 +25,15 @@ describe("hasApproval is deprecated, not removed", () => {
     const f = { ...form(), type: "multistep", playbook: undefined, hasApproval: true,
       steps: [{ name: "Patch", type: "ansible", playbook: "p.yml", hasApproval: false }, { name: "Report", type: "ansible", playbook: "r.yml" }] };
     expect(deprecatedIn7_3(f)).toEqual([
-      "Form 'Approve firmware' : hasApproval is deprecated since 7.3 and removed in 8 - it has no effect, an approval point is set with approval",
-      "Step 'Patch' of form 'Approve firmware' : hasApproval is deprecated since 7.3 and removed in 8 - it has no effect, an approval point is set with approval",
+      "Form 'Approve firmware' : hasApproval is deprecated since 7 and removed in 8 - it has no effect, an approval point is set with approval",
+      "Step 'Patch' of form 'Approve firmware' : hasApproval is deprecated since 7 and removed in 8 - it has no effect, an approval point is set with approval",
     ]);
   });
 
   test("a form that uses it still validates, and the log says so", () => {
     expect(Form.validateForm(form({ hasApproval: true }))).toBeTruthy();
     expect(warnings).toEqual([
-      "Form 'Approve firmware' : hasApproval is deprecated since 7.3 and removed in 8 - it has no effect, an approval point is set with approval",
+      "Form 'Approve firmware' : hasApproval is deprecated since 7 and removed in 8 - it has no effect, an approval point is set with approval",
     ]);
   });
 

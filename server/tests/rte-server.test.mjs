@@ -119,7 +119,7 @@ describe("the jobs it takes", () => {
     assert.equal(jobs[11].host, null);
   });
 
-  test("an app that sends no contract (before 7.5) is still served", async () => {
+  test("an app that sends no contract (an early 7 build) is still served", async () => {
     assert.equal((await call(acceptJob, { body: { jobId: 11 } })).status, 202);
   });
 });

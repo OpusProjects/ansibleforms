@@ -2596,7 +2596,7 @@
           "db_type": { "type": "string", "description": "Type of database (mysql, postgres, etc).", "example": "mysql" },
           "secret_store": { "type": "string", "description": "Name of the secret store user and password are read from.", "example": "vault" },
           "secret_ref": { "type": "string", "description": "Where the secret lives in the store, e.g. a Vault path.", "example": "secret/myapp/prod" },
-          "vault_path": { "type": "string", "deprecated": true, "description": "Deprecated since 7.1, removed in 8 : the same as secret_store 'vault' with this secret_ref.", "example": "secret/data/myapp/prod" }
+          "vault_path": { "type": "string", "deprecated": true, "description": "Deprecated since 7, removed in 8 : the same as secret_store 'vault' with this secret_ref.", "example": "secret/data/myapp/prod" }
         },
         "required": ["name"]
   },

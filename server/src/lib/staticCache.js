@@ -22,7 +22,7 @@ export function staticCacheHeaders(publicPath) {
 }
 
 // index.html links the stylesheet and the favicon by a fixed name. Browsers that cached them
-// for a year before 'no-cache' (up to 7.2.0) would not ask for them again : a version in the
+// for a year before 'no-cache' (before 7.0.0) would not ask for them again : a version in the
 // query string is a new address for them, so every release is fetched fresh.
 export function injectAssetVersion(html, version) {
   if (!html || !version) return html;

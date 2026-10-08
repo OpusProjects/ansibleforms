@@ -5,192 +5,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [7.5.1](https://github.com/ansibleforms/ansibleforms/compare/7.5.0...7.5.1) (2026-10-07)
-
-
-### Fixed
-
-* keep an RTE's result after a lost answer, and let force unlock take the designer lock again ([#730](https://github.com/ansibleforms/ansibleforms/issues/730)) ([5d02476](https://github.com/ansibleforms/ansibleforms/commit/5d02476996595ef2f449740f19cbaac380c05734))
-* keep credentials off disk and out of the log, and end jobs that lose their runner ([#724](https://github.com/ansibleforms/ansibleforms/issues/724)) ([2a75e00](https://github.com/ansibleforms/ansibleforms/commit/2a75e00151b644b596491285b4aedb289543fc92))
-* keep the settings and job pages within the window when their content is wide ([#731](https://github.com/ansibleforms/ansibleforms/issues/731)) ([b88931c](https://github.com/ansibleforms/ansibleforms/commit/b88931cc42a73a64a514fef27fafc16ce1b2eb69))
-* make the designer lock exclusive, stop cleanly on SIGTERM, and keep runtime tables out of backups ([#727](https://github.com/ansibleforms/ansibleforms/issues/727)) ([9fd2061](https://github.com/ansibleforms/ansibleforms/commit/9fd2061d4b0a38765af29c8ad5582741d0afa6ca))
-* read AWX job logs as a download, so a log over 1 MB is not lost ([#734](https://github.com/ansibleforms/ansibleforms/issues/734)) ([0ec4383](https://github.com/ansibleforms/ansibleforms/commit/0ec43836a03bb7c5f49d379947f923919309fc5d))
-* release the repository and schedule claims of a node that went away ([#726](https://github.com/ansibleforms/ansibleforms/issues/726)) ([8f30683](https://github.com/ansibleforms/ansibleforms/commit/8f306835107a5286600b4dcfda11afeaa8dfc6c6))
-* start the page scrollbar below the header ([#732](https://github.com/ansibleforms/ansibleforms/issues/732)) ([4d6796c](https://github.com/ansibleforms/ansibleforms/commit/4d6796c58d3eb90837c807f7fe60d507c3570025))
-* store an AWX job's final log once it ends, so no line is lost or repeated ([#737](https://github.com/ansibleforms/ansibleforms/issues/737)) ([7821d9b](https://github.com/ansibleforms/ansibleforms/commit/7821d9b5c46cbc047aab3ab0be2520a4380ce077))
-* take over the worker lock from a dead host, and never hold it doing nothing ([#725](https://github.com/ansibleforms/ansibleforms/issues/725)) ([1a94213](https://github.com/ansibleforms/ansibleforms/commit/1a94213c39b5a1b1a0b7890cca093d0aa3b43acd))
-
-## [7.5.0](https://github.com/ansibleforms/ansibleforms/compare/7.4.0...7.5.0) (2026-10-07)
-
-
-### Added
-
-* playbooks run on runners, and awx is a runner type ([#713](https://github.com/ansibleforms/ansibleforms/issues/713)) ([d4efa63](https://github.com/ansibleforms/ansibleforms/commit/d4efa631e9ec5fe70e79c21e38b6e5588b6e982c))
-* run a worker next to several app nodes ([#714](https://github.com/ansibleforms/ansibleforms/issues/714)) ([dda52e8](https://github.com/ansibleforms/ansibleforms/commit/dda52e89e372a172d3f6dccec3058d778c2d2226))
-
-## [7.4.0](https://github.com/ansibleforms/ansibleforms/compare/7.3.0...7.4.0) (2026-10-07)
-
-
-### Added
-
-* add Catalan as a language ([#686](https://github.com/ansibleforms/ansibleforms/issues/686)) ([1166384](https://github.com/ansibleforms/ansibleforms/commit/11663848eb5ef7b448051fb0aa808d4d8387daad))
-* add Japanese as a language ([#688](https://github.com/ansibleforms/ansibleforms/issues/688)) ([d9411ff](https://github.com/ansibleforms/ansibleforms/commit/d9411ff9ca383a8b8e73603bb035a82cced2cba9))
-* add Polish as a language ([#704](https://github.com/ansibleforms/ansibleforms/issues/704)) ([19893c5](https://github.com/ansibleforms/ansibleforms/commit/19893c5b045ff049017487e920a39d819e0b4f26))
-* add Portuguese as a language ([#685](https://github.com/ansibleforms/ansibleforms/issues/685)) ([1ce760d](https://github.com/ansibleforms/ansibleforms/commit/1ce760dd6a64f74776f73bcb74b82c56606add2c))
-* add Simplified Chinese as a language ([#689](https://github.com/ansibleforms/ansibleforms/issues/689)) ([f6bc79c](https://github.com/ansibleforms/ansibleforms/commit/f6bc79cb1dab3f04ae7073b028ef6448da35cfd6))
-* list the languages in alphabetical order ([#687](https://github.com/ansibleforms/ansibleforms/issues/687)) ([11a9064](https://github.com/ansibleforms/ansibleforms/commit/11a9064186c476b16e540b216477cd53ed875f6f))
-* record the client address behind a reverse proxy (TRUST_PROXY) ([#695](https://github.com/ansibleforms/ansibleforms/issues/695)) ([351865f](https://github.com/ansibleforms/ansibleforms/commit/351865fded27e6f0e36df45c1bd6c1e76ec2bdb2))
-* search forms and pages from the header ([#683](https://github.com/ansibleforms/ansibleforms/issues/683)) ([6806460](https://github.com/ansibleforms/ansibleforms/commit/68064604fc3399c3f5475b9910121c4c50de3cd0))
-* show each page's description in a popover next to its title ([#707](https://github.com/ansibleforms/ansibleforms/issues/707)) ([d41b602](https://github.com/ansibleforms/ansibleforms/commit/d41b6027516c348ace93c55d7337258a47cd6844))
-* show on the header's Designer link who holds the designer lock ([#710](https://github.com/ansibleforms/ansibleforms/issues/710)) ([eeebac5](https://github.com/ansibleforms/ansibleforms/commit/eeebac5448cc41ad22276d43e637489a58023071))
-
-
-### Fixed
-
-* center the spinner shown while signing out ([#712](https://github.com/ansibleforms/ansibleforms/issues/712)) ([06eade7](https://github.com/ansibleforms/ansibleforms/commit/06eade76de074b0147ebc881c5b32a5a07aba46f))
-* correct the ldap group search and entra id group hints ([#691](https://github.com/ansibleforms/ansibleforms/issues/691)) ([0c8caf6](https://github.com/ansibleforms/ansibleforms/commit/0c8caf68a0a61759f7a21d7b9afc6ab7ff14d335))
-* leave the same space under the card on pages without an action bar ([#709](https://github.com/ansibleforms/ansibleforms/issues/709)) ([59c87a8](https://github.com/ansibleforms/ansibleforms/commit/59c87a85657a8f0306f9cae79f961463ea3036cf))
-* let users with allowPlannedJobs run a form later ([#696](https://github.com/ansibleforms/ansibleforms/issues/696)) ([ceb08bb](https://github.com/ansibleforms/ansibleforms/commit/ceb08bbee21d6e57492af6d8df855402157928e4))
-* name the user in job event emails in the email's language ([#692](https://github.com/ansibleforms/ansibleforms/issues/692)) ([6942d30](https://github.com/ansibleforms/ansibleforms/commit/6942d30b1312e4cbfdee86f46968d07eaed70555))
-* **oidc:** apply the group filter to the groups in the token ([#690](https://github.com/ansibleforms/ansibleforms/issues/690)) ([b16edd7](https://github.com/ansibleforms/ansibleforms/commit/b16edd710b29fae7a81c85fe8c507417e3914c65))
-* show counted texts in each language's plural forms ([#706](https://github.com/ansibleforms/ansibleforms/issues/706)) ([7803766](https://github.com/ansibleforms/ansibleforms/commit/7803766579e154c34cb9c42a531136a0a3717e62))
-* show each theme's own logo while no custom logo is uploaded ([#711](https://github.com/ansibleforms/ansibleforms/issues/711)) ([9a55e37](https://github.com/ansibleforms/ansibleforms/commit/9a55e37d95bf73c44fb3343798cea71027d44082))
-* stop the running step when a multistep job is aborted ([#697](https://github.com/ansibleforms/ansibleforms/issues/697)) ([f48b73e](https://github.com/ansibleforms/ansibleforms/commit/f48b73eb04ffcae9c2ebd005cdc0491e560f8112))
-* translate the subjects of the job and test emails ([#698](https://github.com/ansibleforms/ansibleforms/issues/698)) ([bec81b1](https://github.com/ansibleforms/ansibleforms/commit/bec81b1abc8c1c7045018e4e90bee5a3bcdfa3ae))
-
-
-### Security
-
-* only send the designer lock holder's name and lock time ([#708](https://github.com/ansibleforms/ansibleforms/issues/708)) ([ec58540](https://github.com/ansibleforms/ansibleforms/commit/ec58540af9be603e8125484a586337ab04a78852))
-* only show users their own stored jobs ([#693](https://github.com/ansibleforms/ansibleforms/issues/693)) ([bf8bb98](https://github.com/ansibleforms/ansibleforms/commit/bf8bb980f1f4c08c0cbe6c7ad92963d4e1e454a4))
-* stop other users from deleting a job awaiting approval ([#694](https://github.com/ansibleforms/ansibleforms/issues/694)) ([c37ba71](https://github.com/ansibleforms/ansibleforms/commit/c37ba71df036d7d2f54e1b669e382948d0f2ab80))
-
-## [7.3.0](https://github.com/ansibleforms/ansibleforms/compare/7.2.0...7.3.0) (2026-10-06)
-
-
-### Added
-
-* group the audit and server logs in a Logs menu section ([#676](https://github.com/ansibleforms/ansibleforms/issues/676)) ([b7ecc38](https://github.com/ansibleforms/ansibleforms/commit/b7ecc3828990fd354c0d5a834c67f56b796a9df7))
-* move the scheduled and stored jobs into the jobs menu ([#669](https://github.com/ansibleforms/ansibleforms/issues/669)) ([f0e1208](https://github.com/ansibleforms/ansibleforms/commit/f0e12088c82f0cae45e423b2f82f15effe7bac28))
-* open a job on a page of its own ([#673](https://github.com/ansibleforms/ansibleforms/issues/673)) ([b4a1168](https://github.com/ansibleforms/ansibleforms/commit/b4a1168816c8589555214138e5d60940c7774e66))
-* show a centered loading indicator while the forms and the designer load ([#682](https://github.com/ansibleforms/ansibleforms/issues/682)) ([8a450e2](https://github.com/ansibleforms/ansibleforms/commit/8a450e2fb790f058a0e70aa8695b603060aecfce))
-* show the current time and offset of the picked time zone ([#680](https://github.com/ansibleforms/ansibleforms/issues/680)) ([54c374f](https://github.com/ansibleforms/ansibleforms/commit/54c374fdbb4eb0130cbfb357d2381154e31b9c2d))
-* show the logo on the login page ([#664](https://github.com/ansibleforms/ansibleforms/issues/664)) ([ed89a6f](https://github.com/ansibleforms/ansibleforms/commit/ed89a6f1a411176b1a984e09ef76b8ea2cc18dcc))
-* show the person's name for directory and SSO accounts ([#679](https://github.com/ansibleforms/ansibleforms/issues/679)) ([08ecf55](https://github.com/ansibleforms/ansibleforms/commit/08ecf55438b564c3b166e46df4b881f4f56a897d))
-* tell an open tab when a newer version is deployed ([#663](https://github.com/ansibleforms/ansibleforms/issues/663)) ([9d814fc](https://github.com/ansibleforms/ansibleforms/commit/9d814fcef5ab67ea9921107ec35565270e208585))
-
-
-### Fixed
-
-* center the counts in the forms menu ([#666](https://github.com/ansibleforms/ansibleforms/issues/666)) ([9511c60](https://github.com/ansibleforms/ansibleforms/commit/9511c601ea2c428a1f12d6b181dca6ac39b6bb42))
-* color the designer's folders yellow in every theme ([#681](https://github.com/ansibleforms/ansibleforms/issues/681)) ([d44d9d4](https://github.com/ansibleforms/ansibleforms/commit/d44d9d4a0691ee069f90fae3766f063dfb6ab4ca))
-* correct the settings help for 7.x syntax and the documented defaults ([#672](https://github.com/ansibleforms/ansibleforms/issues/672)) ([afe8c4d](https://github.com/ansibleforms/ansibleforms/commit/afe8c4dc3cdbadf8fce51eebabf48135e75f9e6a))
-* enlarge the separator in category titles ([#667](https://github.com/ansibleforms/ansibleforms/issues/667)) ([b8ea61a](https://github.com/ansibleforms/ansibleforms/commit/b8ea61a54a86f73b471917b2b87f85ffd648c153))
-* keep tab strips on one line and scroll them sideways ([#675](https://github.com/ansibleforms/ansibleforms/issues/675)) ([f976512](https://github.com/ansibleforms/ansibleforms/commit/f9765120337926a802a53aca50243baf994a800f))
-* keep the header on screen on long pages ([#665](https://github.com/ansibleforms/ansibleforms/issues/665)) ([24eb918](https://github.com/ansibleforms/ansibleforms/commit/24eb918b07e0ff40979ab9a276bef2dc8889683a))
-* open a job from anywhere in its row, with a pointer cursor ([#678](https://github.com/ansibleforms/ansibleforms/issues/678)) ([153a535](https://github.com/ansibleforms/ansibleforms/commit/153a5352ed8d7e29ceb748f5146e910a37bc731f))
-* point the designer's lock hint to the top-right corner ([#677](https://github.com/ansibleforms/ansibleforms/issues/677)) ([f9aff8f](https://github.com/ansibleforms/ansibleforms/commit/f9aff8fba6ca97c17adbcbc6dee2c5d7aa5924d4))
-* send logs to syslog only when LOG_SYSLOG_HOST is set ([#668](https://github.com/ansibleforms/ansibleforms/issues/668)) ([603ccf1](https://github.com/ansibleforms/ansibleforms/commit/603ccf19953da251b8789c0ea916fbba41d0a23c))
-* serve the client build and stylesheets without year-old caches ([#661](https://github.com/ansibleforms/ansibleforms/issues/661)) ([894ea92](https://github.com/ansibleforms/ansibleforms/commit/894ea9201769614c53b26cca677264b18d847362))
-
-
-### Changed
-
-* deprecate the hasApproval property, which has no effect ([#671](https://github.com/ansibleforms/ansibleforms/issues/671)) ([5a0aee7](https://github.com/ansibleforms/ansibleforms/commit/5a0aee7cca568a1ba354ca407558701fc974fd66))
-
-
-### Security
-
-* warn at startup when ENCRYPTION_SECRET is not set ([#670](https://github.com/ansibleforms/ansibleforms/issues/670)) ([c22a3c9](https://github.com/ansibleforms/ansibleforms/commit/c22a3c9a47f608a0ed3c1c18d24c6c5c096d9ef8))
-
-## [7.2.0](https://github.com/ansibleforms/ansibleforms/compare/7.1.6...7.2.0) (2026-10-06)
-
-
-### Added
-
-* redesign the header, menus and page layouts ([#658](https://github.com/ansibleforms/ansibleforms/issues/658)) ([483c957](https://github.com/ansibleforms/ansibleforms/commit/483c957ef7f5270800a07fb97b93731b56fb0764))
-
-## [7.1.6](https://github.com/ansibleforms/ansibleforms/compare/7.1.5...7.1.6) (2026-10-05)
-
-
-### Fixed
-
-* **client:** strip the table cell HTML without a regex ([#656](https://github.com/ansibleforms/ansibleforms/issues/656)) ([a418c18](https://github.com/ansibleforms/ansibleforms/commit/a418c18b7397c8b74ec0e2ce3ab97f79eb197609))
-
-## [7.1.5](https://github.com/ansibleforms/ansibleforms/compare/7.1.4...7.1.5) (2026-10-05)
-
-
-### Changed
-
-* **server:** group the templates into seed and email folders ([#646](https://github.com/ansibleforms/ansibleforms/issues/646)) ([9f17826](https://github.com/ansibleforms/ansibleforms/commit/9f178266bd62504bd435832d5038fc04069deb93))
-* **server:** write the key separators as \0 escapes ([#649](https://github.com/ansibleforms/ansibleforms/issues/649)) ([cb69ef5](https://github.com/ansibleforms/ansibleforms/commit/cb69ef5a6cf82f4dea9dde0a21c0c7148214ebed))
-
-## [7.1.4](https://github.com/ansibleforms/ansibleforms/compare/7.1.3...7.1.4) (2026-10-05)
-
-
-### Fixed
-
-* **client:** build without warnings ([#629](https://github.com/ansibleforms/ansibleforms/issues/629)) ([ca68c2b](https://github.com/ansibleforms/ansibleforms/commit/ca68c2b279d654cb2f09725969353484d88d2b8b))
-* **client:** turn off the plugin timings notice ([#633](https://github.com/ansibleforms/ansibleforms/issues/633)) ([6484d4f](https://github.com/ansibleforms/ansibleforms/commit/6484d4fce80c6d5d859cb8c76691346ab5afea86))
-
-## [7.1.3](https://github.com/ansibleforms/ansibleforms/compare/7.1.2...7.1.3) (2026-10-05)
-
-
-### Fixed
-
-* **jobs:** abort reaches a playbook on another host ([#578](https://github.com/ansibleforms/ansibleforms/issues/578)) ([137c5c6](https://github.com/ansibleforms/ansibleforms/commit/137c5c60bf03b01ea5b02551f7708e30572b848e))
-
-## [7.1.2](https://github.com/ansibleforms/ansibleforms/compare/7.1.1...7.1.2) (2026-10-04)
-
-
-### Changed
-
-* help.yaml lives with the server, not in docs ([#600](https://github.com/ansibleforms/ansibleforms/issues/600)) ([b54d95a](https://github.com/ansibleforms/ansibleforms/commit/b54d95a1b396e33062793991d0807eb68e24f7bd))
-
-## [7.1.1](https://github.com/OpusProjects/ansibleforms/compare/7.1.0...7.1.1) (2026-10-04)
-
-
-### Changed
-
-* shared url helpers instead of slash-trimming regexes ([#575](https://github.com/OpusProjects/ansibleforms/issues/575)) ([e6b57ab](https://github.com/OpusProjects/ansibleforms/commit/e6b57abe552f77398443b95dee09a691e3fb9335))
-
-## [7.1.0](https://github.com/OpusProjects/ansibleforms/compare/7.0.0...7.1.0) (2026-10-04)
-
-
-### Added
-
-* **credentials:** a CyberArk Central Credential Provider secret store ([#572](https://github.com/OpusProjects/ansibleforms/issues/572)) ([a19ae72](https://github.com/OpusProjects/ansibleforms/commit/a19ae72d37d48d55886c886f2aed30de00688ae7))
-* **credentials:** dynamic Vault credentials and inline secrets in dbConfig ([#571](https://github.com/OpusProjects/ansibleforms/issues/571)) ([262154b](https://github.com/OpusProjects/ansibleforms/commit/262154b9c0330a7b3b77fcd238d6472eaa8877c4))
-* **credentials:** secret stores with a provider registry (HashiCorp Vault) ([#570](https://github.com/OpusProjects/ansibleforms/issues/570)) ([da3fe6a](https://github.com/OpusProjects/ansibleforms/commit/da3fe6aef0df90b613fb167228cbca77f1725ac3))
-* **gui:** column presets, number and yes/no filters and CSV export in admin tables ([#573](https://github.com/OpusProjects/ansibleforms/issues/573)) ([944832c](https://github.com/OpusProjects/ansibleforms/commit/944832c1e82578924d7bb8b89b31ae7c6aba0ba9))
-
-
-### Fixed
-
-* **credentials:** fnCredentials honours its fallback, one credential resolver ([#569](https://github.com/OpusProjects/ansibleforms/issues/569)) ([ee59299](https://github.com/OpusProjects/ansibleforms/commit/ee592996b3807a88033d3b42541904977efeae68))
-
-## [7.0.0](https://github.com/OpusProjects/ansibleforms/compare/6.5.2...7.0.0) (2026-10-02)
+## [7.0.0](https://github.com/ansibleforms/ansibleforms/compare/6.5.2...7.0.0) (2026-10-08)
 
 
 ### ⚠ BREAKING CHANGES
 
-Everything 6.x marked as deprecated is removed. What to change while still on 6.5: the [upgrade guide](https://ansibleforms.com/upgrade-7).
+7 is one step from 6.5. Read the [upgrade guide](https://ansibleforms.com/upgrade-7) and `DEPRECATED.md` before upgrading.
 
-* `forms.yaml`, `FORMS_PATH`, `ENABLE_FORMS_YAML_IN_DATABASE` and forms in the base config are removed - every form lives in its own file in the forms folder.
-* The `table` field is removed - use a `list` field with a subform.
-* Datasources and data schemas are removed and their tables dropped, as is the AnsibleForms Galaxy collection.
-* API v1 is removed - use `/api/v2`.
-* `disableRelaunch`, `noOutput` and `enableLogin` are removed - use `allowRelaunch: false`, `output: false` and `allowLogin`.
-* `latest` now points to 7. To stay on 6, use the image tag `6` ([image tags](https://ansibleforms.com/installation#image-tags)).
+* **Playbooks run on an RTE, not in the AnsibleForms container.** Start an RTE (image `ghcr.io/ansibleforms/ansibleforms-rte`, `AF_ROLE=rte`, `RTE_TOKEN`, the app's `DB_*` and `ENCRYPTION_SECRET`) and add it under Connections > Runners as the default runner, or through the config seed's `runners:` section. The app image is node only : collections, Python libraries and `ansible.cfg` belong in the RTE image (fork `Dockerfile.rte`).
+* **AWX / AAP / Ascender connections are runners** of type `awx` : the upgrade moves them, the A.A.P. page is gone, `awx: <name>` on a form still works as an alias of `runner: <name>`.
+* Everything 6.x marked as deprecated is removed :
+  * `forms.yaml`, `FORMS_PATH`, `ENABLE_FORMS_YAML_IN_DATABASE` and forms in the base config - every form lives in its own file in the forms folder ;
+  * the `table` field - use a `list` field with a subform ;
+  * datasources and data schemas (their tables are dropped) and the AnsibleForms Galaxy collection ;
+  * API v1 - use `/api/v2` ;
+  * `disableRelaunch`, `noOutput` and `enableLogin` - use `allowRelaunch: false`, `output: false` and `allowLogin`.
+* `ANSIBLE_PATH` and `PROCESS_MAX_BUFFER` are read by the RTE ; `VAULT_*` are imported once as the secret store `vault`.
+* Images are published on ghcr.io only ; `latest` now points to 7. To stay on 6, use the image tag `6` ([image tags](https://ansibleforms.com/installation#image-tags)).
 
 ### Added
 
-* 7.0.0 - remove everything deprecated in 6 ([#556](https://github.com/OpusProjects/ansibleforms/issues/556)) ([0f4d3a4](https://github.com/OpusProjects/ansibleforms/commit/0f4d3a4ad199db3fc80ce6aab90d8d1bea974d74))
-
+* **Runners** : playbooks run on one or more RTE containers, templates on AWX / AAP / Ascender ; a form picks one with `runner:`, or the default of its type runs it. An RTE keeps working across app releases while it speaks the same contract.
+* **Several app nodes and a worker** : `AF_ROLE=app` nodes behind a load balancer and an `AF_ROLE=worker` for schedules, backups, repository syncs and cleanups (one active, a second as standby) ; unset, one container runs both as before. Clean stop on SIGTERM.
+* **Secret stores** : credentials read from HashiCorp Vault (also dynamic database credentials) or CyberArk Central Credential Provider ; inline secrets in `dbConfig`.
+* **A new look** : redesigned header, menus and page layouts ; search for forms and pages from the header ; a job opens on a page of its own ; scheduled and stored jobs in the jobs menu ; audit and server logs in a Logs section ; a page description next to each title ; the logo on the login page.
+* Admin tables with column presets, number and yes/no filters and CSV export.
+* Catalan, Japanese, Polish, Portuguese and Simplified Chinese, in alphabetical order, with each language's plural forms.
+* Users with `allowPlannedJobs` can run a form later.
+* The Designer link shows who holds the designer lock ; the lock is exclusive, also across app nodes.
+* An open tab learns when a newer version is deployed.
+* The client address behind a reverse proxy is recorded (`TRUST_PROXY`).
+* The Status page shows the runners, the nodes and the worker.
+* The person's name is shown for directory and SSO accounts ; the picked time zone shows its current time.
 
 ### Fixed
 
-* a form that still uses what 7.0.0 removed says so in one line ([#559](https://github.com/OpusProjects/ansibleforms/issues/559)) ([d68f3e2](https://github.com/OpusProjects/ansibleforms/commit/d68f3e2dbab28c20db52780bfadb96e8a97d04c0))
+* Aborting a multistep job stops the step that is running.
+* AWX job logs are read as a download and stored once the job ends, so no line is lost or repeated.
+* A job whose runner stops answering ends instead of staying `running`.
+* Job event and test mails are written in the mail's language.
+* The OIDC group filter applies to the groups in the token ; the LDAP group search hints are corrected.
+* Many layout fixes (tab strips, wide pages, the header on long pages, spinners).
+
+### Security
+
+* Credentials are kept off disk and out of the log on the RTE and for AWX.
+* Users only see their own stored jobs, and cannot delete another user's job that awaits approval.
+* Only the designer lock holder's name and lock time are sent to other users.
+* A warning at startup when `ENCRYPTION_SECRET` is not set.
+
+### Changed
+
+* `hasApproval` on a form or step is deprecated (it has no effect) - use `approval`.
 
 ## [6.5.2](https://github.com/OpusProjects/ansibleforms/compare/6.5.1...6.5.2) (2026-10-01)
 

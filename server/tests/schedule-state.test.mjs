@@ -1,6 +1,6 @@
 // The schedule queue has a concurrency guard that was dead.
 //
-// (Since 7.3 the claim is a conditional update : two processes reading the same queued row
+// (Since 7 the claim is a conditional update : two processes reading the same queued row
 // launch it once.)
 //
 // init/index.js refuses to dequeue while any schedule is state='running', and the cron
