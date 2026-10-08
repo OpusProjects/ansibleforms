@@ -5,6 +5,60 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.0.0](https://github.com/ansibleforms/ansibleforms/compare/6.5.5...7.0.0) (2026-10-08)
+
+
+### ⚠ BREAKING CHANGES
+
+7 is one step from 6.5. Read the [upgrade guide](https://ansibleforms.com/upgrade-7) and `DEPRECATED.md` before upgrading.
+
+* **Playbooks run on an RTE, not in the AnsibleForms container.** Start an RTE (image `ghcr.io/ansibleforms/ansibleforms-rte`, `AF_ROLE=rte`, `RTE_TOKEN`, the app's `DB_*` and `ENCRYPTION_SECRET`) and add it under Connections > Runners as the default runner, or through the config seed's `runners:` section. The app image is node only : collections, Python libraries and `ansible.cfg` belong in the RTE image (fork `Dockerfile.rte`).
+* **AWX / AAP / Ascender connections are runners** of type `awx` : the upgrade moves them, the A.A.P. page is gone, `awx: <name>` on a form still works as an alias of `runner: <name>`.
+* Everything 6.x marked as deprecated is removed :
+  * `forms.yaml`, `FORMS_PATH`, `ENABLE_FORMS_YAML_IN_DATABASE` and forms in the base config - every form lives in its own file in the forms folder ;
+  * the `table` field - use a `list` field with a subform ;
+  * datasources and data schemas (their tables are dropped) and the AnsibleForms Galaxy collection ;
+  * API v1 - use `/api/v2` ;
+  * `disableRelaunch`, `noOutput` and `enableLogin` - use `allowRelaunch: false`, `output: false` and `allowLogin`.
+* `ANSIBLE_PATH` and `PROCESS_MAX_BUFFER` are read by the RTE ; `VAULT_*` are imported once as the secret store `vault`.
+* Images are published on ghcr.io only ; `latest` now points to 7. To stay on 6, use the image tag `6` ([image tags](https://ansibleforms.com/installation#image-tags)).
+
+### Added
+
+* **Runners** : playbooks run on one or more RTE containers, templates on AWX / AAP / Ascender ; a form picks one with `runner:`, or the default of its type runs it. An RTE keeps working across app releases while it speaks the same contract.
+* **Several app nodes and a worker** : `AF_ROLE=app` nodes behind a load balancer and an `AF_ROLE=worker` for schedules, backups, repository syncs and cleanups (one active, a second as standby) ; unset, one container runs both as before. Clean stop on SIGTERM.
+* **Secret stores** : credentials read from HashiCorp Vault (also dynamic database credentials) or CyberArk Central Credential Provider ; inline secrets in `dbConfig`.
+* **A new look** : redesigned header, menus and page layouts ; search for forms and pages from the header ; a job opens on a page of its own ; scheduled and stored jobs in the jobs menu ; audit and server logs in a Logs section ; a page description next to each title ; the logo on the login page.
+* Admin tables with column presets, number and yes/no filters and CSV export.
+* Catalan, Japanese, Polish, Portuguese and Simplified Chinese, in alphabetical order, with each language's plural forms.
+* Users with `allowPlannedJobs` can run a form later.
+* The Designer link shows who holds the designer lock ; the lock is exclusive, also across app nodes.
+* An open tab learns when a newer version is deployed.
+* The client address behind a reverse proxy is recorded (`TRUST_PROXY`).
+* The Status page shows the runners, the nodes and the worker.
+* The person's name is shown for directory and SSO accounts ; the picked time zone shows its current time.
+
+### Fixed
+
+* Aborting a multistep job stops the step that is running.
+* AWX job logs are read as a download and stored once the job ends, so no line is lost or repeated.
+* A job whose runner stops answering ends instead of staying `running`.
+* Job event and test mails are written in the mail's language.
+* The OIDC group filter applies to the groups in the token ; the LDAP group search hints are corrected.
+* Many layout fixes (tab strips, wide pages, the header on long pages, spinners).
+
+### Security
+
+* Credentials are kept off disk and out of the log on the RTE and for AWX.
+* Users only see their own stored jobs, and cannot delete another user's job that awaits approval.
+* Only the designer lock holder's name and lock time are sent to other users.
+* A warning at startup when `ENCRYPTION_SECRET` is not set.
+
+### Changed
+
+* `hasApproval` on a form or step is deprecated (it has no effect) - use `approval`.
+
+
 ## [6.5.5](https://github.com/ansibleforms/ansibleforms/compare/6.5.4...6.5.5) (2026-10-06)
 
 
@@ -34,53 +88,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * **client:** build without warnings ([#632](https://github.com/ansibleforms/ansibleforms/issues/632)) ([97f6c95](https://github.com/ansibleforms/ansibleforms/commit/97f6c955e755151b05dfc0568dc25c17f00e77d0))
 
-## [6.5.2](https://github.com/ansibleguy76/ansibleforms/compare/6.5.1...6.5.2) (2026-10-01)
+## [6.5.2](https://github.com/ansibleforms/ansibleforms/compare/6.5.1...6.5.2) (2026-10-01)
 
 
 ### Fixed
 
-* sidebar sections open one at a time, real examples in the chat welcome, scm_branch is sent to AWX ([#549](https://github.com/ansibleguy76/ansibleforms/issues/549)) ([1991e63](https://github.com/ansibleguy76/ansibleforms/commit/1991e6338940c6ce55fc3328abb8092d1c516c9c))
-* the Azure AD login reads the groups from Microsoft Graph on the server ([#552](https://github.com/ansibleguy76/ansibleforms/issues/552)) ([79ed42b](https://github.com/ansibleguy76/ansibleforms/commit/79ed42b6a5b61bedc69321df4e79d9fc847c8804))
+* sidebar sections open one at a time, real examples in the chat welcome, scm_branch is sent to AWX ([#549](https://github.com/ansibleforms/ansibleforms/issues/549)) ([1991e63](https://github.com/ansibleforms/ansibleforms/commit/1991e6338940c6ce55fc3328abb8092d1c516c9c))
+* the Azure AD login reads the groups from Microsoft Graph on the server ([#552](https://github.com/ansibleforms/ansibleforms/issues/552)) ([79ed42b](https://github.com/ansibleforms/ansibleforms/commit/79ed42b6a5b61bedc69321df4e79d9fc847c8804))
 
-## [6.5.1](https://github.com/ansibleguy76/ansibleforms/compare/6.5.0...6.5.1) (2026-09-30)
+## [6.5.1](https://github.com/ansibleforms/ansibleforms/compare/6.5.0...6.5.1) (2026-09-30)
 
 
 ### Fixed
 
-* **chat:** ignore certificate errors for a self-signed proxy, and say why a provider cannot be reached ([#546](https://github.com/ansibleguy76/ansibleforms/issues/546)) ([278f690](https://github.com/ansibleguy76/ansibleforms/commit/278f690be1f083ee519bd129620793c911e43d8e))
+* **chat:** ignore certificate errors for a self-signed proxy, and say why a provider cannot be reached ([#546](https://github.com/ansibleforms/ansibleforms/issues/546)) ([278f690](https://github.com/ansibleforms/ansibleforms/commit/278f690be1f083ee519bd129620793c911e43d8e))
 
-## [6.5.0](https://github.com/ansibleguy76/ansibleforms/compare/6.4.1...6.5.0) (2026-09-30)
+## [6.5.0](https://github.com/ansibleforms/ansibleforms/compare/6.4.1...6.5.0) (2026-09-30)
 
 
 ### Added
 
-* chat assistant - fill in and launch forms by talking (Anthropic, OpenAI and compatible) ([#544](https://github.com/ansibleguy76/ansibleforms/issues/544)) ([255ad8a](https://github.com/ansibleguy76/ansibleforms/commit/255ad8a131111a023116c25b9ec0d33416daeed9))
+* chat assistant - fill in and launch forms by talking (Anthropic, OpenAI and compatible) ([#544](https://github.com/ansibleforms/ansibleforms/issues/544)) ([255ad8a](https://github.com/ansibleforms/ansibleforms/commit/255ad8a131111a023116c25b9ec0d33416daeed9))
 
-## [6.4.1](https://github.com/ansibleguy76/ansibleforms/compare/6.4.0...6.4.1) (2026-09-30)
+## [6.4.1](https://github.com/ansibleforms/ansibleforms/compare/6.4.0...6.4.1) (2026-09-30)
 
 
 ### Fixed
 
-* an uploaded svg logo without width and height is shown ([#540](https://github.com/ansibleguy76/ansibleforms/issues/540)) ([fb56d62](https://github.com/ansibleguy76/ansibleforms/commit/fb56d6245a508b6836e14e0cf619bba696d688b0))
-* server-side launch validation - server-built extravars, list rows, per-form launchValidation, relaunch with changes ([#537](https://github.com/ansibleguy76/ansibleforms/issues/537)) ([81f2f50](https://github.com/ansibleguy76/ansibleforms/commit/81f2f505ff5013b182c72ff020e9ae9e8f56f76b))
-* the Azure AD login no longer fails on the handoff token ([#543](https://github.com/ansibleguy76/ansibleforms/issues/543)) ([af0d7b0](https://github.com/ansibleguy76/ansibleforms/commit/af0d7b02eacbc4e60c3d3999f90c97039aa8fd85))
+* an uploaded svg logo without width and height is shown ([#540](https://github.com/ansibleforms/ansibleforms/issues/540)) ([fb56d62](https://github.com/ansibleforms/ansibleforms/commit/fb56d6245a508b6836e14e0cf619bba696d688b0))
+* server-side launch validation - server-built extravars, list rows, per-form launchValidation, relaunch with changes ([#537](https://github.com/ansibleforms/ansibleforms/issues/537)) ([81f2f50](https://github.com/ansibleforms/ansibleforms/commit/81f2f505ff5013b182c72ff020e9ae9e8f56f76b))
+* the Azure AD login no longer fails on the handoff token ([#543](https://github.com/ansibleforms/ansibleforms/issues/543)) ([af0d7b0](https://github.com/ansibleforms/ansibleforms/commit/af0d7b02eacbc4e60c3d3999f90c97039aa8fd85))
 
-## [6.4.0](https://github.com/ansibleguy76/ansibleforms/compare/6.3.1...6.4.0) (2026-09-29)
+## [6.4.0](https://github.com/ansibleforms/ansibleforms/compare/6.3.1...6.4.0) (2026-09-29)
 
 
 ### Added
 
-* mcp server for ai agents ([#534](https://github.com/ansibleguy76/ansibleforms/issues/534)) ([d7520f4](https://github.com/ansibleguy76/ansibleforms/commit/d7520f472d9a68fbe0498181ec0301c34b96955b))
-* one set of form validation rules for the browser, MCP and the launch API ([#535](https://github.com/ansibleguy76/ansibleforms/issues/535)) ([4d429c2](https://github.com/ansibleguy76/ansibleforms/commit/4d429c2ea97889bcdd89adf89e2edee245343c04))
+* mcp server for ai agents ([#534](https://github.com/ansibleforms/ansibleforms/issues/534)) ([d7520f4](https://github.com/ansibleforms/ansibleforms/commit/d7520f472d9a68fbe0498181ec0301c34b96955b))
+* one set of form validation rules for the browser, MCP and the launch API ([#535](https://github.com/ansibleforms/ansibleforms/issues/535)) ([4d429c2](https://github.com/ansibleforms/ansibleforms/commit/4d429c2ea97889bcdd89adf89e2edee245343c04))
 
-## [6.3.1](https://github.com/ansibleguy76/ansibleforms/compare/6.3.0...6.3.1) (2026-09-25)
+## [6.3.1](https://github.com/ansibleforms/ansibleforms/compare/6.3.0...6.3.1) (2026-09-25)
 
 
 ### Fixed
 
-* legacy expression sanitizer no longer logs an abuse error for expressions it runs ([#524](https://github.com/ansibleguy76/ansibleforms/issues/524)) ([e3e1814](https://github.com/ansibleguy76/ansibleforms/commit/e3e1814d4384d1dfe2c5baca334567f1ef370dac))
+* legacy expression sanitizer no longer logs an abuse error for expressions it runs ([#524](https://github.com/ansibleforms/ansibleforms/issues/524)) ([e3e1814](https://github.com/ansibleforms/ansibleforms/commit/e3e1814d4384d1dfe2c5baca334567f1ef370dac))
 
-## [6.3.0] - 2026-09-25
+## [6.3.0](https://github.com/ansibleforms/ansibleforms/compare/6.2.1...6.3.0) (2026-09-25)
 
 ### Added
 
@@ -185,7 +239,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   `/admin/schedules` and `/admin/stored-jobs` were reachable with only `showSettings`
 -   A form's `constants` came from the request instead of the configuration, so a caller could rescope a query
 
-## [6.2.1] - 2026-07-07
+## [6.2.1](https://github.com/ansibleforms/ansibleforms/compare/6.2.0...6.2.1) (2026-07-07)
 
 ### Changed
 
@@ -224,7 +278,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Remove unused `jsonwebtoken` from client dependencies (#470) - tx to blaipr
 -   Add `unhandledRejection` handler and log uncaught errors via winston (#471) - tx to blaipr
 
-## [6.2.0] - 2026-05-26
+## [6.2.0](https://github.com/ansibleforms/ansibleforms/compare/6.1.5...6.2.0) (2026-05-26)
 
 ### Added
 
@@ -247,7 +301,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   `noOutput: true` (field property) is deprecated. Use `output: false` instead — positive naming, same effect.
 -   `enableLogin` (role option) is deprecated. Use `allowLogin` instead — consistent with all other `allow*` role options.
 
-## [6.1.5] - 2026-04-23
+## [6.1.5](https://github.com/ansibleforms/ansibleforms/compare/6.1.4...6.1.5) (2026-04-23)
 
 ### Added
 
@@ -275,7 +329,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   encoding in the expression functions
 -   Cronschedules now handled with Croner, which should be better (#436)
 
-## [6.1.4] - 2026-03-30
+## [6.1.4](https://github.com/ansibleforms/ansibleforms/compare/6.1.3...6.1.4) (2026-03-30)
 
 ### Added
 
@@ -299,7 +353,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   vite 8
 -   Host and PID aware aborting, faster, cleaner and would allow multi container setup
 
-## [6.1.3] - 2026-02-23
+## [6.1.3](https://github.com/ansibleforms/ansibleforms/compare/6.1.2...6.1.3) (2026-02-23)
 
 ### Added
 
@@ -309,7 +363,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   AzureAD redirect
 
-## [6.1.2] - 2026-02-18
+## [6.1.2](https://github.com/ansibleforms/ansibleforms/compare/6.1.1...6.1.2) (2026-02-18)
 
 ### Added
 
@@ -330,7 +384,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Dropped bulma class backward compability for the tiles (use bg-danger, bg-success-subtle, ... from bootstrap)
 
-## [6.1.1] - 2026-02-17
+## [6.1.1](https://github.com/ansibleforms/ansibleforms/compare/6.1.0...6.1.1) (2026-02-17)
 
 ### fixed
 
@@ -342,11 +396,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   More Tile icon styling (size, color, overlayicon, overlaytext)
 -   Paramiko in base image
 
-## [6.1.0] - 2026-01-24
+## [6.1.0](https://github.com/ansibleforms/ansibleforms/compare/6.0.2...6.1.0) (2026-01-24)
 
 ### Added
 
--   Job relaunch feature: Relaunch jobs with pre-filled form data from previous submissions : [issue 311](https://github.com/ansibleguy76/ansibleforms/issues/311)
+-   Job relaunch feature: Relaunch jobs with pre-filled form data from previous submissions : [issue 311](https://github.com/ansibleforms/ansibleforms/issues/311)
 -   New role option `allowJobRelaunch` to control which users can relaunch jobs
 -   New form option `disableRelaunch` to prevent relaunching specific forms
 -   Form name validation prevents loading data from mismatched forms
@@ -357,7 +411,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   minValue, maxValue, minLength, maxLength, minSize and maxSize now support placeholders for dynamic validation.
 -   Validation descriptions (regex, validIf, validIfNot, notIn, in) now support placeholders for dynamic error messages.
 -   Field labels, help text, and placeholders now support placeholders for dynamic content (e.g., `$(fieldname)`).
--   Notification system enhancements: [issue 332](https://github.com/ansibleguy76/ansibleforms/issues/332).  New `onEvent` property for job lifecycle event notifications (any, launch, relaunch, delete, approve, reject)  Separate `jobevent.html` email template for event notifications (distinct from status notifications)
+-   Notification system enhancements: [issue 332](https://github.com/ansibleforms/ansibleforms/issues/332).  New `onEvent` property for job lifecycle event notifications (any, launch, relaunch, delete, approve, reject)  Separate `jobevent.html` email template for event notifications (distinct from status notifications)
 -   Configuration file migration from forms.yaml to config.yaml.  Introduction of new ENV VARS. `CONFIG_PATH`, `FORMS_FOLDER_PATH` 
 -   Automated nightly backup system: New `NIGHTLY_BACKUP_RETENTION` environment variable
 -   Multi-repository support for forms, add repo switches "use for config", 'use for varsfiles', 'use for forms', 'use for playbooks'.
@@ -389,7 +443,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Password decrypt issue with mail settings
 -   fixed credential cache issue
 
-## [6.0.2] - 2025-11-30
+## [6.0.2](https://github.com/ansibleforms/ansibleforms/compare/6.0.1...6.0.2) (2025-11-30)
 
 ### Added
 
@@ -421,7 +475,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   lock api to v2
 -   knownhosts api to v2
 
-## [6.0.1] - 2025-10-28
+## [6.0.1](https://github.com/ansibleforms/ansibleforms/compare/6.0.0...6.0.1) (2025-10-28)
 
 ### Fixed
 
@@ -435,7 +489,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   playbooksSubfolder, a subfolder path to launch ansible-playbook from
 
-## [6.0.0] - 2025-10-02
+## [6.0.0](https://github.com/ansibleforms/ansibleforms/compare/5.0.10...6.0.0) (2025-10-02)
 
 ### Fixed
 
@@ -448,7 +502,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Add icon not allowed to radio
 -   Fixed encryption key length check
 
-## Added
+### Added
 
 -   updateMarker to table field
 -   multi awx (314)
@@ -474,7 +528,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Maybe not breaking, but the old theme is broken for bulma v1, so it might look a bit different here and there. (but note that v6 will have bootstrap)
 -   Since many packages are updated, I might have missed some breaking changes like OIDC, packages have been bumped and I don't have an OIDC to test against... any help is appreciated.
 
-## [5.0.10] - 2025-06-05
+## [5.0.10](https://github.com/ansibleforms/ansibleforms/compare/5.0.9...5.0.10) (2025-06-05)
 
 ### Added
 
@@ -492,12 +546,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Removed old deprecated type "query" (is enum now)
 
-## [5.0.9] - 2025-06-04
+## [5.0.9](https://github.com/ansibleforms/ansibleforms/compare/5.0.8...5.0.9) (2025-06-04)
 
 ### Fixed
 
--   Reduce formConfig by roles // <https://github.com/ansibleguy76/ansibleforms/issues/262>
--   User-based roles fix // <https://github.com/ansibleguy76/ansibleforms/issues/264>
+-   Reduce formConfig by roles // <https://github.com/ansibleforms/ansibleforms/issues/262>
+-   User-based roles fix // <https://github.com/ansibleforms/ansibleforms/issues/264>
 -   Ldap DN with comma's, are now properly escaped // bump ldap-authentication - ldapjs => ldapts
 
 ### Added
@@ -506,18 +560,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Datasources and schema see documentation for more info
 -   Schedules, allow scheduled forms
 -   hvac pip lib for hashi vault integration
--   awxApiPrefix, default to /api/v2, for future AAP changes (<https://github.com/ansibleguy76/ansibleforms/issues/279>)
--   Added 2 table field properties tableTitleAdd, tableTitleEdit (<https://github.com/ansibleguy76/ansibleforms/issues/277>)
--   Added option showAllJobLogs (<https://github.com/ansibleguy76/ansibleforms/issues/273>)
--   Added option to relaunch verbose (<https://github.com/ansibleguy76/ansibleforms/issues/280>)
+-   awxApiPrefix, default to /api/v2, for future AAP changes (<https://github.com/ansibleforms/ansibleforms/issues/279>)
+-   Added 2 table field properties tableTitleAdd, tableTitleEdit (<https://github.com/ansibleforms/ansibleforms/issues/277>)
+-   Added option showAllJobLogs (<https://github.com/ansibleforms/ansibleforms/issues/273>)
+-   Added option to relaunch verbose (<https://github.com/ansibleforms/ansibleforms/issues/280>)
 
-## [5.0.8] - 2025-02-13
+## [5.0.8](https://github.com/ansibleforms/ansibleforms/compare/5.0.7...5.0.8) (2025-02-13)
 
 ### Fixed
 
 -   Regex in repo's
 -   Jwt token issuer added (use env variable ACCESS_TOKEN_ISSUER) - credits to le-martre for the fix
--   maxBuffer causing abort by operator, adding PROCESS_MAX_BUFFER variable. // <https://github.com/ansibleguy76/ansibleforms/issues/247>
+-   maxBuffer causing abort by operator, adding PROCESS_MAX_BUFFER variable. // <https://github.com/ansibleforms/ansibleforms/issues/247>
 
 ### Changed
 
@@ -530,7 +584,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Role options (showDesigner, showLogs, showSettings, ...) allowing for custom semi-admin or designer roles
 -   Added branch to repos
 
-## [5.0.7] - 2024-10-03
+## [5.0.7](https://github.com/ansibleforms/ansibleforms/compare/5.0.6...5.0.7) (2024-10-03)
 
 ### Added
 
@@ -543,7 +597,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   App now properly waits for mysql to be ready before starting
 -   Vuelidate 2+ was not working properly for dependent required fields
 
-## [5.0.6] - 2024-09-20
+## [5.0.6](https://github.com/ansibleforms/ansibleforms/compare/5.0.5...5.0.6) (2024-09-20)
 
 ### Fixed
 
@@ -554,7 +608,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   New dockerfile with debian
 
-## [5.0.5] - 2024-09-18
+## [5.0.5](https://github.com/ansibleforms/ansibleforms/compare/5.0.4...5.0.5) (2024-09-18)
 
 ### Fixed
 
@@ -562,7 +616,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   New version highlight for CVE
 -   Bumped several versions
 
-## [5.0.4] - 2024-08-18
+## [5.0.4](https://github.com/ansibleforms/ansibleforms/compare/5.0.3...5.0.4) (2024-08-18)
 
 ### Added
 
@@ -577,7 +631,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Some credentials bugfixes
 
-## [5.0.3] - 2024-06-21
+## [5.0.3](https://github.com/ansibleforms/ansibleforms/compare/5.0.2...5.0.3) (2024-06-21)
 
 ### Added
 
@@ -597,7 +651,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Vault credentials, alpine requires decode -d instead --decode
 -   Type on jobstatus notification template
 
-## [5.0.2] - 2024-06-10
+## [5.0.2](https://github.com/ansibleforms/ansibleforms/compare/5.0.1...5.0.2) (2024-06-10)
 
 ### Adding
 
@@ -620,7 +674,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   multistep was always successfull (tx to mdaugs)
 -   using cookie session instead express session
 
-## [5.0.1] - 2024-04-10
+## [5.0.1](https://github.com/ansibleforms/ansibleforms/compare/5.0.0...5.0.1) (2024-04-10)
 
 ### Fixed
 
@@ -636,7 +690,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   allow to model arrays like foo.bar[0].ping.pong[1]
 -   allow placeholders in description fields of field validation
 
-## [5.0.0] - 2024-01-25
+## [5.0.0](https://github.com/ansibleforms/ansibleforms/compare/4.0.19...5.0.0) (2024-01-25)
 
 ### Added
 
@@ -665,7 +719,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   use ldap-authentication main code (no npm)
 -   try ldap group objectName first
 
-## [4.0.19] - 2023-11-22
+## [4.0.19](https://github.com/ansibleforms/ansibleforms/compare/4.0.18...4.0.19) (2023-11-22)
 
 ### Fixed
 
@@ -675,14 +729,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Added AzureAD group filter to limit the number of groups
 
-## [4.0.18] - 2023-11-10
+## [4.0.18](https://github.com/ansibleforms/ansibleforms/compare/4.0.17...4.0.18) (2023-11-10)
 
 ### Fixed
 
 -   javascript replace error with defaults
 -   Newer Netapp collection 22.8.2
 
-## [4.0.17] - 2023-11-07
+## [4.0.17](https://github.com/ansibleforms/ansibleforms/compare/4.0.16...4.0.17) (2023-11-07)
 
 ### Fixed
 
@@ -696,7 +750,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Expression field can now have property `value` for manual data assignment
 -   Added form property ansibleCredentials, allowing to pass ansible_user and ansible_password
 
-## [4.0.16] - 2023-10-07
+## [4.0.16](https://github.com/ansibleforms/ansibleforms/compare/4.0.15...4.0.16) (2023-10-07)
 
 ### Changed
 
@@ -716,7 +770,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Int64 issues in rest results, new rest parameter 'hasBigInt'
 -   Issue with null values in enum fields
 
-## [4.0.15] - 2023-08-09
+## [4.0.15](https://github.com/ansibleforms/ansibleforms/compare/4.0.14...4.0.15) (2023-08-09)
 
 ### Added
 
@@ -727,7 +781,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Table expression issue fixed
 
-## [4.0.14] - 2023-08-03
+## [4.0.14](https://github.com/ansibleforms/ansibleforms/compare/4.0.13...4.0.14) (2023-08-03)
 
 ### Added
 
@@ -743,14 +797,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Typos in help
 -   Vue2 bug number fields fall back to emptry string when empty.  fixed to set to undefined.
 
-## [4.0.13] - 2023-07-24
+## [4.0.13](https://github.com/ansibleforms/ansibleforms/compare/4.0.12...4.0.13) (2023-07-24)
 
 ### Added
 
 -   New dependency mechanism isValid
     you can show/hide a field based if another field is valid or not
 
-## [4.0.12] - 2023-07-15
+## [4.0.12](https://github.com/ansibleforms/ansibleforms/compare/4.0.11...4.0.12) (2023-07-15)
 
 ### Changed
 
@@ -762,7 +816,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   New alias local_out (=> hidden local expression)
 -   New alias credential (=> hidden local expression with asCredential true)
 
-## [4.0.11] - 2023-06-08
+## [4.0.11](https://github.com/ansibleforms/ansibleforms/compare/4.0.10...4.0.11) (2023-06-08)
 
 ### Added
 
@@ -773,7 +827,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   app crash on bad rest body
 -   errors were not shown in output
 
-## [4.0.10] - 2023-05-23
+## [4.0.10](https://github.com/ansibleforms/ansibleforms/compare/4.0.9...4.0.10) (2023-05-23)
 
 ### Fixed
 
@@ -787,7 +841,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Added alias type 'local' => expression, runLocal, hide, noOutput
 
-## [4.0.9] - 2023-05-07
+## [4.0.9](https://github.com/ansibleforms/ansibleforms/compare/4.0.8...4.0.9) (2023-05-07)
 
 ### Added
 
@@ -802,7 +856,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   expression field can have newlines, they will be removed.
 
-## [4.0.8] - 2023-05-03
+## [4.0.8](https://github.com/ansibleforms/ansibleforms/compare/4.0.7...4.0.8) (2023-05-03)
 
 ### Added
 
@@ -810,7 +864,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   new function fn.fnTime // core implementation of dayjs() <https://day.js.org>
 -   background image on login screen (that you can overwrite)
 
-## [4.0.7] - 2023-05-01
+## [4.0.7](https://github.com/ansibleforms/ansibleforms/compare/4.0.5...4.0.7) (2023-05-01)
 
 ### Fixed
 
@@ -823,7 +877,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Added clean up abandoned jobs at startup
 
-## [4.0.5] - 2023-04-15
+## [4.0.5](https://github.com/ansibleforms/ansibleforms/compare/4.0.3...4.0.5) (2023-04-15)
 
 ### Added
 
@@ -840,7 +894,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Non admin can see their own approve jobs
 -   Wrong stdout with AWX sometimes
 
-## [4.0.3] - 2023-03-06
+## [4.0.3](https://github.com/ansibleforms/ansibleforms/compare/4.0.2...4.0.3) (2023-03-06)
 
 ### Fixed
 
@@ -868,7 +922,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   New settings menu
 -   Improved joblog navigation, using url params
 
-## [4.0.2] - 2023-02-10
+## [4.0.2](https://github.com/ansibleforms/ansibleforms/compare/4.0.1...4.0.2) (2023-02-10)
 
 ### Added
 
@@ -885,7 +939,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Colons failed in password due to bad passport-http
 -   Number field was exported as string
 
-## [4.0.1] - 2023-01-27
+## [4.0.1](https://github.com/ansibleforms/ansibleforms/compare/4.0.0...4.0.1) (2023-01-27)
 
 ### Fixed
 
@@ -901,7 +955,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Designer readonly when locked
 
-## [4.0.0] - 2022-12-31
+## [4.0.0](https://github.com/ansibleforms/ansibleforms/compare/3.1.1...4.0.0) (2022-12-31)
 
 ### Fixed
 
@@ -931,7 +985,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   formfield type query is deprecated, use 'enum'
 
-## [3.1.1] - 2022-11-10
+## [3.1.1](https://github.com/ansibleforms/ansibleforms/compare/3.1.0...3.1.1) (2022-11-10)
 
 ### Fixed
 
@@ -952,7 +1006,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     -   actions with delay: load (a form), reload (same form), home, clear (reset form), hide/show (form)
 -   ifExtraVar property on step for conditional step
 
-## [3.1.0] - 2022-10-28
+## [3.1.0](https://github.com/ansibleforms/ansibleforms/compare/3.0.9...3.1.0) (2022-10-28)
 
 ### Added
 
@@ -961,7 +1015,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Allow "notIn" and "in" validation in tablefields
 -   Add nested categories
 
-## [3.0.9] - 2022-10-21
+## [3.0.9](https://github.com/ansibleforms/ansibleforms/compare/3.0.7...3.0.9) (2022-10-21)
 
 ### Fixed
 
@@ -973,7 +1027,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Added fnArray runLocal functions (filterBy,distinctBy,sortBy)
 
-## [3.0.7] - 2022-09-26
+## [3.0.7](https://github.com/ansibleforms/ansibleforms/compare/3.0.6...3.0.7) (2022-09-26)
 
 ### Added
 
@@ -983,13 +1037,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Updated nodejs packages
 
-## [3.0.6] - 2022-08-10
+## [3.0.6](https://github.com/ansibleforms/ansibleforms/compare/3.0.5...3.0.6) (2022-08-10)
 
 ### Fixed
 
 -   Fixed multiselect bug
 
-## [3.0.5] - 2022-07-06
+## [3.0.5](https://github.com/ansibleforms/ansibleforms/compare/3.0.4...3.0.5) (2022-07-06)
 
 ### Added
 
@@ -1002,7 +1056,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Allow selfsigned certificates in mailserver
 -   Auto qdd repo hosts to known_hosts + add gui for manually
 
-## [3.0.4] - 2022-06-09
+## [3.0.4](https://github.com/ansibleforms/ansibleforms/compare/3.0.3...3.0.4) (2022-06-09)
 
 ### Fixed
 
@@ -1012,7 +1066,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Added 'ansibleforms_user' as object to extravars
 
-## [3.0.3] - 2022-06-02
+## [3.0.3](https://github.com/ansibleforms/ansibleforms/compare/3.0.2...3.0.3) (2022-06-02)
 
 ### Changed
 
@@ -1023,7 +1077,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   You cannot remove a group with users
 
-## [3.0.2] - 2022-04-25
+## [3.0.2](https://github.com/ansibleforms/ansibleforms/compare/3.0.1...3.0.2) (2022-04-25)
 
 ### Added
 
@@ -1041,7 +1095,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Remove query filter on values change
 -   Reset query value when "no data"
 
-## [3.0.1] - 2022-04-01
+## [3.0.1](https://github.com/ansibleforms/ansibleforms/compare/3.0.0...3.0.1) (2022-04-01)
 
 ### Added
 
@@ -1069,7 +1123,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Awx launch api (see job post now)
 -   Multistep launch api (see job post now)
 
-## [3.0.0] - 2022-03-09
+## [3.0.0](https://github.com/ansibleforms/ansibleforms/compare/2.2.4...3.0.0) (2022-03-09)
 
 ### Added
 
@@ -1095,7 +1149,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Awx and ansible joboutput => is now native job output
 -   Ansible and awx job aboort => is now native job abort
 
-## [2.2.4] - 2022-02-15
+## [2.2.4](https://github.com/ansibleforms/ansibleforms/compare/2.2.3...2.2.4) (2022-02-15)
 
 ### Added
 
@@ -1125,7 +1179,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Upgrade from fontawesome 5 to 6
 -   Label is no longer a required property
 
-## [2.2.3] - 2022-02-11
+## [2.2.3](https://github.com/ansibleforms/ansibleforms/compare/2.2.2...2.2.3) (2022-02-11)
 
 ### Added
 
@@ -1138,14 +1192,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   A clipping visualization improvement
 
-## [2.2.2] - 2022-02-09
+## [2.2.2](https://github.com/ansibleforms/ansibleforms/compare/2.2.1...2.2.2) (2022-02-09)
 
 ### Fixed
 
 -   Dropdown box gets clipped at the bottom (was new bug since 2.2.1)
 -   Dependencies either with valueColumn or dot-notation
 
-## [2.2.1] - 2022-02-07
+## [2.2.1](https://github.com/ansibleforms/ansibleforms/compare/2.2.0...2.2.1) (2022-02-07)
 
 ### Added
 
@@ -1157,7 +1211,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Ignore error if no forms subdir exists
 -   Allow empty constants in designer (must be object bug)
 
-## [2.2.0] - 2022-02-03
+## [2.2.0](https://github.com/ansibleforms/ansibleforms/compare/2.1.6...2.2.0) (2022-02-03)
 
 ### Added
 
@@ -1179,7 +1233,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Bad required validation when expression had default empty object or array
 -   Interval kept running in the background
 
-## [2.1.6] - 2022-01-25
+## [2.1.6](https://github.com/ansibleforms/ansibleforms/compare/2.1.5...2.1.6) (2022-01-25)
 
 ### Added
 
@@ -1195,14 +1249,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed editable expression bug
 -   Token issue
 
-## [2.1.5] - 2022-01-20
+## [2.1.5](https://github.com/ansibleforms/ansibleforms/compare/37bd2a0cbf47cc2b0b36cead6442f5b28b11bace...2.1.5) (2022-01-20)
 
 ### Added
 
 -   Start with changelog
 -   Start with version releases
 
-## [2.1.4] - 2022-01-20
+## [2.1.4](https://github.com/ansibleforms/ansibleforms/compare/6432ce9a80e5dc76e3c75635ecd0165cde4e3d39...37bd2a0cbf47cc2b0b36cead6442f5b28b11bace) (2022-01-20)
 
 ### Added
 
@@ -1215,13 +1269,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   JWT tokens, allow multiple devices
 -   Expression field can be `editable`
 
-## [2.1.2] - 2022-01-17
+## [2.1.2](https://github.com/ansibleforms/ansibleforms/compare/9c4ab03a888d3b39297e710057b9b4a02c6e2e55...6432ce9a80e5dc76e3c75635ecd0165cde4e3d39) (2022-01-17)
 
 ### Added
 
 -   Allow rest api search by name for credentials, users and groups
 
-## [2.1.0] - 2022-01-16
+## [2.1.0](https://github.com/ansibleforms/ansibleforms/compare/9446b8a33e1f8ad69550c1f23c3d81d2cf3b1772...9c4ab03a888d3b39297e710057b9b4a02c6e2e55) (2022-01-16)
 
 ### Added
 
@@ -1231,7 +1285,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Fixed visualization bug
 
-## [2.0.0] - 2022-01-13
+## [2.0.0](https://github.com/ansibleforms/ansibleforms/compare/4863b8c10ed762e6f54024f022354aadb56c74f4...9446b8a33e1f8ad69550c1f23c3d81d2cf3b1772) (2022-01-13)
 
 ### Added
 
@@ -1253,142 +1307,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Sort & Map on fnReadYaml is removed
 -   Sort & Map on fnReadJson is removed
 
-## [1.2.2] - 2022-01-12
+## [1.2.2](https://github.com/ansibleforms/ansibleforms/compare/6b6e11911665ac42909dd18c3fa6ed9f54aaeb53...4863b8c10ed762e6f54024f022354aadb56c74f4) (2022-01-12)
 
 ### Added
 
 -   Add custom.js to allow custom expression
 -   Start keeping releases in docker-hub
 
-## [1.2.1] - 2022-01-12
+## [1.2.1](https://github.com/ansibleforms/ansibleforms/compare/e2fd87e05505224d74a55500773b7c00137d4d10...6b6e11911665ac42909dd18c3fa6ed9f54aaeb53) (2022-01-12)
 
 ### Fixed
 
 -   Ignore AWX certificate errors
 
-## [1.1.9] - 2022-01-11
+## [1.1.9](https://github.com/ansibleforms/ansibleforms/compare/bd9d99b85ee5438a7aa646bae5d72f59a566fa62...e2fd87e05505224d74a55500773b7c00137d4d10) (2022-01-11)
 
 ### Added
 
 -   Allow check and diff in ansible and awx
 
-## [1.1.8] - 2022-01-11
+## [1.1.8](https://github.com/ansibleforms/ansibleforms/commit/bd9d99b85ee5438a7aa646bae5d72f59a566fa62) (2022-01-11)
 
 ### Added
 
 -   Allow change password for current local user
 -   Start tracking versions
-
-[Unreleased]: https://github.com/ansibleguy76/ansibleforms/compare/6.1.5...HEAD
-
-[6.1.5]: https://github.com/ansibleguy76/ansibleforms/compare/6.1.4...6.1.5
-
-[6.1.4]: https://github.com/ansibleguy76/ansibleforms/compare/6.1.3...6.1.4
-
-[6.1.3]: https://github.com/ansibleguy76/ansibleforms/compare/6.1.2...6.1.3
-
-[6.1.2]: https://github.com/ansibleguy76/ansibleforms/compare/6.1.1...6.1.2
-
-[6.1.1]: https://github.com/ansibleguy76/ansibleforms/compare/6.1.0...6.1.1
-
-[6.1.0]: https://github.com/ansibleguy76/ansibleforms/compare/6.0.2...6.1.0
-
-[6.0.2]: https://github.com/ansibleguy76/ansibleforms/compare/6.0.1...6.0.2
-
-[6.0.1]: https://github.com/ansibleguy76/ansibleforms/compare/6.0.0...6.0.1
-
-[6.0.0]: https://github.com/ansibleguy76/ansibleforms/compare/5.0.10...6.0.0
-
-[5.0.10]: https://github.com/ansibleguy76/ansibleforms/compare/5.0.9...5.0.10
-
-[5.0.9]: https://github.com/ansibleguy76/ansibleforms/compare/5.0.8...5.0.9
-
-[5.0.8]: https://github.com/ansibleguy76/ansibleforms/compare/5.0.7...5.0.8
-
-[5.0.7]: https://github.com/ansibleguy76/ansibleforms/compare/5.0.6...5.0.7
-
-[5.0.6]: https://github.com/ansibleguy76/ansibleforms/compare/5.0.5...5.0.6
-
-[5.0.5]: https://github.com/ansibleguy76/ansibleforms/compare/5.0.4...5.0.5
-
-[5.0.4]: https://github.com/ansibleguy76/ansibleforms/compare/5.0.3...5.0.4
-
-[5.0.3]: https://github.com/ansibleguy76/ansibleforms/compare/5.0.2...5.0.3
-
-[5.0.2]: https://github.com/ansibleguy76/ansibleforms/compare/5.0.1...5.0.2
-
-[5.0.1]: https://github.com/ansibleguy76/ansibleforms/compare/5.0.0...5.0.1
-
-[5.0.0]: https://github.com/ansibleguy76/ansibleforms/compare/4.0.19...5.0.0
-
-[4.0.19]: https://github.com/ansibleguy76/ansibleforms/compare/4.0.18...4.0.19
-
-[4.0.18]: https://github.com/ansibleguy76/ansibleforms/compare/4.0.17...4.0.18
-
-[4.0.17]: https://github.com/ansibleguy76/ansibleforms/compare/4.0.16...4.0.17
-
-[4.0.16]: https://github.com/ansibleguy76/ansibleforms/compare/4.0.15...4.0.16
-
-[4.0.15]: https://github.com/ansibleguy76/ansibleforms/compare/4.0.14...4.0.15
-
-[4.0.14]: https://github.com/ansibleguy76/ansibleforms/compare/4.0.13...4.0.14
-
-[4.0.13]: https://github.com/ansibleguy76/ansibleforms/compare/4.0.12...4.0.13
-
-[4.0.12]: https://github.com/ansibleguy76/ansibleforms/compare/4.0.11...4.0.12
-
-[4.0.11]: https://github.com/ansibleguy76/ansibleforms/compare/4.0.10...4.0.11
-
-[4.0.10]: https://github.com/ansibleguy76/ansibleforms/compare/4.0.9...4.0.10
-
-[4.0.9]: https://github.com/ansibleguy76/ansibleforms/compare/4.0.8...4.0.9
-
-[4.0.8]: https://github.com/ansibleguy76/ansibleforms/compare/4.0.7...4.0.8
-
-[4.0.7]: https://github.com/ansibleguy76/ansibleforms/compare/4.0.5...4.0.7
-
-[4.0.5]: https://github.com/ansibleguy76/ansibleforms/compare/4.0.3...4.0.5
-
-[4.0.3]: https://github.com/ansibleguy76/ansibleforms/compare/4.0.2...4.0.3
-
-[4.0.2]: https://github.com/ansibleguy76/ansibleforms/compare/4.0.1...4.0.2
-
-[4.0.1]: https://github.com/ansibleguy76/ansibleforms/compare/4.0.0...4.0.1
-
-[4.0.0]: https://github.com/ansibleguy76/ansibleforms/compare/3.1.1...4.0.0
-
-[3.1.1]: https://github.com/ansibleguy76/ansibleforms/compare/3.1.0...3.1.1
-
-[3.1.0]: https://github.com/ansibleguy76/ansibleforms/compare/3.0.9...3.1.0
-
-[3.0.9]: https://github.com/ansibleguy76/ansibleforms/compare/3.0.7...3.0.9
-
-[3.0.7]: https://github.com/ansibleguy76/ansibleforms/compare/3.0.6...3.0.7
-
-[3.0.6]: https://github.com/ansibleguy76/ansibleforms/compare/3.0.5...3.0.6
-
-[3.0.5]: https://github.com/ansibleguy76/ansibleforms/compare/3.0.4...3.0.5
-
-[3.0.4]: https://github.com/ansibleguy76/ansibleforms/compare/3.0.3...3.0.4
-
-[3.0.3]: https://github.com/ansibleguy76/ansibleforms/compare/3.0.2...3.0.3
-
-[3.0.2]: https://github.com/ansibleguy76/ansibleforms/compare/3.0.1...3.0.2
-
-[3.0.1]: https://github.com/ansibleguy76/ansibleforms/compare/3.0.0...3.0.1
-
-[3.0.0]: https://github.com/ansibleguy76/ansibleforms/compare/2.2.4...3.0.0
-
-[2.2.4]: https://github.com/ansibleguy76/ansibleforms/compare/2.2.3...2.2.4
-
-[2.2.3]: https://github.com/ansibleguy76/ansibleforms/compare/2.2.2...2.2.3
-
-[2.2.2]: https://github.com/ansibleguy76/ansibleforms/compare/2.2.1...2.2.2
-
-[2.2.1]: https://github.com/ansibleguy76/ansibleforms/compare/2.2.0...2.2.1
-
-[2.2.0]: https://github.com/ansibleguy76/ansibleforms/compare/2.1.6...2.2.0
-
-[2.1.6]: https://github.com/ansibleguy76/ansibleforms/compare/2.1.5...2.1.6
-
-[2.1.5]: https://github.com/ansibleguy76/ansibleforms/compare/2.1.4...2.1.5
