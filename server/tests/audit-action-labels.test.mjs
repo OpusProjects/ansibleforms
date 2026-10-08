@@ -1,4 +1,4 @@
-// Every action the audit middleware can produce needs a readable label, in all six
+// Every action the audit middleware can produce needs a readable label, in all the
 // locales, or the audit page falls back to printing the raw string.
 //
 // That fallback is silent, which is exactly why this is a test rather than a convention:
@@ -15,7 +15,7 @@ import { fileURLToPath } from "url";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const serverRoot = path.join(here, "..");
 const clientLocales = path.join(here, "../../client/src/locales");
-const LANGS = ["en", "de", "fr", "it", "es", "nl"];
+const LANGS = ["en", "de", "fr", "it", "es", "nl", "ca", "pt", "ja", "zh", "pl"];
 
 // the REAL actionFrom and the REAL skip list, lifted from the middleware
 const mwSrc = readFileSync(path.join(serverRoot, "src/lib/auditMiddleware.js"), "utf8");
@@ -122,7 +122,7 @@ describe("the audit action vocabulary", () => {
       `(the key is the action with dots and hyphens replaced by underscores)`);
   });
 
-  test("the six locales define exactly the same label keys", () => {
+  test("all the locales define exactly the same label keys", () => {
     const en = [...labelKeys("en")].sort();
     for (const lang of LANGS.slice(1)) {
       assert.deepEqual([...labelKeys(lang)].sort(), en, `${lang}.js has a different set of action labels than en.js`);

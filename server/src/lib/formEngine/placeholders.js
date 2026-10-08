@@ -177,7 +177,7 @@ export function replacePlaceholderInString(value, ctx, ignoreIncomplete = false,
     if (Object.prototype.hasOwnProperty.call(values, foundfield)) {
       const opts = fieldOptions[foundfield];
       const raw = values[foundfield];
-      if (opts && (["expression", "table", "list", "constant"].includes(opts.type) || column.includes(".")) && (typeof raw == "object")) {
+      if (opts && (["expression", "list", "constant"].includes(opts.type) || column.includes(".")) && (typeof raw == "object")) {
         if (opts.type === 'list' && Array.isArray(raw)) {
           fieldvalue = JSON.stringify(raw.map((row) => row?.__output__ ?? row));
         } else {

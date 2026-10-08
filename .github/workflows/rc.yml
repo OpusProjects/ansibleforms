@@ -39,6 +39,7 @@ jobs:
     outputs:
       rc: ${{ steps.v.outputs.rc }}
       sha: ${{ steps.pr.outputs.sha }}
+      ghcr: ${{ steps.v.outputs.ghcr }}
     steps:
       - name: Read the pull request
         id: pr
@@ -90,6 +91,8 @@ jobs:
           fi
           rc="$next-rc.$PR.$RUN"
           echo "rc=$rc" >> "$GITHUB_OUTPUT"
+          # GHCR rejects uppercase, and github.repository keeps the owner's case
+          echo "ghcr=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
           echo "release candidate $rc (manifest $base)"
 
   publish:
@@ -120,7 +123,8 @@ jobs:
             ### Release candidate `${{ needs.version.outputs.rc }}`
 
             ```
-            docker pull ghcr.io/${{ github.repository }}:${{ needs.version.outputs.rc }}
+            docker pull ${{ needs.version.outputs.ghcr }}:${{ needs.version.outputs.rc }}
+            docker pull ${{ needs.version.outputs.ghcr }}-rte:${{ needs.version.outputs.rc }}
             ```
 
             Also tagged `latest-rc`. Built from ${{ needs.version.outputs.sha }}.

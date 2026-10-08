@@ -14,7 +14,7 @@
 // admins to configure a groups claim in the token that the login never reads.
 import { describe, it, expect } from 'vitest';
 
-const LANGS = ['en', 'de', 'fr', 'it', 'es', 'nl'];
+const LANGS = ['en', 'de', 'fr', 'it', 'es', 'nl', 'ca', 'pt', 'ja', 'zh'];
 
 const locales = {};
 for (const lang of LANGS) {

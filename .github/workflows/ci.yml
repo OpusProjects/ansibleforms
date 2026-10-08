@@ -28,9 +28,12 @@ on:
 permissions:
   contents: read
 
-# a new push to the same PR cancels the run it supersedes
+# A new push to the same PR cancels the run it supersedes. A push to a branch is grouped by
+# its commit instead, so every merge gets its own complete run : a group on the branch name
+# would let a burst of merges (auto-merged dependabot PRs) cancel each other, and the
+# cancelled runs show as a red X on commits that never failed.
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
+  group: ci-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 
 jobs:
@@ -55,6 +58,9 @@ jobs:
 
       - name: Lint
         run: npm run lint:check
+
+      - name: Format
+        run: npm run format:check
 
       - name: Test
         run: npm run test -- --coverage --coverage.reporter=text --coverage.reporter=json-summary

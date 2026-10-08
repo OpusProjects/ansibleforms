@@ -6,7 +6,6 @@
 // success and kept its flag, which then refused every later abort of it.
 import { test, describe, beforeEach, afterEach, vi } from "vitest";
 import assert from "node:assert/strict";
-import os from "os";
 
 process.env.LOG_PATH = process.env.LOG_PATH || "/tmp/ansibleforms-test-logs";
 process.env.DB_HOST ||= "127.0.0.1";
@@ -38,9 +37,8 @@ vi.mock("../src/models/db.model.js", () => ({
         row(params[0]).abort_requested = 0;
         return { changedRows: 1 };
       }
-      if (/SELECT pid, host/.test(sql)) {
-        const j = row(params[0]);
-        return [{ pid: j?.pid ?? null, host: j?.host ?? null }];
+      if (/SELECT runner FROM AnsibleForms.`jobs`/.test(sql)) {
+        return [{ runner: row(params[0])?.runner ?? null }];
       }
       if (/WHERE parent_id=\? AND status='running'/.test(sql)) {
         return jobs.filter((j) => j.parent_id == params[0] && j.status === "running").map((j) => ({ id: j.id }));
@@ -50,9 +48,19 @@ vi.mock("../src/models/db.model.js", () => ({
   },
 }));
 
+// the runner a job runs on : the abort reaches it as a direct cancel (since the playbooks run
+// on runners, there is no process of the app's own to signal)
+let cancels;
+vi.mock("../src/models/runner.model.js", () => ({
+  default: { findByName: async (name) => ({ name, type: "rte" }) },
+}));
+vi.mock("../src/runners/index.js", () => ({
+  getRunner: () => ({ cancel: async ({ jobId }) => { cancels.push(jobId); } }),
+}));
+
 const { default: Job, Multistep } = await import("../src/models/job.model.js");
-// job.model's ../lib/cmd.js resolves to this mock (vitest.config.js alias) - the same module
-const { default: Cmd } = await import("./__mocks__/cmd.js");
+// the cancel is not awaited by the abort : let it land
+const settle = () => new Promise((resolve) => setImmediate(resolve));
 
 const admin = { username: "root", type: "local", roles: ["admin"], options: {} };
 const flagged = (id) => !!jobs.find((j) => j.id == id).abort_requested;
@@ -61,9 +69,11 @@ let kills;
 let killSpy;
 beforeEach(() => {
   kills = [];
-  // record which playbook PID is killed (6.x stops it with Cmd.killChildren)
-  killSpy = vi.spyOn(Cmd, "killChildren").mockImplementation((pid) => {
-    kills.push(pid);
+  cancels = [];
+  // never signal a real process
+  killSpy = vi.spyOn(process, "kill").mockImplementation((pid, signal) => {
+    kills.push([pid, signal]);
+    return true;
   });
 });
 afterEach(() => {
@@ -74,19 +84,21 @@ describe("aborting a multistep aborts its running step", () => {
   beforeEach(() => {
     jobs = [
       { id: 10, parent_id: null, status: "running", abort_requested: 0 },
-      // step one finished, step two is running a playbook on this host
+      // step one finished, step two is running a playbook on an RTE
       { id: 11, parent_id: 10, status: "success", abort_requested: 0 },
-      { id: 12, parent_id: 10, status: "running", abort_requested: 0, pid: 4242, host: os.hostname() },
+      { id: 12, parent_id: 10, status: "running", abort_requested: 0, runner: "rte-1" },
       // a running job of another multistep is not touched
-      { id: 20, parent_id: 19, status: "running", abort_requested: 0, pid: 5151, host: os.hostname() },
+      { id: 20, parent_id: 19, status: "running", abort_requested: 0, runner: "rte-1" },
     ];
   });
 
   test("the running step is flagged and its playbook stopped", async () => {
     await Job.abort(admin, 10);
+    await settle();
     assert.equal(flagged(10), true, "the multistep is flagged, so later steps are skipped");
     assert.equal(flagged(12), true, "the running step is flagged, so its runner stops it");
-    assert.deepEqual(kills, [4242], "the step's playbook is stopped right away");
+    assert.deepEqual(cancels, [12], "the step's runner is told to cancel it right away");
+    assert.deepEqual(kills, [], "no process of the app's own is signalled");
   });
 
   test("finished steps and other jobs are left alone", async () => {
@@ -97,8 +109,9 @@ describe("aborting a multistep aborts its running step", () => {
 
   test("a single job still aborts as before", async () => {
     await Job.abort(admin, 20);
+    await settle();
     assert.equal(flagged(20), true);
-    assert.deepEqual(kills, [5151]);
+    assert.deepEqual(cancels, [20]);
     assert.equal(flagged(12), false);
   });
 
@@ -142,7 +155,7 @@ describe("the multistep ends as aborted when its last step is aborted", () => {
   });
   afterEach(() => Object.assign(Job, saved));
 
-  // the step's runner : ends as aborted when its own flag is set, as Exec.executeCommand does
+  // the step's runner : stops when its own flag is set, as Exec.executeCommand does
   const runStep = async (id, abortedWhileRunning) => {
     const step = () => jobs.find((j) => j.id == id);
     while (!step()) await new Promise((r) => setImmediate(r));

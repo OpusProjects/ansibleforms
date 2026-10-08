@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios from 'axios';
 
 var TokenStorage = {
   isAuthenticated() {
@@ -7,14 +7,14 @@ var TokenStorage = {
 
   getAuthentication() {
     return {
-      headers: { Authorization: "Bearer " + this.getToken() },
+      headers: { Authorization: 'Bearer ' + this.getToken() },
     };
   },
   getAuthenticationMultipart() {
     return {
       headers: {
-        Authorization: "Bearer " + this.getToken(),
-        "Content-Type": "multipart/form-data",
+        Authorization: 'Bearer ' + this.getToken(),
+        'Content-Type': 'multipart/form-data',
       },
     };
   },
@@ -24,15 +24,15 @@ var TokenStorage = {
     var base64;
     var jsonPayload;
     try {
-      base64Url = this.getToken().split(".")[1];
-      base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+      base64Url = this.getToken().split('.')[1];
+      base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
       jsonPayload = decodeURIComponent(
         atob(base64)
-          .split("")
+          .split('')
           .map(function (c) {
-            return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
           })
-          .join("")
+          .join(''),
       );
       return JSON.parse(jsonPayload);
     } catch (err) {
@@ -40,12 +40,12 @@ var TokenStorage = {
     }
   },
   async getNewToken() {
-    console.log("Getting new token from server...");
-    
-    const refreshToken= this.getRefreshToken();
+    console.log('Getting new token from server...');
+
+    const refreshToken = this.getRefreshToken();
 
     if (!refreshToken) {
-      console.log("No refresh token found, cannot get new token");
+      console.log('No refresh token found, cannot get new token');
       return null;
     }
 
@@ -58,32 +58,32 @@ var TokenStorage = {
       this.storeRefreshToken(tokenResponse.data.refreshtoken);
       return tokenResponse.data.token;
     } catch (err) {
-      console.log("Getting token failed:", err.response?.data?.error || err.message);
+      console.log('Getting token failed:', err.response?.data?.error || err.message);
       return null;
     }
   },
 
   storeToken(token) {
     // console.log(`Storing token ${token}`);
-    localStorage.setItem("token", token);
+    localStorage.setItem('token', token);
   },
 
   storeRefreshToken(refreshToken) {
     // console.log(`Storing refresh token ${refreshToken}`);
-    localStorage.setItem("refreshtoken", refreshToken);
+    localStorage.setItem('refreshtoken', refreshToken);
   },
 
   clear() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("refreshtoken");
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshtoken');
   },
 
   getRefreshToken() {
-    return localStorage.getItem("refreshtoken");
+    return localStorage.getItem('refreshtoken');
   },
 
   getToken() {
-    return localStorage.getItem("token");
+    return localStorage.getItem('token');
   },
 };
 

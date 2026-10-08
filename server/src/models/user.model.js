@@ -207,7 +207,7 @@ class User extends CrudModel {
     // MUST be the same shape as the success path. Every caller does
     // `user.roles = ro.roles; user.options = ro.options` (auth_basic.js and both login
     // controllers), so returning the bare array left BOTH undefined - and the very next
-    // line, hasValidLoginOption, dereferences user.options.enableLogin. That throws
+    // line, hasValidLoginOption, dereferences user.options.allowLogin. That throws
     // inside passport's req.login callback, which discards the returned promise, so the
     // surrounding try/catch never sees it and NO RESPONSE IS EVER SENT: every local and
     // ldap login hung for ever, leaking a socket each time. This branch is reached
@@ -234,7 +234,7 @@ static getGroups(user, groupObj, ldapConfig = {}) {
       ldapgroups.forEach(function (v) {
         // grab groupname part
         // logger.debug(JSON.stringify(v))
-        var groupObject = v["objectName"] || v; // https://github.com/ansibleguy76/ansibleforms/issues/119 first try objectName and then fall back.  Different flavours of ldap servers return different group objects.  Until someone else hit's another flavour, these are the ones we implement.
+        var groupObject = v["objectName"] || v; // https://github.com/ansibleforms/ansibleforms/issues/119 first try objectName and then fall back.  Different flavours of ldap servers return different group objects.  Until someone else hit's another flavour, these are the ones we implement.
         var groupMatch = groupObject.match("^[cCnN]{2}=([^,]*)");
         if (groupMatch.length > 0) {
           groups.push(groupMatch[1]);

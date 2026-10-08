@@ -8,6 +8,12 @@ import fs from "fs";
 import fse from "fs-extra";
 import appConfig from "../../config/app.config.js";
 import CrudModel from './crud.model.js';
+import { bump } from '../lib/epochs.js';
+import { nodeId, NODE_DEAD_SECONDS, uptimeSeconds } from '../lib/role.js';
+
+// a repository claim older than this is released whatever its node says : no clone, pull or
+// sync runs for that long, so it is the remains of one that hung
+const CLAIM_MAX_HOURS = 2;
 import { friendlyPullError, configRepoFromPath } from "../lib/forms-git.js";
 
 class Repository extends CrudModel {
@@ -27,6 +33,8 @@ class Repository extends CrudModel {
   // delete() already had to evict by hand for the same reason; this keeps every other
   // path honest, so a new raw write cannot reintroduce it.
   static evictCache({ name, id } = {}) {
+    // the other processes drop their whole repositories cache (lib/epochs.js)
+    bump(this.modelName);
     const cache = CrudModel.getCache(this.modelName);
     if (!cache) return;
     if (name === undefined && id === undefined) return cache.flushAll();
@@ -90,7 +98,7 @@ class Repository extends CrudModel {
       // exists on disk. The repository then read as 'not cloned', every pull failed, and
       // seed.ensureRepositoryClones cloned it again, orphaning the moved tree for good.
       if (!opts.fromSeed) await CrudModel.assertNotManaged(this.modelName, repo.id);
-      const claim = await Repository.writeState("update AnsibleForms.`repositories` set status = 'running' where name = ? and COALESCE(status,'') <> 'running'", [name], { name })
+      const claim = await Repository.claim(name)
       if (!claim.affectedRows) {
         throw new Error(`Repository '${name}' not found or already running, try again later`)
       }
@@ -143,7 +151,7 @@ class Repository extends CrudModel {
     // afterwards hits Repo.clone's "already exists, pulling instead" path, so the new
     // repository silently pulls from the OLD remote and reports success.
     // Claimed after assertNotManaged, so a refused delete never touches the status.
-    const claim = await Repository.writeState("update AnsibleForms.`repositories` set status = 'running' where name = ? and COALESCE(status,'') <> 'running'", [name], { name })
+    const claim = await Repository.claim(name)
     if (!claim.affectedRows) {
       throw new Error(`Repository '${name}' not found or already running, try again later`)
     }
@@ -192,7 +200,7 @@ class Repository extends CrudModel {
     logger.info(`Resetting repository ${name}`);
     // claim the repo BEFORE deleting the tree : a reset rm's the working tree,
     // which must not race a pull/sync running git on it (issue #414)
-    const claim = await Repository.writeState("update AnsibleForms.`repositories` set status = 'running' where name = ? and COALESCE(status,'') <> 'running'", [name], { name })
+    const claim = await Repository.claim(name)
     if (!claim.affectedRows) {
       throw new Error(`Repository '${name}' not found or already running, try again later`)
     }
@@ -273,22 +281,14 @@ class Repository extends CrudModel {
       
       const repoPath = path.join(appConfig.repoPath, configRepositories[0].name)
       
-      // Check for config.yaml first (new way)
       const configPath = path.join(repoPath, "config.yaml")
       if(fs.existsSync(configPath)){
         logger.debug(`Found config.yaml in use_for_config repository: ${configRepositories[0].name}`)
         return configPath
       }
-      
-      // Fallback to forms.yaml (legacy)
-      const formsYamlPath = path.join(repoPath, "forms.yaml")
-      if(fs.existsSync(formsYamlPath)){
-        logger.debug(`Found forms.yaml (legacy) in use_for_config repository: ${configRepositories[0].name}`)
-        return formsYamlPath
-      }
-      
+
       // Config repo exists but no config file found
-      logger.warning(`Repository '${configRepositories[0].name}' is marked as use_for_config but no config.yaml or forms.yaml found`)
+      logger.warning(`Repository '${configRepositories[0].name}' is marked as use_for_config but has no config.yaml`)
       return ""
     }
     
@@ -306,17 +306,9 @@ class Repository extends CrudModel {
   for(const repo of repositories){
     var repoPath = path.join(appConfig.repoPath, repo.name)
     
-    // Check for config.yaml first (new way)
     const configPath = path.join(repoPath, "config.yaml")
     if(fs.existsSync(configPath)){
-      foundConfigs.push({ repo: repo.name, path: configPath, isLegacy: false })
-      continue // found config.yaml, no need to check forms.yaml
-    }
-    
-    // Fallback to forms.yaml (legacy)
-    const formsYamlPath = path.join(repoPath, "forms.yaml")
-    if(fs.existsSync(formsYamlPath)){
-      foundConfigs.push({ repo: repo.name, path: formsYamlPath, isLegacy: true })
+      foundConfigs.push({ repo: repo.name, path: configPath })
     }
   }
   
@@ -452,7 +444,7 @@ class Repository extends CrudModel {
     // also treat loose *.yaml at the repo root as content (root-served forms),
     // so seeding never overwrites a repo that already holds forms
     const rootYaml = fs.existsSync(repoDir) && fs.readdirSync(repoDir).some(f => /\.(yaml|yml)$/i.test(f))
-    const hasContent = rootYaml || fs.existsSync(path.join(repoDir, "config.yaml")) || fs.existsSync(path.join(repoDir, "forms.yaml")) || fs.existsSync(path.join(repoDir, "forms"))
+    const hasContent = rootYaml || fs.existsSync(path.join(repoDir, "config.yaml")) || fs.existsSync(path.join(repoDir, "forms"))
     if (hasContent) {
       return ""
     }
@@ -474,7 +466,7 @@ class Repository extends CrudModel {
     if (!claimed) {
       // atomic check-and-set : a clone must not run git while a pull/sync/reset
       // is touching the same working tree
-      const claim = await Repository.writeState("update AnsibleForms.`repositories` set status = 'running' where name = ? and COALESCE(status,'') <> 'running'", [name], { name })
+      const claim = await Repository.claim(name)
       if (!claim.affectedRows) {
         throw new Error(`Repository '${name}' not found or already running, try again later`)
       }
@@ -514,7 +506,7 @@ class Repository extends CrudModel {
     var output, status, head
     // atomic check-and-set : a pull and a sync (or another pull) must not run
     // git on the same working tree at the same time (issue #414)
-    const claimed = await Repository.writeState("update AnsibleForms.`repositories` set status = 'running' where name = ? and COALESCE(status,'') <> 'running'", [name], { name })
+    const claimed = await Repository.claim(name)
     if (!claimed.affectedRows) {
       throw new Error(`Repository '${name}' not found or already running, try again later`)
     }
@@ -633,7 +625,7 @@ class Repository extends CrudModel {
   static async claimForWrite(name) {
     const rows = await mysql.do("SELECT status FROM AnsibleForms.`repositories` WHERE name = ?", [name])
     if (!rows.length) return undefined // not a tracked repo (e.g. the staging folder) : skip
-    const claim = await Repository.writeState("update AnsibleForms.`repositories` set status = 'running' where name = ? and COALESCE(status,'') <> 'running'", [name], { name })
+    const claim = await Repository.claim(name)
     if (!claim.affectedRows) {
       throw new Error(`Repository '${name}' is busy (a pull or sync is running), try again`)
     }
@@ -649,14 +641,33 @@ class Repository extends CrudModel {
   // guarded on status='running' so it only ever clears OUR own claim and never
   // overwrites a status another operation legitimately set afterwards
   static async releaseWrite(name, priorStatus) {
-    await Repository.writeState("update AnsibleForms.`repositories` set status = ? where name = ? and status = 'running'", [priorStatus ?? null, name], { name })
+    await Repository.writeState("update AnsibleForms.`repositories` set status = ?, claim_node = NULL where name = ? and status = 'running' and (claim_node = ? or claim_node IS NULL)", [priorStatus ?? null, name, nodeId], { name })
   }
 
-  // clear any repository left at status='running' by a process that died mid
-  // pull/sync : the atomic claim (status<>'running') would otherwise wedge the
-  // repo forever. Run once at startup, mirroring Job.abandon (issue #414)
-  static async resetStaleLocks() {
-    const result = await Repository.writeState("update AnsibleForms.`repositories` set status = 'failed' where status = 'running'", [])
+  // The atomic claim every git operation and designer save takes (status<>'running' -> 'running'),
+  // naming the node that holds it and since when : a claim whose node went away is released by
+  // the worker (releaseStaleClaims) instead of wedging the repository until somebody notices.
+  static async claim(name) {
+    return Repository.writeState(
+      "update AnsibleForms.`repositories` set status = 'running', claim_node = ?, claim_since = NOW() where name = ? and COALESCE(status,'') <> 'running'",
+      [nodeId, name], { name })
+  }
+
+  // Release the claims nobody will release any more, marking those repositories 'failed' :
+  //   - the node holding it stopped answering (no heartbeat for NODE_DEAD_SECONDS)
+  //   - it is older than CLAIM_MAX_HOURS : no git operation takes that long
+  //   - atStart (the worker's start) : its own from before this process started (a process
+  //     that takes the lock later must not release the save or pull it is doing right now),
+  //     and any without a node (taken before 7)
+  // A claim an app node holds right now is left alone - the worker used to reset every claim
+  // at its start, letting a second git process into a working tree an app node was writing.
+  static async releaseStaleClaims({ atStart = false } = {}) {
+    const result = await Repository.writeState(
+      "update AnsibleForms.`repositories` r set r.status = 'failed', r.claim_node = NULL where r.status = 'running' and (" +
+        "(r.claim_node IS NOT NULL and NOT EXISTS (SELECT 1 FROM AnsibleForms.`nodes` n WHERE n.id = r.claim_node AND n.last_seen > (NOW() - INTERVAL ? SECOND)))" +
+        " or r.claim_since < (NOW() - INTERVAL ? HOUR)" +
+        (atStart ? " or (r.claim_node = ? and r.claim_since < (NOW() - INTERVAL ? SECOND)) or r.claim_node IS NULL" : "") + ")",
+      atStart ? [NODE_DEAD_SECONDS, CLAIM_MAX_HOURS, nodeId, uptimeSeconds()] : [NODE_DEAD_SECONDS, CLAIM_MAX_HOURS])
     return result.affectedRows || 0
   }
 
@@ -716,7 +727,7 @@ class Repository extends CrudModel {
     var output, status, head, syncRepo = null
     // atomic check-and-set : refuse concurrent syncs of the same repository
     // (eg the settings page button while a designer push is in flight)
-    const claimed = await Repository.writeState("update AnsibleForms.`repositories` set status = 'running' where name = ? and COALESCE(status,'') <> 'running'", [name], { name })
+    const claimed = await Repository.claim(name)
     if (!claimed.affectedRows) {
       throw new Error(`Repository '${name}' not found or already running, try again later`)
     }

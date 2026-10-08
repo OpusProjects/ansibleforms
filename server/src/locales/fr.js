@@ -72,9 +72,12 @@ export default {
     storedJobDeleted: "Tache enregistree supprimee",
     storedJobNoAccess: "Vous n'avez pas acces a cette tache enregistree",
     oauth2Added: "Fournisseur OAuth2 ajoute",
-    awxAdded: "AAP ajoute",
-    awxNotFound: "AAP introuvable",
-    awxConnectionOk: "La connexion AAP est OK",
+    secretStoreAdded: "Coffre de secrets ajoute",
+    secretStoreNotFound: "Coffre de secrets introuvable",
+    secretStoreConnectionOk: "La connexion au coffre de secrets est OK",
+    runnerAdded: "Runner ajouté",
+    runnerNotFound: "Runner introuvable",
+    runnerConnectionOk: "La connexion au runner est OK",
     userNotFound: "Utilisateur introuvable",
     currentPasswordRequired: "Votre mot de passe actuel est requis pour en définir un nouveau",
     currentPasswordWrong: "Le mot de passe actuel est incorrect",
@@ -168,11 +171,43 @@ export default {
     jobevent: {
       button: "Voir la tache",
       regards: "Cordialement,<br>AnsibleForms",
-      launch: "La tache a ete lancee{by}.",
-      relaunch: "La tache a ete relancee{by}.",
-      delete: "La tache a ete supprimee{by}.",
-      approve: "La tache a ete approuvee{by} et continuera son execution.",
-      reject: "La tache a ete rejetee{by}.",
+      // without a user, and with the user who did it : a whole sentence
+      // each, so every language puts the name where its word order needs it
+      launch: "La tache a ete lancee.",
+      relaunch: "La tache a ete relancee.",
+      delete: "La tache a ete supprimee.",
+      approve: "La tache a ete approuvee et continuera son execution.",
+      reject: "La tache a ete rejetee.",
+      launchBy: "La tache a ete lancee par {user}.",
+      relaunchBy: "La tache a ete relancee par {user}.",
+      deleteBy: "La tache a ete supprimee par {user}.",
+      approveBy: "La tache a ete approuvee par {user} et continuera son execution.",
+      rejectBy: "La tache a ete rejetee par {user}.",
+    },
+    // the subjects : "AnsibleForms '<form>' [<type>] (<id>) - <one of these>", and the
+    // approval one when the form gives no title
+    subject: {
+      approval: "Demande d'approbation AnsibleForms",
+      event: {
+        launch: "Lancée",
+        relaunch: "Relancée",
+        delete: "Supprimée",
+        approve: "Approuvée",
+        reject: "Rejetée",
+      },
+      status: {
+        success: "Réussie",
+        failed: "Échouée",
+        aborted: "Interrompue",
+        rejected: "Rejetée",
+        abandoned: "Abandonnée",
+        warning: "Avertissement",
+      },
+    },
+    // the test mail of the mail settings
+    test: {
+      subject: "Message de test",
+      body: "<p>Ceci est un message de test d'AnsibleForms</p>",
     },
   },
 }

@@ -18,7 +18,7 @@ MySql.clean=function(config){
 
 MySql.query = async function (connection_name, query) {
   // get credentials
-  var config = await Credential.findByNameRegex(connection_name)
+  var config = await Credential.resolveCredential(connection_name)
   logger.debug(`[${connection_name}] query : ${query}`)
   var conn
   try{

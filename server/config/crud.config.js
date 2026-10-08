@@ -1,26 +1,6 @@
 // Central config for all CRUD models
 const crudConfigs = {
-  awx: {
-    table: 'AnsibleForms.awx',
-    fields: [
-      { name: 'id', isKey: true },
-      { name: 'name', isNaturalKey: true, required: true },
-      { name: 'description' },
-      { name: 'is_default', isBoolean: true },
-      { name: 'uri', required: true },
-      { name: 'use_credentials', isBoolean: true },
-      { name: 'username', setDefault: true },
-      { name: 'password', isEncrypted: true, setDefault: true },
-      { name: 'token', isEncrypted: true, setDefault: true },
-      { name: 'ignore_certs', isBoolean: true },
-      { name: 'ca_bundle' },
-      // owned by the declarative config seed, never by an API caller - CrudModel
-      // strips it from any payload that does not come from the seed itself
-      { name: 'managed', isBoolean: true }
-    ],
-    allowCache: true,
-    cacheTTL: 3600
-  },
+
   oauth2: {
     table: 'AnsibleForms.oauth2_providers',
     fields: [
@@ -59,39 +39,57 @@ const crudConfigs = {
       { name: 'description' },
       { name: 'db_type' },
       { name: 'vault_path' },
+      { name: 'secret_store' },
+      { name: 'secret_ref' },
       { name: 'managed', isBoolean: true }
     ],
     allowCache: true,
     cacheTTL: 3600
   },
-  datasource: {
-    table: 'AnsibleForms.datasource',
+  // Where a job runs : an RTE (runtime environment container) for playbooks, AWX/AAP/Ascender
+  // for templates. Which fields a type uses is up to its runner in src/runners.
+  runner: {
+    table: 'AnsibleForms.runners',
     fields: [
       { name: 'id', isKey: true },
       { name: 'name', isNaturalKey: true, required: true },
-      { name: 'schema', required: true },
-      { name: 'extra_vars' },
-      { name: 'form' },
-      { name: 'cron' },
-      { name: 'output' },
-      { name: 'status' },
-      { name: 'state' },
-      { name: 'last_run' },
-      { name: 'queue_id' }
+      { name: 'type', required: true },
+      { name: 'description' },
+      { name: 'uri', required: true },
+      { name: 'token', isEncrypted: true },
+      { name: 'username' },
+      { name: 'password', isEncrypted: true },
+      { name: 'use_credentials', isBoolean: true },
+      { name: 'ignore_certs', isBoolean: true },
+      { name: 'ca_bundle' },
+      { name: 'is_default', isBoolean: true },
+      { name: 'managed', isBoolean: true }
     ],
     allowCache: true,
     cacheTTL: 3600
   },
-  datasource_schemas: {
-    table: 'AnsibleForms.datasource_schemas',
+  // HashiCorp Vault, CyberArk, ... : where credentials read their user and password from.
+  // Which fields a type uses is up to its provider in src/secrets/providers.
+  secretstore: {
+    table: 'AnsibleForms.secret_stores',
     fields: [
       { name: 'id', isKey: true },
       { name: 'name', isNaturalKey: true, required: true },
+      { name: 'type', required: true },
       { name: 'description' },
-      { name: 'table_definitions' },
-      { name: 'output' },
-      { name: 'status' },
-      { name: 'path' }
+      { name: 'url', required: true },
+      { name: 'token', isEncrypted: true },
+      { name: 'namespace' },
+      { name: 'kv_version' },
+      { name: 'default_mount' },
+      { name: 'app_id' },
+      { name: 'client_cert' },
+      { name: 'client_key', isEncrypted: true },
+      { name: 'ignore_certs', isBoolean: true },
+      { name: 'ca_bundle' },
+      { name: 'cache_ttl_seconds' },
+      { name: 'extra' },
+      { name: 'managed', isBoolean: true }
     ],
     allowCache: true,
     cacheTTL: 3600
@@ -179,7 +177,10 @@ const crudConfigs = {
       { name: 'status' },
       { name: 'state' },
       { name: 'last_run', isDatetime: true },
-      { name: 'queue_id' }
+      { name: 'queue_id' },
+      // who planned it, as a JSON user object : set ONLY by Schedule.plan, never from a
+      // request body (the controller drops it). Empty = an admin-level schedule.
+      { name: 'owner' }
     ],
     allowCache: true,
     cacheTTL: 3600

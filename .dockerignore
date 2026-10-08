@@ -1,23 +1,13 @@
 **/node_modules/
 node_modules
-**/vue.config.js
-vue.config.js
 Dockerfile
 .env.*
 .env
 README.md
 .git
-.venv
-**/__pycache__
-**/.pytest_cache
 **/logs
-server/persistent/
-!server/persistent/config.yaml
-!server/persistent/forms.yaml.example
-!server/persistent/forms.yaml.personal
-!server/persistent/forms/
-!server/persistent/certificates/
-!server/persistent/templates/
 **/*.log
+# local data of a development server, never part of the image
+server/persistent/
 .vscode
 *.code-workspace

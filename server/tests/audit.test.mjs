@@ -259,6 +259,22 @@ describe("no single field can suppress its own audit row", () => {
     assert.equal(v[COL.outcome].length, 16);
   });
 
+  test("an IPv4-mapped address is recorded as plain IPv4, other addresses unchanged", async () => {
+    // node reports a direct IPv4 client as ::ffff:a.b.c.d, X-Forwarded-For as a.b.c.d
+    const cases = [
+      ["::ffff:203.0.113.7", "203.0.113.7"],
+      ["::FFFF:10.0.0.1", "10.0.0.1"],
+      ["203.0.113.7", "203.0.113.7"],
+      ["2001:db8::1", "2001:db8::1"],
+      ["::ffff:abcd", "::ffff:abcd"],
+      [undefined, null],
+    ];
+    for (const [ip, expected] of cases) {
+      await Audit.log({ ip, action: "auth.login" });
+      assert.equal(lastInsert().vars[COL.ip], expected, String(ip));
+    }
+  });
+
   test("a detail whose action throws on toString does not become an unhandled rejection", async () => {
     const hostile = { toString() { throw new Error("evil"); } };
     // the assertion is that this resolves rather than rejecting

@@ -82,7 +82,7 @@ describe("the cached repository record is evicted when state is written", () => 
   });
 
   test("a statement with no key drops the whole model cache", async () => {
-    // resetStaleLocks updates every running row; this caller cannot name them.
+    // releaseStaleClaims updates every stale running row; this caller cannot name them.
     await Repository.writeState("update AnsibleForms.`repositories` set status = 'failed' where status = 'running'");
     assert.equal(flushed, 1, "an unscoped write must not leave stale entries behind");
     assert.deepEqual(evicted, []);

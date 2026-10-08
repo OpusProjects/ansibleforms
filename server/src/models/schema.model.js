@@ -32,6 +32,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import init from "../init/index.js";
+import { holdsWorkerLock } from "../lib/workerLock.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -51,9 +52,12 @@ class Schema {
    */
   static _cachedOk = null;
 
+  // Checks the schema, and patches it - but only in the process holding the worker lock : any
+  // other (an app node, or a second AF_ROLE unset process waiting for the lock) only checks, so
+  // it never runs DDL next to the worker patching the same tables.
   static async hasSchema() {
     if (Schema._cachedOk) return Schema._cachedOk;
-    const result = await checkAll();
+    const result = await checkAll({ patch: holdsWorkerLock() });
     Schema._cachedOk = result;
     return result;
   }
@@ -111,10 +115,21 @@ class Schema {
    * Callers are responsible for establishing that this is allowed - the endpoint
    * checks isProvisioned(), the startup bootstrap checks isEmpty().
    */
-  static async createTables() {
+  // `onlyIf` is checked again once the lock is held : the startup bootstrap creates only an
+  // empty database, and another process may have created it while this one waited.
+  static async createTables({ onlyIf } = {}) {
     if (!appConfig.allowSchemaCreation) {
       throw new Error(`Schema creation is disabled`);
     }
+    // two processes never run the script at the same time : it drops every table first,
+    // so the second would wipe what the first had just created
+    return mysql.withLock("ansibleforms_schema", 120, async () => {
+      if (onlyIf && !(await onlyIf())) return false;
+      return Schema.runCreateScript();
+    });
+  }
+
+  static async runCreateScript() {
     // added in 5.0.3
     const buffer = fs.readFileSync(`${__dirname}/../db/create_schema_and_tables.sql`);
     const query = buffer.toString();
@@ -137,7 +152,10 @@ class Schema {
   static async create() {
     logger.notice(`Trying to create database schema 'AnsibleForms' and tables`);
     await Schema.createTables();
-    await init()
+    // the bootstrap that follows (the admin account, the default rows, the seed) is the
+    // worker's : run here when this process is the worker, otherwise the worker finds the
+    // new schema on its next check (init/worker.js)
+    if (holdsWorkerLock()) await init()
     return { message: `Created schema 'AnsibleForms' and tables` };
   }
 }
@@ -180,6 +198,11 @@ async function checkTable(table) {
     logger.warning(message);
     throw new Error(message);
   }
+}
+// PATCHING : whether a table exists (the awx table is gone once 7 moved it to runners)
+async function tablePresent(table) {
+  const res = await mysql.do("SHOW TABLES FROM ?? WHERE ?? = ?", ["AnsibleForms", "Tables_in_AnsibleForms", table]);
+  return res.length > 0;
 }
 function addIdPrimaryKey(table) {
   var message;
@@ -478,9 +501,9 @@ function clearStaleLdapAdvancedGroupFields() {
 const SCHEMA_MANIFEST = {
   // tables the fresh install creates, so they must exist however the database was built
   base: {
-    tables: ['groups', 'users', 'tokens', 'credentials', 'ldap', 'awx', 'jobs', 'job_output',
-             'settings', 'repositories', 'datasource_schemas', 'datasource', 'staging',
-             'schedule', 'audit', 'chat_settings'],
+    tables: ['groups', 'users', 'tokens', 'credentials', 'ldap', 'jobs', 'job_output',
+             'settings', 'repositories', 'schedule', 'audit', 'chat_settings', 'secret_stores', 'runners',
+             'nodes', 'cache_epochs', 'designer_lock'],
   },
   patches: {
     patchVersion4: { columns: ['ldap.groups_search_base', 'ldap.groups_attribute', 'ldap.group_class',
@@ -491,26 +514,37 @@ const SCHEMA_MANIFEST = {
     // table a patch ever made is NOT the same as the expected schema - listing them here
     // made this check report a false error on a perfectly healthy database.
     patchVersion5: { tables: ['repositories', 'schedule'],
-                     columns: ['users.email', 'azuread.groupfilter', 'jobs.awx_id', 'awx.use_credentials',
+                     // not azuread.groupfilter : its patch is commented out below, and an app node
+                     // waits for every column listed here (app-start.js)
+                     columns: ['users.email', 'jobs.awx_id',
                                'settings.forms_yaml', 'repositories.branch', 'jobs.awx_artifacts',
-                               'jobs.abort_requested', 'awx.name', 'awx.description', 'awx.is_default'] },
+                               'jobs.abort_requested'] },
     // One entry per patch function, and there is one patch function per MAJOR version -
     // so everything 6.x adds is listed here, including all of 6.3.0. `indexes` is a
     // separate list from `columns` because the caller grades a missing index lower :
     // its absence is slow rather than broken.
-    patchVersion6: { tables: ['datasource_schemas', 'datasource', 'staging', 'oauth2_providers', 'stored_jobs',
+    patchVersion6: { tables: ['oauth2_providers', 'stored_jobs',
                               'audit', 'chat_settings'],
                      columns: ['oauth2_providers.tenant_id', 'jobs.raw_form_data', 'repositories.use_for_config',
                                'repositories.use_for_vars_files', 'jobs.pid', 'jobs.host', 'schedule.one_time_run',
                                'schedule.run_at', 'credentials.vault_path', 'jobs.awx_workflow', 'settings.logo',
                                'settings.config_source', 'settings.default_language',
                                'settings.default_theme', 'settings.default_theme_color',
-                               'awx.managed', 'credentials.managed', 'oauth2_providers.managed',
+                               'credentials.managed', 'oauth2_providers.managed',
                                'repositories.managed', 'ldap.managed', 'settings.managed',
                                'ldap.groupfilter', 'chat_settings.auth_type', 'chat_settings.api_version',
                                'chat_settings.request_user', 'chat_settings.extra_headers',
                                'chat_settings.ignore_certs'],
                      indexes: ['jobs.idx_jobs_retention'] },
+    // 7 : runners - AWX connections are runners of type awx (the awx table is copied, then
+    // dropped), and the job log a playbook writes is stored on the job
+    // and the worker and several app nodes : the processes on the database, what changed
+    // between them, the designer lock, and the node that follows a job
+    patchVersion7: { tables: ['secret_stores', 'runners', 'nodes', 'cache_epochs', 'designer_lock'],
+                     columns: ['schedule.owner', 'credentials.secret_store', 'credentials.secret_ref', 'settings.vault_env_imported_at', 'jobs.runner',
+                               'runners.username', 'runners.password', 'runners.use_credentials', 'jobs.job_log',
+                               'jobs.tracker', 'repositories.claim_node', 'repositories.claim_since',
+                               'schedule.claim_node', 'schedule.claim_since'] },
   },
 };
 
@@ -566,7 +600,10 @@ async function patchVersion5(messages, success, failed) {
   await checkPromise(addColumn("jobs", "awx_id", "int(11)", true, "NULL"), messages, success, failed); // add for future tracking
 
   // patch for awx credentials, the use_credentials was added to the awx table, to allow the use of credentials
-  await checkPromise(addColumn("awx", "use_credentials", "tinyint(4)", true, "0"), messages, success, failed); // bugfix for awx credentials
+  // (only while the awx table exists : 7 moves it to runners, see patchVersion7)
+  if (await tablePresent("awx")) {
+    await checkPromise(addColumn("awx", "use_credentials", "tinyint(4)", true, "0"), messages, success, failed); // bugfix for awx credentials
+  }
 
   // A new feature was added, the repositories table, to store the repositories for the forms and playbooks
   // A real gamechanger, because now the forms and playbooks can be stored in a git repository
@@ -591,7 +628,7 @@ async function patchVersion5(messages, success, failed) {
   // In 5.0.9, We add a scheduler
   buffer = fs.readFileSync(`${__dirname}/../db/create_schedule_table.sql`);
   sql = buffer.toString();
-  await checkPromise(addTable("schedule", sql), messages, success, failed); // add datasource_schemas table
+  await checkPromise(addTable("schedule", sql), messages, success, failed); // add schedule table
 
   // In 5.0.10, we add a new column to the jobs table, to store the awx artifacts
   await checkPromise(addColumn("jobs", "awx_artifacts", "longtext", true, "NULL"), messages, success, failed); // add awx_artifacts column
@@ -600,11 +637,14 @@ async function patchVersion5(messages, success, failed) {
   await checkPromise(addColumn("jobs", "abort_requested", "tinyint(4)", true, "NULL"), messages, success, failed); // add abort_requested column
 
   // In 6.0.0, we allow multiple awx instances, so we need to add id, name and description to the awx table
-  await checkPromise(addIdPrimaryKey("awx"), messages, success, failed); // add id column with auto_increment primary key
-  await checkPromise(addColumn("awx", "name", "varchar(250)", true, "NULL"), messages, success, failed); // add name column
-  await checkPromise(addUniqueKey("awx", "name"), messages, success, failed); // make name unique
-  await checkPromise(addColumn("awx", "description", "varchar(250)", true, "NULL"), messages, success, failed); // add description column
-  await checkPromise(addColumn("awx", "is_default", "tinyint(4)", true, "0"), messages, success, failed); // add is_default column
+  // (only while the awx table exists : 7 moves it to runners, see patchVersion7)
+  if (await tablePresent("awx")) {
+    await checkPromise(addIdPrimaryKey("awx"), messages, success, failed); // add id column with auto_increment primary key
+    await checkPromise(addColumn("awx", "name", "varchar(250)", true, "NULL"), messages, success, failed); // add name column
+    await checkPromise(addUniqueKey("awx", "name"), messages, success, failed); // make name unique
+    await checkPromise(addColumn("awx", "description", "varchar(250)", true, "NULL"), messages, success, failed); // add description column
+    await checkPromise(addColumn("awx", "is_default", "tinyint(4)", true, "0"), messages, success, failed); // add is_default column
+  }
 }
 
 // Patches for v6 
@@ -613,16 +653,8 @@ async function patchVersion6(messages, success, failed) {
   var buffer;
   var sql;
 
-  // temp install the datasource tables
-  buffer = fs.readFileSync(`${__dirname}/../db/create_datasource_schemas_table.sql`);
-  sql = buffer.toString();
-  await checkPromise(addTable("datasource_schemas", sql), messages, success, failed); // add datasource_schemas table
-  buffer = fs.readFileSync(`${__dirname}/../db/create_datasource_table.sql`);
-  sql = buffer.toString();
-  await checkPromise(addTable("datasource", sql), messages, success, failed); // add datasource table
-  buffer = fs.readFileSync(`${__dirname}/../db/create_staging_table.sql`);
-  sql = buffer.toString();
-  await checkPromise(addTable("staging", sql), messages, success, failed); // add staging table
+  // The datasource tables (datasource_schemas, datasource, staging) were created here until
+  // 7.0.0 removed datasources ; patchVersion7 drops them.
 
   // In 6.0.0, we add oauth2 providers table
   buffer = fs.readFileSync(`${__dirname}/../db/create_oauth2_providers_table.sql`);
@@ -782,10 +814,105 @@ async function patchVersion6(messages, success, failed) {
   // The declarative config seed flags the objects it owns, so the API can refuse to
   // change them behind the seed's back. One column per seedable table. Default 0 :
   // everything that already exists was made by hand and stays editable.
-  for (const table of ["awx", "credentials", "oauth2_providers", "repositories", "ldap", "settings"]) {
+  for (const table of ["credentials", "oauth2_providers", "repositories", "ldap", "settings"]) {
     await checkPromise(addColumn(table, "managed", "tinyint(4)", true, "0"), messages, success, failed);
   }
+  // the awx table too, while it exists (7 moves it to runners, see patchVersion7)
+  if (await tablePresent("awx")) {
+    await checkPromise(addColumn("awx", "managed", "tinyint(4)", true, "0"), messages, success, failed);
+  }
 
+}
+
+// Patches for v7
+// 7.0.0 removed datasources : their tables go. staging first, it references datasource.
+// The data schemas an import filled are separate databases of the user's own and stay.
+async function patchVersion7(messages, success, failed) {
+  await checkPromise(dropTable("staging"), messages, success, failed);
+  await checkPromise(dropTable("datasource"), messages, success, failed);
+  await checkPromise(dropTable("datasource_schemas"), messages, success, failed);
+
+  // 7.x : secret stores (HashiCorp Vault, CyberArk, ...) and the credential columns that
+  // point into one
+  const buffer = fs.readFileSync(`${__dirname}/../db/create_secret_stores_table.sql`);
+  await checkPromise(addTable("secret_stores", buffer.toString()), messages, success, failed);
+  await checkPromise(addColumn("credentials", "secret_store", "varchar(250)", true, "NULL"), messages, success, failed);
+  await checkPromise(addColumn("credentials", "secret_ref", "varchar(500)", true, "NULL"), messages, success, failed);
+  // a credential that read from vault through vault_path now names the store `vault`
+  await checkPromise(copyVaultPathToSecretRef(), messages, success, failed);
+  // when the VAULT_* variables were imported as the secret store `vault` (once, at the
+  // first 7.x start that has them - secrets/importVaultEnv.js)
+  await checkPromise(addColumn("settings", "vault_env_imported_at", "datetime", true, "NULL"), messages, success, failed);
+  // the user a planned job ("Run later" with allowPlannedJobs) runs as - see Schedule.plan
+  await checkPromise(addColumn("schedule", "owner", "longtext", true, "NULL"), messages, success, failed);
+
+  // 7 : runners (where a playbook runs : an RTE) and the runner a job ran on
+  const runners = fs.readFileSync(`${__dirname}/../db/create_runners_table.sql`);
+  await checkPromise(addTable("runners", runners.toString()), messages, success, failed);
+  await checkPromise(addColumn("jobs", "runner", "varchar(250)", true, "NULL"), messages, success, failed);
+  // AWX/AAP/Ascender connections are runners of type awx : the awx table is copied into
+  // runners once, then dropped ; the job log a playbook writes is stored on the job
+  await checkPromise(addColumn("runners", "username", "varchar(250)", true, "NULL"), messages, success, failed);
+  await checkPromise(addColumn("runners", "password", "text", true, "NULL"), messages, success, failed);
+  await checkPromise(addColumn("runners", "use_credentials", "tinyint(4)", true, "0"), messages, success, failed);
+  await checkPromise(copyAwxToRunners(), messages, success, failed);
+  await checkPromise(addColumn("jobs", "job_log", "longtext", true, "NULL"), messages, success, failed);
+
+  // 7 : a worker and several app nodes on one database (lib/nodes.js, lib/epochs.js,
+  // the designer lock in models/lock.model.js, the node following a job)
+  for (const table of ["nodes", "cache_epochs", "designer_lock"]) {
+    const sql = fs.readFileSync(`${__dirname}/../db/create_${table}_table.sql`);
+    await checkPromise(addTable(table, sql.toString()), messages, success, failed);
+  }
+  await checkPromise(addColumn("jobs", "tracker", "varchar(250)", true, "NULL"), messages, success, failed);
+  // who holds a repository's or a schedule's 'running' claim, and since when : a claim left by a
+  // node that went away is released by the worker (Repository.releaseStaleClaims, Schedule.releaseStale)
+  for (const table of ["repositories", "schedule"]) {
+    await checkPromise(addColumn(table, "claim_node", "varchar(250)", true, "NULL"), messages, success, failed);
+    await checkPromise(addColumn(table, "claim_since", "datetime", true, "NULL"), messages, success, failed);
+  }
+}
+
+// Idempotent by its WHERE clause : a row is copied once, and never over a store chosen since
+function copyVaultPathToSecretRef() {
+  return mysql
+    .do("UPDATE AnsibleForms.`credentials` SET secret_store='vault', secret_ref=vault_path WHERE vault_path IS NOT NULL AND vault_path<>'' AND (secret_store IS NULL OR secret_store='')")
+    .then((res) => {
+      const n = res?.affectedRows || 0;
+      const message = n ? `pointed ${n} credential(s) with a vault_path at the secret store 'vault'` : "No credential vault_path left to copy";
+      if (n) logger.warning(message); else logger.debug(message);
+      return message;
+    });
+}
+
+/**
+ * Copies every AWX connection into runners (type awx), then drops the awx table. Idempotent :
+ * a row is copied once (by name), and with no awx table left there is nothing to do. Both
+ * tables encrypt password and token with the same key, so the ciphertext is copied as is.
+ * A name already taken by a runner of ANOTHER type cannot be copied : then the awx table is
+ * kept (nothing is lost) and the log says which name to change ; the next start retries.
+ */
+export async function copyAwxToRunners() {
+  if (!(await tablePresent("awx"))) return "No awx table left to copy";
+  const copied = await mysql.do(
+    "INSERT INTO AnsibleForms.`runners` (name, type, description, uri, token, username, password, use_credentials, ignore_certs, ca_bundle, is_default, managed) " +
+    "SELECT a.name, 'awx', a.description, a.uri, NULLIF(a.token,''), NULLIF(a.username,''), NULLIF(a.password,''), COALESCE(a.use_credentials,0), COALESCE(a.ignore_certs,0), a.ca_bundle, COALESCE(a.is_default,0), COALESCE(a.managed,0) " +
+    "FROM AnsibleForms.`awx` a WHERE a.name IS NOT NULL AND NOT EXISTS (SELECT 1 FROM AnsibleForms.`runners` r WHERE r.name = a.name)"
+  );
+  const blocked = await mysql.do(
+    "SELECT a.name FROM AnsibleForms.`awx` a LEFT JOIN AnsibleForms.`runners` r ON r.name = a.name AND r.type = 'awx' WHERE r.id IS NULL"
+  );
+  if (blocked.length) {
+    const names = blocked.map((b) => b.name || "(no name)").join(", ");
+    const message = `AWX connection(s) ${names} could not move to runners : a runner of another type has that name, or the connection has none. Rename it ; the awx table is kept until then`;
+    logger.error(message);
+    return message;
+  }
+  await dropTable("awx");
+  const n = copied?.affectedRows || 0;
+  const message = n ? `Moved ${n} AWX connection(s) to runners (type awx) and dropped the awx table` : "Dropped the awx table, its connections were already runners";
+  logger.warning(message);
+  return message;
 }
 
 // PATCHING : Patch All
@@ -793,6 +920,7 @@ async function patchAll(messages, success, failed) {
   await checkPromise(patchVersion4(messages, success, failed), messages, success, failed);
   await checkPromise(patchVersion5(messages, success, failed), messages, success, failed);
   await checkPromise(patchVersion6(messages, success, failed), messages, success, failed);
+  await checkPromise(patchVersion7(messages, success, failed), messages, success, failed);
 }
 async function checkPromise(promise, messages, success, failed) {
   try {
@@ -815,7 +943,7 @@ async function checkTables(tables, messages, success, failed) {
   }
 }
 
-async function checkAll() {
+async function checkAll({ patch = true } = {}) {
   var messages = [];
   var success = [];
   var failed = [];
@@ -833,7 +961,8 @@ async function checkAll() {
   }
 
   // check all the tables
-  var tables = ["credentials", "groups", "job_output", "jobs", "ldap", "tokens", "users", "awx"];
+  // not awx : 7 copies it into runners and drops it (patchVersion7)
+  var tables = ["credentials", "groups", "job_output", "jobs", "ldap", "tokens", "users"];
   await checkPromise(checkTables(tables, messages, success, failed), messages, success, failed);
 
   if (failed.length > 0) {
@@ -845,7 +974,7 @@ async function checkAll() {
   }
 
   // patch the tables
-  await checkPromise(patchAll(messages, success, failed), messages, success, failed);
+  if (patch) await checkPromise(patchAll(messages, success, failed), messages, success, failed);
 
   if (failed.length > 0) {
     // some of the patches failed // throw now

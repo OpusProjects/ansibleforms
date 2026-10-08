@@ -5,10 +5,22 @@
 export const authProviders = ['local', 'ldap', 'azuread', 'oidc'];
 
 export const roleOptionKeys = [
-  'showDesigner', 'showLogs', 'showDebugButtons', 'showSettings',
-  'showExtravars', 'showAllJobLogs', 'showArtifacts', 'showJobs',
-  'allowLogin', 'allowBackupOps', 'allowVerboseMode', 'allowJobRelaunch',
-  'allowScheduledJobs', 'allowStoredJobs', 'allowPlannedJobs', 'allowChat',
+  'showDesigner',
+  'showLogs',
+  'showDebugButtons',
+  'showSettings',
+  'showExtravars',
+  'showAllJobLogs',
+  'showArtifacts',
+  'showJobs',
+  'allowLogin',
+  'allowBackupOps',
+  'allowVerboseMode',
+  'allowJobRelaunch',
+  'allowScheduledJobs',
+  'allowStoredJobs',
+  'allowPlannedJobs',
+  'allowChat',
   'extendedTokenExpiration',
 ];
 
@@ -20,14 +32,26 @@ export const roleOptionKeys = [
 // variant is not exposed by this editor, so it is not listed here (unknown keys
 // found in hand-written yaml are preserved verbatim by serializeRole).
 const trueByDefaultOptions = [
-  'allowVerboseMode', 'showJobs', 'showDebugButtons', 'showExtravars',
-  'showArtifacts', 'allowStoredJobs', 'allowPlannedJobs', 'allowLogin', 'allowChat',
+  'allowVerboseMode',
+  'showJobs',
+  'showDebugButtons',
+  'showExtravars',
+  'showArtifacts',
+  'allowStoredJobs',
+  'allowPlannedJobs',
+  'allowLogin',
+  'allowChat',
 ];
 
 // Options whose effective value defaults to the "is this an admin" check.
 const adminByDefaultOptions = [
-  'showSettings', 'showDesigner', 'showLogs', 'allowBackupOps',
-  'allowJobRelaunch', 'showAllJobLogs', 'allowScheduledJobs',
+  'showSettings',
+  'showDesigner',
+  'showLogs',
+  'allowBackupOps',
+  'allowJobRelaunch',
+  'showAllJobLogs',
+  'allowScheduledJobs',
 ];
 
 // Effective value of every option for a role that does not spell it out.
@@ -118,15 +142,16 @@ export function roleToEditable(r) {
 //    explicit false would turn "no opinion" into "deny" and, for a user holding
 //    several roles, silently strip permissions granted by another role -- an
 //    admin who also matches a plain role would lose settings access.
-// Flags we don't know about (hand-written yaml, deprecated aliases like
-// enableLogin, the showExtraVars casing variant) are passed through untouched.
+// Flags we don't know about (hand-written yaml, the showExtraVars casing variant) are
+// passed through untouched.
 export function serializeRole(r) {
   const name = (r.name || '').trim();
   const isPublic = name === 'public';
   const role = { name };
-  const clean = (list) => (list || [])
-    .filter(e => e && typeof e.name === 'string' && e.name.trim())
-    .map(e => formatProviderEntry({ provider: e.provider, name: e.name.trim() }));
+  const clean = (list) =>
+    (list || [])
+      .filter((e) => e && typeof e.name === 'string' && e.name.trim())
+      .map((e) => formatProviderEntry({ provider: e.provider, name: e.name.trim() }));
   role.groups = isPublic ? [] : clean(r.groups);
   const users = isPublic ? [] : clean(r.users);
   if (users.length) role.users = users;

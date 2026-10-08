@@ -1,8 +1,0 @@
----
-- name: "Ansible Forms Query mysql and dump to csv files"
-  ansibleguy76.ansibleforms.af_datasource_query_mysql:
-    datasource : "{{ datasource }}"
-    mysql_conn: "{{ query_mysql_conn }}"
-    import_path: "{{ import_path }}"
-  delegate_to: localhost
-  register: af_datasource_query_mysql_result

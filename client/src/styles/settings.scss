@@ -4,13 +4,13 @@
  * Configures SASS variables and bootstrap overwrites
  */
 
-@import "variables"; // custom bootstrap colors
-@import "bootstrap/scss/bootstrap"; // bootstrap
+@import 'variables'; // custom bootstrap colors
+@import 'bootstrap/scss/bootstrap'; // bootstrap
 // @import "themes"; // custom bootstrap themes
-@import "popper"; // popper styling
-@import "textColors"; // custom text colors
-@import "inputGroup"; // input group styling
-@import "highlight"; // code highlighting
-@import "ace-editor"; // ace editor styling
-@import "bootstrap-override"; // bootstrap overrides
-@import "sonner"; // vue-sonner toast styling
+@import 'popper'; // popper styling
+@import 'textColors'; // custom text colors
+@import 'inputGroup'; // input group styling
+@import 'highlight'; // code highlighting
+@import 'ace-editor'; // ace editor styling
+@import 'bootstrap-override'; // bootstrap overrides
+@import 'sonner'; // vue-sonner toast styling

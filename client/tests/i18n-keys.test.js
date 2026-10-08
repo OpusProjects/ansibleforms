@@ -2,7 +2,7 @@
 //
 // vue-i18n renders a key it does not know as the key ITSELF, so a missing entry is not a
 // crash and not a lint error - it is the literal string `errors.requiredFields` appearing
-// in a toast, in all six languages. That is exactly how it shipped: the key existed in the
+// in a toast, in every language. That is exactly how it shipped: the key existed in the
 // SERVER locales only, and the settings page used it for a client-side validation message.
 //
 // This scans the real source rather than a list, so a key added tomorrow is covered.
@@ -14,7 +14,7 @@ import { fileURLToPath } from 'url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(here, '..');
 
-const LANGS = ['en', 'de', 'fr', 'it', 'es', 'nl'];
+const LANGS = ['en', 'de', 'fr', 'it', 'es', 'nl', 'ca', 'pt', 'ja', 'zh', 'pl'];
 
 function flatten(obj, prefix = '', out = {}) {
   for (const [k, v] of Object.entries(obj)) {
@@ -68,7 +68,7 @@ describe('every translated key used in the source exists', () => {
     expect(missing).toEqual([]);
   });
 
-  it('and every en key exists in the other five locales', () => {
+  it('and every en key exists in all the other locales', () => {
     const gaps = [];
     for (const key of Object.keys(maps.en)) {
       for (const lang of LANGS.slice(1)) {

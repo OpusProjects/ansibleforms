@@ -29,7 +29,7 @@ describe('a save must not reorder the forms files', () => {
   });
 
   it('the display path may still sort alphabetically', () => {
-    const fn = designer.slice(designer.indexOf('function formnames'), designer.indexOf('const hasBaseForms'));
+    const fn = designer.slice(designer.indexOf('function formnames'), designer.indexOf('async function loadAll'));
     expect(fn).toContain('toLowerCase');
   });
 });
@@ -150,7 +150,7 @@ describe('the tree marker and the Save button agree', () => {
   it('an unparsable buffer falls back to the raw text rather than colliding', () => {
     // two different unparsable drafts must not both stringify to the same thing
     const fn = designer.slice(designer.indexOf('function parsedForm'), designer.indexOf('function isFormDirty'));
-    expect(fn).toMatch(/catch \{ return raw; \}/);
+    expect(fn).toMatch(/catch \{\s*(\/\/[^\n]*\s*)?return raw;\s*\}/);
   });
 });
 

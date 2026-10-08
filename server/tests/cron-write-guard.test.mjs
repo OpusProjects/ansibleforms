@@ -1,7 +1,7 @@
 // A schedule the scheduler cannot run must not reach the database.
 //
 // cron.service.js validates too, but only when it REGISTERS the task - and there a failure
-// is a log line and a `return`. By then the row is stored, so the repository, datasource or
+// is a log line and a `return`. By then the row is stored, so the repository or
 // schedule simply never runs again and nothing on any page says why. That is the quietest
 // failure in the product: a sync that has stopped looks exactly like one with nothing to do.
 //
@@ -27,11 +27,10 @@ const CrudModel = (await import("../src/models/crud.model.js")).default;
 // throws, making every assertion below vacuous
 const BASE = {
   repositories: { name: "x", uri: "https://example.com/r.git" },
-  datasource: { name: "x", schema: "s" },
   schedule: { name: "x" },
   users: { username: "x", password: "y", group_id: 1 },
 };
-const CRON_TABLES = ["repositories", "datasource", "schedule"];
+const CRON_TABLES = ["repositories", "schedule"];
 
 describe("an unrunnable cron is refused on the way in", () => {
   test.each(CRON_TABLES)("%s.create refuses an inverted range", async (model) => {

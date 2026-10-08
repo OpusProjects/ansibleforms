@@ -63,7 +63,10 @@ const mailcheck = async function(req, res) {
       const existingSettings = await Settings.find();
       settingsConfig.mail_password = existingSettings.mail_password;
     }
-    const messageid = await Settings.mailcheck(new Settings(settingsConfig), req.body.to, req.body.subject, req.body.body);
+    // the settings page sends no subject or body : the test mail is in the admin's language
+    const subject = req.body.subject || i18n.t(req, 'email.test.subject');
+    const body = req.body.body || i18n.t(req, 'email.test.body');
+    const messageid = await Settings.mailcheck(new Settings(settingsConfig), req.body.to, subject, body);
     res.json(RestResult.single({ message: i18n.t(req, 'resources.mailSent', { id: messageid }) }));
   } catch(err) {
     res.status(500).json(RestResult.error(i18n.t(req, 'resources.mailCheckFailed'), Helpers.getError(err)));
@@ -219,22 +222,6 @@ const saveConfig = async function(req, res) {
     }
 };
 
-const legacyCheck = function(req, res) {
-    try {
-      res.json(RestResult.single({ hasLegacy: Settings.hasLegacyFormsYaml() }));
-    } catch(err) {
-      res.status(500).json(RestResult.error(i18n.t(req, 'resources.failedLegacyCheck'), Helpers.getError(err)));
-    }
-};
-
-const convertLegacy = function(req, res) {
-    try {
-      const message = Settings.convertFormsYaml();
-      res.json(RestResult.single({ message }));
-    } catch(err) {
-      res.status(500).json(RestResult.error(i18n.t(req, 'resources.failedConvertLegacy'), Helpers.getError(err)));
-    }
-};
 
 export default {
     find,
@@ -243,7 +230,5 @@ export default {
     importConfig,
     exportConfig,
     getConfig,
-    saveConfig,
-    legacyCheck,
-    convertLegacy
+    saveConfig
 };

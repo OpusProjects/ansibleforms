@@ -1,10 +1,16 @@
 {
   "private": true,
   "name": "ansible-forms",
-  "description": "A web application with vue3 and nodejs/express to build nice forms to target local ansible or remote ansible automation platform (awx, tower, aap)",
+  "description": "A web application with vue3 and nodejs/express to build forms that run Ansible playbooks on runtime environments (RTE) and AWX/AAP/Ascender templates",
   "scripts": {
-    "dev": "npm-run-all --parallel dev:server dev:client",
+    "dev": "npm-run-all --parallel dev:server dev:rte dev:client",
+    "dev:local": "npm-run-all --parallel dev:server dev:client",
+    "dev:split": "npm-run-all --parallel dev:app dev:app2 dev:worker dev:rte dev:client",
+    "dev:app": "cd server && npm run dev:app",
+    "dev:app2": "cd server && npm run dev:app2",
+    "dev:worker": "cd server && npm run dev:worker",
     "dev:server": "cd server && npm run dev",
+    "dev:rte": "cd server && npm run dev:rte",
     "dev:client": "cd client && npm run dev"
   },
   "devDependencies": {

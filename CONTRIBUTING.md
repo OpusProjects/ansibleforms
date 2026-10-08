@@ -11,7 +11,7 @@ as you like — only the pull request title survives.
 
 | Branch | Holds | Releases |
 |---|---|---|
-| `main` | the next major (7) | `7.0.0-beta.N` until 7.0.0 is final |
+| `main` | the newest major (7) | `7.x.y` |
 | `release/6.x` | the current major, fixes only | `6.5.x` patches |
 
 1. Branch from `main`, named `<type>/<short-description>`, for example
@@ -85,19 +85,21 @@ the schema builds itself at startup.
 CI runs exactly these, so running them first saves a round trip:
 
 ```bash
-cd client && npm run lint:check && npm run test && npm run build
+cd client && npm run lint:check && npm run format:check && npm run test && npm run build
 cd server && npm run lint:check && npm run test
 ```
 
-Both sides are lint-clean and green, and the intent is to keep them that way. The server
+`format:check` is the client's Prettier check ; when it fails, `npm run format` in `client`
+rewrites the files it names. Both sides are lint-clean and green, and the intent is to keep
+them that way. The server
 suite needs no database — it runs against the stubs in `server/tests/__mocks__`.
 
 ## Things that are easy to get wrong
 
-**Six locale files, always.** Every UI string goes through `t('key')`, and
-`client/src/locales/` holds `en`, `de`, `fr`, `it`, `es` and `nl`. They are at exact
+**Every locale file, always.** Every UI string goes through `t('key')`, and
+`client/src/locales/` holds `en`, `de`, `fr`, `it`, `es`, `nl`, `ca`, `pt`, `ja`, `zh` and `pl`. They are at exact
 parity: same keys, same `{placeholder}` tokens. Adding a string to one and not the others
-ships a missing translation. Server strings live in `server/src/locales/`, same six.
+ships a missing translation. Server strings live in `server/src/locales/`, same set.
 
 **Adding a page does not add a route.** `client/src/router/index.js` is hand-written, one
 entry per page with its own `beforeEnter` guard. The guard has to match the permission the
@@ -116,14 +118,14 @@ is not. Note that SQL file **drops every table** — never run it against anythi
 about.
 
 **Configuration in the database needs the config seed.** A Kubernetes deployment rebuilds its
-configuration from the seed file (`CONFIG_SEED_PATH`, see `docs/seed.md`). A new table or
+configuration from the seed file (`CONFIG_SEED_PATH`, see the [seed page](https://ansibleforms.com/seed)). A new table or
 column that holds configuration - settings, a connection, a provider - must be declared in
 `server/src/lib/seed-schema.js`, applied in `server/src/lib/seed.js` (secrets as
 `${ENV_VAR}` references, the `managed` flag for single-row sections) and documented in
-`docs/seed.md`, with a test in `server/tests/config-seed.test.mjs`. If it should not be
+`seed.md` of [ansibleforms/website](https://github.com/ansibleforms/website), with a test in `server/tests/config-seed.test.mjs`. If it should not be
 seedable, say why in the pull request.
 
-**Environment variables need a `docs/_data/help.yaml` entry.** That file is the single
+**Environment variables need a `server/help.yaml` entry.** That file is the single
 source of truth for the label, the help text, the type and the allowed values. A variable
 missing from it appears nowhere in the settings UI.
 

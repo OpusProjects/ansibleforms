@@ -1,12 +1,16 @@
 name: Publish
 
-# Builds and pushes the application image. Called by release.yml when a release is created
+# Builds and pushes the two images : the application (ansibleforms, Dockerfile) and the
+# runtime environment that runs its playbooks (ansibleforms-rte, Dockerfile.rte), with the
+# same tags. Called by release.yml when a release is created
 # and by rc.yml for a release candidate. "Run workflow" re-publishes an existing release tag,
-# for when a push failed half way. The tags (see "Work out the tags") :
-#   release 6.5.3      -> 6.5.3, 6.5, 6 and latest - each only while it is the highest of
-#                         its kind, so a patch on an older line never moves them backwards
-#   pre-release 7.0.0-beta.2 -> 7.0.0-beta.2, 7-beta, next (never latest)
-#   rc 6.5.3-rc.551.1  -> 6.5.3-rc.551.1, 6-rc, latest-rc
+# for when a push failed half way. The tags are the list in installation.md (Image
+# tags) of ansibleforms/website - change that list and this together, never one of them :
+#   release 6.5.3     -> 6.5.3, 6.5, 6 and latest - each only while it is the highest of
+#                        its kind, so a patch on an older line never moves them backwards ;
+#                        a release that takes latest takes latest-rc too, so a test server
+#                        on latest-rc is never behind latest
+#   rc 6.5.3-rc.551.1 -> 6.5.3-rc.551.1 and latest-rc
 #
 # Images go to GHCR only. Docker Hub (ansibleguy/ansibleforms) is no longer published to:
 # it keeps the releases it already has and gets no new version, of either line.
@@ -62,7 +66,7 @@ jobs:
         run: |
           case "$CHANNEL" in release|rc) ;; *) echo "::error::unknown channel '$CHANNEL'"; exit 1 ;; esac
           echo "build_time=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
-          # short, not the full sha : generate-build-info.sh writes GIT_SHA verbatim into
+          # short, not the full sha : scripts/generate-build-info.sh writes GIT_SHA verbatim into
           # build-info.json and the About dialog has always shown the short form
           echo "sha_short=$(git rev-parse --short=7 HEAD)" >> "$GITHUB_OUTPUT"
           echo "Publishing $VERSION ($CHANNEL) from $(git rev-parse HEAD)"
@@ -83,8 +87,8 @@ jobs:
       - name: Work out the tags
         id: tags
         run: |
-          # github.repository is already lowercase here ; GHCR rejects anything else
-          ghcr="ghcr.io/${{ github.repository }}"
+          # GHCR rejects uppercase, and github.repository keeps the owner's case
+          ghcr="ghcr.io/${GITHUB_REPOSITORY,,}"
           major="${VERSION%%.*}"
           minor="$major.$(echo "$VERSION" | cut -d. -f2)"
 
@@ -93,14 +97,14 @@ jobs:
           highest() { { echo "$finals"; echo "$VERSION"; } | grep -E "^$1" | sort -V | tail -1; }
 
           if [ "$CHANNEL" = "rc" ]; then
-            names="$VERSION latest-rc $major-rc"
+            names="$VERSION latest-rc"
           elif [[ "$VERSION" == *-* ]]; then
-            names="$VERSION next $major-beta"
+            names="$VERSION"   # a pre-release version : no moving tag at all
           else
             names="$VERSION"
             [ "$(highest "$minor\.")" = "$VERSION" ] && names="$names $minor"
             [ "$(highest "$major\.")" = "$VERSION" ] && names="$names $major"
-            [ "$(highest "")" = "$VERSION" ] && names="$names latest"
+            [ "$(highest "")" = "$VERSION" ] && names="$names latest latest-rc"
           fi
 
           tags=""
@@ -110,6 +114,14 @@ jobs:
           tags="${tags#,}"
           echo "list=$tags" >> "$GITHUB_OUTPUT"
           echo "$tags" | tr ',' '\n'
+          # the RTE : the same tags on its own image name
+          rte=""
+          for n in $names; do
+            rte="$rte,$ghcr-rte:$n"
+          done
+          rte="${rte#,}"
+          echo "rte=$rte" >> "$GITHUB_OUTPUT"
+          echo "$rte" | tr ',' '\n'
 
       - uses: docker/setup-buildx-action@v4
 
@@ -132,8 +144,22 @@ jobs:
             GIT_SHA=${{ steps.v.outputs.sha_short }}
             BUILD_TIME=${{ steps.v.outputs.build_time }}
             VERSION=${{ env.VERSION }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=app
+          cache-to: type=gha,mode=max,scope=app
+
+      - name: Build and push the RTE
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile.rte
+          push: true
+          tags: ${{ steps.tags.outputs.rte }}
+          build-args: |
+            GIT_SHA=${{ steps.v.outputs.sha_short }}
+            BUILD_TIME=${{ steps.v.outputs.build_time }}
+            VERSION=${{ env.VERSION }}
+          cache-from: type=gha,scope=rte
+          cache-to: type=gha,mode=max,scope=rte
 
       - name: Summary
         run: |
@@ -142,6 +168,7 @@ jobs:
             echo ""
             echo '```'
             echo "${{ steps.tags.outputs.list }}" | tr ',' '\n'
+            echo "${{ steps.tags.outputs.rte }}" | tr ',' '\n'
             echo '```'
             echo ""
             echo "from \`$(git rev-parse HEAD)\`"

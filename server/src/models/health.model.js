@@ -6,9 +6,16 @@ import BackupModel from './backup.model.js';
 import cronService from '../services/cron.service.js';
 import appConfig from '../../config/app.config.js';
 import logConfig from '../../config/log.config.js';
-import Vault from '../lib/vault.js';
+import SecretStore from './secretStore.model.js';
+import Runner from './runner.model.js';
+import { checkStore } from '../secrets/providers/index.js';
 import { getSeedState } from '../lib/seed.js';
 import { getExpressionMode } from '../lib/expressionMode.js';
+import Lock from './lock.model.js';
+import { holdsWorkerLock } from '../lib/workerLock.js';
+import { listNodes } from '../lib/nodes.js';
+import { majorMinor } from '../lib/version.js';
+import { missingFromManifest } from '../lib/schemaCompleteness.js';
 import net from 'net';
 import tls from 'tls';
 import logger from '../lib/logger.js';
@@ -175,30 +182,6 @@ try {
   buildInfo = JSON.parse(readFileSync(path.resolve(__dirname_h, '../../build-info.json'), 'utf8'));
 } catch { /* absent in dev, which is normal */ }
 
-// Which ansible will actually run a playbook. The app shells out to 'ansible-playbook'
-// by name, so what answers depends on PATH, the venv and the container image - and
-// nothing else in the UI says which one won. Deliberately INFORMATION, not a check :
-// an instance driving AWX/AAP only has no local ansible and that is not a fault.
-async function ansibleVersion() {
-  try {
-    // 'ansible-playbook [core 2.16.3]' is the first line ; the rest is config paths
-    const out = await Cmd.executeSilentCommand({
-      command: 'ansible-playbook --version',
-      directory: process.cwd(),
-      description: 'Reading ansible version'
-    }, true, true, 10);
-    const first = String(out || '').split(/\r?\n/)[0].trim();
-    if (!first) return null;
-    // 'ansible-playbook [core 2.21.1]' since ansible 2.10, 'ansible-playbook 2.9.27'
-    // before it - report the number either way, and keep the raw line in the detail
-    const m = /\[core\s+([^\]]+)\]/.exec(first) || /(\d+\.\d+[\w.]*)/.exec(first);
-    return { version: m ? m[1].trim() : first, raw: first };
-  } catch {
-    // not installed, or not on PATH for the user this process runs as
-    return null;
-  }
-}
-
 // Which sign-in routes are open. 'why can this user not log in' starts here, and the
 // answer is otherwise spread over two admin pages.
 async function authenticationFacts() {
@@ -218,41 +201,71 @@ async function authenticationFacts() {
   };
 }
 
-// The scheduler runs in-process. If the system tasks are missing, the nightly
+// The live worker's row in `nodes`, or null : the scheduler runs in the process holding the
+// worker lock, which may be another container than the one answering this page.
+async function liveWorker() {
+  const nodes = await listNodes().catch(() => []);
+  return nodes.find(n => n.isWorker && n.alive) || null;
+}
+
+// The scheduler runs in the worker. If the system tasks are missing, the nightly
 // backup, the token cleanup and the abandoned-job sweep are all silently not
 // happening - which looks exactly like a healthy instance from the outside.
 async function schedulerCheck() {
-  const system = cronService.jobs?.system
-  if (!system || system.size === 0) {
+  let described;
+  let where;
+  if (holdsWorkerLock()) {
+    described = cronService.describe();
+    where = 'this process';
+  } else {
+    const worker = await liveWorker();
+    if (!worker || !worker.info?.scheduler) {
+      return check('scheduler', ERROR, 'no worker', {
+        reason: 'No process holds the worker lock, so schedules, backups, repository syncs and cleanups are not running',
+        note: 'Start a worker (AF_ROLE=worker), or a process with AF_ROLE unset',
+      });
+    }
+    described = worker.info.scheduler;
+    where = worker.id;
+  }
+  const { counts, tasks } = described;
+  if (!counts?.system) {
     return check('scheduler', ERROR, 'not running', 'No system tasks are registered');
   }
-  const tasks = [];
-  for (const [name, task] of system.entries()) {
-    var next;
-    try { next = task.nextRun?.() || null; } catch { next = null; }
-    tasks.push({ name, nextRun: next ? new Date(next).toISOString() : null });
-  }
-  const counts = {
-    system: system.size,
-    schedules: cronService.jobs?.schedules?.size || 0,
-    repositories: cronService.jobs?.repositories?.size || 0,
-    datasources: cronService.jobs?.datasources?.size || 0,
-  };
   // A registered task is not a running one. croner returns a null next run for a task
   // that has been stopped or whose pattern has no future occurrence, and that is the
-  // only scheduler failure actually OBSERVABLE here: the empty-map branch above cannot
-  // be reached in practice, because app.js awaits init() - which registers these six
-  // tasks - before the http server ever listens, so a registration failure means there
-  // is no page to show the row on. This branch is what gives the row a real verdict:
-  // a nightly backup that silently stopped scheduling looks identical to a healthy
-  // instance from the outside, which is the whole reason this page exists.
+  // only scheduler failure actually OBSERVABLE here. This branch is what gives the row a
+  // real verdict: a nightly backup that silently stopped scheduling looks identical to a
+  // healthy instance from the outside, which is the whole reason this page exists.
   const dead = tasks.filter(t => !t.nextRun);
   if (dead.length > 0) {
-    return check('scheduler', ERROR, `${dead.length} of ${system.size} tasks will not run again`, {
-      counts, tasks, stopped: dead.map(t => t.name),
+    return check('scheduler', ERROR, `${dead.length} of ${counts.system} tasks will not run again`, {
+      counts, tasks, stopped: dead.map(t => t.name), worker: where,
     });
   }
-  return check('scheduler', OK, `${counts.system} system, ${counts.schedules} schedules`, { counts, tasks });
+  return check('scheduler', OK, `${counts.system} system, ${counts.schedules} schedules`,
+    { counts, tasks, worker: where, lastResync: described.lastResync || null });
+}
+
+// The processes on this database : app nodes, the worker (and one waiting), their versions.
+// Mixed versions mean a rolling update is under way or stuck - one schema, two codes.
+async function nodesCheck() {
+  const nodes = (await listNodes()).filter(n => n.alive);
+  if (nodes.length === 0) {
+    return check('nodes', WARNING, 'none seen', 'No process has written its heartbeat yet');
+  }
+  const detail = nodes.map(n => ({
+    id: n.id, role: n.role, version: n.version, worker: n.isWorker, lastSeenSecondsAgo: n.ageSeconds, self: n.self,
+  }));
+  // not the RTEs : they may run an older release on purpose, the contract decides (rte/contract.js)
+  const versions = [...new Set(nodes.filter(n => n.role !== 'rte').map(n => majorMinor(n.version)))];
+  if (versions.length > 1) {
+    return check('nodes', WARNING, `${nodes.length} nodes, versions ${versions.join(' and ')}`,
+      { nodes: detail, reason: 'The nodes run different versions on one schema - finish the update' });
+  }
+  const workers = nodes.filter(n => n.isWorker).length;
+  const rtes = nodes.filter(n => n.role === 'rte').length;
+  return check('nodes', OK, `${nodes.length - rtes} node(s), ${workers} worker, ${rtes} RTE`, { nodes: detail });
 }
 
 // The dump tool is the one dependency that produces a convincing failure : the
@@ -353,14 +366,14 @@ async function configSourceFacts() {
   };
 }
 
-// A stale lock file survives restarts and makes every config save, import and
+// A stale designer lock survives restarts and makes every config save, import and
 // export answer 423 with no other symptom.
 async function designerLockCheck() {
   // deliberately NOT Lock.status() : that goes through Lock.get(), which enforces
   // showDesigner, and health is a settings-level page
   try {
-    const raw = await fs.readFile(appConfig.lockPath, 'utf8');
-    const lock = yaml.parse(raw) || {};
+    const lock = await Lock.read();
+    if (lock === null) return check('designerLock', OK, 'free');
     const who = lock.username || 'unknown';
     // A held lock is the designer WORKING, not a fault, and warning on it turned this row
     // amber during ordinary use - which teaches people to ignore amber and so costs us the
@@ -379,7 +392,7 @@ async function designerLockCheck() {
     if (ageHours === null) {
       // Lock.set always writes a timestamp, so one without it is hand-written or corrupt
       return check('designerLock', WARNING, `held by ${who}, age unknown`,
-        { ...detail, reason: 'The lock file has no usable creation time' });
+        { ...detail, reason: 'The lock has no usable creation time' });
     }
     if (ageHours >= STALE_LOCK_HOURS) {
       return check('designerLock', WARNING, `held by ${who} for ${Math.floor(ageHours)}h`,
@@ -387,7 +400,7 @@ async function designerLockCheck() {
     }
     return check('designerLock', OK, `held by ${who}`, detail);
   } catch (e) {
-    if (e.code === 'ENOENT') return check('designerLock', OK, 'free');
+    if (e.code === 'ER_NO_SUCH_TABLE') return check('designerLock', OK, 'free');
     throw e;
   }
 }
@@ -427,40 +440,93 @@ async function repositoriesCheck() {
 
 // Job output is longtext and nothing prunes it, so this is the table that grows
 // without limit on a busy instance. Surface it before it becomes a problem.
-// Vault is optional, so an instance without it is fine - but once configured it is a HARD
-// dependency: credential.model.v2 rethrows on a failed read, so a job using a vault-backed
-// credential fails outright. And nothing renews the token, so the realistic failure is not
-// a dead server but a token quietly reaching the end of its ttl.
+// Secret stores are optional, so an instance without any is fine - but once one is used it
+// is a HARD dependency: credential.model.v2 rethrows on a failed read, so a job using a
+// credential from it fails outright. For a Vault, nothing renews the token, so the
+// realistic failure is not a dead server but a token quietly reaching the end of its ttl.
 const VAULT_TTL_WARN_SECONDS = 7 * 24 * 3600;
 
-async function vaultCheck() {
-  // no network at all when it is not in use
-  if (!Vault.isConfigured()) return check('vault', OK, 'not configured');
-  // 5s, not the 10s default : these checks run in parallel and a hanging Vault would
-  // hold the whole page
-  const info = await Vault.vaultCheck({ timeoutMs: 5000 });
-  const detail = {
-    addr: info.addr,
-    namespace: info.namespace,
-    kvVersion: info.kvVersion,
-    defaultMount: info.defaultMount,
-    renewable: info.renewable,
-    policies: info.policies,
-    ttlSeconds: info.ttl,
-  };
+function describeVaultToken(info) {
   // Vault reports 0 for a token that does not expire
-  if (!info.ttl) return check('vault', OK, 'reachable, token does not expire', detail);
+  if (!info?.ttl) return { status: OK, value: 'token does not expire' };
   const days = Math.floor(info.ttl / 86400);
-  const value = days >= 1 ? `reachable, token expires in ${days}d` : `reachable, token expires in ${Math.max(1, Math.round(info.ttl / 3600))}h`;
-  if (info.ttl <= VAULT_TTL_WARN_SECONDS) {
-    return check('vault', WARNING, value, {
-      ...detail,
-      reason: info.renewable
-        ? 'Nothing renews this token automatically - every vault-backed credential fails when it expires'
-        : 'This token is not renewable - issue a new one before it expires, or every vault-backed credential fails',
+  const value = days >= 1 ? `token expires in ${days}d` : `token expires in ${Math.max(1, Math.round(info.ttl / 3600))}h`;
+  if (info.ttl > VAULT_TTL_WARN_SECONDS) return { status: OK, value };
+  return {
+    status: WARNING,
+    value,
+    reason: info.renewable
+      ? 'Nothing renews this token automatically - every credential reading from this store fails when it expires'
+      : 'This token is not renewable - issue a new one before it expires, or every credential reading from this store fails',
+  };
+}
+
+async function secretStoresCheck() {
+  const stores = await SecretStore.findAll() || [];
+  // no network at all when none is in use
+  if (!stores.length) return check('secretStores', OK, 'none configured');
+  // 5s, not the 10s default : these checks run in parallel and a hanging store would hold
+  // the whole page
+  const results = await Promise.all(stores.map(async (store) => {
+    const base = { name: store.name, type: store.type, url: store.url };
+    try {
+      const info = await checkStore(store, { timeoutMs: 5000 });
+      if (store.type !== 'vault') return { ...base, status: OK, value: 'reachable' };
+      const token = describeVaultToken(info);
+      return { ...base, status: token.status, value: `reachable, ${token.value}`, ...(token.reason ? { reason: token.reason } : {}),
+        namespace: info.namespace, kvVersion: info.kvVersion, defaultMount: info.defaultMount, renewable: info.renewable, policies: info.policies, ttlSeconds: info.ttl };
+    } catch (e) {
+      return { ...base, status: ERROR, value: 'unreachable', reason: e.message || String(e) };
+    }
+  }));
+  const worst = results.reduce((w, r) => (SEVERITY[r.status] > SEVERITY[w] ? r.status : w), OK);
+  const failing = results.filter((r) => r.status !== OK);
+  const value = !failing.length
+    ? `${results.length} store(s) reachable`
+    : failing.length === 1 && results.length === 1
+      ? failing[0].value
+      : `${failing.length} of ${results.length} store(s) need attention : ${failing.map((r) => r.name).join(', ')}`;
+  // one store failing : its reason is the check's reason, as it was for the single Vault
+  const reason = failing.length === 1 ? failing[0].reason : undefined;
+  return check('secretStores', worst, value, { ...(reason ? { reason } : {}), stores: results });
+}
+
+// Runners : where jobs run (RTEs for playbooks, AWX/AAP for templates). Since 7 the app
+// runs nothing itself, so with no runner no form can run a job - a warning, not an error :
+// a fresh instance has none yet. Each runner is asked for its health (an RTE also proves it
+// runs this release), in parallel, like the secret stores.
+async function runnersCheck() {
+  const runners = await Runner.findAll() || [];
+  if (!runners.length) {
+    return check('runners', WARNING, 'none configured', { reason: 'Since 7 jobs run on runners : add one under Connections > Runners (an RTE for playbooks, AWX/AAP for templates)' });
+  }
+  const results = await Promise.all(runners.map(async (runner) => {
+    const base = { name: runner.name, type: runner.type, uri: runner.uri, isDefault: !!runner.is_default };
+    try {
+      const info = await Runner.check(runner);
+      // an RTE older than the app is fine while it speaks the same contract (rte/contract.js) :
+      // said, not warned about, or the row would be amber for every RTE nobody needed to touch
+      return { ...base, status: OK, value: info.olderRelease ? `reachable, ${info.version} (compatible)` : 'reachable', ...info };
+    } catch (e) {
+      return { ...base, status: ERROR, value: 'unreachable', reason: e.message || String(e) };
+    }
+  }));
+  const worst = results.reduce((w, r) => (SEVERITY[r.status] > SEVERITY[w] ? r.status : w), OK);
+  const failing = results.filter((r) => r.status !== OK);
+  const value = !failing.length
+    ? `${results.length} runner(s) reachable`
+    : failing.length === 1 && results.length === 1
+      ? failing[0].value
+      : `${failing.length} of ${results.length} runner(s) need attention : ${failing.map((r) => r.name).join(', ')}`;
+  const reason = failing.length === 1 ? failing[0].reason : undefined;
+  // a playbook form that names no runner runs on the default RTE : without one it fails
+  if (worst === OK && !runners.some((r) => r.type === 'rte' && r.is_default)) {
+    return check('runners', WARNING, 'no default RTE', {
+      reason: 'Playbook forms that name no runner fail : mark an RTE as default under Connections > Runners',
+      runners: results,
     });
   }
-  return check('vault', OK, value, detail);
+  return check('runners', worst, value, { ...(reason ? { reason } : {}), runners: results });
 }
 
 // LDAP, WITHOUT binding.
@@ -529,34 +595,7 @@ async function ldapCheck() {
 //
 // Three information_schema reads, no writes.
 async function schemaCheck() {
-  if (!SCHEMA_MANIFEST?.base?.tables?.length) {
-    throw new Error('The schema manifest is empty or unreadable, so completeness cannot be judged');
-  }
-  const wanted = { tables: new Set(SCHEMA_MANIFEST.base.tables), columns: new Set(), indexes: new Set() };
-  // which patch is responsible for each item, so the row can name the migration to look at
-  const owner = new Map();
-  for (const [patch, spec] of Object.entries(SCHEMA_MANIFEST.patches)) {
-    for (const t of spec.tables || []) { wanted.tables.add(t); if (!owner.has(t)) owner.set(t, patch); }
-    for (const c of spec.columns || []) { wanted.columns.add(c); owner.set(c, patch); }
-    for (const i of spec.indexes || []) { wanted.indexes.add(i); owner.set(i, patch); }
-  }
-
-  const [tableRows, columnRows, indexRows] = await Promise.all([
-    mysql.do("SELECT table_name AS t FROM information_schema.tables WHERE table_schema='AnsibleForms'"),
-    mysql.do("SELECT table_name AS t, column_name AS c FROM information_schema.columns WHERE table_schema='AnsibleForms'"),
-    mysql.do("SELECT DISTINCT table_name AS t, index_name AS i FROM information_schema.statistics WHERE table_schema='AnsibleForms'"),
-  ]);
-  const haveTables = new Set(tableRows.map(r => r.t));
-  const haveColumns = new Set(columnRows.map(r => `${r.t}.${r.c}`));
-  const haveIndexes = new Set(indexRows.map(r => `${r.t}.${r.i}`));
-
-  const missingTables = [...wanted.tables].filter(t => !haveTables.has(t)).sort();
-  // a column on a table that is itself missing would be noise - the table is the finding
-  const missingColumns = [...wanted.columns]
-    .filter(c => !haveColumns.has(c) && haveTables.has(c.split('.')[0]))
-    .sort();
-  const missingIndexes = [...wanted.indexes].filter(i => !haveIndexes.has(i) && haveTables.has(i.split('.')[0])).sort();
-
+  const { missingTables, missingColumns, missingIndexes, haveTables, owner } = await missingFromManifest(SCHEMA_MANIFEST, mysql);
   const missing = missingTables.length + missingColumns.length + missingIndexes.length;
   if (missing === 0) return check('schema', OK, 'complete', { tables: haveTables.size });
 
@@ -618,7 +657,6 @@ async function writableCheck() {
     ['uploads', appConfig.uploadPath],
     ['vars', appConfig.varsFilesPath],
     ['repositories', appConfig.repoPath],
-    ['lock', path.dirname(appConfig.lockPath)],
     ['logs', logConfig.path],
   ].filter(([, dir]) => !!dir);
 
@@ -682,11 +720,13 @@ async function configSeedCheck() {
   const seedPath = appConfig.configSeedPath;
   if (!seedPath) {
     return check('configSeed', OK, 'not configured',
-      { note: 'Set CONFIG_SEED_PATH to declare the admin objects in a file - see docs/seed.md' });
+      { note: 'Set CONFIG_SEED_PATH to declare the admin objects in a file - see https://ansibleforms.com/seed' });
   }
   // Before anything read from disk : a failed reload means what is on disk is NOT what is
   // running, so reporting the file as healthy would describe configuration nobody applied.
-  const state = getSeedState();
+  // the worker applies the seed : its state, wherever this page is served from
+  let state = getSeedState();
+  if (!holdsWorkerLock()) state = (await liveWorker())?.info?.seed || state;
   if (state.failure) {
     return check('configSeed', ERROR, 'last reload failed',
       {
@@ -729,7 +769,7 @@ async function configSeedCheck() {
 // How many records the seed currently owns, per table. A fact, not a verdict : it is
 // the quickest way to tell whether the file everybody edits is actually in force.
 async function seedManagedFacts() {
-  const tables = ['awx', 'credentials', 'oauth2_providers', 'repositories', 'ldap', 'settings'];
+  const tables = ['runners', 'credentials', 'secret_stores', 'oauth2_providers', 'repositories', 'ldap', 'settings'];
   const counts = {};
   let total = 0;
   for (const table of tables) {
@@ -747,6 +787,7 @@ Health.check = async function () {
     safely('database', databaseCheck),
     safely('schema', schemaCheck),
     safely('scheduler', schedulerCheck),
+    safely('nodes', nodesCheck),
     safely('jobs', jobsCheck),
     safely('backupTooling', backupToolingCheck),
     safely('lastBackup', lastBackupCheck),
@@ -754,7 +795,8 @@ Health.check = async function () {
     safely('repositories', repositoriesCheck),
     // next to repositories : both are about configuration arriving from outside the app
     safely('configSeed', configSeedCheck),
-    safely('vault', vaultCheck),
+    safely('secretStores', secretStoresCheck),
+    safely('runners', runnersCheck),
     safely('expressions', expressionsCheck),
     safely('ldap', ldapCheck),
     safely('storage', storageCheck),
@@ -786,11 +828,6 @@ Health.check = async function () {
       ? 'Set with BASE_URL, for hosting behind a reverse proxy under a subpath'
       : 'Served from the root ; set BASE_URL to host it under a subpath',
   });
-  const ansible = await ansibleVersion();
-  add('ansible', ansible?.version ?? null, ansible ? {
-    raw: ansible.raw,
-    note: 'Local playbook runs need this ; AWX/AAP templates do not',
-  } : null);
   try {
     const db = await databaseFacts();
     add('database', `${db.product} ${db.number}`.trim(), { version: db.version, comment: db.comment || null });

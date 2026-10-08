@@ -4,11 +4,9 @@ import Form from '../models/form.model.js';
 /**
  * Who may run what through the query endpoints.
  *
- * This lives in lib/ rather than in a controller because BOTH api versions have to apply
- * it. /api/v2/query was fixed to bind a query to a form field; /api/v1/query was not, and
- * it is mounted with nothing but `authobj` - so any authenticated user could still send
- * arbitrary SQL to any configured datasource, with the stored credential's privileges,
- * simply by using the older URL. A guard one version enforces is not a guard.
+ * A query is bound to a form field : an ordinary user cannot send SQL of their own to a
+ * configured database, with the stored credential's privileges. Only a settings user may
+ * run a raw query.
  */
 
 // Which characters a value has to be protected against depends on the ENGINE, and this

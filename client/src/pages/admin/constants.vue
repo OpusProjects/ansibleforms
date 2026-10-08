@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
-import Profile from "@/lib/Profile";
+import { ref, computed, onMounted } from 'vue';
+import Profile from '@/lib/Profile';
 import { toast } from 'vue-sonner';
 import { useI18n } from 'vue-i18n';
 import { useFormsConfig } from '@/composables/useFormsConfig';
@@ -85,7 +85,10 @@ function findDuplicateKey(arr) {
 function removeConstant(target, list) {
   if (!list) list = constants.value;
   const idx = list.indexOf(target);
-  if (idx !== -1) { list.splice(idx, 1); return true; }
+  if (idx !== -1) {
+    list.splice(idx, 1);
+    return true;
+  }
   for (const item of list) {
     if (item.children && removeConstant(target, item.children)) return true;
   }
@@ -120,9 +123,14 @@ onMounted(async () => {
 <template>
   <AppNav />
   <div class="flex-shrink-0">
-    <main class="d-flex flex-nowrap container-xxl">
+    <main class="d-flex flex-nowrap af-settings-layout">
       <AppSidebar />
-      <AppSettings v-if="authenticated" icon="sliders-h" :title="t('settings.settingsPage.constants')" :description="t('settings.settingsPage.constantsDescription')">
+      <AppSettings
+        v-if="authenticated"
+        icon="sliders-h"
+        :title="t('settings.settingsPage.constants')"
+        :description="t('settings.settingsPage.constantsDescription')"
+      >
         <template #default>
           <div class="pt-2">
             <div v-if="loadError" class="alert alert-danger" role="alert">
@@ -144,7 +152,12 @@ onMounted(async () => {
                 <tr v-for="entry in flatConstants" :key="entry.row._uid">
                   <td>
                     <div class="d-flex align-items-center" :style="{ paddingLeft: entry.depth * 1.5 + 'rem' }">
-                      <FaIcon v-if="entry.depth > 0" icon="level-up-alt" class="text-muted fa-rotate-90 flex-shrink-0 me-2" style="font-size: 0.75rem;" />
+                      <FaIcon
+                        v-if="entry.depth > 0"
+                        icon="level-up-alt"
+                        class="text-muted fa-rotate-90 flex-shrink-0 me-2"
+                        style="font-size: 0.75rem"
+                      />
                       <input class="form-control form-control-sm" v-model="entry.row.key" :disabled="readOnly" />
                     </div>
                   </td>
@@ -152,12 +165,25 @@ onMounted(async () => {
                     <!-- a textarea, not an input : a list is written as yaml, which
                          needs more than one line. It renders as a single row until the
                          value actually has one, so a plain constant looks unchanged. -->
-                    <textarea v-if="!isParent(entry.row)" class="form-control form-control-sm" :rows="constantValueRows(entry.row.value)" v-model="entry.row.value" :disabled="readOnly" :placeholder="t('settings.settingsPage.constantValuePlaceholder')"></textarea>
-                    <span v-else class="text-muted fst-italic small">{{ entry.row.children.length }} {{ entry.row.children.length === 1 ? t('settings.settingsPage.subkey') : t('settings.settingsPage.subkeys') }}</span>
+                    <textarea
+                      v-if="!isParent(entry.row)"
+                      class="form-control form-control-sm"
+                      :rows="constantValueRows(entry.row.value)"
+                      v-model="entry.row.value"
+                      :disabled="readOnly"
+                      :placeholder="t('settings.settingsPage.constantValuePlaceholder')"
+                    ></textarea>
+                    <span v-else class="text-muted fst-italic small">{{
+                      t('settings.settingsPage.subkeyCount', entry.row.children.length)
+                    }}</span>
                   </td>
                   <td class="text-center">
                     <div v-if="!readOnly" class="d-flex justify-content-center gap-1">
-                      <button class="btn btn-sm btn-outline-secondary" @click="addSubconstant(entry.row)" :title="t('settings.settingsPage.addSubconstant')">
+                      <button
+                        class="btn btn-sm btn-outline-secondary"
+                        @click="addSubconstant(entry.row)"
+                        :title="t('settings.settingsPage.addSubconstant')"
+                      >
                         <FaIcon icon="plus" />
                       </button>
                       <button class="btn btn-sm btn-outline-danger" @click="removeConstant(entry.row)">
@@ -169,12 +195,20 @@ onMounted(async () => {
               </tbody>
             </table>
             <div class="d-flex justify-content-end mt-3">
-              <BsButton icon="plus" colorClass="secondary" :disabled="readOnly" @click="addConstant()">{{ t('settings.settingsPage.addConstant') }}</BsButton>
+              <BsButton icon="plus" colorClass="secondary" :disabled="readOnly" @click="addConstant()">{{
+                t('settings.settingsPage.addConstant')
+              }}</BsButton>
             </div>
           </div>
         </template>
         <template #actions>
-          <BsButton icon="save" :colorClass="isConstantsDirty ? 'primary' : 'secondary'" :disabled="!isConstantsDirty || readOnly" @click="saveConstants()">{{ t('settings.common.save') }}</BsButton>
+          <BsButton
+            icon="save"
+            :colorClass="isConstantsDirty ? 'primary' : 'secondary'"
+            :disabled="!isConstantsDirty || readOnly"
+            @click="saveConstants()"
+            >{{ t('settings.common.save') }}</BsButton
+          >
         </template>
       </AppSettings>
     </main>

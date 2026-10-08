@@ -1,242 +1,52 @@
 # Deprecated Features
 
-This document tracks deprecated features that will be **removed in v7.0.0** (breaking changes).
+Removed in 8.0.0. Each logs a warning when it is used.
 
-> **Note:** v7 will be the first major version to remove backward compatibility for these features.
-> It is developed on `main` and released as `7.0.0-beta.N`; 6.x gets patches from `release/6.x`.
+| Deprecated | Replacement | Since |
+|---|---|---|
+| `VAULT_*` environment variables (imported once at the first 7.x start, then ignored) | a secret store named `vault` (Connections > Secret stores) | 7.0.0 |
+| `vault_path` on a credential (API, seed) | `secret_store` + `secret_ref` | 7.0.0 |
+| `POST /api/v2/config/vault/check`, `GET /api/v2/config/vault/mounts` | `POST /api/v2/secretstore/{id}/check`, `GET /api/v2/secretstore/{id}/mounts` | 7.0.0 |
+| `hasApproval` on a form or a step (it has no effect) | `approval` | 7.0.0 |
+| `awx: <name>` on a form | `runner: <name>` (an AWX connection is a runner of type `awx`) | 7.0.0 |
+| the config seed's `awx:` section | `runners:` items with `type: awx` | 7.0.0 |
+| `LOCK_PATH` (no longer read) | nothing: the designer lock is kept in the database | 7.0.0 |
 
-## At a glance
+## Upgrading from 6.5 to 7.0.0 - read first
 
-| Removed in 7 | Replacement | Deprecated since |
+7 runs playbooks on runners: the app no longer runs `ansible-playbook` itself. Together with
+the removals below, this is what a 6.5 install changes when it moves to 7.
+
+| What changed | What to do |
+|---|---|
+| playbooks no longer run inside the AnsibleForms container | start an RTE (the `ansibleforms-rte` image, `AF_ROLE=rte`, `RTE_TOKEN`, the app's `DB_*` and `ENCRYPTION_SECRET`), add it under Connections > Runners and mark it as default - or declare it in the config seed's `runners:` section - or name it on the form with `runner:` |
+| the app image is node only: no ansible, python or collections | anything you added to the image or the persistent folder for playbooks (collections, roles, python libraries, `ansible.cfg`) goes into your RTE image (fork `Dockerfile.rte`) or its mounts |
+| `ANSIBLE_PATH`, `PROCESS_MAX_BUFFER` are read by the RTE, not the app | set them in the RTE container's environment |
+| the `awx` table, `/api/v2/awx` and the A.A.P. page are gone | nothing : the upgrade moves every AWX/AAP connection to Runners (type `awx`) ; forms with `awx:` keep working |
+| HashiCorp Vault through `VAULT_*` | nothing : the first start imports them once as the secret store `vault` |
+| images are on `ghcr.io/ansibleforms` only | pull `ghcr.io/ansibleforms/ansibleforms:7` (and `ansibleforms-rte:7`) |
+| optional : several app nodes | `AF_ROLE=app` nodes plus one `AF_ROLE=worker`, sharing the database and the persistent volume - see `examples/scale` |
+
+## Removed in 7.0.0
+
+Everything 6.x marked as deprecated was removed in 7.0.0. The upgrade guide
+([Upgrading to 7](https://ansibleforms.com/upgrade-7) on the site) says what
+replaces each item and how to move over while still on 6.5.
+
+| Removed | Replacement | Deprecated since |
 |---|---|---|
 | `forms.yaml`, forms in the base config | `config.yaml` + one file per form in `forms/` | 6.0.0 |
 | `FORMS_PATH` | `CONFIG_PATH` + `FORMS_FOLDER_PATH` | 6.0.0 |
 | `ENABLE_FORMS_YAML_IN_DATABASE` | `ENABLE_CONFIG_IN_DATABASE` | 6.0.0 |
 | the `table` field type (`tableFields`, `insertColumns`, `readonlyColumns`, `tableTitleAdd/Edit`) | a `list` field with a `subform` | 6.2.0 |
-| API v1 (`/api/v1/*`, including `/api/v1/auth` and `/api/v1/token`) | API v2 | 6.2.x |
+| API v1 (`/api/v1/*`) | API v2 | 6.2.x |
 | `disableRelaunch` | `allowRelaunch: false` | 6.3.0 |
 | `noOutput` | `output: false` | 6.3.0 |
 | `enableLogin` (role option) | `allowLogin` | 6.3.0 |
-| datasources and data schemas (admin pages, tables, import schedules) | none - a form queries the source itself | 7.0.0 |
-| the `ansibleguy76.ansibleforms` collection (`af_datasource_*` modules) | none - it only feeds datasources | 7.0.0 |
+| datasources and data schemas (their tables are dropped), the AnsibleForms Galaxy collection | none - an import runs as a playbook of your own | 7.0.0 |
 
-The sections below are the original notes per item. Two of their file references are out of
-date: `templates/forms.yaml.template` and `Repository.getFormsPath()` no longer exist.
 
----
+## Deprecating something
 
-## Configuration Architecture (Deprecated in v6.0.0)
-
-### 1. forms.yaml File Structure
-**Status:** DEPRECATED  
-**Replacement:** `config.yaml` + `forms/` folder  
-**Timeline:** Remove in v7.0.0
-
-#### What's Changing
-- **OLD:** Single `forms.yaml` containing both configuration (categories, roles, constants) and form definitions
-- **NEW:** 
-  - `config.yaml` for application configuration only
-  - `forms/` folder for individual form files
-
-#### Developer Impact (v7 Cleanup)
-When v7 removes support, delete:
-
-**Backend Code:**
-- `form.model.js`:
-  - Remove `legacyFormFilePath` variable
-  - Remove `legacyFormFileName` variable  
-  - Remove `legacyFormFileBackupPath` variable
-  - Remove fallback logic in `getConfigPath()` - only check `config.yaml`
-  - Remove `isLegacy` return property from `getConfigPath()`
-  - Remove deprecation warning in `getBaseConfig()`
-  - Remove check for forms in base config file (line ~344: "Found forms in base config file. This is DEPRECATED...")
-  
-- `repository.model.js`:
-  - Remove `Repository.getFormsPath()` method entirely
-  - Update `Repository.getConfigPath()` to only check `config.yaml` (remove forms.yaml fallback)
-
-- `settings.model.js`:
-  - Remove forms.yaml fallback in `Settings.importFormsFileFromYaml()`
-  - Simplify to only import from config.yaml
-
-**Templates:**
-- Consider removing `templates/forms.yaml.template` (only keep `config.yaml.template`)
-
-**Frontend:**
-- `settings.vue`: Remove deprecation warning message
-- `error.vue`: Remove reference to "or legacy forms.yaml"
-- `designer.vue`: Remove deprecation message about forms in config
-
----
-
-### 2. FORMS_PATH Environment Variable
-**Status:** DEPRECATED  
-**Replacement:** `CONFIG_PATH` + `FORMS_FOLDER_PATH`  
-**Timeline:** Remove in v7.0.0
-
-#### What's Changing
-- **OLD:** `FORMS_PATH` pointed to forms.yaml (combined config + forms location)
-- **NEW:**
-  - `CONFIG_PATH` → Path to config.yaml (default: `persistent/config.yaml`)
-  - `FORMS_FOLDER_PATH` → Path to forms folder (default: `persistent/forms`)
-
-#### Developer Impact (v7 Cleanup)
-**Backend Code:**
-- `app.config.js`:
-  - Remove `formsPath: process.env.FORMS_PATH || ...`
-  - Remove comment "// DEPRECATED: Use configPath and formsFolderPath instead"
-
-**Documentation:**
-- Remove all references to `FORMS_PATH` from installation docs
-- Update Docker/K8s examples to use new env vars only
-
----
-
-### 3. Forms in Base Config File
-**Status:** DEPRECATED  
-**Replacement:** Individual form files in `forms/` folder  
-**Timeline:** Remove in v7.0.0
-
-#### What's Changing
-- **OLD:** Forms could be defined directly in forms.yaml/config.yaml under `forms:` key
-- **NEW:** Each form is a separate YAML file in the `forms/` folder (supports subdirectories)
-
-#### Developer Impact (v7 Cleanup)
-**Backend Code:**
-- `form.model.js`:
-  - Remove lines ~344-346 (warning about forms in base config)
-  - Remove `unvalidatedForms` extraction from base config
-  - Remove `delete f.source` logic for base forms
-  - Start directly from empty forms array and only load from `forms/` folder
-
----
-
-## API Naming Conventions (Deprecated in v6.3.0)
-
-### 4. `disableRelaunch` Form Property
-**Status:** DEPRECATED  
-**Replacement:** `allowRelaunch: false`  
-**Timeline:** Remove in v7.0.0
-
-#### What's Changing
-- **OLD:** `disableRelaunch: true` — negative naming, opt-in to disable
-- **NEW:** `allowRelaunch: false` — positive naming, consistent with `allowJobRelaunch` role option
-
-Both values are accepted in v6.3.x. A server-side deprecation warning is logged when `disableRelaunch` is found.
-
-#### Developer Impact (v7 Cleanup)
-- `job.model.js`: Remove the `disableRelaunch` branch from both `getRawFormData` and `relaunch` functions — keep only `allowRelaunch === false` check.
-- `help.yaml`: Remove the `noOutput` entry; remove deprecated mentions.
-
----
-
-### 5. `noOutput` Field Property
-**Status:** DEPRECATED  
-**Replacement:** `output: false`  
-**Timeline:** Remove in v7.0.0
-
-#### What's Changing
-- **OLD:** `noOutput: true` — negative naming, opt-in to suppress output
-- **NEW:** `output: false` — positive naming, consistent with other boolean field flags
-
-Both values are honoured in v6.3.x (`noOutput || output === false`).
-
-#### Developer Impact (v7 Cleanup)
-- `client/src/lib/Helpers.js`: Change `if (item.noOutput || item.output === false) return;` → `if (item.output === false) return;`
-- `client/src/components/AppForm.vue` (`local` alias expansion): Change `item.noOutput = item.noOutput ?? true;` → `item.output = item.output ?? false;`
-- `help.yaml`: Remove the `noOutput` entry; remove deprecated mentions.
-
----
-
-### 6. `enableLogin` Role Option
-**Status:** DEPRECATED  
-**Replacement:** `allowLogin`  
-**Timeline:** Remove in v7.0.0
-
-#### What's Changing
-- **OLD:** `enableLogin: false` — `enable*` prefix inconsistent with all other role options
-- **NEW:** `allowLogin: false` — consistent with `allowVerboseMode`, `allowJobRelaunch`, `allowScheduledJobs`, etc.
-
-Both values are accepted in v6.3.x. A server-side deprecation warning is logged when `enableLogin` is found.
-
-#### Developer Impact (v7 Cleanup)
-- `server/src/controllers/v1/login.controller.js` and `v2/login.controller.js`: Remove `enableLogin` branch — keep only `allowLogin === false` check.
-- JSON schemas (`base_schema.json`, `forms_schema.json`, `public/forms_schema.json`): Remove `enableLogin` property definition.
-- `help.yaml`: Remove deprecated `enableLogin` entries.
-
----
-
-## Summary of v7.0.0 Breaking Changes
-
-### Files/Code to Remove:
-1. **Variables:**
-   - `legacyFormFilePath`
-   - `legacyFormFileName`
-   - `legacyFormFileBackupPath`
-   - `appConfig.formsPath`
-
-2. **Functions/Methods:**
-   - `Repository.getFormsPath()` - remove entirely
-   - `getConfigPath()` - simplify to only return config.yaml path
-   - All fallback logic checking for forms.yaml
-
-3. **Templates:**
-   - `templates/forms.yaml.template` (optional - keep for migration reference)
-
-4. **Environment Variables:**
-   - Remove support for `FORMS_PATH`
-
-5. **Features:**
-   - Remove ability to define forms in config.yaml
-   - Remove forms.yaml file format support
-
-### Migration Path for Users
-Before upgrading to v7, users must:
-1. Rename `forms.yaml` → `config.yaml`
-2. Remove `forms:` section from config file
-3. Create individual form files in `forms/` folder
-4. Update environment variables: `FORMS_PATH` → `CONFIG_PATH` + `FORMS_FOLDER_PATH`
-5. Update volume mounts in Docker/K8s deployments
-
-### Backward Compatibility Timeline
-- **v6.x:** Full backward compatibility with deprecation warnings
-- **v7.0.0:** Breaking changes - legacy support removed
-- **Recommendation:** Provide migration tool/script before v7 release
-
----
-
-## Already Removed (v6.0.0)
-
-These features were removed in v6 and are **not** subject to future deprecation:
-
-### Notification System
-- ✅ `on` property - Removed (replaced by `onStatus` and `onEvent`)
-- ✅ Individual event properties (`onLaunch`, `onRelaunch`, `onDelete`, `onApprove`, `onReject`) - Removed (consolidated into `onEvent` array)
-
----
-
-## Migration Recommendations
-
-### For v7 Development:
-1. Create automated migration script that:
-   - Detects forms.yaml and prompts migration
-   - Automatically splits config from forms
-   - Updates environment variables
-   
-2. Add startup validation that:
-   - Fails hard if forms.yaml exists (no fallback)
-   - Requires config.yaml to be present
-   - Verifies forms/ folder structure
-
-3. Documentation updates:
-   - Clear migration guide from v6 → v7
-   - Updated quick start examples
-   - Docker/K8s deployment examples
-
-### Testing Checklist Before v7:
-- [ ] Fresh installation uses only config.yaml + forms/
-- [ ] No forms.yaml fallback code paths execute
-- [ ] All tests pass without legacy files
-- [ ] Docker images work with new structure
-- [ ] Git repositories use new structure
-- [ ] Database imports work with config.yaml only
+Mark it here with its replacement and the version, log a warning when it is used, and
+remove it in the next major.

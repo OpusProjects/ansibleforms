@@ -1,30 +1,30 @@
 /* vue-sonner toast customization - using bootstrap colors */
 
 // Light theme - subtle color backgrounds
-[data-sonner-toaster][data-sonner-theme="light"] {
+[data-sonner-toaster][data-sonner-theme='light'] {
   --normal-bg: #fff !important;
   --normal-border: var(--bs-border-color) !important;
   --normal-text: var(--bs-body-color) !important;
-  
-  [data-sonner-toast][data-type="success"] {
+
+  [data-sonner-toast][data-type='success'] {
     background-color: color-mix(in srgb, var(--bs-success) 15%, white) !important;
     border-color: var(--bs-success) !important;
     color: color-mix(in srgb, var(--bs-success) 90%, black) !important;
   }
-  
-  [data-sonner-toast][data-type="error"] {
+
+  [data-sonner-toast][data-type='error'] {
     background-color: color-mix(in srgb, var(--bs-danger) 15%, white) !important;
     border-color: var(--bs-danger) !important;
     color: var(--bs-danger) !important;
   }
-  
-  [data-sonner-toast][data-type="warning"] {
+
+  [data-sonner-toast][data-type='warning'] {
     background-color: color-mix(in srgb, var(--bs-warning) 20%, white) !important;
     border-color: var(--bs-warning) !important;
     color: color-mix(in srgb, var(--bs-warning) 80%, black) !important;
   }
-  
-  [data-sonner-toast][data-type="info"] {
+
+  [data-sonner-toast][data-type='info'] {
     background-color: color-mix(in srgb, var(--bs-info) 15%, white) !important;
     border-color: var(--bs-info) !important;
     color: color-mix(in srgb, var(--bs-info) 90%, black) !important;
@@ -32,30 +32,30 @@
 }
 
 // Dark theme - subtle darker backgrounds
-[data-sonner-toaster][data-sonner-theme="dark"] {
+[data-sonner-toaster][data-sonner-theme='dark'] {
   --normal-bg: var(--bs-dark) !important;
   --normal-border: var(--bs-border-color) !important;
   --normal-text: var(--bs-body-color) !important;
-  
-  [data-sonner-toast][data-type="success"] {
+
+  [data-sonner-toast][data-type='success'] {
     background-color: color-mix(in srgb, var(--bs-success) 20%, #1a1d20) !important;
     border-color: var(--bs-success) !important;
     color: color-mix(in srgb, var(--bs-success) 80%, white) !important;
   }
-  
-  [data-sonner-toast][data-type="error"] {
+
+  [data-sonner-toast][data-type='error'] {
     background-color: color-mix(in srgb, var(--bs-danger) 20%, #1a1d20) !important;
     border-color: var(--bs-danger) !important;
     color: color-mix(in srgb, var(--bs-danger) 80%, white) !important;
   }
-  
-  [data-sonner-toast][data-type="warning"] {
+
+  [data-sonner-toast][data-type='warning'] {
     background-color: color-mix(in srgb, var(--bs-warning) 20%, #1a1d20) !important;
     border-color: var(--bs-warning) !important;
     color: color-mix(in srgb, var(--bs-warning) 90%, white) !important;
   }
-  
-  [data-sonner-toast][data-type="info"] {
+
+  [data-sonner-toast][data-type='info'] {
     background-color: color-mix(in srgb, var(--bs-info) 20%, #1a1d20) !important;
     border-color: var(--bs-info) !important;
     color: color-mix(in srgb, var(--bs-info) 80%, white) !important;
@@ -63,30 +63,30 @@
 }
 
 // Color theme - full vibrant colors
-[data-sonner-toaster][data-sonner-theme="color"] {
+[data-sonner-toaster][data-sonner-theme='color'] {
   --normal-bg: #fff !important;
   --normal-border: var(--bs-border-color) !important;
   --normal-text: var(--bs-body-color) !important;
-  
-  [data-sonner-toast][data-type="success"] {
+
+  [data-sonner-toast][data-type='success'] {
     background-color: var(--bs-success) !important;
     border-color: var(--bs-success) !important;
     color: #fff !important;
   }
-  
-  [data-sonner-toast][data-type="error"] {
+
+  [data-sonner-toast][data-type='error'] {
     background-color: var(--bs-danger) !important;
     border-color: var(--bs-danger) !important;
     color: #fff !important;
   }
-  
-  [data-sonner-toast][data-type="warning"] {
+
+  [data-sonner-toast][data-type='warning'] {
     background-color: var(--bs-warning) !important;
     border-color: var(--bs-warning) !important;
     color: #000 !important;
   }
-  
-  [data-sonner-toast][data-type="info"] {
+
+  [data-sonner-toast][data-type='info'] {
     background-color: var(--bs-info) !important;
     border-color: var(--bs-info) !important;
     color: #000 !important;

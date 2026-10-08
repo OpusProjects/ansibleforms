@@ -18,7 +18,7 @@ const fields = [
   { name: 'size', type: 'number', model: 'volume.size' },
   { name: 'secret', type: 'password' },
   { name: 'hidden', type: 'text' },
-  { name: 'nooutput', type: 'text', noOutput: true },
+  { name: 'nooutput', type: 'text', output: false },
   { name: 'data', type: 'expression' },
   { name: 'when', type: 'datetime', dateType: 'month' },
   { name: 'disks', type: 'list', subform: 'disk' },

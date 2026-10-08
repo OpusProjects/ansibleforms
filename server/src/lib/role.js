@@ -1,0 +1,40 @@
+// What this process runs (AF_ROLE), and the name it goes by among the other processes on
+// the same database.
+//
+//   all (unset) : the web app and the worker in one process, the way AnsibleForms always ran
+//   app         : the web app and the API only - run as many as you like behind a load balancer
+//   worker      : the background work only - schema, seed, schedules, backups, repository
+//                 syncs, cleanups. One holds the worker lock (lib/workerLock.js), others wait.
+//   rte         : a runtime environment that runs playbooks (src/rte/server.js)
+import os from "os";
+
+export const ROLES = ["all", "app", "worker", "rte"];
+
+export function currentRole(env = process.env) {
+  return String(env.AF_ROLE || "").trim().toLowerCase() || "all";
+}
+
+const role = currentRole();
+
+export const ROLE = role;
+// serves the web interface and the API
+export const runsWeb = role === "all" || role === "app";
+// may run the background work, once it holds the worker lock
+export const runsWorker = role === "all" || role === "worker";
+
+// The name on this process's row in `nodes`, on the jobs it follows (jobs.tracker) and, for an
+// RTE, on the jobs it runs (jobs.host) : <role>-<hostname>-<port>. Unique without a setting -
+// two processes on one machine listen on different ports - and the same after a restart, so a
+// restarted container finds its own jobs again. A new pod gets a new name, and the worker ends
+// the jobs of a node that stopped answering.
+export const nodeId = `${role === "all" ? "af" : role}-${os.hostname()}-${process.env.PORT || 8000}`;
+
+// a node whose heartbeat (lib/nodes.js, every 10 s) is older than this is gone : the worker ends
+// its jobs, and a worker lock it still holds is taken from it (lib/workerLock.js)
+export const NODE_DEAD_SECONDS = 120;
+
+// How long this process has run, in whole seconds, rounded down : "a claim older than this" -
+// measured with the database's clock on both sides - was taken before this process started.
+export function uptimeSeconds() {
+  return Math.floor(process.uptime());
+}

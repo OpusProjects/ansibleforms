@@ -10,6 +10,22 @@ import svgLoader from 'vite-svg-loader'
 // Utilities
 import { defineConfig, loadEnv } from 'vite'
 import { fileURLToPath, URL } from 'node:url'
+import { readFileSync } from 'node:fs'
+
+// The client's build identity, baked into the bundle (issue #660). The docker build writes
+// build-info.json here, in client/, before it runs vite build (scripts/generate-build-info.sh) ;
+// a build without one - CI's client job, a developer's npm run build - is a 'dev' build. It
+// used to be fetched at runtime from /build-info.json, but that file describes the server's
+// disk, not the code running in the tab, and was cached for a year.
+function clientBuildInfo() {
+  try {
+    const info = JSON.parse(readFileSync(new URL('./build-info.json', import.meta.url), 'utf8'))
+    if (info?.gitSha) return info
+  } catch {
+    // no build-info.json : a development build
+  }
+  return { gitSha: 'dev', dirty: false, buildTime: null }
+}
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -46,7 +62,7 @@ return {
       vueTemplate: true,
     }),
   ],
-  define: { 'process.env': {} },
+  define: { 'process.env': {}, __CLIENT_BUILD__: JSON.stringify(clientBuildInfo()) },
   resolve: {
     // yaml is deduped so the shared form engine (@engine, under server/) resolves it from
     // client/node_modules - server/node_modules does not exist when the image builds the client

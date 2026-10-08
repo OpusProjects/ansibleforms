@@ -175,3 +175,36 @@ describe("a reload that fails keeps the instance running", () => {
     assert.equal((await reloadConfigSeed()).status, "applied");
   });
 });
+
+// The boot, the reload poll and SIGHUP can ask at the same moment. Each section is
+// find-then-create, so two applies at once could create one row twice : they run one after
+// the other. And a reload that applies must not wait for itself.
+describe("one apply at a time", () => {
+  test("concurrent applies and reloads run one after the other, and all finish", async () => {
+    let inFlight = 0;
+    let most = 0;
+    dbHandler = async () => {
+      inFlight++;
+      most = Math.max(most, inFlight);
+      await new Promise((r) => setTimeout(r, 2));
+      inFlight--;
+      return [];
+    };
+    const results = await Promise.all([
+      applyConfigSeed(),
+      reloadConfigSeed({ force: true, trigger: "SIGHUP" }),
+      reloadConfigSeed({ force: true, trigger: "poll" }),
+      applyConfigSeed(),
+    ]);
+    assert.equal(results.length, 4, "none waits for ever - a reload that applies does not queue behind itself");
+    assert.equal(most, 1, "never two queries of two applies at the same time");
+  });
+
+  test("a failing apply does not block the next", async () => {
+    fs.writeFileSync(seedPath, "version: 1\nnot_a_section: [\n");
+    const first = await reloadConfigSeed({ force: true });
+    assert.equal(first.status, "failed");
+    fs.writeFileSync(seedPath, EMPTY_SEED);
+    assert.equal((await reloadConfigSeed({ force: true })).status, "applied");
+  });
+});

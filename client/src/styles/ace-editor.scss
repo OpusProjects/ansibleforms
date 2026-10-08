@@ -1,14 +1,14 @@
-.ace-monokai{
-    background-color: var(--af-ace-editor-bg);
-    .ace_gutter {
-        background: #1e1e1e;
-        color: #858585;
-    }
+.ace-monokai {
+  background-color: var(--af-ace-editor-bg);
+  .ace_gutter {
+    background: #1e1e1e;
+    color: #858585;
+  }
 }
 // The editor follows the app theme (AceEditor falls back to `chrome` outside the
 // dark theme), so the light skin needs the same frame as the dark one.
 .ace-monokai,
-.ace-chrome{
-    border: var(--bs-border-width) solid var(--bs-border-color);
-    border-radius: var(--bs-border-radius);
+.ace-chrome {
+  border: var(--bs-border-width) solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
 }

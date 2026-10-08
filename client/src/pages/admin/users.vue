@@ -1,6 +1,6 @@
 <script setup>
-import getSettings from "@/config/settings";
-import Profile from "@/lib/Profile";
+import getSettings from '@/config/settings';
+import Profile from '@/lib/Profile';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
@@ -18,7 +18,7 @@ onMounted(async () => {
 <template>
   <AppNav />
   <div class="flex-shrink-0">
-    <main class="d-flex flex-nowrap container-xxl">
+    <main class="d-flex flex-nowrap af-settings-layout">
       <AppSidebar />
       <AppAdminMulti v-if="authenticated" :settings="settings.users" :apiVersion="2" />
     </main>

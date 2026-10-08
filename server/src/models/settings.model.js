@@ -64,8 +64,7 @@ var Settings=function(settings){
 // Resolve whether the ACTIVE config lives in the database, from a findFormsYaml record.
 //
 // Precedence is the same everywhere in the app: the ENVIRONMENT first, then the database,
-// then the built-in default. An explicitly set ENABLE_CONFIG_IN_DATABASE (or the deprecated
-// ENABLE_FORMS_YAML_IN_DATABASE) therefore wins over the config_source column, and the UI
+// then the built-in default. An explicitly set ENABLE_CONFIG_IN_DATABASE therefore wins over the config_source column, and the UI
 // greys the selector out when that is the case rather than offering an edit that cannot take.
 //
 // This REVERSED in 6.3.0. Before, the column won and the variable was only a fallback, so a
@@ -76,9 +75,7 @@ var Settings=function(settings){
 // Pure : no I/O, safe to call anywhere the findFormsYaml record is already in hand.
 Settings.configSourceFromEnv = function () {
   // undefined means 'not configured', which is not the same as 0
-  const explicit = process.env.ENABLE_CONFIG_IN_DATABASE !== undefined
-    ? process.env.ENABLE_CONFIG_IN_DATABASE
-    : process.env.ENABLE_FORMS_YAML_IN_DATABASE;
+  const explicit = process.env.ENABLE_CONFIG_IN_DATABASE;
   return explicit === undefined ? null : explicit == 1;
 }
 
@@ -92,9 +89,8 @@ Settings.resolveConfigInDatabase = function (settings) {
 Settings.update = async function (record) {
     logger.info(`Updating settings`)
     // Guard the chokepoint : a record with zero own properties renders an empty
-    // SET clause, which mysql2 turns into invalid SQL. The v1 legacy controller
-    // can reach here with a body of only unknown keys (the v2 controller
-    // pre-checks and returns 400). Log a warning and no-op instead of querying.
+    // SET clause, which mysql2 turns into invalid SQL. The controller pre-checks and
+    // returns 400 ; log a warning and no-op instead of querying for any other caller.
     const cols = Object.keys(record)
     if (cols.length === 0) {
       logger.warning("Settings.update called with an empty record, nothing to update")
@@ -135,9 +131,8 @@ Settings.setLogo = async function (logo) {
   await Settings.update({ logo })
 };
 // backstop against overwriting the config while the designer holds the lock.
-// The v2 controllers pre-check this and return a clean 423, but the v1 legacy
-// routes (e.g. PUT /api/v1/settings/importConfig) call the model directly and
-// have no such guard, so the check must also live here.
+// The controllers pre-check this and return a clean 423 ; the check also lives here so
+// no caller of the model can skip it.
 Settings.assertDesignerNotLocked = async function(){
   if (await Lock.isHeld()) {
     throw new Error("Configuration is locked by the designer. Please close the designer and try again.")
@@ -162,25 +157,12 @@ async function backupConfig(source='active'){
 }
 Settings.importConfig = async function(){
   await Settings.assertDesignerNotLocked()
-  // Repository.getConfigPath() already handles config.yaml → forms.yaml fallback
-  var configPath = (await Repository.getConfigPath()) || appConfig.configPath
-  
+  const configPath = (await Repository.getConfigPath()) || appConfig.configPath
   if(!fs.existsSync(configPath)){
-    // Final fallback to forms.yaml if nothing else exists
-    configPath = appConfig.formsPath
-    
-    if(!fs.existsSync(configPath)){
-      logger.error(`Config path ${configPath} doesn't exist`)
-      throw new Error(`Config path ${configPath} doesn't exist`)
-    }
+    logger.error(`Config path ${configPath} doesn't exist`)
+    throw new Error(`Config path ${configPath} doesn't exist`)
   }
-  
-  const isLegacy = configPath.endsWith('forms.yaml')
-  
-  if(isLegacy){
-    logger.warning(`Using forms.yaml is DEPRECATED. Please migrate to config.yaml.`)
-  }
-  
+
   logger.notice(`Loading ${configPath} into the database`)
   let configFile = fs.readFileSync(configPath, 'utf8')
   // Validate BEFORE writing, exactly as saveConfig does. This path used to copy the file
@@ -221,10 +203,6 @@ Settings.importConfig = async function(){
   var settings = await Settings.findFormsYaml()
   settings.forms_yaml = configFile
   await Settings.update(settings)
-  
-  if(isLegacy){
-    return "forms.yaml imported successfully (DEPRECATED - please migrate to config.yaml)"
-  }
   return "config.yaml imported successfully"
 
 }
@@ -263,25 +241,6 @@ Settings.exportConfig = async function(){
   }
   return "config.yaml exported successfully"
 }
-Settings.hasLegacyFormsYaml = function() {
-  // Only a genuine legacy install: forms.yaml present AND no config.yaml yet.
-  // A stale forms.yaml next to an existing config.yaml is not a conversion candidate.
-  return fs.existsSync(appConfig.formsPath) && !fs.existsSync(appConfig.configPath)
-}
-Settings.convertFormsYaml = function() {
-  const src = appConfig.formsPath
-  if (!fs.existsSync(src)) {
-    throw new Error("No forms.yaml file found to convert")
-  }
-  const dest = appConfig.configPath
-  if (fs.existsSync(dest)) {
-    throw new Error("config.yaml already exists, refusing to overwrite it with forms.yaml")
-  }
-  fs.copyFileSync(src, dest)
-  fs.unlinkSync(src)
-  logger.notice(`Converted forms.yaml to config.yaml (${src} → ${dest})`)
-  return "forms.yaml has been converted to config.yaml"
-}
 Settings.getActiveConfig = async function() {
   const settings = await Settings.findFormsYaml()
   const useDatabase = Settings.resolveConfigInDatabase(settings)
@@ -290,10 +249,7 @@ Settings.getActiveConfig = async function() {
     return settings.forms_yaml
   }
 
-  let configPath = (await Repository.getConfigPath()) || appConfig.configPath
-  if (!fs.existsSync(configPath)) {
-    configPath = appConfig.formsPath
-  }
+  const configPath = (await Repository.getConfigPath()) || appConfig.configPath
   if (!fs.existsSync(configPath)) {
     return ''
   }
@@ -347,9 +303,9 @@ Settings.find = function () {
           logger.error("Couldn't decrypt mail password, did the secretkey change ?")
           res[0].mail_password=""
         }
-        // Use new property name, keep old one for backwards compatibility
         res[0].enableConfigInDatabase = appConfig.enableConfigInDatabase
-        res[0].enableFormsYamlInDatabase = appConfig.enableFormsYamlInDatabase
+        // internal bookkeeping (secrets/importVaultEnv.js), not a setting
+        delete res[0].vault_env_imported_at
         return res[0]
       }else{
         logger.error("No settings record in the database, something is wrong")

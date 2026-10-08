@@ -34,7 +34,9 @@ describe("the client cannot choose what a job actually runs", () => {
   // keep the caller away from; combined with the upload endpoint it was arbitrary code.
   const RESERVED = ["__playbook__", "__playbookSubPath__", "__inventory__", "__tags__",
                     "__limit__", "__credentials__", "__ansibleCredentials__",
-                    "__vaultCredentials__", "__keepExtravars__", "__awxCredentials__"];
+                    "__vaultCredentials__", "__keepExtravars__", "__awxCredentials__",
+                    // where the job runs : a caller must not pick another runner (7)
+                    "__runner__", "__awx__"];
 
   for (const key of RESERVED) {
     test(`${key} supplied by the client is removed`, () => {
@@ -277,8 +279,10 @@ describe("a credential that cannot be resolved does not stop the job", () => {
   // runs without that extra var, as it did before 6.3. What is kept from 6.3 is the log
   // line naming WHICH credential failed, so the operator can find it afterwards.
   test("the failure is logged with the credential key and the job carries on", async () => {
-    const src = (await import("fs")).readFileSync(
-      new URL("../src/models/job.model.js", import.meta.url), "utf8");
+    const { readFileSync } = await import("fs");
+    // the resolution loop moved from the job model into the credential model in 7.x
+    const src = readFileSync(new URL("../src/models/job.model.js", import.meta.url), "utf8")
+      + readFileSync(new URL("../src/models/credential.model.v2.js", import.meta.url), "utf8");
     // the pre 6.3 shape logged the error without saying which credential it was
     assert.equal(/logger\.error\("Cannot get credential\." \+ err\)/.test(src), false,
       "the log line must name the credential");

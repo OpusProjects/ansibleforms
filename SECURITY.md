@@ -2,15 +2,14 @@
 
 ## Supported versions
 
-Security fixes go into the current major's latest patch release, and into the next major
-while it is in beta. Older releases are not patched — the fixes for [GHSA-g27f-cjvv-42rf](https://github.com/ansibleguy76/ansibleforms/security/advisories/GHSA-g27f-cjvv-42rf),
-[GHSA-56pr-p4x6-mwm6](https://github.com/ansibleguy76/ansibleforms/security/advisories/GHSA-56pr-p4x6-mwm6)
-and [GHSA-wcmj-wqvw-6c88](https://github.com/ansibleguy76/ansibleforms/security/advisories/GHSA-wcmj-wqvw-6c88)
+Security fixes go into the newest release of 7 and of 6.5. Older releases are not patched — the fixes for [GHSA-g27f-cjvv-42rf](https://github.com/ansibleforms/ansibleforms/security/advisories/GHSA-g27f-cjvv-42rf),
+[GHSA-56pr-p4x6-mwm6](https://github.com/ansibleforms/ansibleforms/security/advisories/GHSA-56pr-p4x6-mwm6)
+and [GHSA-wcmj-wqvw-6c88](https://github.com/ansibleforms/ansibleforms/security/advisories/GHSA-wcmj-wqvw-6c88)
 all shipped in 6.2.1 and were not backported.
 
 | Version | Supported |
 | ------- | --------- |
-| 7.0.0-beta | ✅ (pre-release) |
+| 7.x     | ✅        |
 | 6.5.x   | ✅        |
 | < 6.5   | ❌        |
 
@@ -22,7 +21,7 @@ If you are running an older version, upgrading is the fix.
 everybody running AnsibleForms about the hole at the same moment it tells us, and this is
 software that holds Ansible credentials, database passwords and Vault tokens.
 
-Use **[Report a vulnerability](https://github.com/ansibleguy76/ansibleforms/security/advisories/new)**
+Use **[Report a vulnerability](https://github.com/ansibleforms/ansibleforms/security/advisories/new)**
 on the Security tab. That opens a private advisory visible only to you and the
 maintainers, and it is the same mechanism the three advisories above went through.
 

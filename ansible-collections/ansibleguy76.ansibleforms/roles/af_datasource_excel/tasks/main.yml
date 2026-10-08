@@ -1,8 +1,0 @@
----
-- name: "Ansible Forms parse excel and dump to csv files"
-  ansibleguy76.ansibleforms.af_datasource_excel:
-    datasource : "{{ datasource }}"
-    excel_path: "{{ excel_path }}"
-    import_path: "{{ import_path }}"
-  delegate_to: localhost
-  register: af_datasource_excel_result

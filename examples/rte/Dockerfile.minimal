@@ -1,0 +1,39 @@
+# A minimal AnsibleForms RTE : ansible-core and nothing else, for teams that install their
+# own collections and python packages. Not published - copy it, add what your playbooks
+# need, and build your own image :
+#
+#   docker build -f examples/rte/Dockerfile.minimal -t my-rte .
+#
+# The published ghcr.io/ansibleforms/ansibleforms-rte (Dockerfile.rte) is the full flavour :
+# everything the AnsibleForms image had before 7 (ansible, the python libraries, the NetApp
+# and community collections).
+#
+# Use the same AnsibleForms release as the app : an RTE runs the app's own server code.
+FROM node:24-bookworm-slim AS builder
+ARG GIT_SHA=unknown
+ARG BUILD_TIME=unknown
+ARG VERSION=
+WORKDIR /app/server
+COPY ./server/package*.json ./
+RUN npm ci --omit=dev
+COPY ./server .
+COPY ./scripts/generate-build-info.sh /tmp/generate-build-info.sh
+RUN chmod +x /tmp/generate-build-info.sh && /tmp/generate-build-info.sh . "$GIT_SHA" "$BUILD_TIME" "$VERSION"
+RUN rm -f .env.* && rm -rf ./views
+
+FROM node:24-bookworm-slim AS final
+# what a playbook run needs : python with ansible-core, git and ssh for repositories and hosts
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends python3 python3-venv git openssh-client sshpass ca-certificates \
+ && rm -rf /var/lib/apt/lists/* \
+ && python3 -m venv /venv \
+ && /venv/bin/pip install --no-cache-dir ansible-core
+ENV PATH="/venv/bin:$PATH"
+# add your own here, e.g.
+#   RUN ansible-galaxy collection install community.general -p /usr/share/ansible/collections
+#   RUN pip install --no-cache-dir pyvmomi
+WORKDIR /app/dist
+COPY --from=builder /app/server/. ./
+COPY ./server/ansible.cfg /etc/ansible/ansible.cfg
+ENV AF_ROLE=rte
+ENTRYPOINT ["node", "./index.js"]

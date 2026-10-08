@@ -1,8 +1,0 @@
----
-# defaults file for af_datasource_import
-af_datasource_import_force: false
-af_datasource_import_keep: false
-af_datasource_import_hash_ids: false
-af_mysql_conn: {}
-datasource: {}
-import_path: 

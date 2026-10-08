@@ -2,7 +2,7 @@
 //
 // The rules themselves - what passes, what fails, the message - live in the engine, so the
 // browser, the MCP server and the launch validation (LAUNCH_VALIDATION) can never
-// disagree about them. This file only wraps each one the way AppForm and AppTableField expect
+// disagree about them. This file only wraps each one the way AppForm and AppListField expect
 // a vuelidate rule : keyed by its type, with `$params.type` and `$params.description` (what
 // getErrorsToDisplay and the input components read) and the description as `$message`.
 import { computed, unref } from 'vue';

@@ -14,7 +14,7 @@
 //                          config.yaml.
 import { test, describe } from "vitest";
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync } from "fs";
+import { readFileSync } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -124,14 +124,15 @@ describe("every tree-touching repository operation claims the lock first", () =>
   });
 
   test("it claims before touching the tree", () => {
-    const claim = fn.indexOf("set status = 'running'");
+    // every claim goes through Repository.claim (status = 'running', with its node and time)
+    const claim = fn.indexOf("Repository.claim(name)");
     const rm = fn.indexOf("Repo.delete(name)");
     assert.ok(claim > -1, "no claim at all");
     assert.ok(claim < rm, "the claim must come before the rm -rf");
   });
 
   test("the claim is taken after the managed guard, so a refused delete leaves it alone", () => {
-    assert.ok(fn.indexOf("assertNotManaged") < fn.indexOf("set status = 'running'"));
+    assert.ok(fn.indexOf("assertNotManaged") < fn.indexOf("Repository.claim(name)"));
   });
 
   test("the tree removal is awaited", () => {
@@ -175,34 +176,18 @@ describe("a missing HEAD does not unwind a successful git operation", () => {
 });
 
 describe("queue numbers are allocated atomically", () => {
-  // Both queues used to read MAX(queue_id) and write it back in a separate statement, so
-  // a cron tick and a manual queue could interleave and hand two rows the same number -
-  // losing the FIFO order the processor depends on (ORDER BY queue_id LIMIT 1). The
-  // datasource one was worse: MAX(x)+1 over an all-NULL column is NULL, not 1, so on a
-  // fresh install the first datasource was queued with no queue number at all.
-  const models = {
-    datasource: readFileSync(path.join(here, "../src/models/datasource.model.js"), "utf8"),
-    schedule: readFileSync(path.join(here, "../src/models/schedule.model.js"), "utf8"),
-  };
+  // The queue used to read MAX(queue_id) and write it back in a separate statement, so a
+  // cron tick and a manual queue could interleave and hand two rows the same number -
+  // losing the FIFO order the processor depends on (ORDER BY queue_id LIMIT 1).
+  const src = readFileSync(path.join(here, "../src/models/schedule.model.js"), "utf8");
 
-  test.each([["datasource", "Ds.queue = async function(id)"], ["schedule", "static async queue(id)"]])(
-    "%s allocates and writes in one statement",
-    (name, marker) => {
-      const src = models[name];
-      const fn = src.slice(src.indexOf(marker), src.indexOf(marker) + 1200);
-      assert.ok(fn.includes("queue_id"), "the slice must be the queue function");
-      // exactly one statement reaches the database
-      const stmts = [...fn.matchAll(/mysql\.do\(|super\.update\(|super\.findAll\(/g)];
-      assert.equal(stmts.length, 1, `${name} still makes ${stmts.length} calls to allocate a queue slot`);
-      assert.match(fn, /COALESCE\(MAX\(queue_id\),0\)\+1/, "the next number must be computed in SQL");
-    }
-  );
-
-  test("the datasource cannot be queued with a NULL number", () => {
-    // COALESCE, not a bare MAX+1. Comments stripped first: the comment explaining this
-    // fix quotes the old SQL, so matching the raw file matched the PROSE.
-    const code = models.datasource.replace(/\/\/[^\n]*/g, "");
-    assert.doesNotMatch(code, /SELECT MAX\(queue_id\)\+1/);
+  test("the schedule allocates and writes in one statement", () => {
+    const marker = "static async queue(id)";
+    const fn = src.slice(src.indexOf(marker), src.indexOf(marker) + 1200);
+    assert.ok(fn.includes("queue_id"), "the slice must be the queue function");
+    const stmts = [...fn.matchAll(/mysql\.do\(|super\.update\(|super\.findAll\(/g)];
+    assert.equal(stmts.length, 1, `schedule still makes ${stmts.length} calls to allocate a queue slot`);
+    assert.match(fn, /COALESCE\(MAX\(queue_id\),0\)\+1/, "the next number must be computed in SQL");
   });
 });
 
@@ -296,18 +281,19 @@ describe("hasChanges does not invent a clean working tree", () => {
   });
 });
 
-describe("the default AAP flag is cleared only once its row is stored", () => {
+describe("the default runner flag is cleared only once its row is stored", () => {
   // preProcess used to clear is_default on every unmanaged row BEFORE the insert, and
   // `name` carries a unique key - so creating a connection with a name that already
   // exists cleared the flag everywhere and then died with ER_DUP_ENTRY. Measured against
   // the live database: no record created AND zero rows holding the default, so every job
-  // targeting the default AAP failed until somebody set it again by hand.
-  const src = readFileSync(path.join(here, "../src/models/awx.model.js"), "utf8");
+  // targeting the default AAP failed until somebody set it again by hand. Since 7 AAP
+  // connections are runners (runner.model.js), which keep the same rule, per type.
+  const src = readFileSync(path.join(here, "../src/models/runner.model.js"), "utf8");
 
-  test("preProcess no longer writes", () => {
-    const fn = src.slice(src.indexOf("static async preProcess"), src.indexOf("static async clearOtherDefaults"));
+  test("the check before the write only refuses, it never writes", () => {
+    const fn = src.slice(src.indexOf("static async assertDefaultAllowed"), src.indexOf("static async clearOtherDefaults"));
     assert.match(fn, /AccessDeniedError/, "it must still REFUSE a managed holder");
-    assert.doesNotMatch(fn, /UPDATE AnsibleForms\.`awx` SET is_default = 0/,
+    assert.doesNotMatch(fn, /UPDATE AnsibleForms\.`runners` SET is_default = 0/,
       "the blanket clear must not run before the insert");
   });
 
@@ -381,34 +367,30 @@ describe("the forms walk and the delete pass see the same files", () => {
   });
 });
 
-describe("a malformed forms block is reported, not fatal", () => {
-  // The base config's `forms:` is never schema validated, so whatever the yaml parsed to
-  // arrives raw. A trailing empty list item parses to null and `delete null.source` threw;
-  // a mapping made `for...of` throw. Neither was inside a try, so every forms endpoint
-  // answered 500 with a raw TypeError - measured on /config/formlist and the designer's
-  // /config. Both now return 200 with the problem in `errors`.
-  const src = readFileSync(path.join(here, "../src/models/form.model.js"), "utf8");
-  const block = src.slice(src.indexOf("var unvalidatedForms = unvalidatedBase.forms"), src.indexOf("// read extra form files"));
+describe("forms live in files only (7.0.0)", () => {
+  // The base config's `forms:` block (the old forms.yaml layout) is no longer read, and the
+  // designer save never writes a form into the base config again. Both must say so rather
+  // than lose a form silently.
+  const src = readFileSync(path.join(here, "../src/models/form.model.js"), "latin1");
+  const load = src.slice(src.indexOf("const unvalidatedBase = await getBaseConfig();"), src.indexOf("// read extra form files"));
+  const save = src.slice(src.indexOf("Form.save = async function"), src.indexOf("Form.save = async function") + 9000);
 
-  test("the slice really is the block, so these assertions are not vacuous", () => {
-    assert.match(block, /DEPRECATED/);
+  test("a forms section in the base config is reported, and none of it is loaded", () => {
+    assert.match(load, /unvalidatedBase\.forms/);
+    assert.match(load, /error\("The base config has a 'forms' section/);
+    assert.match(load, /var unvalidatedForms = \[\];/);
   });
 
-  test("a non-array forms section is rejected before it is iterated", () => {
-    assert.match(block, /!Array\.isArray\(unvalidatedForms\)/);
-    const guard = block.indexOf("Array.isArray");
-    const loop = block.indexOf("for(let f of unvalidatedForms)");
-    assert.ok(guard < loop, "the guard must come before the loop");
+  test("the save refuses a form without a file, and writes the base config without forms", () => {
+    assert.match(save, /Every form must be saved to a file in the forms folder/);
+    const refuse = save.indexOf("Every form must be saved");
+    const write = save.indexOf("yaml.stringify(formsConfig)");
+    assert.ok(refuse > -1 && write > refuse);
+    assert.match(save.slice(write - 200, write), /delete formsConfig\.forms/);
   });
 
-  test("entries that are not objects are filtered out", () => {
-    assert.match(block, /typeof f !== 'object'/);
-  });
-
-  test("both cases are surfaced to the user, not just logged", () => {
-    // error() pushes into the errors array the client renders
-    const errs = [...block.matchAll(/\berror\(/g)];
-    assert.equal(errs.length, 2, `expected both cases to report, found ${errs.length}`);
+  test("nothing reads forms.yaml or FORMS_PATH any more", () => {
+    assert.doesNotMatch(src, /appConfig\.formsPath|forms\.yaml\.template|legacyFormFile/);
   });
 });
 
@@ -484,67 +466,3 @@ describe("a varsFile that cannot be read is reported", () => {
   });
 });
 
-describe("a failure is never reported inside a success envelope", () => {
-  // v1's RestResult carries the outcome in its first field, and two handlers built a
-  // "success" envelope whose own message said "failed" - so a client checking the status
-  // field was told a failed job launch, or a failed expression, had worked. The same bug
-  // was in v1/query.controller.
-  const dir = path.join(here, "../src/controllers");
-
-  test("no controller pairs a success status with a failure message", () => {
-    const offenders = [];
-    for (const version of ["v1", "v2"]) {
-      const d = path.join(dir, version);
-      for (const f of readdirSync(d)) {
-        if (!f.endsWith(".js")) continue;
-        const src = readFileSync(path.join(d, f), "utf8");
-        for (const m of src.matchAll(/RestResult\("success"\s*,\s*"([^"]*)"/g)) {
-          if (/fail|error/i.test(m[1])) offenders.push(`${version}/${f}: "${m[1]}"`);
-        }
-      }
-    }
-    assert.deepEqual(offenders, []);
-  });
-
-  test("both former offenders now answer 500 with an error envelope", () => {
-    for (const [file, needle] of [
-      ["v1/job.controller.js", "failed to launch form"],
-      ["v1/expression.controller.js", "failed to execute expression"],
-    ]) {
-      const src = readFileSync(path.join(dir, file), "utf8");
-      const at = src.indexOf(needle);
-      assert.ok(at > -1, `${file} no longer mentions ${needle}`);
-      const line = src.slice(src.lastIndexOf("\n", at), at);
-      assert.match(line, /RestResult\("error"/, `${file} still uses a success envelope`);
-      assert.match(line, /status\(500\)/, `${file} still answers 200`);
-    }
-  });
-});
-
-describe("a refused credential edit answers a real status", () => {
-  // The v1 controller's catches called res.json() with NO status, so a refusal - or any
-  // failure - came back as HTTP 200 with an "error" envelope: a client checking the
-  // status code was told it had worked. And a seeded credential must answer 403, never
-  // 401 (which drops the session) and never 500 (which claims the server broke).
-  const model = readFileSync(path.join(here, "../src/models/credential.model.js"), "utf8");
-  const ctrl = readFileSync(path.join(here, "../src/controllers/v1/credential.controller.js"), "utf8");
-
-  test("the managed refusal is a typed error, not a bare string", () => {
-    assert.match(model, /throw new Errors\.AccessDeniedError\(/);
-    assert.doesNotMatch(model.replace(/\/\/[^\n]*/g, ""), /throw "This credential is managed/);
-  });
-
-  test("both mutations map it to 403 and everything else to 500", () => {
-    for (const verb of ["update", "delete"]) {
-      const at = ctrl.indexOf(`failed to ${verb} credential`);
-      assert.ok(at > -1, `${verb} handler not found`);
-      const around = ctrl.slice(Math.max(0, at - 600), at + 200);
-      assert.match(around, /err\?\.name === 'AccessDeniedError' \? 403 : 500/, `${verb} has no status mapping`);
-      assert.match(around, /res\.status\(code\)\.json\(/, `${verb} still answers 200`);
-    }
-  });
-
-  test("neither answers 401", () => {
-    assert.doesNotMatch(ctrl, /res\.status\(401\)/);
-  });
-});

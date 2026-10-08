@@ -147,13 +147,13 @@ describe("applying a renewed certificate", () => {
 });
 
 describe("the wiring that makes it live", () => {
-  test("index.js registers the https server, and only in the https branch", () => {
-    const src = readFileSync(path.join(serverRoot, "index.js"), "utf8");
+  test("the app start registers the https server, and only in the https branch", () => {
+    const src = readFileSync(path.join(serverRoot, "src", "app-start.js"), "utf8");
     expect(src).toMatch(/registerHttpsServer\(/);
     // everything from the https branch to the else must contain the call ; registering the
     // http server would be the bug (setSecureContext does not exist on it)
     const branch = /if\s*\(httpsConfig\.https\)\s*\{([\s\S]*?)\}\s*else\s*\{([\s\S]*?)\}/.exec(src);
-    expect(branch, "could not find the https/http branch in index.js").toBeTruthy();
+    expect(branch, "could not find the https/http branch in src/app-start.js").toBeTruthy();
     expect(branch[1]).toMatch(/registerHttpsServer\(/);
     expect(branch[2]).not.toMatch(/registerHttpsServer\(/);
   });

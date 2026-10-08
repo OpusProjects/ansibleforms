@@ -9,7 +9,7 @@ const Mssql = {}
 
 Mssql.query = async function (connection_name, query) {
 
-  var creds = await Credential.findByNameRegex(connection_name)
+  var creds = await Credential.resolveCredential(connection_name)
   var config = {
     server: creds.host,
     user: creds.user,

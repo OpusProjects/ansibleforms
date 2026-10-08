@@ -1,346 +1,347 @@
-@use "sass:color";
+@use 'sass:color';
 
 .text-gray-500 {
-    color: var(--af-gray-muted);
+  color: var(--af-gray-muted);
 }
 .text-edit {
-    color: var(--af-edit);
+  color: var(--af-edit);
 }
 .text-delete {
-    color: var(--af-delete);
+  color: var(--af-delete);
 }
 .text-change {
-    color: var(--af-change);
+  color: var(--af-change);
 }
 .text-test {
-    color: var(--af-test);
+  color: var(--af-test);
 }
 .text-preview {
-    color: var(--af-preview);
+  color: var(--af-preview);
 }
 .text-refresh {
-    color: var(--af-refresh);
+  color: var(--af-refresh);
 }
 .text-trigger {
-    color: var(--af-trigger);
+  color: var(--af-trigger);
 }
 .text-blue {
-    color: var(--bs-blue);
+  color: var(--bs-blue);
 }
 .text-indigo {
-    color: var(--bs-indigo);
+  color: var(--bs-indigo);
 }
 .text-purple {
-    color: var(--bs-purple);
+  color: var(--bs-purple);
 }
 .text-pink {
-    color: var(--bs-pink);
+  color: var(--bs-pink);
 }
 .text-red {
-    color: var(--bs-red);
+  color: var(--bs-red);
 }
 .text-orange {
-    color: var(--bs-orange);
+  color: var(--bs-orange);
 }
 .text-yellow {
-    color: var(--bs-yellow);
+  color: var(--bs-yellow);
 }
 .text-green {
-    color: var(--bs-green);
+  color: var(--bs-green);
 }
 .text-teal {
-    color: var(--bs-teal);
+  color: var(--bs-teal);
 }
 .text-cyan {
-    color: var(--bs-cyan);
+  color: var(--bs-cyan);
 }
-html,body{
-    height: 100%;
-}
-
-[data-bs-theme=light] {
-    /* Status Text Colors */
-    .text-info {
-        color: color.mix($blue, $dark, 20%)!important;
-    }
-    .text-primary {
-        color: color.mix($primary, $dark, 20%)!important;
-    }
-    .text-success {
-        color: color.mix($green, $dark, 20%)!important;
-    }
-    .text-warning {
-        color: color.mix($orange, $dark, 20%)!important;
-    }
-    .text-danger {
-        color: color.mix($red, $dark, 20%)!important;
-    }
-    /* Status Text Bg Colors */
-    .text-bg-info {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($blue, $light, 20%)!important;
-    }
-    .text-bg-primary {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($primary, $light, 20%)!important;
-    }
-    .text-bg-success {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($green, $light, 20%)!important;
-    }
-    .text-bg-warning {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($orange, $light, 20%)!important;
-    }
-    .text-bg-danger {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($red, $light, 20%)!important;
-    }
-    .custom-table {
-        border-color: #d1d5db!important; /* light-grey */
-    }     
-    /* Table Bg Colors */
-    .table-info {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($blue, $light, 10%)!important;
-        border-color: #d1d5db!important; /* light-grey */
-    }
-    .table-primary {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($primary, $light, 10%)!important;
-        border-color: #d1d5db!important; /* light-grey */
-    }
-    .table-success {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($green, $light, 10%)!important;
-        border-color: #d1d5db!important; /* light-grey */
-    }
-    .table-warning {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($orange, $light, 10%)!important;
-        border-color: #d1d5db!important; /* light-grey */
-    }
-    .table-danger {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($red, $light, 10%)!important;
-        border-color: #d1d5db!important; /* light-grey */
-    }
-    .table-dark {
-        color: $dark!important;
-        background-color: $light!important;
-        border-color: #d1d5db!important; /* light-grey */
-    }        
-    /* Btn Bg Colors */
-    .btn-info {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($blue, $light, 10%)!important;
-    }
-    .btn-primary {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($primary, $light, 10%)!important;
-    }
-    .btn-success {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($green, $light, 10%)!important;
-    }
-    .btn-warning {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($orange, $light, 10%)!important;
-    }
-    .btn-danger {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($red, $light, 10%)!important;
-    }        
+html,
+body {
+  height: 100%;
 }
 
-[data-bs-theme=color] {
-    /* Status Text Colors */
-    .text-info {
-        color: var(--bs-blue)!important;
-    }
-    .text-primary {
-        color: var(--af-primary)!important;
-    }
-    .text-success {
-        color: var(--bs-green)!important;
-    }
-    .text-warning {
-        color: var(--bs-orange)!important;
-    }
-    .text-danger {
-        color: var(--bs-red)!important;
-    }
-    /* Status Text Bg Colors */
-    .text-bg-info {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($blue, $light, 40%)!important;
-    }
-    .text-bg-primary {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($primary, $light, 40%)!important;
-    }
-    .text-bg-success {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($green, $light, 40%)!important;
-    }
-    .text-bg-warning {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($orange, $light, 40%)!important;
-    }
-    .text-bg-danger {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($red, $light, 40%)!important;
-    }
-    .custom-table {
-        border-color: #d1d5db!important; /* light-grey */
-    }     
-    /* Table Bg Colors */
-    .table-info {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($blue, $light, 20%)!important;
-        border-color: #d1d5db!important; /* light-grey */
-    }
-    .table-primary {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($primary, $light, 20%)!important;
-        border-color: #d1d5db!important; /* light-grey */
-    }
-    .table-success {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($green, $light, 20%)!important;
-        border-color: #d1d5db!important; /* light-grey */
-    }
-    .table-warning {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($orange, $light, 20%)!important;
-        border-color: #d1d5db!important; /* light-grey */
-    }
-    .table-danger {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($red, $light, 20%)!important;
-        border-color: #d1d5db!important; /* light-grey */
-    }
-    .table-dark {
-        color: $dark!important;
-        background-color: $light!important;
-        border-color: #d1d5db!important; /* light-grey */
-    }    
-    /* Btn Bg Colors */
-    .btn-info {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($blue, $light, 20%)!important;
-    }
-    .btn-primary {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($primary, $light, 20%)!important;
-    }
-    .btn-success {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($green, $light, 20%)!important;
-    }
-    .btn-warning {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($orange, $light, 20%)!important;
-    }
-    .btn-danger {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($red, $light, 20%)!important;
-    }    
+[data-bs-theme='light'] {
+  /* Status Text Colors */
+  .text-info {
+    color: color.mix($blue, $dark, 20%) !important;
+  }
+  .text-primary {
+    color: color.mix($primary, $dark, 20%) !important;
+  }
+  .text-success {
+    color: color.mix($green, $dark, 20%) !important;
+  }
+  .text-warning {
+    color: color.mix($orange, $dark, 20%) !important;
+  }
+  .text-danger {
+    color: color.mix($red, $dark, 20%) !important;
+  }
+  /* Status Text Bg Colors */
+  .text-bg-info {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($blue, $light, 20%) !important;
+  }
+  .text-bg-primary {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($primary, $light, 20%) !important;
+  }
+  .text-bg-success {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($green, $light, 20%) !important;
+  }
+  .text-bg-warning {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($orange, $light, 20%) !important;
+  }
+  .text-bg-danger {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($red, $light, 20%) !important;
+  }
+  .custom-table {
+    border-color: #d1d5db !important; /* light-grey */
+  }
+  /* Table Bg Colors */
+  .table-info {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($blue, $light, 10%) !important;
+    border-color: #d1d5db !important; /* light-grey */
+  }
+  .table-primary {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($primary, $light, 10%) !important;
+    border-color: #d1d5db !important; /* light-grey */
+  }
+  .table-success {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($green, $light, 10%) !important;
+    border-color: #d1d5db !important; /* light-grey */
+  }
+  .table-warning {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($orange, $light, 10%) !important;
+    border-color: #d1d5db !important; /* light-grey */
+  }
+  .table-danger {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($red, $light, 10%) !important;
+    border-color: #d1d5db !important; /* light-grey */
+  }
+  .table-dark {
+    color: $dark !important;
+    background-color: $light !important;
+    border-color: #d1d5db !important; /* light-grey */
+  }
+  /* Btn Bg Colors */
+  .btn-info {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($blue, $light, 10%) !important;
+  }
+  .btn-primary {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($primary, $light, 10%) !important;
+  }
+  .btn-success {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($green, $light, 10%) !important;
+  }
+  .btn-warning {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($orange, $light, 10%) !important;
+  }
+  .btn-danger {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($red, $light, 10%) !important;
+  }
 }
 
-[data-bs-theme=dark] {
-    /* Status Text Colors */
-    .text-info {
-        color: color.mix($blue, $light, 20%)!important;
-    }
-    .text-primary {
-        color: color.mix($primary, $light, 20%)!important;
-    }
-    .text-success {
-        color: color.mix($green, $light, 20%)!important;
-    }
-    .text-warning {
-        color: color.mix($orange, $light, 20%)!important;
-    }
-    .text-danger {
-        color: color.mix($red, $light, 20%)!important;
-    }
-    /* Status Text Bg Colors */
-    .text-bg-info {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($blue, $dark, 20%)!important;
-    }
-    .text-bg-primary {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($primary, $dark, 20%)!important;
-    }
-    .text-bg-success {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($green, $dark, 20%)!important;
-    }
-    .text-bg-warning {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($orange, $dark, 20%)!important;
-    }
-    .text-bg-danger {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($red, $dark, 20%)!important;
-    }
-    .custom-table {
-        border-color: #374151!important; /* dark-grey */
-    }     
-    /* Table Bg Colors */
-    .table-info {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($blue, $dark, 20%)!important;
-        border-color: #374151!important; /* dark-grey */
-    }
-    .table-primary {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($primary, $dark, 20%)!important;
-        border-color: #374151!important; /* dark-grey */
-    }
-    .table-success {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($green, $dark, 20%)!important;
-        border-color: #374151!important; /* dark-grey */
-    }
-    .table-warning {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($orange, $dark, 20%)!important;
-        border-color: #374151!important; /* dark-grey */
-    }
-    .table-danger {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($red, $dark, 20%)!important;
-        border-color: #374151!important; /* dark-grey */
-    }
-    .table-dark {
-        color: $light!important;
-        background-color: $dark!important;
-        border-color: #374151!important; /* dark-grey */
-    }
-    /* Btn Bg Colors */
-    .btn-info {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($blue, $dark, 20%)!important;
-    }
-    .btn-primary {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($primary, $dark, 20%)!important;
-    }
-    .btn-success {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($green, $dark, 20%)!important;
-    }
-    .btn-warning {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($orange, $dark, 20%)!important;
-    }
-    .btn-danger {
-        color: var(--bs-body-color)!important;
-        background-color: color.mix($red, $dark, 20%)!important;
-    }        
+[data-bs-theme='color'] {
+  /* Status Text Colors */
+  .text-info {
+    color: var(--bs-blue) !important;
+  }
+  .text-primary {
+    color: var(--af-primary) !important;
+  }
+  .text-success {
+    color: var(--bs-green) !important;
+  }
+  .text-warning {
+    color: var(--bs-orange) !important;
+  }
+  .text-danger {
+    color: var(--bs-red) !important;
+  }
+  /* Status Text Bg Colors */
+  .text-bg-info {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($blue, $light, 40%) !important;
+  }
+  .text-bg-primary {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($primary, $light, 40%) !important;
+  }
+  .text-bg-success {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($green, $light, 40%) !important;
+  }
+  .text-bg-warning {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($orange, $light, 40%) !important;
+  }
+  .text-bg-danger {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($red, $light, 40%) !important;
+  }
+  .custom-table {
+    border-color: #d1d5db !important; /* light-grey */
+  }
+  /* Table Bg Colors */
+  .table-info {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($blue, $light, 20%) !important;
+    border-color: #d1d5db !important; /* light-grey */
+  }
+  .table-primary {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($primary, $light, 20%) !important;
+    border-color: #d1d5db !important; /* light-grey */
+  }
+  .table-success {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($green, $light, 20%) !important;
+    border-color: #d1d5db !important; /* light-grey */
+  }
+  .table-warning {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($orange, $light, 20%) !important;
+    border-color: #d1d5db !important; /* light-grey */
+  }
+  .table-danger {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($red, $light, 20%) !important;
+    border-color: #d1d5db !important; /* light-grey */
+  }
+  .table-dark {
+    color: $dark !important;
+    background-color: $light !important;
+    border-color: #d1d5db !important; /* light-grey */
+  }
+  /* Btn Bg Colors */
+  .btn-info {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($blue, $light, 20%) !important;
+  }
+  .btn-primary {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($primary, $light, 20%) !important;
+  }
+  .btn-success {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($green, $light, 20%) !important;
+  }
+  .btn-warning {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($orange, $light, 20%) !important;
+  }
+  .btn-danger {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($red, $light, 20%) !important;
+  }
+}
+
+[data-bs-theme='dark'] {
+  /* Status Text Colors */
+  .text-info {
+    color: color.mix($blue, $light, 20%) !important;
+  }
+  .text-primary {
+    color: color.mix($primary, $light, 20%) !important;
+  }
+  .text-success {
+    color: color.mix($green, $light, 20%) !important;
+  }
+  .text-warning {
+    color: color.mix($orange, $light, 20%) !important;
+  }
+  .text-danger {
+    color: color.mix($red, $light, 20%) !important;
+  }
+  /* Status Text Bg Colors */
+  .text-bg-info {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($blue, $dark, 20%) !important;
+  }
+  .text-bg-primary {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($primary, $dark, 20%) !important;
+  }
+  .text-bg-success {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($green, $dark, 20%) !important;
+  }
+  .text-bg-warning {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($orange, $dark, 20%) !important;
+  }
+  .text-bg-danger {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($red, $dark, 20%) !important;
+  }
+  .custom-table {
+    border-color: #374151 !important; /* dark-grey */
+  }
+  /* Table Bg Colors */
+  .table-info {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($blue, $dark, 20%) !important;
+    border-color: #374151 !important; /* dark-grey */
+  }
+  .table-primary {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($primary, $dark, 20%) !important;
+    border-color: #374151 !important; /* dark-grey */
+  }
+  .table-success {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($green, $dark, 20%) !important;
+    border-color: #374151 !important; /* dark-grey */
+  }
+  .table-warning {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($orange, $dark, 20%) !important;
+    border-color: #374151 !important; /* dark-grey */
+  }
+  .table-danger {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($red, $dark, 20%) !important;
+    border-color: #374151 !important; /* dark-grey */
+  }
+  .table-dark {
+    color: $light !important;
+    background-color: $dark !important;
+    border-color: #374151 !important; /* dark-grey */
+  }
+  /* Btn Bg Colors */
+  .btn-info {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($blue, $dark, 20%) !important;
+  }
+  .btn-primary {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($primary, $dark, 20%) !important;
+  }
+  .btn-success {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($green, $dark, 20%) !important;
+  }
+  .btn-warning {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($orange, $dark, 20%) !important;
+  }
+  .btn-danger {
+    color: var(--bs-body-color) !important;
+    background-color: color.mix($red, $dark, 20%) !important;
+  }
 }
 
 // /* Status Text Colors */
@@ -393,118 +394,117 @@ html,body{
 // }
 
 // Background Colors
-.bg-primary{
-    background-color: var(--af-bg-primary-color)!important;
+.bg-primary {
+  background-color: var(--af-bg-primary-color) !important;
 }
-.bg-primary-subtle{
-    background-color: var(--af-bg-primary-subtle-color)!important;
+.bg-primary-subtle {
+  background-color: var(--af-bg-primary-subtle-color) !important;
 }
-.bg-secondary{
-    background-color: var(--af-bg-secondary-color)!important;
+.bg-secondary {
+  background-color: var(--af-bg-secondary-color) !important;
 }
-.bg-secondary-subtle{
-    background-color: var(--af-bg-secondary-subtle-color)!important;
+.bg-secondary-subtle {
+  background-color: var(--af-bg-secondary-subtle-color) !important;
 }
-.bg-success{
-    background-color: var(--af-bg-success-color)!important;
+.bg-success {
+  background-color: var(--af-bg-success-color) !important;
 }
-.bg-success-subtle{
-    background-color: var(--af-bg-success-subtle-color)!important;
+.bg-success-subtle {
+  background-color: var(--af-bg-success-subtle-color) !important;
 }
-.bg-danger{
-    background-color: var(--af-bg-danger-color)!important;
+.bg-danger {
+  background-color: var(--af-bg-danger-color) !important;
 }
-.bg-danger-subtle{
-    background-color: var(--af-bg-danger-subtle-color)!important;
+.bg-danger-subtle {
+  background-color: var(--af-bg-danger-subtle-color) !important;
 }
-.bg-warning{
-    background-color: var(--af-bg-warning-color)!important;
+.bg-warning {
+  background-color: var(--af-bg-warning-color) !important;
 }
-.bg-warning-subtle{
-    background-color: var(--af-bg-warning-subtle-color)!important;
+.bg-warning-subtle {
+  background-color: var(--af-bg-warning-subtle-color) !important;
 }
-.bg-info{
-    background-color: var(--af-bg-info-color)!important;
+.bg-info {
+  background-color: var(--af-bg-info-color) !important;
 }
-.bg-info-subtle{
-    background-color: var(--af-bg-info-subtle-color)!important;
+.bg-info-subtle {
+  background-color: var(--af-bg-info-subtle-color) !important;
 }
-.bg-light{
-    background-color: var(--af-bg-light-color)!important;
+.bg-light {
+  background-color: var(--af-bg-light-color) !important;
 }
-.bg-light-subtle{
-    background-color: var(--af-bg-light-subtle-color)!important;
+.bg-light-subtle {
+  background-color: var(--af-bg-light-subtle-color) !important;
 }
-.bg-dark{
-    background-color: var(--af-bg-dark-color)!important;
+.bg-dark {
+  background-color: var(--af-bg-dark-color) !important;
 }
-.bg-dark-subtle{
-    background-color: var(--af-bg-dark-subtle-color)!important;
+.bg-dark-subtle {
+  background-color: var(--af-bg-dark-subtle-color) !important;
 }
-.bg-body-secondary{
-    background-color: var(--af-bg-body-secondary-color)!important;
+.bg-body-secondary {
+  background-color: var(--af-bg-body-secondary-color) !important;
 }
-.bg-body-tertiary{
-    background-color: var(--af-bg-body-tertiary-color)!important;
+.bg-body-tertiary {
+  background-color: var(--af-bg-body-tertiary-color) !important;
 }
-.bg-body{
-    background-color: var(--af-bg-body-color)!important;
+.bg-body {
+  background-color: var(--af-bg-body-color) !important;
 }
-.bg-black{
-    background-color: var(--af-bg-black-color)!important;
+.bg-black {
+  background-color: var(--af-bg-black-color) !important;
 }
-.bg-white{
-    background-color: var(--af-bg-white-color)!important;
+.bg-white {
+  background-color: var(--af-bg-white-color) !important;
 }
-.bg-transparent{
-    background-color: var(--af-bg-transparent-color)!important;
+.bg-transparent {
+  background-color: var(--af-bg-transparent-color) !important;
 }
-.bg-primary-forced{
-    background-color: var(--af-primary)!important;
-    color: var(--af-body)!important;
-}
-.navbar{
-    background-color:var(--af-bg-navbar)!important;
-    color:var(--af-text-navbar)!important;
-}
-.nav {
-    .nav-link.active{
-        background-color:var(--af-bg-active)!important;
-        color:var(--af-text-active)!important;
-    }
+.bg-primary-forced {
+  background-color: var(--af-primary) !important;
+  color: var(--af-body) !important;
 }
 .navbar {
-    .nav-link {
-        color: var(--af-navbar-link-color)!important;
-        &:hover {
-            color: var(--af-navbar-link-hover-color)!important;
-        };
-        &.active {
-            color: var(--af-navbar-link-active-color)!important;
-        }
+  background-color: var(--af-bg-navbar) !important;
+  color: var(--af-text-navbar) !important;
+}
+.nav {
+  .nav-link.active {
+    background-color: var(--af-bg-active) !important;
+    color: var(--af-text-active) !important;
+  }
+}
+.navbar {
+  .nav-link {
+    color: var(--af-navbar-link-color) !important;
+    &:hover {
+      color: var(--af-navbar-link-hover-color) !important;
     }
-}
-.btn-outline-primary{
-    color: var(--af-primary)!important;
-    border-color: var(--af-primary)!important;
-}
-.btn-outline-primary:hover{
-    color: var(--af-text-active)!important;
-    background-color: var(--af-bg-active)!important;
-
-}
-button{
-    .dropdown-item{
-        &.active{
-            background-color: var(--af-bg-active);
-            color: var(--af-text-active);
-        }
+    &.active {
+      color: var(--af-navbar-link-active-color) !important;
     }
+  }
 }
-.bg-categories{
-    min-width: 300px;
-    background-color: var(--af-bg-categories);
+.btn-outline-primary {
+  color: var(--af-primary) !important;
+  border-color: var(--af-primary) !important;
 }
-.af-shadow{
-    box-shadow: 0 .5rem 1rem rgba(var(--af-shadow), .35)!important;
+.btn-outline-primary:hover {
+  color: var(--af-text-active) !important;
+  background-color: var(--af-bg-active) !important;
+}
+button {
+  .dropdown-item {
+    &.active {
+      background-color: var(--af-bg-active);
+      color: var(--af-text-active);
+    }
+  }
+}
+.bg-categories {
+  min-width: 300px;
+  background-color: var(--af-bg-categories);
+}
+.af-shadow {
+  box-shadow: 0 0.5rem 1rem rgba(var(--af-shadow), 0.35) !important;
 }
