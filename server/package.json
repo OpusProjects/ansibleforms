@@ -43,7 +43,7 @@
     "moment": "~2.31.0",
     "moment-timezone": "0.6.5",
     "mongodb": "~7.6.0",
-    "mssql": "~12.7.2",
+    "mssql": "~12.7.4",
     "multer": "~2.4.0",
     "mysql2": "~3.24.5",
     "node-cache": "~5.1.2",
