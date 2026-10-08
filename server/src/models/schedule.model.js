@@ -160,7 +160,7 @@ class Schedule extends CrudModel {
   // Back to idle, the launches nobody will finish : the node launching it stopped answering, it
   // is older than LAUNCH_MAX_MINUTES (a launch only hands the job over, it takes seconds), or -
   // atStart, the worker's start - its own from before this process started and those from before
-  // 7.5.1. A launch an app node (or this process) is doing right now is left alone.
+  // 7. A launch an app node (or this process) is doing right now is left alone.
   static async releaseStale({ atStart = false } = {}) {
     const res = await mysql.do(
       "UPDATE AnsibleForms.`schedule` s SET s.state='idle', s.claim_node=NULL WHERE s.state='running' AND (" +

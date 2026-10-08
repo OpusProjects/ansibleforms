@@ -4,24 +4,28 @@ Removed in 8.0.0. Each logs a warning when it is used.
 
 | Deprecated | Replacement | Since |
 |---|---|---|
-| `VAULT_*` environment variables (imported once at the first 7.x start, then ignored) | a secret store named `vault` (Connections > Secret stores) | 7.1.0 |
-| `vault_path` on a credential (API, seed) | `secret_store` + `secret_ref` | 7.1.0 |
-| `POST /api/v2/config/vault/check`, `GET /api/v2/config/vault/mounts` | `POST /api/v2/secretstore/{id}/check`, `GET /api/v2/secretstore/{id}/mounts` | 7.1.0 |
-| `hasApproval` on a form or a step (it has no effect) | `approval` | 7.3.0 |
-| `awx: <name>` on a form | `runner: <name>` (an AWX connection is a runner of type `awx`) | 7.5.0 |
-| the config seed's `awx:` section | `runners:` items with `type: awx` | 7.5.0 |
-| `LOCK_PATH` (no longer read) | nothing: the designer lock is kept in the database | 7.5.0 |
+| `VAULT_*` environment variables (imported once at the first 7.x start, then ignored) | a secret store named `vault` (Connections > Secret stores) | 7.0.0 |
+| `vault_path` on a credential (API, seed) | `secret_store` + `secret_ref` | 7.0.0 |
+| `POST /api/v2/config/vault/check`, `GET /api/v2/config/vault/mounts` | `POST /api/v2/secretstore/{id}/check`, `GET /api/v2/secretstore/{id}/mounts` | 7.0.0 |
+| `hasApproval` on a form or a step (it has no effect) | `approval` | 7.0.0 |
+| `awx: <name>` on a form | `runner: <name>` (an AWX connection is a runner of type `awx`) | 7.0.0 |
+| the config seed's `awx:` section | `runners:` items with `type: awx` | 7.0.0 |
+| `LOCK_PATH` (no longer read) | nothing: the designer lock is kept in the database | 7.0.0 |
 
-## Changed in 7.5.0 - read before upgrading
+## Upgrading from 6.5 to 7.0.0 - read first
 
-7.5 runs playbooks on runners: the app no longer runs `ansible-playbook` itself.
+7 runs playbooks on runners: the app no longer runs `ansible-playbook` itself. Together with
+the removals below, this is what a 6.5 install changes when it moves to 7.
 
 | What changed | What to do |
 |---|---|
-| playbooks no longer run inside the AnsibleForms container | start an RTE (the `ansibleforms-rte` image), add it under Connections > Runners and mark it as default, or name it on the form with `runner:` |
+| playbooks no longer run inside the AnsibleForms container | start an RTE (the `ansibleforms-rte` image, `AF_ROLE=rte`, `RTE_TOKEN`, the app's `DB_*` and `ENCRYPTION_SECRET`), add it under Connections > Runners and mark it as default - or declare it in the config seed's `runners:` section - or name it on the form with `runner:` |
+| the app image is node only: no ansible, python or collections | anything you added to the image or the persistent folder for playbooks (collections, roles, python libraries, `ansible.cfg`) goes into your RTE image (fork `Dockerfile.rte`) or its mounts |
 | `ANSIBLE_PATH`, `PROCESS_MAX_BUFFER` are read by the RTE, not the app | set them in the RTE container's environment |
-| the app image is node only: no ansible, python or collections | anything you added to the app image for playbooks goes into your RTE image (fork `Dockerfile.rte`) |
-| the `awx` table, `/api/v2/awx` and the A.A.P. page are gone | nothing : the upgrade moves every AWX/AAP connection to Runners (type `awx`) |
+| the `awx` table, `/api/v2/awx` and the A.A.P. page are gone | nothing : the upgrade moves every AWX/AAP connection to Runners (type `awx`) ; forms with `awx:` keep working |
+| HashiCorp Vault through `VAULT_*` | nothing : the first start imports them once as the secret store `vault` |
+| images are on `ghcr.io/ansibleforms` only | pull `ghcr.io/ansibleforms/ansibleforms:7` (and `ansibleforms-rte:7`) |
+| optional : several app nodes | `AF_ROLE=app` nodes plus one `AF_ROLE=worker`, sharing the database and the persistent volume - see `examples/scale` |
 
 ## Removed in 7.0.0
 

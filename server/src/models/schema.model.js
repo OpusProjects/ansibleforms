@@ -199,7 +199,7 @@ async function checkTable(table) {
     throw new Error(message);
   }
 }
-// PATCHING : whether a table exists (the awx table is gone once 7.5 moved it to runners)
+// PATCHING : whether a table exists (the awx table is gone once 7 moved it to runners)
 async function tablePresent(table) {
   const res = await mysql.do("SHOW TABLES FROM ?? WHERE ?? = ?", ["AnsibleForms", "Tables_in_AnsibleForms", table]);
   return res.length > 0;
@@ -536,7 +536,7 @@ const SCHEMA_MANIFEST = {
                                'chat_settings.request_user', 'chat_settings.extra_headers',
                                'chat_settings.ignore_certs'],
                      indexes: ['jobs.idx_jobs_retention'] },
-    // 7.5 : runners - AWX connections are runners of type awx (the awx table is copied, then
+    // 7 : runners - AWX connections are runners of type awx (the awx table is copied, then
     // dropped), and the job log a playbook writes is stored on the job
     // and the worker and several app nodes : the processes on the database, what changed
     // between them, the designer lock, and the node that follows a job
@@ -600,7 +600,7 @@ async function patchVersion5(messages, success, failed) {
   await checkPromise(addColumn("jobs", "awx_id", "int(11)", true, "NULL"), messages, success, failed); // add for future tracking
 
   // patch for awx credentials, the use_credentials was added to the awx table, to allow the use of credentials
-  // (only while the awx table exists : 7.5 moves it to runners, see patchVersion7)
+  // (only while the awx table exists : 7 moves it to runners, see patchVersion7)
   if (await tablePresent("awx")) {
     await checkPromise(addColumn("awx", "use_credentials", "tinyint(4)", true, "0"), messages, success, failed); // bugfix for awx credentials
   }
@@ -637,7 +637,7 @@ async function patchVersion5(messages, success, failed) {
   await checkPromise(addColumn("jobs", "abort_requested", "tinyint(4)", true, "NULL"), messages, success, failed); // add abort_requested column
 
   // In 6.0.0, we allow multiple awx instances, so we need to add id, name and description to the awx table
-  // (only while the awx table exists : 7.5 moves it to runners, see patchVersion7)
+  // (only while the awx table exists : 7 moves it to runners, see patchVersion7)
   if (await tablePresent("awx")) {
     await checkPromise(addIdPrimaryKey("awx"), messages, success, failed); // add id column with auto_increment primary key
     await checkPromise(addColumn("awx", "name", "varchar(250)", true, "NULL"), messages, success, failed); // add name column
@@ -817,7 +817,7 @@ async function patchVersion6(messages, success, failed) {
   for (const table of ["credentials", "oauth2_providers", "repositories", "ldap", "settings"]) {
     await checkPromise(addColumn(table, "managed", "tinyint(4)", true, "0"), messages, success, failed);
   }
-  // the awx table too, while it exists (7.5 moves it to runners, see patchVersion7)
+  // the awx table too, while it exists (7 moves it to runners, see patchVersion7)
   if (await tablePresent("awx")) {
     await checkPromise(addColumn("awx", "managed", "tinyint(4)", true, "0"), messages, success, failed);
   }
@@ -846,7 +846,7 @@ async function patchVersion7(messages, success, failed) {
   // the user a planned job ("Run later" with allowPlannedJobs) runs as - see Schedule.plan
   await checkPromise(addColumn("schedule", "owner", "longtext", true, "NULL"), messages, success, failed);
 
-  // 7.5 : runners (where a playbook runs : an RTE) and the runner a job ran on
+  // 7 : runners (where a playbook runs : an RTE) and the runner a job ran on
   const runners = fs.readFileSync(`${__dirname}/../db/create_runners_table.sql`);
   await checkPromise(addTable("runners", runners.toString()), messages, success, failed);
   await checkPromise(addColumn("jobs", "runner", "varchar(250)", true, "NULL"), messages, success, failed);
@@ -858,7 +858,7 @@ async function patchVersion7(messages, success, failed) {
   await checkPromise(copyAwxToRunners(), messages, success, failed);
   await checkPromise(addColumn("jobs", "job_log", "longtext", true, "NULL"), messages, success, failed);
 
-  // 7.5 : a worker and several app nodes on one database (lib/nodes.js, lib/epochs.js,
+  // 7 : a worker and several app nodes on one database (lib/nodes.js, lib/epochs.js,
   // the designer lock in models/lock.model.js, the node following a job)
   for (const table of ["nodes", "cache_epochs", "designer_lock"]) {
     const sql = fs.readFileSync(`${__dirname}/../db/create_${table}_table.sql`);
@@ -961,7 +961,7 @@ async function checkAll({ patch = true } = {}) {
   }
 
   // check all the tables
-  // not awx : 7.5 copies it into runners and drops it (patchVersion7)
+  // not awx : 7 copies it into runners and drops it (patchVersion7)
   var tables = ["credentials", "groups", "job_output", "jobs", "ldap", "tokens", "users"];
   await checkPromise(checkTables(tables, messages, success, failed), messages, success, failed);
 

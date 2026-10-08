@@ -231,7 +231,7 @@ Job.abandon = async function (all = false) {
   return res.changedRows;
 };
 // At a process start : the jobs this node followed died with its previous run. `untracked`
-// adds the jobs no node follows (started before 7.5) ; only the worker's start passes it, so
+// adds the jobs no node follows (started before 7) ; only the worker's start passes it, so
 // they are swept once per database, not by every app node that starts.
 Job.abandonOwn = async function (tracker, { untracked = false } = {}) {
   const res = await mysql.do(
@@ -1387,7 +1387,7 @@ Job._buildAndSendEmail = async function ({
     }
 
     // Read template : the bundled ones live in templates/email, but a copy mounted
-    // where they used to be (src/templates, documented up to 7.1) still overrides it
+    // where they used to be (src/templates, documented before 7) still overrides it
     var legacyTemplate = `${__dirname}/../templates/${templatePath}`;
     var templateFile = fs.existsSync(legacyTemplate) ? legacyTemplate : `${__dirname}/../../templates/email/${templatePath}`;
     var buffer = fs.readFileSync(templateFile);

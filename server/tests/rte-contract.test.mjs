@@ -31,10 +31,10 @@ describe("the contract decides, not the release", () => {
   });
 
   test("an older release that speaks the same contract : accepted, and said to be older", async () => {
-    health.version = "7.0.0";
+    health.version = "0.1.0"; // older than any app release
     const info = await rte.check(runner);
     assert.equal(info.olderRelease, true);
-    assert.equal(info.version, "7.0.0");
+    assert.equal(info.version, "0.1.0");
   });
 
   test("an older contract : refused, update the RTE", async () => {

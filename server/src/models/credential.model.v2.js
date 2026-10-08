@@ -15,7 +15,7 @@ class CredentialModel extends CrudModel {
   static mirrorVaultPath(data) {
     if (data.secret_store === '') data.secret_store = null;
     if (data.vault_path && !data.secret_store) {
-      logger.warning(`Credential '${data.name || ''}' : vault_path is deprecated since 7.1 and removed in 8 - use secret_store and secret_ref`);
+      logger.warning(`Credential '${data.name || ''}' : vault_path is deprecated since 7 and removed in 8 - use secret_store and secret_ref`);
       data.secret_store = VAULT_STORE_NAME;
       data.secret_ref = data.vault_path;
     } else if (data.secret_store !== undefined) {

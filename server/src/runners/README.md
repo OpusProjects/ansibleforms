@@ -259,7 +259,7 @@ Customers make it their own by forking `Dockerfile.rte` (the full flavour) or
 
 Semaphore and Rundeck adapters; `findDefault` by capability once a second playbook-capable
 type exists; following multistep and AWX jobs from the worker, so they survive the app node that
-started them. (The worker role and several app nodes exist since 7.5: see
+started them. (The worker role and several app nodes exist since 7: see
 [examples/scale](../../../examples/scale).)
 
 ## Tests

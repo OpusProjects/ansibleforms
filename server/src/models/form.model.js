@@ -909,16 +909,16 @@ export function removedIn7(form){
   }
   return found
 }
-// Deprecated in 7.3.0, removed in 8.0.0 (DEPRECATED.md). hasApproval is accepted by the
+// Deprecated in 7.0.0, removed in 8.0.0 (DEPRECATED.md). hasApproval is accepted by the
 // schema on a form and on a step, but nothing reads it : a form that sets it gets no
 // approval point from it. The approval point is the approval property.
-const DEPRECATED_IN_7_3 = 'deprecated since 7.3 and removed in 8'
+const DEPRECATED_IN_7 = 'deprecated since 7 and removed in 8'
 export function deprecatedIn7_3(form){
   const found = []
   if (form && typeof form === 'object') {
-    if (form.hasApproval !== undefined) found.push(`Form '${form.name}' : hasApproval is ${DEPRECATED_IN_7_3} - it has no effect, an approval point is set with approval`)
+    if (form.hasApproval !== undefined) found.push(`Form '${form.name}' : hasApproval is ${DEPRECATED_IN_7} - it has no effect, an approval point is set with approval`)
     for (const s of Array.isArray(form.steps) ? form.steps : []) {
-      if (s && typeof s === 'object' && s.hasApproval !== undefined) found.push(`Step '${s.name}' of form '${form.name}' : hasApproval is ${DEPRECATED_IN_7_3} - it has no effect, an approval point is set with approval`)
+      if (s && typeof s === 'object' && s.hasApproval !== undefined) found.push(`Step '${s.name}' of form '${form.name}' : hasApproval is ${DEPRECATED_IN_7} - it has no effect, an approval point is set with approval`)
     }
   }
   return found

@@ -137,7 +137,7 @@ const routes = [
   { path: '/admin/mailSettings', name: '/admin/mailSettings', component: mailSettings, beforeEnter: checkSettings },
   { path: '/admin/logo', name: '/admin/logo', component: logo, beforeEnter: checkSettings },
   { path: '/admin/repositories', name: '/admin/repositories', component: repositories, beforeEnter: checkSettings },
-  // moved under /jobs (7.3) : bookmarks to the old addresses still land on the page
+  // moved under /jobs (7) : bookmarks to the old addresses still land on the page
   { path: '/admin/schedules', redirect: '/jobs/schedules' },
   { path: '/admin/stored-jobs', redirect: '/jobs/stored' },
   { path: '/admin/settings', name: '/admin/settings', component: settings, beforeEnter: checkSettings },

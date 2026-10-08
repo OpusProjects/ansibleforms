@@ -66,7 +66,7 @@
     short: HashiCorp Vault address (deprecated)
     required: false
     description: |
-      **Deprecated since 7.1, removed in 8.** The first 7.x start that finds these variables imports them once as the secret store `vault`; after that they are ignored. Manage the Vault under Connections > Secret stores.
+      **Deprecated since 7, removed in 8.** The first 7.x start that finds these variables imports them once as the secret store `vault`; after that they are ignored. Manage the Vault under Connections > Secret stores.
       Base URL of a HashiCorp Vault server (e.g. `https://vault.example.com:8200`).
       When set together with `VAULT_TOKEN`, AnsibleForms can resolve credentials from Vault.
       A credential row in the local database can specify a `vault_path`; when present, the user/password are fetched from Vault at runtime instead of being read from the local encrypted columns.
@@ -76,7 +76,7 @@
     short: HashiCorp Vault token (deprecated)
     required: false
     description: |
-      **Deprecated since 7.1, removed in 8.** The first 7.x start that finds these variables imports them once as the secret store `vault`; after that they are ignored. Manage the Vault under Connections > Secret stores.
+      **Deprecated since 7, removed in 8.** The first 7.x start that finds these variables imports them once as the secret store `vault`; after that they are ignored. Manage the Vault under Connections > Secret stores.
       Authentication token used by AnsibleForms to read secrets from Vault.
       Required when `VAULT_ADDR` is set.
       Use a token with read-only access to the relevant secret paths.
@@ -85,7 +85,7 @@
     short: HashiCorp Vault namespace (deprecated)
     required: false
     description: |
-      **Deprecated since 7.1, removed in 8.** The first 7.x start that finds these variables imports them once as the secret store `vault`; after that they are ignored. Manage the Vault under Connections > Secret stores.
+      **Deprecated since 7, removed in 8.** The first 7.x start that finds these variables imports them once as the secret store `vault`; after that they are ignored. Manage the Vault under Connections > Secret stores.
       Optional Vault Enterprise namespace. Sent as the `X-Vault-Namespace` header on every request.
   - name: VAULT_KV_VERSION
     type: number
@@ -94,7 +94,7 @@
     required: false
     default: 2
     description: |
-      **Deprecated since 7.1, removed in 8.** The first 7.x start that finds these variables imports them once as the secret store `vault`; after that they are ignored. Manage the Vault under Connections > Secret stores.
+      **Deprecated since 7, removed in 8.** The first 7.x start that finds these variables imports them once as the secret store `vault`; after that they are ignored. Manage the Vault under Connections > Secret stores.
       Version of the Vault KV secret engine. Defaults to 2 (recommended).
       For KV v2, the client automatically inserts the `/data/` segment in the API path if it is missing.
   - name: VAULT_DEFAULT_MOUNT
@@ -103,7 +103,7 @@
     required: false
     default: secret
     description: |
-      **Deprecated since 7.1, removed in 8.** The first 7.x start that finds these variables imports them once as the secret store `vault`; after that they are ignored. Manage the Vault under Connections > Secret stores.
+      **Deprecated since 7, removed in 8.** The first 7.x start that finds these variables imports them once as the secret store `vault`; after that they are ignored. Manage the Vault under Connections > Secret stores.
       Default KV mount used when a credential's `vault_path` is provided as a bare key (no slash).
       For example, with the default `secret` mount, `vault_path = "myapp"` resolves to `secret/data/myapp` (KV v2).
   - name: VAULT_CACHE_TTL_MS
@@ -113,7 +113,7 @@
     required: false
     default: 60000
     description: |
-      **Deprecated since 7.1, removed in 8.** The first 7.x start that finds these variables imports them once as the secret store `vault`; after that they are ignored. Manage the Vault under Connections > Secret stores.
+      **Deprecated since 7, removed in 8.** The first 7.x start that finds these variables imports them once as the secret store `vault`; after that they are ignored. Manage the Vault under Connections > Secret stores.
       Time-to-live in milliseconds of the in-memory cache used by AnsibleForms when reading secrets from Vault.
       Lower this if you rotate secrets aggressively; raise it to reduce load on Vault.
   - name: VAULT_SKIP_VERIFY
@@ -124,7 +124,7 @@
     required: false
     default: "false"
     description: |
-      **Deprecated since 7.1, removed in 8.** The first 7.x start that finds these variables imports them once as the secret store `vault`; after that they are ignored. Manage the Vault under Connections > Secret stores.
+      **Deprecated since 7, removed in 8.** The first 7.x start that finds these variables imports them once as the secret store `vault`; after that they are ignored. Manage the Vault under Connections > Secret stores.
       Disable TLS certificate verification when calling Vault. **For development/testing only** — never enable this in production.
   - name: PORT
     type: number
@@ -144,7 +144,7 @@
       For example with `BASE_URL=/ansibleforms`, the application is served under `https://host/ansibleforms/`.
       Note : when using an OAuth2 identity provider (Entra ID / OIDC), make sure the instance url in the provider settings includes the subpath, so the generated redirect uri matches.
   - name: TRUST_PROXY
-    version: 7.4.0
+    version: 7.0.0
     type: string
     allowed: 0, a number of proxies, true, or a comma-separated list of proxy addresses and CIDR ranges
     short: Trusted reverse proxies
@@ -299,7 +299,7 @@
     hint: No longer used - the designer lock is kept in the database.
     default: "%PERSISTENT_FOLDER%/ansibleForms.lock"
     description: |
-      Deprecated since 7.5.0 and ignored : the designer lock (who is editing the forms) is kept
+      Deprecated since 7.0.0 and ignored : the designer lock (who is editing the forms) is kept
       in the database, so every app node sees the same lock. Removed in 8.0.0.
   - name: FORMS_BACKUP_PATH
     version: 4.0.3
@@ -348,7 +348,7 @@
       removes entries older than this.
       Set to 0 to keep everything.
   - name: AF_ROLE
-    version: 7.5.0
+    version: 7.0.0
     type: string
     allowed: all, app, worker, rte
     short: What this process runs
@@ -367,7 +367,7 @@
       settings (`DB_*`), the same `ENCRYPTION_SECRET`, and `RTE_TOKEN`. The app reaches it
       through a runner added under Connections > Runners.
   - name: RTE_TOKEN
-    version: 7.5.0
+    version: 7.0.0
     type: string
     allowed: at least 16 characters
     short: The token between an app and its RTE
@@ -745,7 +745,7 @@
     default: 1024 * 1024
     description: |
       Read by an RTE (`AF_ROLE=rte`) : a playbook whose output on one stream passes this many
-      bytes is stopped. If you have large output, raise it. Since 7.5 the app runs no playbook
+      bytes is stopped. If you have large output, raise it. Since 7 the app runs no playbook
       itself, so set this in the RTE container's environment ; it is not editable on the
       Settings page.
     version: 5.0.8
@@ -1016,7 +1016,7 @@
     default: "%PERSISTENT_FOLDER%/playbooks"
     description: |
       Read by an RTE (`AF_ROLE=rte`) : the folder its playbooks run from when no repository is
-      marked for playbooks. Since 7.5 the app runs no playbook itself, so set this in the RTE
+      marked for playbooks. Since 7 the app runs no playbook itself, so set this in the RTE
       container's environment ; it is not editable on the Settings page.
   - name: REGEX_FILTER_JOB_OUTPUT
     type: string
@@ -1684,7 +1684,7 @@
         - name: ansible
           description: | 
             Targets an Ansible playbook, run on a runner of type rte (Connections > Runners),
-            named with `runner:` or the default one. Since 7.5 AnsibleForms runs no playbook itself.
+            named with `runner:` or the default one. Since 7 AnsibleForms runs no playbook itself.
           examples:
           - name: Ansible Core Form
             code: |
@@ -2112,7 +2112,7 @@
         type: string
         with_types: ansible, awx
         group: workflow
-        version: 7.5.0
+        version: 7.0.0
         allowed: the name of a runner (Connections > Runners)
         short: Where the job runs
         description: |
@@ -2120,7 +2120,7 @@
           container) for a playbook, a runner of type awx (AWX / Ansible Automation Platform /
           Ascender) for a template. Runners are added under Connections > Runners.
           Without this property the default runner of the matching type is used ; without a
-          default the job fails and says how to add one. Since 7.5 AnsibleForms runs no
+          default the job fails and says how to add one. Since 7 AnsibleForms runs no
           playbook itself.
         examples:
         - name: Run on the vmware runtime
@@ -2143,8 +2143,8 @@
         allowed: name of a runner of type awx
         short: Deprecated alias of runner
         description: |
-          **Deprecated since 7.5, removed in 8.** Use `runner`. AWX/AAP connections are runners
-          of type awx since 7.5 (Connections > Runners) ; the upgrade moves the existing ones
+          **Deprecated since 7, removed in 8.** Use `runner`. AWX/AAP connections are runners
+          of type awx since 7 (Connections > Runners) ; the upgrade moves the existing ones
           there. `awx: <name>` still names that runner, with a warning in the log.
        
           
@@ -5344,7 +5344,7 @@
 
       **How it works:**
       - During a job run, the RTE watches for a log file at a well-known path inside the playbook folder
-      - Every 2 seconds, when the file changed, and once more when the playbook ends, the RTE stores its contents on the job ; the file is then removed (since 7.5)
+      - Every 2 seconds, when the file changed, and once more when the playbook ends, the RTE stores its contents on the job ; the file is then removed (since 7)
       - The log file is displayed in a separate **Logfile** panel below the main Ansible output, with full ANSI colour support
 
       **Log file path convention:**

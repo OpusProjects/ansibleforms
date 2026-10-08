@@ -58,7 +58,7 @@ describe("a starting process ends only the jobs it may", () => {
     assert.doesNotMatch(sql, /tracker IS NULL/, "jobs nobody follows are the worker's to end, once");
   });
 
-  test("the worker : its own, and the jobs from before 7.3 that nobody follows", async () => {
+  test("the worker : its own, and the jobs from before 7 that nobody follows", async () => {
     await Job.abandonOwn("worker-a", { untracked: true });
     assert.match(calls[0].sql, /\(tracker=\? or tracker IS NULL\)/);
   });

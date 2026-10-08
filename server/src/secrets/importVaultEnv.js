@@ -1,4 +1,4 @@
-// Before 7.1 the only secret store was a HashiCorp Vault configured with VAULT_*
+// Before 7 the only secret store was a HashiCorp Vault configured with VAULT_*
 // environment variables. The first 7.x start that finds them set imports them ONCE as the
 // secret store named `vault`, and records that in settings.vault_env_imported_at. From then
 // on the store row is the only truth and the variables are ignored - a store deleted later

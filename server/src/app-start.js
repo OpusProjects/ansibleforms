@@ -47,7 +47,7 @@ const app = express();
 const build = readBuildInfo(__dirname);
 const assetVersion = () => [build.version, build.gitSha].filter(Boolean).join('-');
 /**
- * Waits until the worker has created the schema and patched it to this version : serving 7.5 code
+ * Waits until the worker has created the schema and patched it to this version : serving this version's code
  * over a schema the worker could not patch yet fails on missing tables, while the old check -
  * "not empty" - said all was well. Says what is missing every minute. With ALLOW_SCHEMA_CREATION=0
  * an empty database is nobody's to create automatically, so the app starts and offers the

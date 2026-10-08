@@ -255,7 +255,7 @@ const initOnce = async function({ boot = false } = {}){
     Form.initBackupFolder()
 
     // the jobs this process followed before it restarted, and the jobs nobody follows (from
-    // before 7.5, when no job named its node). A job another app node follows is left alone :
+    // before 7, when no job named its node). A job another app node follows is left alone :
     // that node is alive, or the worker's dead-node sweep ends it (Job.abandonDeadNodes).
     logger.info("Checking old jobs")
     Job.abandonOwn(nodeId, { untracked: true })
@@ -270,7 +270,7 @@ const initOnce = async function({ boot = false } = {}){
     // awaited : the boot clone/pull below use the atomic status='running' claim, so a
     // stale one must be released first or they'd be rejected. Only the stale ones : this
     // worker's own from before it restarted, those of nodes that went away, and those from
-    // before 7.5 - an app node's live claim (a designer sync) is left alone.
+    // before 7 - an app node's live claim (a designer sync) is left alone.
     try {
       const reset = await Repository.releaseStaleClaims({ atStart: true })
       if(reset) logger.warning(`Released ${reset} stale repository claim(s)`)
@@ -294,7 +294,7 @@ const initOnce = async function({ boot = false } = {}){
   // would mean an instance that no longer matches the manifest describing it, with
   // nothing saying so. Only the worker applies it, so app nodes may run as replicas ;
   // a second worker waits for the worker lock.
-  // the VAULT_* variables of before 7.1 become the secret store `vault`, once. Before the
+  // the VAULT_* variables of before 7 become the secret store `vault`, once. Before the
   // seed, so a seed that declares `vault` takes the imported row over.
   if(schemaIsReady){
     try{

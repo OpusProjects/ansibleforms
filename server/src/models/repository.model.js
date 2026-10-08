@@ -658,7 +658,7 @@ class Repository extends CrudModel {
   //   - it is older than CLAIM_MAX_HOURS : no git operation takes that long
   //   - atStart (the worker's start) : its own from before this process started (a process
   //     that takes the lock later must not release the save or pull it is doing right now),
-  //     and any without a node (taken before 7.5.1)
+  //     and any without a node (taken before 7)
   // A claim an app node holds right now is left alone - the worker used to reset every claim
   // at its start, letting a second git process into a working tree an app node was writing.
   static async releaseStaleClaims({ atStart = false } = {}) {

@@ -5,7 +5,7 @@
 #   docker build -f examples/rte/Dockerfile.minimal -t my-rte .
 #
 # The published ghcr.io/ansibleforms/ansibleforms-rte (Dockerfile.rte) is the full flavour :
-# everything the AnsibleForms image had before 7.5 (ansible, the python libraries, the NetApp
+# everything the AnsibleForms image had before 7 (ansible, the python libraries, the NetApp
 # and community collections).
 #
 # Use the same AnsibleForms release as the app : an RTE runs the app's own server code.

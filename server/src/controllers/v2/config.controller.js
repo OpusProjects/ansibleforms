@@ -177,7 +177,7 @@ const saveEnv = async function(req,res){
 const SECRET_ENV_NAME = /PASSWORD|SECRET|_TOKEN$/;
 const MASK = "*** NOT REVEALED ***";
 
-// Deprecated since 7.1 (removed in 8) : the Vault page these served is replaced by the
+// Deprecated since 7 (removed in 8) : the Vault page these served is replaced by the
 // secret stores page (/api/v2/secretstore/:id/check and /mounts). They now answer for the
 // store named `vault`, which is what the old page configured.
 //
@@ -187,7 +187,7 @@ let vaultEndpointsWarned = false;
 function warnVaultEndpoints(){
   if (vaultEndpointsWarned) return;
   vaultEndpointsWarned = true;
-  logger.warning("/api/v2/config/vault/* is deprecated since 7.1 and removed in 8 - use /api/v2/secretstore/{id}/check and /mounts");
+  logger.warning("/api/v2/config/vault/* is deprecated since 7 and removed in 8 - use /api/v2/secretstore/{id}/check and /mounts");
 }
 
 const vaultCheck = async function(req,res){
