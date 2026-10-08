@@ -59,8 +59,8 @@ describe("signHandoff", () => {
   });
 });
 
-describe("the callback of both login controllers", () => {
-  for (const version of ["v1", "v2"]) {
+describe("the callback of the login controller", () => {
+  for (const version of ["v2"]) {
     test(`${version} : redirects with a handoff token, and hands errors to next instead of hanging`, async () => {
       const src = await import("fs").then((fs) => fs.readFileSync(new URL(`../src/controllers/${version}/login.controller.js`, import.meta.url), "utf8"));
       const fn = src.slice(src.indexOf("const authCallback"), src.indexOf("};\n", src.indexOf("const authCallback")));

@@ -1,68 +1,79 @@
 <script setup>
+/******************************************************************/
+/*                                                                */
+/*  Bootstrap Input Radiobutton component                          */
+/*                                                                */
+/*  @props:                                                       */
+/*      name: String                                              */
+/*      disabled: Boolean                                         */
+/*      style: String                                             */
+/*      cssClass: String                                          */
+/*      uid: String                                               */
+/*      hasError: Boolean                                         */
+/*      values: Array                                             */
+/*                                                                */
+/******************************************************************/
 
-    /******************************************************************/
-    /*                                                                */
-    /*  Bootstrap Input Radiobutton component                          */
-    /*                                                                */
-    /*  @props:                                                       */
-    /*      name: String                                              */
-    /*      disabled: Boolean                                         */
-    /*      style: String                                             */
-    /*      cssClass: String                                          */
-    /*      uid: String                                               */
-    /*      hasError: Boolean                                         */
-    /*      values: Array                                             */
-    /*                                                                */
-    /******************************************************************/
+// MODEL
 
-    // MODEL
+const model = defineModel();
 
-    const model = defineModel();
+// EMITS
 
-    // EMITS
+const emit = defineEmits(['change']);
 
-    const emit = defineEmits(['change']);
+// PROPS
 
-    // PROPS
+defineProps({
+  name: {
+    type: String,
+    required: true,
+  },
+  disabled: {
+    type: Boolean,
+    default: false,
+  },
+  style: {
+    type: String,
+    default: '',
+  },
+  cssClass: {
+    type: String,
+    default: '',
+  },
+  uid: {
+    type: String,
+    default: '',
+  },
+  hasError: {
+    type: Boolean,
+    default: false,
+  },
+  values: {
+    type: Array,
+    required: true,
+  },
+});
 
-    defineProps({
-        name:{
-            type: String,
-            required: true
-        },
-        disabled: {
-            type: Boolean,
-            default: false,
-        },
-        style: {
-            type: String,
-            default: "",
-        },
-        cssClass: {
-            type: String,
-            default: "",
-        },
-        uid: {
-            type: String,
-            default: "",
-        },
-        hasError: {
-            type: Boolean,
-            default: false,
-        },
-        values: {
-            type: Array,
-            required: true,
-        },
-    });
+// METHODS
 
-    // METHODS
-
-    const handleChange = (event) => {
-        emit('change', event);
-    };
-
+const handleChange = (event) => {
+  emit('change', event);
+};
 </script>
 <template>
-    <BsRadiobutton :name="name" v-model="model" v-for="radiovalue in values" :inline="true" :value="(typeof radiovalue=='string')?radiovalue:radiovalue.value" :key="(typeof radiovalue=='string')?radiovalue:radiovalue.value" :label="(typeof radiovalue=='string')?radiovalue:radiovalue.label" :disabled="disabled" :style="style" :cssClass="cssClass" :hasError="hasError" @change="handleChange" />
+  <BsRadiobutton
+    :name="name"
+    v-model="model"
+    v-for="radiovalue in values"
+    :inline="true"
+    :value="typeof radiovalue == 'string' ? radiovalue : radiovalue.value"
+    :key="typeof radiovalue == 'string' ? radiovalue : radiovalue.value"
+    :label="typeof radiovalue == 'string' ? radiovalue : radiovalue.label"
+    :disabled="disabled"
+    :style="style"
+    :cssClass="cssClass"
+    :hasError="hasError"
+    @change="handleChange"
+  />
 </template>

@@ -8,7 +8,7 @@
 //
 // Two properties are being pinned here, and the first is the important one:
 //
-//   * the DEFAULT does not change. docs/faq.md recommends asserting on
+//   * the DEFAULT does not change. https://ansibleforms.com/faq recommends asserting on
 //     ansibleforms_user.groups inside a playbook as a defence in depth check, so trimming
 //     by default would silently weaken a check somebody wrote deliberately.
 //   * under `none` the key must be REMOVED, not merely left unassigned. A client controls
@@ -105,7 +105,7 @@ describe("the global setting", () => {
     expect(Helpers.userForExtravars(USER)).toBe(USER);
   });
 
-  test("the synthetic schedule and datasource user is filtered like any other", () => {
+  test("the synthetic schedule user is filtered like any other", () => {
     appConfig.extravarsUserFields = "username,type";
     const service = { id: 0, username: "Schedule Service", type: "schedule", groups: [], roles: ["admin"] };
     expect(Helpers.userForExtravars(service)).toEqual({ username: "Schedule Service", type: "schedule" });
@@ -218,7 +218,7 @@ describe("setUserExtravars", () => {
     expect("ansibleforms_user" in ev).toBe(false);
   });
 
-  test("a schedule or datasource gets its own synthetic user", () => {
+  test("a schedule gets its own synthetic user", () => {
     appConfig.extravarsUserFields = "";
     const service = { id: 0, username: "Schedule Service", type: "schedule", groups: [], roles: ["admin"] };
     const ev = { schedule: { id: 3 } };

@@ -47,14 +47,13 @@ export function buildFormOutput(fields, raw, opts = {}) {
     if (!item || !item.name) return;
     if (item.name === '__user__') return;
     if (item.name === '__parent__') return;
-    if (item.noOutput || item.output === false) return;
+    if (item.output === false) return;
     if (!isVisible(item)) return;
 
     const outputObject =
       item.outputObject ||
       item.type === 'expression' ||
       item.type === 'file' ||
-      item.type === 'table' ||
       item.type === 'list' ||
       item.type === 'yaml' ||
       item.type === 'datetime' ||
@@ -276,7 +275,7 @@ export function maskPasswords(data, fields, subforms = []) {
   const walk = (target, fieldDefs) => {
     if (!target || typeof target !== 'object' || !Array.isArray(fieldDefs)) return;
     for (const f of fieldDefs) {
-      if (!f || !f.name || f.noOutput || f.output === false) continue;
+      if (!f || !f.name || f.output === false) continue;
       const paths = [].concat(f.model || f.name);
       const sub = (typeof f.subform === 'string') ? subformByName[f.subform] : f.subform;
       if (f.type === 'password') {

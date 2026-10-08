@@ -9,10 +9,9 @@ import logger, { setLogLevel, setLogColor, rebuildSyslogTransport, rebuildFileTr
 import { setDefaultLocale } from './i18n.js';
 import { applySecureContext } from './httpsContext.js';
 import { rebuildBodyParsers } from './bodyParsers.js';
+import { applyTrustProxy, compileTrustProxy } from './trustProxy.js';
 import authConfig from '../../config/auth.config.js';
 import logConfig from '../../config/log.config.js';
-import ansibleConfig from '../../config/ansible.config.js';
-import { setCacheTtl } from './vault.js';
 
 // Editing environment variables from the settings page.
 //
@@ -88,7 +87,6 @@ const LIVE = {
   // Settings.resolveConfigInDatabase reads these per config load. The config_source column
   // outranks them anyway, so this is only the fallback.
   ENABLE_CONFIG_IN_DATABASE: { key: 'enableConfigInDatabase', parse: v => v == 1 },
-  ENABLE_FORMS_YAML_IN_DATABASE: { key: 'enableFormsYamlInDatabase', parse: v => v == 1 },
   // form.model builds the ytt command from these on every render
   YTT_VARS_PREFIX: { key: 'yttVarsPrefix', parse: v => v },
   YTT_ALLOW_SYMLINK_DESTINATIONS: { key: 'yttAllowSymlinkDestinations', parse: v => v },
@@ -102,7 +100,6 @@ const LIVE = {
   BACKUP_PATH: { key: 'backupPath', parse: v => v },
   CONFIG_PATH: { key: 'configPath', parse: v => v },
   FORMS_FOLDER_PATH: { key: 'formsFolderPath', parse: v => v },
-  FORMS_PATH: { key: 'formsPath', parse: v => v },
   FORMS_STAGING_PATH: { key: 'formsStagingPath', parse: v => v },
   VARS_FILES_PATH: { key: 'varsFilesPath', parse: v => v },
   REPO_PATH: { key: 'repoPath', parse: v => v },
@@ -111,16 +108,11 @@ const LIVE = {
   // multer's destination callback dereferences this per upload (the SIZE cap does not -
   // see the UPLOAD_MAX_GB note above)
   UPLOAD_PATH: { key: 'uploadPath', parse: v => v },
-  LOCK_PATH: { key: 'lockPath', parse: v => v },
 };
 
 // Read straight from process.env at call time by their consumer rather than captured into
 // appConfig, so setting the environment variable is enough - no appConfig key to update.
-// vault.js:getEnv() rebuilds its config on every operation, which is why these are live.
-// VAULT_CACHE_TTL_MS is NOT here: its NodeCache is constructed once at import.
 const LIVE_ENV_ONLY = new Set([
-  'VAULT_ADDR', 'VAULT_TOKEN', 'VAULT_NAMESPACE', 'VAULT_KV_VERSION',
-  'VAULT_DEFAULT_MOUNT', 'VAULT_SKIP_VERIFY',
   // app.routes reads these inside the /api/v2/app/config handler, so the next page load
   // has them
   'NAV_HOME_LABEL', 'NAV_HOME_ICON',
@@ -133,7 +125,6 @@ const LIVE_ENV_ONLY = new Set([
 // Live, but needing more than an appConfig field or process.env : a function that
 // reconfigures something already constructed.
 const LIVE_CUSTOM = {
-  VAULT_CACHE_TTL_MS: (value) => setCacheTtl(value),
   // jwt.sign() reads these off authConfig at call time (token.controller, login.controller),
   // so updating the object is enough - the next token issued uses the new value
   ACCESS_TOKEN_EXPIRATION: (v) => { authConfig.jwtExpiration = v; },
@@ -152,9 +143,6 @@ const LIVE_CUSTOM = {
   LOG_COLOR_NOTICE: (v) => setLogColor('notice', v),
   LOG_COLOR_INFO: (v) => setLogColor('info', v),
   LOG_COLOR_DEBUG: (v) => setLogColor('debug', v),
-  // job.model reads ansibleConfig.path at call time (lines 609, 1815), but the value lives
-  // in ansible.config, not appConfig - so it needs a setter rather than a LIVE map entry
-  ANSIBLE_PATH: (v) => { ansibleConfig.path = v; },
   // getTimestamp() reads loggerConfig.tz inside the function, so every log line already
   // picks up a change - it only needed logConfig updating. (An earlier pass wrongly called
   // this captured in the formatter's closure ; it is not.)
@@ -170,6 +158,10 @@ const LIVE_CUSTOM = {
   // body-parser bakes the limit in at creation, so the pair is rebuilt behind the stable
   // middlewares app.js installed - no per-request cost, no restart
   API_BODY_LIMIT_MB: (v) => { appConfig.apiBodyLimitMb = parseInt(v, 10) || 50; return rebuildBodyParsers(); },
+  // express compiles 'trust proxy' when it is set and reads the compiled function per
+  // request, so setting it again on the running app is enough. Reads process.env, which
+  // applyLive has already updated. Returns false for a value it refused.
+  TRUST_PROXY: () => applyTrustProxy(),
   // mysql2 fixes connectionLimit at creation, so a new size means a new pool. Safe because a
   // transaction holds its own connection - see MySql.resizePool.
   DB_POOL_SIZE: (v) => mysql.resizePool(v),
@@ -189,8 +181,8 @@ const LIVE_CUSTOM = {
 // Restart-tier variables that point at a location holding data. A restart applies the new
 // value but does NOT move what is already there, which is the part worth warning about.
 export const RELOCATES = new Set([
-  'BACKUP_PATH', 'FORMS_BACKUP_PATH', 'CONFIG_PATH', 'FORMS_FOLDER_PATH', 'FORMS_PATH',
-  'FORMS_STAGING_PATH', 'REPO_PATH', 'UPLOAD_PATH', 'VARS_FILES_PATH', 'LOG_PATH', 'LOCK_PATH',
+  'BACKUP_PATH', 'FORMS_BACKUP_PATH', 'CONFIG_PATH', 'FORMS_FOLDER_PATH',
+  'FORMS_STAGING_PATH', 'REPO_PATH', 'UPLOAD_PATH', 'VARS_FILES_PATH', 'LOG_PATH',
 ]);
 
 export function classify(name) {
@@ -288,6 +280,15 @@ export function validate(name, value, doc) {
   }
   if (name === 'LAUNCH_VALIDATION' && v !== '' && !['off', 'log', 'enforce'].includes(v.trim().toLowerCase())) {
     return 'LAUNCH_VALIDATION must be off, log or enforce';
+  }
+  // refused here rather than at the next start : an address express cannot parse would
+  // otherwise only be logged, and the audit trail would quietly keep naming the proxy
+  if (name === 'TRUST_PROXY' && v !== '') {
+    try {
+      compileTrustProxy(v);
+    } catch (e) {
+      return `TRUST_PROXY must be a number of proxies, true, false or a comma-separated list of addresses and CIDR ranges : ${e.message}`;
+    }
   }
   if (v.length > 4096) return `${name} is too long`;
   // A value documented as a regular expression is COMPILED by its consumer, and both of

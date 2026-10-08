@@ -98,6 +98,38 @@ MySql.do = async function (query, vars, silent = false) {
 };
 
 /**
+ * MySql.do without the error log, for the queries that run every few seconds in every process
+ * (the node heartbeat, the cache epochs) : before the schema has their tables, each would log
+ * an error per tick. The caller handles the rejection.
+ */
+MySql.tryDo = async function (query, vars) {
+  const [result] = await pool.query(query, vars);
+  return result;
+};
+
+/**
+ * Run fn while holding the named database lock (GET_LOCK), so two processes on the same
+ * database never run it at the same time - two workers creating the schema on an empty
+ * database, for one. GET_LOCK belongs to a connection, so the lock is taken and released on
+ * one held connection ; the work itself goes through the pool. Waits up to timeoutSeconds for
+ * the lock, then throws.
+ */
+MySql.withLock = async function (name, timeoutSeconds, fn) {
+  const conn = await pool.getConnection();
+  try {
+    const [rows] = await conn.query("SELECT GET_LOCK(?, ?) AS got", [name, timeoutSeconds]);
+    if (rows?.[0]?.got !== 1) throw new Error(`Timed out waiting for the database lock '${name}'`);
+    try {
+      return await fn();
+    } finally {
+      await conn.query("SELECT RELEASE_LOCK(?)", [name]).catch(() => {});
+    }
+  } finally {
+    conn.release();
+  }
+};
+
+/**
  * Run several statements on ONE pooled connection, inside a transaction. The
  * callback is handed a `do(query, vars)` bound to that connection ; throwing from
  * it rolls everything back, returning commits. MySql.do takes a fresh connection

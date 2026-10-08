@@ -6,7 +6,7 @@ import i18n from '../../lib/i18n.js';
 import { resolveQuery, QueryPolicyError, escapeSqlValue, substitute } from '../../lib/queryPolicy.js';
 
 // re-exported so the existing tests keep importing them from here ; the implementations
-// moved to lib/queryPolicy.js because /api/v1/query has to apply the same rules
+// lives in lib/queryPolicy.js
 export { escapeSqlValue, substitute };
 
 /**

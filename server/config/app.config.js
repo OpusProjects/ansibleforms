@@ -1,7 +1,6 @@
 import path from "path";
 import os from "os";
 import { fileURLToPath } from "url";
-import { existsSync } from "fs";
 import { normalizeBaseUrl } from "../src/lib/baseurl.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -19,7 +18,7 @@ var app_config = {
   configPath: process.env.CONFIG_PATH || path.resolve(__dirname + "/../persistent/config.yaml"),
   // Declarative config seed for the admin objects (awx, credentials, oauth2 providers,
   // repositories, ldap, mail/url). Empty = feature off. NOT the same thing as configPath,
-  // which holds the forms configuration - see docs/seed.md.
+  // which holds the forms configuration - see https://ansibleforms.com/seed.
   configSeedPath: process.env.CONFIG_SEED_PATH || "",
   // How often the seed file is re-read and re-applied when its content changed, in
   // seconds. 0 turns the poll off, leaving the boot apply, POST /api/v2/config-seed/apply
@@ -36,7 +35,6 @@ var app_config = {
   // staging area for new forms in repository mode : they live here until a
   // 'Push to repo' assigns them to a chosen repository (issue #414)
   formsStagingPath: process.env.FORMS_STAGING_PATH || path.resolve(__dirname + "/../persistent/forms_staging"),
-  formsPath: process.env.FORMS_PATH || path.resolve(__dirname + "/../persistent/forms.yaml"), // DEPRECATED: use configPath + formsFolderPath instead
   nightlyBackupRetention: parseInt(process.env.NIGHTLY_BACKUP_RETENTION || "7", 10),
   // How long audit entries are kept. The trail is append only, so without a sweep
   // it grows for ever - set to 0 to disable the sweep and keep everything.
@@ -67,10 +65,12 @@ var app_config = {
   yttLibData: {},
   yttVarsPrefix: process.env.YTT_VARS_PREFIX || "",
   lockPath: process.env.LOCK_PATH || path.resolve(__dirname + "/../persistent/ansibleForms.lock"),
-  helpPath: existsSync(path.resolve(__dirname + "/../help.yaml"))
-    ? path.resolve(__dirname + "/../help.yaml")
-    : path.resolve(__dirname + "/../../docs/_data/help.yaml"),
+  helpPath: path.resolve(__dirname + "/../help.yaml"),
   encryptionSecret: ((process.env.ENCRYPTION_SECRET || "undefinedvOVH6sdmpNWjRRIqCc7rdxs") + "vOVH6sdmpNWjRRIqCc7rdxs01lwHzfr3").substring(0, 32),
+  // without ENCRYPTION_SECRET the key above is the fallback in this public source : index.js
+  // warns at startup. The fallback itself stays - changing it would make every credential
+  // already stored with it unreadable.
+  encryptionSecretIsDefault: !process.env.ENCRYPTION_SECRET,
   homePath: process.env.HOME_PATH || os.homedir(),
   uploadPath: process.env.UPLOAD_PATH || path.resolve(__dirname + "/../persistent/uploads"),
   varsFilesPath: process.env.VARS_FILES_PATH || path.resolve(__dirname + "/../persistent/vars"),
@@ -92,21 +92,7 @@ var app_config = {
   // artifacts; override via UPLOAD_MAX_GB. Set to 0 to disable the cap.
   uploadMaxGb: parseInt(process.env.UPLOAD_MAX_GB ?? "10", 10),
   enableDbQueryLogging: (process.env.ENABLE_DB_QUERY_LOGGING ?? 0) == 1,
-  // ENABLE_CONFIG_IN_DATABASE takes priority, falls back to deprecated ENABLE_FORMS_YAML_IN_DATABASE
-  enableConfigInDatabase: (() => {
-    if (process.env.ENABLE_CONFIG_IN_DATABASE !== undefined) {
-      return (process.env.ENABLE_CONFIG_IN_DATABASE ?? 0) == 1;
-    }
-    // Fall back to deprecated variable
-    return (process.env.ENABLE_FORMS_YAML_IN_DATABASE ?? 0) == 1;
-  })(),
-  // Deprecated: Use enableConfigInDatabase instead
-  enableFormsYamlInDatabase: (() => {
-    if (process.env.ENABLE_CONFIG_IN_DATABASE !== undefined) {
-      return (process.env.ENABLE_CONFIG_IN_DATABASE ?? 0) == 1;
-    }
-    return (process.env.ENABLE_FORMS_YAML_IN_DATABASE ?? 0) == 1;
-  })(),
+  enableConfigInDatabase: (process.env.ENABLE_CONFIG_IN_DATABASE ?? 0) == 1,
   processMaxBuffer: process.env.PROCESS_MAX_BUFFER || 1024 * 1024,
   adminUsername: process.env.ADMIN_USERNAME || "admin",
   adminPassword: process.env.ADMIN_PASSWORD || "AnsibleForms!123",

@@ -12,6 +12,14 @@ import yaml from 'yaml';
 import dotenv from 'dotenv';
 import Errors from '../lib/errors.js';
 import logger from '../lib/logger.js';
+import { bump } from '../lib/epochs.js';
+
+// The tables that describe the running processes, not the configuration : which nodes are up,
+// what changed between them (lib/epochs.js), who holds the designer. A restore must not bring
+// back gone nodes, an old designer lock or old change counters - so they are not dumped, and a
+// restore leaves the live ones as they are.
+const RUNTIME_TABLES = ['nodes', 'cache_epochs', 'designer_lock']
+  .map((t) => `--ignore-table=AnsibleForms.${t}`).join(' ');
 
 /**
  * Wrap a value for a POSIX shell as a single-quoted string.
@@ -70,7 +78,6 @@ async function describeBackup(folder) {
   const backupFolder = path.join(appConfig.backupPath, folder);
   const backupFile = path.join(backupFolder, 'ansibleforms.sql');
   const configYaml = path.join(backupFolder, path.basename(appConfig.configPath));
-  const formsYaml = path.join(backupFolder, path.basename(appConfig.formsPath));
   const formsDir = path.join(backupFolder, 'forms');
   const envFile = path.join(backupFolder, ENV_BACKUP_NAME);
   let description = '';
@@ -89,7 +96,6 @@ async function describeBackup(folder) {
     valid: backupFileExists && backupFileSize > 0,
     backupFileExists,
     configYamlExists: await fs.stat(configYaml).then(() => true).catch(() => false),
-    formsYamlExists: await fs.stat(formsYaml).then(() => true).catch(() => false),
     formsDirExists: await fs.stat(formsDir).then(() => true).catch(() => false),
     // Reported so an operator can SEE that this folder carries environment settings - it is
     // 0600 and credential-bearing (VAULT_TOKEN, a mail password), and it is restored only on
@@ -97,7 +103,6 @@ async function describeBackup(folder) {
     envFileExists: await fs.stat(envFile).then(() => true).catch(() => false),
     envFileSize: await getFileSize(envFile),
     configYamlSize: await getFileSize(configYaml),
-    formsYamlSize: await getFileSize(formsYaml),
     backupFileSize,
     formsDirFileCount: formsDirStats.fileCount,
     formsDirTotalSize: formsDirStats.totalSize
@@ -255,11 +260,6 @@ class BackupModel {
     const destConfigFile = path.join(backupFolder, path.basename(configFile));
     await copyFileIfExists(configFile, destConfigFile);
     
-    // Backup forms.yaml (legacy - for backward compatibility)
-    const legacyFormsFile = appConfig.formsPath;
-    const destLegacyFormsFile = path.join(backupFolder, path.basename(legacyFormsFile));
-    await copyFileIfExists(legacyFormsFile, destLegacyFormsFile);
-    
     // Backup the managed environment file. Everything the settings page writes lives here,
     // and without this a restore onto a fresh host silently loses all of it.
     //
@@ -328,11 +328,6 @@ class BackupModel {
     const configYamlBackup = path.join(restoreFolder, path.basename(configFile));
     await copyFileIfExists(configYamlBackup, configFile);
     
-    // Restore forms.yaml (legacy - if it exists in backup)
-    const legacyFormsFile = appConfig.formsPath;
-    const formsYamlBackup = path.join(restoreFolder, path.basename(legacyFormsFile));
-    await copyFileIfExists(formsYamlBackup, legacyFormsFile);
-    
     // Restore forms directory
     const formsDir = appConfig.formsFolderPath;
     const formsDirBackup = path.join(restoreFolder, 'forms');
@@ -393,12 +388,12 @@ class BackupModel {
     }
     await fs.mkdir(backupFolder, { recursive: true });
     try {
-      const dumpCmd = `${appConfig.mysqldumpCommand} -h ${shQuote(dbHost)} -u${shQuote(dbUser)} -p${shQuote(dbPassword)} -P ${shQuote(dbPort)} ${shQuote(dbName)} > "${backupFile}"`;
+      const dumpCmd = `${appConfig.mysqldumpCommand} -h ${shQuote(dbHost)} -u${shQuote(dbUser)} -p${shQuote(dbPassword)} -P ${shQuote(dbPort)} ${RUNTIME_TABLES} ${shQuote(dbName)} > "${backupFile}"`;
       const cmdObj = {
         command: dumpCmd,
         directory: process.cwd(),
         description: `Database backup to ${backupFile}`,
-        maskedCommand: `${appConfig.mysqldumpCommand} -h ${shQuote(dbHost)} -u${shQuote(dbUser)} -p'*****' -P ${shQuote(dbPort)} ${shQuote(dbName)} > "${backupFile}"`
+        maskedCommand: `${appConfig.mysqldumpCommand} -h ${shQuote(dbHost)} -u${shQuote(dbUser)} -p'*****' -P ${shQuote(dbPort)} ${RUNTIME_TABLES} ${shQuote(dbName)} > "${backupFile}"`
       };
       // explicit timeout : the default is 60s, which no real database can dump in
       await Cmd.executeSilentCommand(cmdObj, true, false, appConfig.backupCommandTimeoutSeconds);
@@ -475,6 +470,8 @@ class BackupModel {
       );
     }
     await this.restoreFormsAndFolder(restoreFolder);
+    // every process drops what it had cached of the replaced rows (lib/epochs.js)
+    bump('restore');
     return { message: 'Restore completed', restoreFolder };
   }
 

@@ -7,7 +7,6 @@ import Job from '../models/job.model.js';
 import Schema from '../models/schema.model.js';
 import mysql from "../models/db.model.js";
 import Repository from '../models/repository.model.js';
-import Datasource from '../models/datasource.model.js';
 import Schedule from '../models/schedule.model.js';
 import BackupModel from '../models/backup.model.js';
 import cronService from '../services/cron.service.js';
@@ -16,31 +15,31 @@ import User from "../models/user.model.js";
 import Group from "../models/group.model.js";
 import Token from "../models/token.model.js";
 import { applyConfigSeed } from "../lib/seed.js";
+import { importVaultFromEnvOnce } from "../secrets/importVaultEnv.js";
+import { nodeId } from "../lib/role.js";
+import { die } from "../lib/die.js";
 
-/**
- * @param {object} [opts]
- * @param {boolean} [opts.boot] True only on the application boot path (app.js). A seed
- *   failure is FATAL there - the process must not come up misconfigured. It must NOT be
- *   fatal when init() is re-entered from POST /api/v2/schema, because process.exit()
- *   inside a request handler kills the server in response to an API call - and that
- *   endpoint is unauthenticated while the database has no accounts. There the failure is
- *   thrown so the caller answers with an error instead.
- */
-const init = async function({ boot = false } = {}){
+// The worker's start : the database bootstrap and every background task. It runs only in the
+// process holding the worker lock (lib/workerLock.js) - AF_ROLE unset, or a worker - so
+// whatever runs here runs once per database, however many app nodes share it.
+//
+// The bootstrap half (schema, admin, default rows, ssh key, vault import, seed) may run again :
+// POST /api/v2/schema re-enters it after creating the schema, and a worker that started on a
+// database without one retries it (init/worker.js). The background half (the boot sweeps, the
+// cron registry, the schedule queue) starts once per process : starting it again doubled
+// every loop and left the first set of system tasks running next to the second.
+let backgroundStarted = false;
 
+export async function sleep(millis) {
+  return new Promise(resolve => setTimeout(resolve, millis));
+}
 
-  let adminGroupId = undefined;
-
-  // this is at startup, don't start the app until mysql is ready
-  // rewrite with await
-
-  async function sleep(millis) {
-    return new Promise(resolve => setTimeout(resolve, millis));
-  }
+// don't start until mysql is ready
+export async function waitForDatabase() {
   var MYSQL_IS_READY = false
   while(!MYSQL_IS_READY){
     try{
-      logger.info("Waiting for mysql to start")      
+      logger.info("Waiting for mysql to start")
       await mysql.do("SELECT 1")
       MYSQL_IS_READY = true
     }catch(e){
@@ -48,8 +47,34 @@ const init = async function({ boot = false } = {}){
       await sleep(5000)
     }
   }
-
   logger.info("Mysql is ready")
+}
+
+/**
+ * @returns {Promise<boolean>} whether the schema is ready
+ * @param {object} [opts]
+ * @param {boolean} [opts.boot] True only on the worker's start (init/worker.js). A seed
+ *   failure is FATAL there - the process must not come up misconfigured. It must NOT be
+ *   fatal when init() is re-entered from POST /api/v2/schema, because process.exit()
+ *   inside a request handler kills the server in response to an API call - and that
+ *   endpoint is unauthenticated while the database has no accounts. There the failure is
+ *   thrown so the caller answers with an error instead.
+ */
+// One run at a time in a process : the worker's schema retry, POST /api/v2/schema and the boot
+// can each ask for it. A second caller waits for the run in progress and gets its result,
+// rather than patching the schema and applying the seed next to it.
+let initRun = null;
+const init = function(opts = {}){
+  if (!initRun) initRun = initOnce(opts).finally(() => { initRun = null; });
+  return initRun;
+};
+
+const initOnce = async function({ boot = false } = {}){
+
+
+  let adminGroupId = undefined;
+
+  await waitForDatabase()
 
   // Bootstrap an empty database.
   //
@@ -67,7 +92,9 @@ const init = async function({ boot = false } = {}){
     try{
       if(await Schema.isEmpty()){
         logger.notice("The database holds no AnsibleForms tables : creating the schema")
-        await Schema.createTables()
+        // asked again under the schema lock : POST /api/v2/schema on an app node may be
+        // creating it at this very moment
+        await Schema.createTables({ onlyIf: () => Schema.isEmpty() })
       }
     }catch(err){
       // not fatal : hasSchema() below reports what is missing, and the /schema
@@ -204,21 +231,14 @@ const init = async function({ boot = false } = {}){
 
   logger.info("All database records are checked")
 
-  // Refusing to start is only useful if the REASON survives. winston's file transport is
-  // asynchronous, so process.exit() truncates whatever it has not written yet - which
-  // loses precisely the one line that explains a crash-looping container. Verified: three
-  // deliberately broken seeds logged "Applying config seed" and then died silently.
-  // stderr is what `kubectl logs` and `docker logs` show, so the reason goes there too,
-  // and the short wait gives the file transport a chance to catch up.
+  // Refusing to start says why on stderr too (lib/die.js) - but only at boot : never exit the
+  // process for an API call (POST /api/v2/schema re-enters init), throw instead
   async function refuseToStart(message){
-    logger.error(message)
     if(!boot){
-      // not the boot path : never exit the process for an API call
+      logger.error(message)
       throw new Error(message)
     }
-    console.error(message)
-    await new Promise(resolve => setTimeout(resolve, 250))
-    process.exit(1)
+    await die(message)
   }
 
   logger.info("Checking ssh keys")
@@ -227,33 +247,43 @@ const init = async function({ boot = false } = {}){
       logger.warning("Failed to generate ssh keys : " + err)
     })
 
-  logger.info("Checking backup folder")
-  Form.initBackupFolder()
+  const startBackground = !backgroundStarted
+  if(startBackground){
+    backgroundStarted = true
 
-  logger.info("Checking old jobs")
-  Job.abandon(true)
-  .then((changed)=>{
-    logger.warning(`Abandoned ${changed} jobs`)
-  })
-  .catch((err)=>{
-    logger.error("Failed to abandon jobs : " + err)
-  })
+    logger.info("Checking backup folder")
+    Form.initBackupFolder()
 
-  logger.info("Checking stale repository locks")
-  // awaited : the boot clone/pull below now use the atomic status='running'
-  // claim, so a stale 'running' must be cleared first or they'd be rejected
-  try {
-    const reset = await Repository.resetStaleLocks()
-    if(reset) logger.warning(`Reset ${reset} stale repository lock(s)`)
-  } catch(err) {
-    logger.error("Failed to reset stale repository locks : " + err)
+    // the jobs this process followed before it restarted, and the jobs nobody follows (from
+    // before 7, when no job named its node). A job another app node follows is left alone :
+    // that node is alive, or the worker's dead-node sweep ends it (Job.abandonDeadNodes).
+    logger.info("Checking old jobs")
+    Job.abandonOwn(nodeId, { untracked: true })
+    .then((changed)=>{
+      logger.warning(`Abandoned ${changed} jobs`)
+    })
+    .catch((err)=>{
+      logger.error("Failed to abandon jobs : " + err)
+    })
+
+    logger.info("Checking stale repository claims")
+    // awaited : the boot clone/pull below use the atomic status='running' claim, so a
+    // stale one must be released first or they'd be rejected. Only the stale ones : this
+    // worker's own from before it restarted, those of nodes that went away, and those from
+    // before 7 - an app node's live claim (a designer sync) is left alone.
+    try {
+      const reset = await Repository.releaseStaleClaims({ atStart: true })
+      if(reset) logger.warning(`Released ${reset} stale repository claim(s)`)
+    } catch(err) {
+      logger.error("Failed to release stale repository claims : " + err)
+    }
   }
 
   // Declarative config seed (CONFIG_SEED_PATH).
   //
-  // It MUST come after resetStaleLocks and before the cron/rebase bootstrap below.
+  // It MUST come after releaseStaleClaims and before the cron/rebase bootstrap below.
   // Creating a seeded repository fires Repository.clone WITHOUT awaiting it, and that
-  // clone takes the atomic status='running' claim. Run earlier, resetStaleLocks then
+  // clone takes the atomic status='running' claim. Run earlier, the release then
   // wiped the claim of a clone that was still running - marking a healthy repository
   // 'failed' and letting the rebase_on_start block start a SECOND git process in the
   // same directory. In this position the claim survives, so that block is correctly
@@ -262,16 +292,33 @@ const init = async function({ boot = false } = {}){
   //
   // A broken seed refuses to start, on purpose : running on the previous configuration
   // would mean an instance that no longer matches the manifest describing it, with
-  // nothing saying so. Note this app is single-instance, so a deployment must use
-  // replicas 1 with the Recreate strategy (docs/seed.md).
+  // nothing saying so. Only the worker applies it, so app nodes may run as replicas ;
+  // a second worker waits for the worker lock.
+  // the VAULT_* variables of before 7 become the secret store `vault`, once. Before the
+  // seed, so a seed that declares `vault` takes the imported row over.
+  if(schemaIsReady){
+    try{
+      await importVaultFromEnvOnce()
+    }catch(err){
+      logger.error("Could not import the VAULT_* environment variables : " + (err.message || err))
+    }
+  }
+
   try {
     await applyConfigSeed({ schemaIsReady })
   } catch (err) {
     await refuseToStart("Config seed failed, refusing to start : " + (err.message || err))
   }
 
+  if(!startBackground){
+    // re-entered : the background below is running already, but a schema created just now
+    // has schedules and repository crons the registry has not seen
+    await cronService.resync()
+    return schemaIsReady
+  }
+
   logger.info("Initializing cron service for scheduled tasks")
-  // Initialize all cron jobs from database (repositories, datasources, schedules)
+  // Initialize all cron jobs from database (repositories, schedules)
   await cronService.initializeAll();
 
   logger.info("Initializing system maintenance tasks")
@@ -292,76 +339,15 @@ const init = async function({ boot = false } = {}){
     logger.warning(`Failed to query repositories for rebase_on_start: ${e.message || e}`)
   })
 
-  // now we check if there are any datasources that need to be imported, every 10 seconds
-  // we only import 1 datasource that is with the lowest queue_id while there are no datasources with status running
-  // in the interval, we only import one datasource
-
-  async function checkDatasources() {
-    try {
-      // logger.info("Checking datasources")
-      // check if another one is still running... skip if it is (in theory not possible)
-      // but in case 2 instances are running against the same database
-      const running = await mysql.do("SELECT id FROM AnsibleForms.`datasource` WHERE state='running'", undefined, true);
-      // still running, don't do anything
-      if (running.length > 0) {
-        logger.error("Datasource is running, skipping, this is not normal, this means 2 instances are running against the same database");
-        return;
-      }
-      // logger.info("No datasource is running, checking for queued datasources")
-      const datasources = await mysql.do("SELECT id FROM AnsibleForms.`datasource` WHERE state='queued' ORDER BY queue_id LIMIT 1", undefined, true);
-      if (datasources.length > 0) {
-        logger.info("Found queued datasource");
-        const ds = datasources[0];
-        logger.info(`Importing datasource ${ds.id}`);
-        try {
-          await Datasource.import(ds.id);
-        } catch (e) {
-          logger.error(`Failed to import datasource ${ds.id} : ` + e);
-        }
-      }
-    } catch (e) {
-      logger.error(e);
-    } finally {
-      // Schedule the next execution
-      setTimeout(checkDatasources, 10000);
-    }
-  }
-  
-  // Initial call to start the process, after clearing anything a crash left behind :
-  // a datasource stuck at 'running' blocks the whole queue (the processor refuses to
-  // dequeue while one is running), same as for schedules
-  releaseStaleRunning('datasource').finally(() => setTimeout(checkDatasources, 10000));
-
-  // just like datasource, be also process schedules, some database layout
-
-  /**
-   * Nothing can still be running: this process has just started, and AnsibleForms is
-   * single instance. A row left at 'running' is the remains of a crash or a kill during
-   * a launch, and since the check below refuses to dequeue anything while one is
-   * 'running', leaving it would disable every scheduled run until somebody edited the
-   * database by hand. Same reasoning as the abandoned-jobs sweep.
-   */
-  async function releaseStaleRunning(table){
-    try{
-      const res = await mysql.do(`UPDATE AnsibleForms.\`${table}\` SET state='idle' WHERE state='running'`)
-      if(res?.changedRows > 0){
-        logger.warning(`Released ${res.changedRows} ${table}(s) left at 'running' by a previous run`)
-      }
-    }catch(e){
-      logger.error(`Failed to release stale running ${table}s : ` + e)
-    }
-  }
-  const releaseStaleRunningSchedules = () => releaseStaleRunning('schedule')
+  // the schedules : a queue in the database, processed one at a time
 
   async function checkSchedules(){
     try{
       // logger.info("Checking schedules")
-      // check if another one is still running... skip if it is (in theory not possible)
-      // but in case 2 instances are running against the same database
+      // one schedule at a time : wait while one is still launching
       const running = await mysql.do("SELECT id FROM AnsibleForms.`schedule` WHERE state='running'",undefined,true)
-      // still running, don't do anything
       if(running.length>0){
-        logger.error("Schedule is running, skipping, this is not normal, this means 2 instances are running against the same database")
+        logger.debug("A schedule is still launching, checking again later")
         return
       }
       // logger.info("No schedule is running, checking for queued schedules")
@@ -384,31 +370,15 @@ const init = async function({ boot = false } = {}){
     }
   }
 
-  // Initial call to start the process, after clearing anything a crash left behind
-  releaseStaleRunningSchedules().finally(() => setTimeout(checkSchedules,10000))
+  // Initial call to start the process, after releasing what a crash left 'running' : the
+  // check above refuses to dequeue anything while one is, so leaving it would disable every
+  // scheduled run (the expired stored jobs are swept by the system task at 4:00, cron.service.js)
+  Schedule.releaseStale({ atStart: true })
+    .then((released) => { if (released) logger.warning(`Released ${released} schedule(s) left at 'running' by a previous run`) })
+    .catch((e) => logger.error("Failed to release stale running schedules : " + e))
+    .finally(() => setTimeout(checkSchedules,10000))
 
-  // Cleanup expired stored jobs daily at 3 AM
-  logger.info("Initializing stored jobs cleanup");
-  async function cleanupExpiredStoredJobs() {
-    try {
-      const result = await mysql.do(
-        "DELETE FROM AnsibleForms.stored_jobs WHERE expires_at IS NOT NULL AND expires_at < NOW()",
-        undefined,
-        true
-      );
-      if (result.affectedRows > 0) {
-        logger.info(`Cleaned up ${result.affectedRows} expired stored job(s)`);
-      }
-    } catch (e) {
-      logger.error("Failed to cleanup expired stored jobs:", e);
-    } finally {
-      // Run cleanup daily (24 hours)
-      setTimeout(cleanupExpiredStoredJobs, 24 * 60 * 60 * 1000);
-    }
-  }
-
-  // Initial call to start the cleanup process (run after 1 minute)
-  setTimeout(cleanupExpiredStoredJobs, 60000);
+  return schemaIsReady
 }
 
 export default init

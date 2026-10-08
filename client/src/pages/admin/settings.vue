@@ -1,13 +1,13 @@
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed } from 'vue';
 import { useVuelidate } from '@vuelidate/core';
-import { required, helpers } from "@vuelidate/validators";
-import Profile from "@/lib/Profile";
-import axios from "axios";
-import { toast } from "vue-sonner";
-import TokenStorage from "@/lib/TokenStorage";
-import Helpers from "@/lib/Helpers";
-import Theme from "@/lib/Theme";
+import { required, helpers } from '@vuelidate/validators';
+import Profile from '@/lib/Profile';
+import axios from 'axios';
+import { toast } from 'vue-sonner';
+import TokenStorage from '@/lib/TokenStorage';
+import Helpers from '@/lib/Helpers';
+import Theme from '@/lib/Theme';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
@@ -36,35 +36,103 @@ const envGroupOrder = [
   // configuration come from". Both are refused (see REFUSED in lib/envSettings.js), so
   // they render read-only with their reason - which is the point: an operator needs to
   // see that a seed is in force, and that is exactly why this page cannot be saved.
-  { key: 'configuration', label: () => t('settings.settingsPage.tabConfiguration'), icon: 'right-left',
-    exact: ['ENABLE_CONFIG_IN_DATABASE', 'ENABLE_FORMS_YAML_IN_DATABASE', 'CONFIG_SEED_PATH', 'CONFIG_SEED_RELOAD_SECONDS', 'ALLOW_ENV_EDIT'] },
-  { key: 'server', label: () => t('settings.settingsPage.envGroupServer'), icon: 'globe',
+  {
+    key: 'configuration',
+    label: () => t('settings.settingsPage.tabConfiguration'),
+    icon: 'right-left',
+    exact: ['ENABLE_CONFIG_IN_DATABASE', 'CONFIG_SEED_PATH', 'CONFIG_SEED_RELOAD_SECONDS', 'ALLOW_ENV_EDIT'],
+  },
+  {
+    key: 'server',
+    label: () => t('settings.settingsPage.envGroupServer'),
+    icon: 'globe',
     // no BASE_URL : it is in OWNED_ELSEWHERE, which is filtered out before the groups are
     // consulted, so listing it here only claimed a variable this page never renders
-    exact: ['NODE_ENV', 'PORT', 'HTTPS', 'HTTPS_KEY', 'HTTPS_CERT', 'API_BODY_LIMIT_MB', 'ENABLE_MCP', 'ENABLE_CHAT'] },
-  { key: 'database', label: () => t('settings.settingsPage.envGroupDatabase'), icon: 'database',
+    exact: [
+      'NODE_ENV',
+      'PORT',
+      'HTTPS',
+      'HTTPS_KEY',
+      'HTTPS_CERT',
+      'TRUST_PROXY',
+      'API_BODY_LIMIT_MB',
+      'ENABLE_MCP',
+      'ENABLE_CHAT',
+    ],
+  },
+  {
+    key: 'database',
+    label: () => t('settings.settingsPage.envGroupDatabase'),
+    icon: 'database',
     prefix: ['DB_'],
-    exact: ['ENABLE_DB_QUERY_LOGGING', 'ALLOW_SCHEMA_CREATION'] },
-  { key: 'retention', label: () => t('settings.settingsPage.envGroupRetention'), icon: 'clock-rotate-left',
-    exact: ['JOB_RETENTION_DAYS', 'AUDIT_RETENTION_DAYS', 'NIGHTLY_BACKUP_RETENTION', 'OLD_BACKUP_DAYS'] },
-  { key: 'backups', label: () => t('settings.settingsPage.envGroupBackups'), icon: 'box-archive',
-    exact: ['MYSQLDUMP_COMMAND', 'MYSQL_COMMAND', 'BACKUP_PATH', 'FORMS_BACKUP_PATH', 'BACKUP_COMMAND_TIMEOUT_SECONDS'] },
-  { key: 'authentication', label: () => t('settings.settingsPage.envGroupAuthentication'), icon: 'user-shield',
-    prefix: ['ADMIN_', 'ACCESS_TOKEN_'], exact: ['REINIT_ADMIN', 'AZURE_GRAPH_URI'] },
-  { key: 'security', label: () => t('settings.settingsPage.envGroupSecurity'), icon: 'lock',
-    prefix: ['REST_'], exact: ['ENCRYPTION_SECRET', 'MASK_EXTRAVARS_REGEX', 'EXTRAVARS_USER_FIELDS', 'EXPRESSION_SANITIZER', 'LAUNCH_VALIDATION'] },
-  { key: 'jobs', label: () => t('settings.settingsPage.envGroupJobs'), icon: 'fac,ansible',
-    exact: ['ANSIBLE_PATH', 'PROCESS_MAX_BUFFER', 'REGEX_FILTER_JOB_OUTPUT', 'UPLOAD_PATH', 'UPLOAD_MAX_GB', 'VARS_FILES_PATH', 'AWX_API_PREFIX'] },
-  { key: 'formsConfig', label: () => t('settings.settingsPage.envGroupFormsConfig'), icon: 'file-code',
-    exact: ['CONFIG_PATH', 'FORMS_FOLDER_PATH', 'FORMS_PATH', 'FORMS_STAGING_PATH', 'LOCK_PATH'] },
-  { key: 'git', label: () => t('settings.settingsPage.envGroupGit'), icon: 'fab,git',
-    prefix: ['GIT_'], exact: ['REPO_PATH', 'HOME_PATH'] },
-  { key: 'ytt', label: () => t('settings.settingsPage.envGroupYtt'), icon: 'code',
-    prefix: ['YTT_'], exact: ['USE_YTT'] },
-  { key: 'ui', label: () => t('settings.settingsPage.envGroupUi'), icon: 'palette',
-    prefix: ['NAV_HOME_'], exact: ['DEFAULT_LANGUAGE', 'SHOW_DESIGNER'] },
-  { key: 'logging', label: () => t('settings.settingsPage.envGroupLogging'), icon: 'file-alt',
-    prefix: ['LOG_'] },
+    exact: ['ENABLE_DB_QUERY_LOGGING', 'ALLOW_SCHEMA_CREATION'],
+  },
+  {
+    key: 'retention',
+    label: () => t('settings.settingsPage.envGroupRetention'),
+    icon: 'clock-rotate-left',
+    exact: ['JOB_RETENTION_DAYS', 'AUDIT_RETENTION_DAYS', 'NIGHTLY_BACKUP_RETENTION', 'OLD_BACKUP_DAYS'],
+  },
+  {
+    key: 'backups',
+    label: () => t('settings.settingsPage.envGroupBackups'),
+    icon: 'box-archive',
+    exact: ['MYSQLDUMP_COMMAND', 'MYSQL_COMMAND', 'BACKUP_PATH', 'FORMS_BACKUP_PATH', 'BACKUP_COMMAND_TIMEOUT_SECONDS'],
+  },
+  {
+    key: 'authentication',
+    label: () => t('settings.settingsPage.envGroupAuthentication'),
+    icon: 'user-shield',
+    prefix: ['ADMIN_', 'ACCESS_TOKEN_'],
+    exact: ['REINIT_ADMIN', 'AZURE_GRAPH_URI'],
+  },
+  {
+    key: 'security',
+    label: () => t('settings.settingsPage.envGroupSecurity'),
+    icon: 'lock',
+    prefix: ['REST_'],
+    exact: [
+      'ENCRYPTION_SECRET',
+      'MASK_EXTRAVARS_REGEX',
+      'EXTRAVARS_USER_FIELDS',
+      'EXPRESSION_SANITIZER',
+      'LAUNCH_VALIDATION',
+    ],
+  },
+  {
+    key: 'jobs',
+    label: () => t('settings.settingsPage.envGroupJobs'),
+    icon: 'fac,ansible',
+    exact: ['REGEX_FILTER_JOB_OUTPUT', 'UPLOAD_PATH', 'UPLOAD_MAX_GB', 'VARS_FILES_PATH', 'AWX_API_PREFIX'],
+  },
+  {
+    key: 'formsConfig',
+    label: () => t('settings.settingsPage.envGroupFormsConfig'),
+    icon: 'file-code',
+    exact: ['CONFIG_PATH', 'FORMS_FOLDER_PATH', 'FORMS_STAGING_PATH'],
+  },
+  {
+    key: 'git',
+    label: () => t('settings.settingsPage.envGroupGit'),
+    icon: 'fab,git',
+    prefix: ['GIT_'],
+    exact: ['REPO_PATH', 'HOME_PATH'],
+  },
+  {
+    key: 'ytt',
+    label: () => t('settings.settingsPage.envGroupYtt'),
+    icon: 'code',
+    prefix: ['YTT_'],
+    exact: ['USE_YTT'],
+  },
+  {
+    key: 'ui',
+    label: () => t('settings.settingsPage.envGroupUi'),
+    icon: 'palette',
+    prefix: ['NAV_HOME_'],
+    exact: ['DEFAULT_LANGUAGE', 'SHOW_DESIGNER'],
+  },
+  { key: 'logging', label: () => t('settings.settingsPage.envGroupLogging'), icon: 'file-alt', prefix: ['LOG_'] },
 ];
 
 // exact name or declared prefix - no regex, so no anchor to get wrong
@@ -86,7 +154,7 @@ function envHelp(e) {
   if (e.hint) return String(e.hint).trim();
   const d = String(e.description || '')
     .replace(/\s+/g, ' ')
-    .replace(/\*\*(.+?)\*\*/g, '$1')   // '**DEPRECATED:**' rendered its asterisks
+    .replace(/\*\*(.+?)\*\*/g, '$1') // '**DEPRECATED:**' rendered its asterisks
     .replace(/`([^`]+)`/g, '$1')
     .trim();
   if (!d) return '';
@@ -103,59 +171,75 @@ function envHelp(e) {
 // tests/env-group-coverage.test.js pins exactly that: it reads the real help.yaml and fails
 // when a variable belongs to no group, or to more than one.
 //
-// VAULT_* have their own page under Connections. BASE_URL is here for a different reason -
+// VAULT_* are only imported once, when upgrading to 7 (Secret stores). BASE_URL is here for a different reason -
 // it is the one setting that genuinely cannot be applied without a restart, because the
 // served index.html has the base path baked into it, so every page already open would break.
 // Showing it on a page of editable settings would only offer an edit that cannot work; it is
 // reported as a fact on the Status page instead.
-const OWNED_ELSEWHERE = /^VAULT_|^BASE_URL$/;
+// AF_ROLE and RTE_* describe which process this is and where its RTE lives : set in
+// the environment of the container, not edited from inside the app. LOCK_PATH is no longer read
+// (the designer lock is in the database since 7). ANSIBLE_PATH and
+// PROCESS_MAX_BUFFER are read by an RTE only : since 7 the app runs no playbook itself.
+const OWNED_ELSEWHERE = /^VAULT_|^BASE_URL$|^AF_ROLE$|^LOCK_PATH$|^RTE_|^ANSIBLE_PATH$|^PROCESS_MAX_BUFFER$/;
 
 const envGroups = computed(() => {
   if (!env.value || !Array.isArray(env.value)) return [];
   const matched = new Set();
-  const groups = envGroupOrder.map(g => {
-    const items = env.value.filter(e => {
-      if (matched.has(e.name) || OWNED_ELSEWHERE.test(e.name)) return false;
-      if (envInGroup(g, e.name)) { matched.add(e.name); return true; }
-      return false;
-    });
-    return { ...g, label: g.label(), items };
-  }).filter(g => g.items.length > 0);
+  const groups = envGroupOrder
+    .map((g) => {
+      const items = env.value.filter((e) => {
+        if (matched.has(e.name) || OWNED_ELSEWHERE.test(e.name)) return false;
+        if (envInGroup(g, e.name)) {
+          matched.add(e.name);
+          return true;
+        }
+        return false;
+      });
+      return { ...g, label: g.label(), items };
+    })
+    .filter((g) => g.items.length > 0);
   return groups;
 });
 
 const authenticated = ref(false);
 const item = ref({ url: '', forms_yaml: '', config_source: null });
 const originalItem = ref(null);
-const hasLegacy = ref(false);
 const showImportConfirm = ref(false);
 const showExportConfirm = ref(false);
 
-const themeOptions = Theme.themes().map(th => ({ value: th.value, label: th.title }));
+const themeOptions = Theme.themes().map((th) => ({ value: th.value, label: th.title }));
 
 const colorPalette = [
-    { label: "Blue",    hex: "#008cba" },
-    { label: "Indigo",  hex: "#6610f2" },
-    { label: "Purple",  hex: "#744fc6" },
-    { label: "Pink",    hex: "#d63384" },
-    { label: "Red",     hex: "#dc3545" },
-    { label: "Orange",  hex: "#ff8800" },
-    { label: "Green",   hex: "#198754" },
-    { label: "Teal",    hex: "#20c997" },
-    { label: "Cyan",    hex: "#0190ce" },
-    { label: "Navy",    hex: "#1b2a4a" },
-    { label: "Slate",   hex: "#475569" },
-    { label: "Brown",   hex: "#795548" },
+  { label: 'Blue', hex: '#008cba' },
+  { label: 'Indigo', hex: '#6610f2' },
+  { label: 'Purple', hex: '#744fc6' },
+  { label: 'Pink', hex: '#d63384' },
+  { label: 'Red', hex: '#dc3545' },
+  { label: 'Orange', hex: '#ff8800' },
+  { label: 'Green', hex: '#198754' },
+  { label: 'Teal', hex: '#20c997' },
+  { label: 'Cyan', hex: '#0190ce' },
+  { label: 'Navy', hex: '#1b2a4a' },
+  { label: 'Slate', hex: '#475569' },
+  { label: 'Brown', hex: '#795548' },
 ];
 
 const effectiveTheme = computed({
-  get() { return item.value.default_theme || 'light'; },
-  set(val) { item.value.default_theme = val; }
+  get() {
+    return item.value.default_theme || 'light';
+  },
+  set(val) {
+    item.value.default_theme = val;
+  },
 });
 
 const effectiveThemeColor = computed({
-  get() { return item.value.default_theme_color || '#008cba'; },
-  set(val) { item.value.default_theme_color = val; }
+  get() {
+    return item.value.default_theme_color || '#008cba';
+  },
+  set(val) {
+    item.value.default_theme_color = val;
+  },
 });
 
 const rules = computed(() => ({
@@ -183,11 +267,13 @@ function resolveThemeColor(obj) {
 
 const settingsDirty = computed(() => {
   if (originalItem.value === null) return false;
-  return item.value.url !== originalItem.value.url
-    || resolveConfigSource(item.value) !== resolveConfigSource(originalItem.value)
-    || resolveLanguage(item.value) !== resolveLanguage(originalItem.value)
-    || resolveTheme(item.value) !== resolveTheme(originalItem.value)
-    || resolveThemeColor(item.value) !== resolveThemeColor(originalItem.value);
+  return (
+    item.value.url !== originalItem.value.url ||
+    resolveConfigSource(item.value) !== resolveConfigSource(originalItem.value) ||
+    resolveLanguage(item.value) !== resolveLanguage(originalItem.value) ||
+    resolveTheme(item.value) !== resolveTheme(originalItem.value) ||
+    resolveThemeColor(item.value) !== resolveThemeColor(originalItem.value)
+  );
 });
 
 async function loadItem() {
@@ -212,7 +298,11 @@ async function saveSettings() {
   }
   try {
     const { url, config_source, default_language, default_theme, default_theme_color } = item.value;
-    await axios.put('/api/v2/settings/', { url, config_source, default_language, default_theme, default_theme_color }, TokenStorage.getAuthentication());
+    await axios.put(
+      '/api/v2/settings/',
+      { url, config_source, default_language, default_theme, default_theme_color },
+      TokenStorage.getAuthentication(),
+    );
     toast.success(t('settings.settingsPage.label') + ' ' + t('settings.common.isUpdated'));
     await loadItem();
     return true;
@@ -246,25 +336,6 @@ async function exportConfigToFile() {
   }
 }
 
-async function checkLegacy() {
-  try {
-    const result = await axios.get('/api/v2/settings/legacyCheck', TokenStorage.getAuthentication());
-    hasLegacy.value = result.data?.hasLegacy || false;
-  } catch (err) {
-    hasLegacy.value = false;
-  }
-}
-
-async function convertLegacy() {
-  try {
-    const result = await axios.put('/api/v2/settings/convertLegacy', {}, TokenStorage.getAuthentication());
-    toast.success(result.data.message);
-    hasLegacy.value = false;
-  } catch (err) {
-    toast.error(Helpers.parseAxiosResponseError(err));
-  }
-}
-
 // The edited values, keyed by variable name. Seeded from what the server reports so
 // 'dirty' means 'differs from what is actually in effect', not 'has been touched'.
 const envEdits = ref({});
@@ -278,14 +349,15 @@ function envEditable(e) {
   return e.editable !== 'refused' && !e.overridden;
 }
 
-const envSecret = computed(() => new Set((env.value || []).filter(e => e.secret).map(e => e.name)));
+const envSecret = computed(() => new Set((env.value || []).filter((e) => e.secret).map((e) => e.name)));
 const envDirtyNames = computed(() =>
-  Object.keys(envEdits.value).filter(k => {
+  Object.keys(envEdits.value).filter((k) => {
     // a blank secret box means 'leave it alone', not 'set it to empty' - otherwise
     // opening the tab and pressing Save would wipe every stored credential
     if (envSecret.value.has(k) && String(envEdits.value[k] ?? '') === '') return false;
     return String(envEdits.value[k] ?? '') !== String(envBaseline.value[k] ?? '');
-  }));
+  }),
+);
 const envDirty = computed(() => envDirtyNames.value.length > 0);
 
 async function saveEnvironmentVariables() {
@@ -309,7 +381,7 @@ async function saveActiveTab() {
   // A refused settings half must stop the whole save, not let the environment half
   // through on its own - the user pressed one button and is entitled to one outcome.
   if (settingsDirty.value) {
-    if (await saveSettings() === false) return;
+    if ((await saveSettings()) === false) return;
   }
   if (envDirty.value) await saveEnvironmentVariables();
 }
@@ -328,21 +400,32 @@ async function loadEnvironmentVariables() {
 }
 
 onMounted(async () => {
-    authenticated.value = !!(await Profile.load());
-    if (!authenticated.value) return;
-    await Promise.all([loadItem(), loadEnvironmentVariables(), checkLegacy()]);
+  authenticated.value = !!(await Profile.load());
+  if (!authenticated.value) return;
+  await Promise.all([loadItem(), loadEnvironmentVariables()]);
 });
 </script>
 <template>
   <AppNav />
   <div class="flex-shrink-0">
-    <main class="d-flex flex-nowrap container-xxl">
+    <main class="d-flex flex-nowrap af-settings-layout">
       <AppSidebar />
-      <AppSettings v-if="authenticated" icon="cog" :title="t('settings.settingsPage.label')" :description="t('settings.settingsPage.description')">
+      <!-- titled like its menu entry, "General" : the header link and the menu are "Settings" already -->
+      <AppSettings
+        v-if="authenticated"
+        icon="toolbox"
+        :title="t('sidebar.ansibleForms')"
+        :description="t('settings.settingsPage.description')"
+      >
         <template #tabs>
           <ul class="nav nav-tabs mb-0">
             <li v-for="group in envGroups" :key="group.key" class="nav-item">
-              <a class="nav-link" :class="{ active: activeTab === 'env_' + group.key }" href="#" @click.prevent="activeTab = 'env_' + group.key">
+              <a
+                class="nav-link"
+                :class="{ active: activeTab === 'env_' + group.key }"
+                href="#"
+                @click.prevent="activeTab = 'env_' + group.key"
+              >
                 <FaIcon :icon="group.icon" class="me-1" />
                 {{ group.label }}
               </a>
@@ -358,21 +441,45 @@ onMounted(async () => {
                    theme defaults are UI ones. They save through saveSettings(), the fields
                    below through the env endpoint - the one Save button covers both. -->
               <template v-if="group.key === 'server'">
-                <BsInput :isFloating="false" icon="globe" v-model="$v.item.url.$model" :label="t('settings.settingsPage.publicRootUrl')" :required="true" :help="t('settings.settingsPage.publicRootUrlHelp')" :hasError="$v.item.url.$invalid && $v.item.url.$dirty" :errors="$v.item.url.$errors" />
+                <BsInput
+                  :isFloating="false"
+                  icon="globe"
+                  v-model="$v.item.url.$model"
+                  :label="t('settings.settingsPage.publicRootUrl')"
+                  :required="true"
+                  :help="t('settings.settingsPage.publicRootUrlHelp')"
+                  :hasError="$v.item.url.$invalid && $v.item.url.$dirty"
+                  :errors="$v.item.url.$errors"
+                />
                 <div class="mt-4"></div>
               </template>
               <template v-if="group.key === 'ui'">
                 <!-- no language field here : DEFAULT_LANGUAGE below is the one control for it.
                      Theme and colour have no environment variable, so they stay database
                      backed. -->
-                <BsInput :isFloating="false" type="select" icon="palette" v-model="effectiveTheme" :values="themeOptions" valueKey="value" labelKey="label" :label="t('settings.settingsPage.defaultTheme')" :help="t('settings.settingsPage.defaultThemeHelp')" />
+                <BsInput
+                  :isFloating="false"
+                  type="select"
+                  icon="palette"
+                  v-model="effectiveTheme"
+                  :values="themeOptions"
+                  valueKey="value"
+                  labelKey="label"
+                  :label="t('settings.settingsPage.defaultTheme')"
+                  :help="t('settings.settingsPage.defaultThemeHelp')"
+                />
                 <div v-if="effectiveTheme === 'color'" class="mt-2 ms-1">
                   <div class="d-flex flex-wrap gap-2">
-                    <button v-for="c in colorPalette" :key="c.hex" type="button" class="settings-color-swatch"
+                    <button
+                      v-for="c in colorPalette"
+                      :key="c.hex"
+                      type="button"
+                      class="settings-color-swatch"
                       :style="{ backgroundColor: c.hex }"
                       :class="{ 'settings-color-swatch-active': effectiveThemeColor === c.hex }"
                       :title="c.label"
-                      @click="effectiveThemeColor = c.hex">
+                      @click="effectiveThemeColor = c.hex"
+                    >
                       <FaIcon v-if="effectiveThemeColor === c.hex" icon="check" class="settings-swatch-check" />
                     </button>
                   </div>
@@ -400,15 +507,19 @@ onMounted(async () => {
                   <!-- an editable variable gets a real BsInput, so it is identical to the
                        Settings tab. One that cannot be written keeps the read-only box and
                        says why, rather than offering an edit that would not take. -->
-                  <BsInput v-if="envEditable(e)" :isFloating="false"
+                  <BsInput
+                    v-if="envEditable(e)"
+                    :isFloating="false"
                     :icon="e.type === 'number' ? 'hashtag' : 'font'"
-                    :type="envOptions(e) ? 'select' : (e.secret ? 'password' : (e.type === 'number' ? 'number' : 'text'))"
+                    :type="envOptions(e) ? 'select' : e.secret ? 'password' : e.type === 'number' ? 'number' : 'text'"
                     :values="envOptions(e) || []"
-                    valueKey="value" labelKey="label"
+                    valueKey="value"
+                    labelKey="label"
                     :placeholder="e.secret && e.set ? t('settings.settingsPage.envSecretUnchanged') : ''"
                     :label="e.short || e.name"
                     :help="envHelp(e)"
-                    v-model="envEdits[e.name]" />
+                    v-model="envEdits[e.name]"
+                  />
                   <template v-else>
                     <label class="form-label fw-bold">{{ e.short || e.name }}</label>
                     <div>
@@ -416,12 +527,14 @@ onMounted(async () => {
                         <span class="input-group-text text-gray-500">
                           <FaIcon :fixedwidth="true" :icon="e.editable === 'refused' ? 'lock' : 'shield-halved'" />
                         </span>
-                        <div class="form-control env-value" :title="e.name">{{ e.value === null || e.value === '' ? '—' : e.value }}</div>
+                        <div class="form-control env-value" :title="e.name">
+                          {{ e.value === null || e.value === '' ? '—' : e.value }}
+                        </div>
                       </div>
                     </div>
                     <div v-if="envHelp(e)" class="form-text">{{ envHelp(e) }}</div>
                     <div class="form-text env-locked">
-                      {{ e.overridden ? t('settings.settingsPage.envOverridden') : (e.refusedReason || '') }}
+                      {{ e.overridden ? t('settings.settingsPage.envOverridden') : e.refusedReason || '' }}
                     </div>
                   </template>
                   <div v-if="envEditable(e) && e.editable === 'restart'" class="form-text env-restart">
@@ -440,9 +553,16 @@ onMounted(async () => {
                    zeroes precisely because it stacks on the card's own padding. -->
               <template v-if="group.key === 'configuration'">
                 <div class="mt-4 mb-2 d-flex align-items-center">
-                  <BsButton icon="file-import" colorClass="secondary" @click="showImportConfirm = true">{{ t('settings.settingsPage.importToDatabase') }}</BsButton>
-                  <BsButton icon="file-export" colorClass="secondary" cssClass="ms-3" @click="showExportConfirm = true">{{ t('settings.settingsPage.exportToFile') }}</BsButton>
-                  <BsButton v-if="hasLegacy" icon="exchange-alt" cssClass="ms-3 btn-convert-legacy" @click="convertLegacy()">{{ t('settings.settingsPage.convertLegacy') }}</BsButton>
+                  <BsButton icon="file-import" colorClass="secondary" @click="showImportConfirm = true">{{
+                    t('settings.settingsPage.importToDatabase')
+                  }}</BsButton>
+                  <BsButton
+                    icon="file-export"
+                    colorClass="secondary"
+                    cssClass="ms-3"
+                    @click="showExportConfirm = true"
+                    >{{ t('settings.settingsPage.exportToFile') }}</BsButton
+                  >
                 </div>
               </template>
             </div>
@@ -451,7 +571,13 @@ onMounted(async () => {
         <template #actions>
           <!-- one button : a tab can now hold both database-backed settings and environment
                variables, so Save applies whichever of the two is pending -->
-          <BsButton icon="save" :colorClass="anyDirty ? 'primary' : 'secondary'" :disabled="!anyDirty" @click="saveActiveTab()">{{ t('settings.common.save') }}</BsButton>
+          <BsButton
+            icon="save"
+            :colorClass="anyDirty ? 'primary' : 'secondary'"
+            :disabled="!anyDirty"
+            @click="saveActiveTab()"
+            >{{ t('settings.common.save') }}</BsButton
+          >
         </template>
       </AppSettings>
 
@@ -527,11 +653,13 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   padding: 0;
-  transition: transform 0.15s, border-color 0.15s;
+  transition:
+    transform 0.15s,
+    border-color 0.15s;
 }
 .settings-color-swatch:hover {
   transform: scale(1.15);
-  border-color: rgba(255,255,255,0.5);
+  border-color: rgba(255, 255, 255, 0.5);
 }
 .settings-color-swatch-active {
   border-color: var(--bs-body-color);
@@ -540,16 +668,6 @@ onMounted(async () => {
 .settings-swatch-check {
   color: #fff;
   font-size: 0.65rem;
-  filter: drop-shadow(0 0 1px rgba(0,0,0,0.5));
-}
-:deep(.btn-convert-legacy.btn) {
-  color: #c2640a;
-  border-color: #c2640a;
-  background-color: transparent;
-  &:hover {
-    color: #fff;
-    background-color: #c2640a;
-    border-color: #c2640a;
-  }
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.5));
 }
 </style>

@@ -10,12 +10,12 @@ import cors from "cors";
 import helmet from "helmet";
 import swaggerUi from "swagger-ui-express";
 import { jsonBody, urlencodedBody } from "./lib/bodyParsers.js";
+import { applyTrustProxy } from "./lib/trustProxy.js";
 import passport from "passport";
 
 // App configuration and utilities
 import Middleware from "./lib/middleware.js";
 import logger from "./lib/logger.js";
-import init from "./init/index.js";
 import appConfig from "../config/app.config.js";
 
 // Authentication strategies
@@ -26,23 +26,6 @@ import "./auth/auth_jwt.js";
 
 // API route handlers
 // V1 routes (DEPRECATED - not following REST standards)
-import queryRoutes from "./routes/v1/query.routes.js";
-import expressionRoutes from "./routes/v1/expression.routes.js";
-import helpRoutes from "./routes/v1/help.routes.js";
-import profileRoutes from "./routes/v1/profile.routes.js";
-import loginRoutes from "./routes/v1/login.routes.js";
-import tokenRoutes from "./routes/v1/token.routes.js";
-import jobRoutes from "./routes/v1/job.routes.js";
-import userRoutes from "./routes/v1/user.routes.js";
-import groupRoutes from "./routes/v1/group.routes.js";
-import settingsRoutes from "./routes/v1/settings.routes.js";
-import credentialRoutes from "./routes/v1/credential.routes.js";
-import sshRoutes from "./routes/v1/ssh.routes.js";
-import logRoutes from "./routes/v1/log.routes.js";
-import repositoryRoutes from "./routes/v1/repository.routes.js";
-import configRoutes from "./routes/v1/config.routes.js";
-import datasourceSchemaRoutes from "./routes/v1/datasourceSchema.routes.js";
-import datasourceRoutes from "./routes/v1/datasource.routes.js";
 
 // V2 routes (CURRENT - REST standards compliant)
 import queryRoutesv2 from "./routes/v2/query.routes.js";
@@ -60,11 +43,12 @@ import chatSettingsRoutes from "./routes/v2/chatSettings.routes.js";
 import chatRoutes from "./chat/router.js";
 import oauth2Routes from "./routes/v2/oauth2.routes.js";
 import credentialRoutesv2 from "./routes/v2/credential.routes.js";
+import secretStoreRoutesv2 from "./routes/v2/secretStore.routes.js";
+import runnerRoutesv2 from "./routes/v2/runner.routes.js";
 import knownhostsRoutes from "./routes/v2/knownhosts.routes.js";
 import scheduleRoutes from "./routes/v2/schedule.routes.js";
 import storedJobsRoutes from "./routes/v2/stored-jobs.routes.js";
 import appRoutes from "./routes/v2/app.routes.js";
-import awxRoutesv2 from "./routes/v2/awx.routes.js";
 import backupRoutes from "./routes/v2/backup.routes.js";
 import groupRoutesv2 from "./routes/v2/group.routes.js";
 import settingsRoutesv2 from "./routes/v2/settings.routes.js";
@@ -84,18 +68,21 @@ import mcpRoutes from "./mcp/router.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const swaggerDocumentV1 = JSON.parse(fs.readFileSync(path.join(__dirname, "swagger_v1.json"), "utf8"));
 const swaggerDocumentV2 = JSON.parse(fs.readFileSync(path.join(__dirname, "swagger_v2.json"), "utf8"));
 
 // a small custom middleware to check whether the user has access to routes
 
 // start the app
 const load = async (app) => {
-  // first time run of the app
-  // from now on, it's async => we wait for mysql to be ready
-  await init({ boot: true })
+  // the database and the worker's bootstrap come first (app-start.js)
   await auth_azuread.initialize(); // we wait for the azuread to be ready
   await auth_oidc.initialize(); // we wait for the oidc to be ready
+
+  // which address req.ip - and so every audit row - names : the connection's peer unless
+  // TRUST_PROXY says which reverse proxies may report the client in X-Forwarded-For.
+  // Set on this app, not on the one index.js wraps it in for BASE_URL : req.ip asks the app
+  // handling the request, and with a base url that is still this one (see lib/trustProxy.js)
+  applyTrustProxy(app);
 
   // security headers with helmet
   app.use(helmet({
@@ -160,10 +147,6 @@ const load = async (app) => {
     customCssUrl: `${appConfig.baseUrl}/assets/css/swagger.css`,
     docExpansion: "none",
   };
-  // v1 docs
-  swaggerDocumentV1.basePath = `${appConfig.baseUrl}/api/v1`;
-  app.use(`/api/v1/docs`, cors(), swaggerUi.serveFiles(swaggerDocumentV1, swaggerOptions), swaggerUi.setup(swaggerDocumentV1, swaggerOptions));
-
   // v2 docs
   swaggerDocumentV2.basePath = `${appConfig.baseUrl}/api/v2`;
   app.use(`/api/v2/docs`, cors(), swaggerUi.serveFiles(swaggerDocumentV2, swaggerOptions), swaggerUi.setup(swaggerDocumentV2, swaggerOptions));
@@ -174,37 +157,6 @@ const load = async (app) => {
   // attributed, while a request refused by authobj or a permission guard is
   // recorded as 'denied' instead of vanishing before any model is reached.
   app.use(`/api`, auditMiddleware);
-
-  // ========== V1 API Routes (DEPRECATED) ==========
-
-  // api routes for querying
-  app.use(`/api/v1/query`, cors(), authobj, queryRoutes);
-  app.use(`/api/v1/expression`, cors(), authobj, expressionRoutes);
-
-  // api route for help
-  app.use(`/api/v1/help`, cors(), authobj, helpRoutes);
-
-  // api route for profile
-  app.use(`/api/v1/profile`, cors(), authobj, profileRoutes);
-
-  // api routes for authorization
-  app.use(`/api/v1/auth`, cors(), loginRoutes);
-  app.use(`/api/v1/token`, cors(), tokenRoutes);
-
-  // api routes for admin management
-  app.use(`/api/v1/job`, cors(), authobj, jobRoutes);
-  app.use(`/api/v1/user`, cors(), authobj, Middleware.checkSettingsMiddleware, userRoutes);
-  app.use(`/api/v1/group`, cors(), authobj, Middleware.checkSettingsMiddleware, groupRoutes);
-  app.use(`/api/v1/settings`, cors(), authobj, Middleware.checkSettingsMiddleware, settingsRoutes);
-  app.use(`/api/v1/credential`, cors(), authobj, Middleware.checkSettingsMiddleware, credentialRoutes);
-  app.use(`/api/v1/sshkey`, cors(), authobj, Middleware.checkSettingsMiddleware, sshRoutes);
-  app.use(`/api/v1/log`, cors(), authobj, Middleware.checkLogsMiddleware, logRoutes);
-  app.use(`/api/v1/repository`, cors(), authobj, Middleware.checkSettingsMiddleware, repositoryRoutes);
-  app.use(`/api/v1/datasource/schema`, cors(), authobj, Middleware.checkSettingsMiddleware, datasourceSchemaRoutes);
-  app.use(`/api/v1/datasource`, cors(), authobj, Middleware.checkSettingsMiddleware, datasourceRoutes);
-
-  // routes for form config (extra middleware in the routes itself)
-  app.use(`/api/v1/config`, cors(), authobj, configRoutes);
 
   // ========== V2 API Routes (CURRENT) ==========
   
@@ -239,16 +191,18 @@ const load = async (app) => {
   app.use(`/api/v2/settings`, cors(), authobj, Middleware.checkSettingsMiddleware, settingsRoutesv2);
   app.use(`/api/v2/health`, cors(), authobj, Middleware.checkSettingsMiddleware, healthRoutesv2);
   app.use(`/api/v2/audit`, cors(), authobj, Middleware.checkSettingsMiddleware, auditRoutesv2);
-  // custom logo ; reading is for all authenticated users (navbar), changing it is guarded in the routes
-  app.use(`/api/v2/logo`, cors(), authobj, logoRoutesv2);
+  // custom logo ; reading is public (header and login page), changing it is guarded in the routes
+  app.use(`/api/v2/logo`, cors(), logoRoutesv2);
   app.use(`/api/v2/sshkey`, cors(), authobj, Middleware.checkSettingsMiddleware, sshRoutesv2);
   app.use(`/api/v2/ldap`, cors(), authobj, Middleware.checkSettingsMiddleware, ldapRoutes);
   app.use(`/api/v2/chatsettings`, cors(), authobj, Middleware.checkSettingsMiddleware, chatSettingsRoutes);
   app.use(`/api/v2/oauth2`, cors(), authobj, Middleware.checkSettingsMiddleware, oauth2Routes);
   app.use(`/api/v2/credential`, cors(), authobj, Middleware.checkSettingsMiddleware, credentialRoutesv2);
-  app.use(`/api/v2/awx`, cors(), authobj, Middleware.checkSettingsMiddleware, awxRoutesv2);
+  app.use(`/api/v2/secretstore`, cors(), authobj, Middleware.checkSettingsMiddleware, secretStoreRoutesv2);
+  app.use(`/api/v2/runner`, cors(), authobj, Middleware.checkSettingsMiddleware, runnerRoutesv2);
   app.use(`/api/v2/knownhosts`, cors(), authobj, Middleware.checkSettingsMiddleware, knownhostsRoutes);
-  app.use(`/api/v2/schedule`, cors(), authobj, Middleware.checkScheduledJobsMiddleware, scheduleRoutes);
+  // allowScheduledJobs for everything ; allowPlannedJobs only for creating a one-time run
+  app.use(`/api/v2/schedule`, cors(), authobj, Middleware.checkScheduleOrPlannedJobsMiddleware, scheduleRoutes);
   app.use(`/api/v2/stored-jobs`, cors(), authobj, Middleware.checkStoredJobsMiddleware, storedJobsRoutes);
 
   // backup/restore/list routes

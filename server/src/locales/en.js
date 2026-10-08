@@ -72,9 +72,12 @@ export default {
     storedJobDeleted: "Stored job deleted",
     storedJobNoAccess: "You do not have access to this stored job",
     oauth2Added: "OAuth2 provider added",
-    awxAdded: "AAP added",
-    awxNotFound: "AAP not found",
-    awxConnectionOk: "AAP connection is OK",
+    secretStoreAdded: "Secret store added",
+    secretStoreNotFound: "Secret store not found",
+    secretStoreConnectionOk: "Secret store connection is OK",
+    runnerAdded: "Runner added",
+    runnerNotFound: "Runner not found",
+    runnerConnectionOk: "Runner connection is OK",
     userNotFound: "User not found",
     currentPasswordRequired: "Your current password is required to set a new one",
     currentPasswordWrong: "The current password is not correct",
@@ -168,11 +171,43 @@ export default {
     jobevent: {
       button: "View Job",
       regards: "Regards,<br>AnsibleForms",
-      launch: "Job has been launched{by}.",
-      relaunch: "Job has been relaunched{by}.",
-      delete: "Job has been deleted{by}.",
-      approve: "Job has been approved{by} and will continue execution.",
-      reject: "Job has been rejected{by}.",
+      // without a user, and with the user who did it : a whole sentence
+      // each, so every language puts the name where its word order needs it
+      launch: "Job has been launched.",
+      relaunch: "Job has been relaunched.",
+      delete: "Job has been deleted.",
+      approve: "Job has been approved and will continue execution.",
+      reject: "Job has been rejected.",
+      launchBy: "Job has been launched by {user}.",
+      relaunchBy: "Job has been relaunched by {user}.",
+      deleteBy: "Job has been deleted by {user}.",
+      approveBy: "Job has been approved by {user} and will continue execution.",
+      rejectBy: "Job has been rejected by {user}.",
+    },
+    // the subjects : "AnsibleForms '<form>' [<type>] (<id>) - <one of these>", and the
+    // approval one when the form gives no title
+    subject: {
+      approval: "AnsibleForms Approval Request",
+      event: {
+        launch: "Launched",
+        relaunch: "Relaunched",
+        delete: "Deleted",
+        approve: "Approved",
+        reject: "Rejected",
+      },
+      status: {
+        success: "Success",
+        failed: "Failed",
+        aborted: "Aborted",
+        rejected: "Rejected",
+        abandoned: "Abandoned",
+        warning: "Warning",
+      },
+    },
+    // the test mail of the mail settings
+    test: {
+      subject: "Test message",
+      body: "<p>This is a test message from AnsibleForms</p>",
     },
   },
 }

@@ -17,8 +17,10 @@ on:
 permissions:
   contents: read
 
+# per PR, so a new push cancels the run it supersedes ; per commit otherwise, so a burst of
+# merges never cancels the analysis of an earlier one (see ci.yml)
 concurrency:
-  group: codeql-${{ github.event.pull_request.number || github.ref }}
+  group: codeql-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 
 jobs:

@@ -7,7 +7,7 @@ const Oracle = {}
 
 // rewritten with await 5.0.3
 Oracle.query = async function (connection_name, query) {
-  var creds = await Credential.findByNameRegex(connection_name)
+  var creds = await Credential.resolveCredential(connection_name)
   var connection
   var config = {
       user: creds.user,

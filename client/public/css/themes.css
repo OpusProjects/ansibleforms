@@ -88,11 +88,17 @@
     --af-bg-transparent-color     : transparent;
 
       /* navbar */
-    --af-navbar-link-color       : var(--bs-dark);
-    --af-navbar-link-hover-color : var(--af-primary);
-    --af-navbar-link-active-color: var(--af-primary);
+    --af-navbar-link-color       : #3d4451;
+    --af-navbar-link-hover-color : #11151c;
+    --af-navbar-link-active-color: #11151c;
     --af-bg-navbar               : var(--bs-secondary-bg-subtle);
-    --af-text-navbar             : var(--bs-dark);
+    --af-text-navbar             : #11151c;
+    --af-navbar-hover-bg         : rgba(15, 23, 42, 0.07);
+    --af-navbar-indicator        : var(--af-primary);
+    --af-header-border           : rgba(15, 23, 42, 0.09);
+    --af-header-shadow           : 0 1px 2px rgba(15, 23, 42, 0.04);
+    --af-avatar-bg               : var(--af-primary);
+    --af-avatar-hover-bg         : var(--af-navbar-hover-bg);
 
     /* defaults */
     --af-shadow: 0, 0, 0;
@@ -151,7 +157,7 @@
     --af-body-bg-rgb: 33, 37, 41;
 
       /* table action buttons */
-    --af-gray-muted: #343a40;
+    --af-gray-muted: #8b949e;  /* input icons : readable on the dark inputs, still quieter than the text */
     --af-edit      : var(--bs-cyan); /* no color for dark theme */ 
     --af-delete    : var(--bs-cyan); /* no color for dark theme */
     --af-change    : var(--bs-cyan); /* no color for dark theme */
@@ -204,11 +210,17 @@
     --af-bg-transparent-color     : transparent;
 
       /* navbar */
-    --af-navbar-link-color       : var(--bs-white);
-    --af-navbar-link-hover-color : var(--af-primary);
-    --af-navbar-link-active-color: var(--af-primary);
-    --af-bg-navbar               : var(--bs-black);
-    --af-text-navbar             : var(--bs-light);
+    --af-navbar-link-color       : #c3c8d0;
+    --af-navbar-link-hover-color : #ffffff;
+    --af-navbar-link-active-color: #ffffff;
+    --af-bg-navbar               : #111418;
+    --af-text-navbar             : #ffffff;
+    --af-navbar-hover-bg         : rgba(255, 255, 255, 0.06);
+    --af-navbar-indicator        : var(--af-primary);
+    --af-header-border           : rgba(255, 255, 255, 0.08);
+    --af-header-shadow           : none;
+    --af-avatar-bg               : var(--af-primary);
+    --af-avatar-hover-bg         : rgba(255, 255, 255, 0.28); /* lighter than the other header buttons : the avatar's ring shows against it, as on the light header */
 
     /* defaults */
     --af-shadow: 128,128,128;
@@ -312,11 +324,17 @@
     --af-bg-transparent-color     : transparent;
 
       /* navbar */
-    --af-navbar-link-color       : var(--bs-white);
-    --af-navbar-link-hover-color : var(--af-primary-subtle);
-    --af-navbar-link-active-color: var(--af-primary-subtle);
+    --af-navbar-link-color       : rgba(255, 255, 255, 0.82);
+    --af-navbar-link-hover-color : #ffffff;
+    --af-navbar-link-active-color: #ffffff;
     --af-bg-navbar               : var(--af-primary);
-    --af-text-navbar             : var(--bs-light);
+    --af-text-navbar             : #ffffff;
+    --af-navbar-hover-bg         : rgba(255, 255, 255, 0.12);
+    --af-navbar-indicator        : #ffffff;
+    --af-header-border           : rgba(0, 0, 0, 0.12);
+    --af-header-shadow           : 0 1px 2px rgba(0, 0, 0, 0.08);
+    --af-avatar-bg               : rgba(255, 255, 255, 0.22);
+    --af-avatar-hover-bg         : var(--af-navbar-hover-bg);
 
     /* defaults */
     --af-shadow: 0, 0, 0;    

@@ -1,49 +1,48 @@
 <script setup>
-import { useRouter } from "vue-router";
-import { ref } from "vue";
-import axios from "axios";
-import { toast } from "vue-sonner";
-import TokenStorage from "@/lib/TokenStorage";
-import { useVuelidate } from "@vuelidate/core";
-import Navigate from "@/lib/Navigate";
-import { required, helpers, sameAs } from "@vuelidate/validators";
+import { useRouter } from 'vue-router';
+import { ref } from 'vue';
+import axios from 'axios';
+import { toast } from 'vue-sonner';
+import TokenStorage from '@/lib/TokenStorage';
+import { useVuelidate } from '@vuelidate/core';
+import Navigate from '@/lib/Navigate';
+import { required, helpers, sameAs } from '@vuelidate/validators';
 
 const router = useRouter();
 
 const item = ref({
   // the server requires the current password before it will set a new one : a stolen
   // access token expires, an account takeover does not
-  currentPassword: "",
-  password: "",
-  password2: "",
+  currentPassword: '',
+  password: '',
+  password2: '',
 });
 
 const fields = [
   {
-    key: "password",
-    label: "Password",
-    type: "password",
+    key: 'password',
+    label: 'Password',
+    type: 'password',
     sortable: false,
     required: true,
     filterable: false,
-    icon: "lock",
+    icon: 'lock',
   },
 ];
 
 async function updateItem() {
-
-    if (!$v.$invalid) {
-        try {
-            await axios.put(`/api/v2/profile`, item.value, TokenStorage.getAuthentication())
-            toast.success("Password is changed");
-            Navigate.toHome(router);
-        } catch (err) {
-            toast.error(err.toString())
-        }
-    } else {
-        toast.warning("Invalid form data");
-        $v.value.item.$touch()
+  if (!$v.$invalid) {
+    try {
+      await axios.put(`/api/v2/profile`, item.value, TokenStorage.getAuthentication());
+      toast.success('Password is changed');
+      Navigate.toHome(router);
+    } catch (err) {
+      toast.error(err.toString());
     }
+  } else {
+    toast.warning('Invalid form data');
+    $v.value.item.$touch();
+  }
 }
 
 function getRules() {
@@ -51,34 +50,32 @@ function getRules() {
   fields.forEach((field) => {
     var rule = {};
     if (field.required) {
-      rule.required = helpers.withMessage(
-        `${field.label} is required`,
-        required
-      );
+      rule.required = helpers.withMessage(`${field.label} is required`, required);
     }
     // regex validation
     if (field.regex && field.regex.expression) {
       // a malformed pattern must not throw out of the rules builder and take the
       // whole form down - report it and skip the rule, as AppForm does
-      var regexObj = null
-      try { regexObj = new RegExp(field.regex.expression) } catch (e) {
-          console.error(`Field '${field.key || field.label}': invalid regex '${field.regex.expression}' (${e.message}); the rule is ignored.`)
+      var regexObj = null;
+      try {
+        regexObj = new RegExp(field.regex.expression);
+      } catch (e) {
+        console.error(
+          `Field '${field.key || field.label}': invalid regex '${field.regex.expression}' (${e.message}); the rule is ignored.`,
+        );
       }
       var description = field.regex.description;
       // only when there is a usable pattern - see the guard above
       if (regexObj) {
-        rule.regex = helpers.withMessage(
-          description,
-          (value) => !helpers.req(value) || regexObj.test(value)
-        );
+        rule.regex = helpers.withMessage(description, (value) => !helpers.req(value) || regexObj.test(value));
       }
     }
 
     ruleObj.item[field.key] = rule;
-    if (field.type == "password") {
+    if (field.type == 'password') {
       rule = {};
       rule.password_comfirmation = sameAs(computed(() => item.value.password));
-      ruleObj.item["password2"] = rule;
+      ruleObj.item['password2'] = rule;
     }
   });
   return ruleObj;
@@ -88,11 +85,11 @@ const rules = getRules();
 // added outside getRules() : that loop appends a 'Confirm' box for every password-typed
 // field, and the current password must not get one
 rules.item.currentPassword = {
-  required: helpers.withMessage("Current password is required", required),
+  required: helpers.withMessage('Current password is required', required),
 };
 
 const $v = useVuelidate(rules, { item });
-// 
+//
 </script>
 
 <template>
@@ -132,7 +129,6 @@ const $v = useVuelidate(rules, { item });
             :labelKey="field.labelKey"
             :style="field.style"
             :lang="field.lang"
-
           />
           <BsInput
             v-if="field.type == 'password'"
@@ -145,9 +141,7 @@ const $v = useVuelidate(rules, { item });
             :isFloating="true"
             :required="true"
             label="Confirm"
-            :hasError="
-              $v.item['password2'].$invalid && $v.item['password2'].$dirty
-            "
+            :hasError="$v.item['password2'].$invalid && $v.item['password2'].$dirty"
             :errors="$v.item['password2'].$errors"
           />
           <!-- password confirmation -->
@@ -166,19 +160,19 @@ const $v = useVuelidate(rules, { item });
   padding: 1rem;
 }
 
-[data-bs-theme="light"] {
+[data-bs-theme='light'] {
   .login {
     background-image: var(--af-login-background-light) !important;
     background-size: cover;
   }
 }
-[data-bs-theme="dark"] {
+[data-bs-theme='dark'] {
   .login {
     background-image: var(--af-login-background-dark) !important;
     background-size: cover;
   }
 }
-[data-bs-theme="color"] {
+[data-bs-theme='color'] {
   .login {
     background-image: var(--af-login-background-color) !important;
     background-size: cover;

@@ -1,4 +1,5 @@
 'use strict';
+import { stripTrailingSlashes } from './url.js';
 import logger from './logger.js';
 
 // Graph pages at 100 by default ; 50 pages is 5000 groups, more than any role mapping needs
@@ -12,7 +13,7 @@ const MAX_PAGES = 50;
  */
 export async function fetchAzureGroups(accessToken, graphUrl, { fetchImpl = fetch } = {}) {
   const names = [];
-  let url = `${String(graphUrl || 'https://graph.microsoft.com').replace(/\/+$/, '')}/v1.0/me/transitiveMemberOf?$select=displayName&$top=999`;
+  let url = `${stripTrailingSlashes(graphUrl || 'https://graph.microsoft.com')}/v1.0/me/transitiveMemberOf?$select=displayName&$top=999`;
   for (let page = 0; url && page < MAX_PAGES; page++) {
     const res = await fetchImpl(url, { headers: { authorization: `Bearer ${accessToken}`, accept: 'application/json' }, signal: AbortSignal.timeout(20000) });
     const text = await res.text();

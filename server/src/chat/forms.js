@@ -6,7 +6,7 @@
  */
 
 // computed, display, secret and upload fields are never answered by the operator
-const SKIP_TYPES = new Set(['expression', 'html', 'password', 'file', 'table', 'local', 'local_out', 'credential']);
+const SKIP_TYPES = new Set(['expression', 'html', 'password', 'file', 'local', 'local_out', 'credential']);
 // a field behind this dependency asks for stored credentials, which AnsibleForms keeps to itself
 const CREDENTIAL_DEPENDENCY = 'CREDENTIALS.';
 const SUMMARY_FIELDS = 4;

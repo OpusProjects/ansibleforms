@@ -12,9 +12,9 @@ process.env.DB_PORT = process.env.DB_PORT || "3306";
 process.env.DB_USER = process.env.DB_USER || "test";
 process.env.DB_PASSWORD = process.env.DB_PASSWORD || "test";
 
-const { default: Job, Awx } = await import("../src/models/job.model.js");
+const { default: Job } = await import("../src/models/job.model.js");
+const { Awx } = await import("../src/runners/awx/api.js");
 const { default: mysql } = await import("../src/models/db.model.js");
-const { default: AwxModel } = await import("../src/models/awx.model.js");
 const { default: logger } = await import("../src/lib/logger.js");
 
 /*****************************************************************/
@@ -22,10 +22,24 @@ const { default: logger } = await import("../src/lib/logger.js");
 /*****************************************************************/
 var jobRow = {};
 var outputs = [];
+var nextOutputId = 1;
 mysql.do = async function (sql, params) {
   if (sql.includes("INSERT INTO AnsibleForms.`job_output`")) {
-    outputs.push({ ...params[0] });
-    return { insertId: outputs.length };
+    const row = { id: nextOutputId++, ...params[0] };
+    outputs.push(row);
+    return { insertId: row.id };
+  }
+  // the increment-issue path : the last stored row
+  if (sql.includes("DELETE FROM AnsibleForms.`job_output` WHERE job_id=? ORDER BY `order` DESC LIMIT 1")) {
+    const last = [...outputs].sort((a, b) => b.order - a.order || b.id - a.id)[0];
+    outputs = outputs.filter((o) => o !== last);
+    return { affectedRows: 1 };
+  }
+  // Job.replaceTrackedOutput : the stdout chunks the final stdout replaces (issue #735)
+  if (sql.includes("DELETE FROM AnsibleForms.`job_output` WHERE job_id=? AND output_type='stdout'")) {
+    const [, fromOrder, keepId] = params;
+    outputs = outputs.filter((o) => !(o.output_type == "stdout" && o.order >= fromOrder && o.id != keepId));
+    return { affectedRows: 1 };
   }
   if (sql.includes("UPDATE AnsibleForms.`jobs` set abort_requested=0")) {
     jobRow.abort_requested = 0;
@@ -157,6 +171,12 @@ function handleRequest(req, res) {
   var data = null;
   if (req.method == "POST" && path.match(/\/cancel\/$/)) {
     cancelCalls.push(path);
+    // AWX refuses a second cancel with 405 : the abort's own cancel already went
+    if (awxState.cancelAnswers405) {
+      res.writeHead(405, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ detail: "Method not allowed" }));
+      return;
+    }
     res.writeHead(202, { "Content-Type": "application/json" });
     res.end("{}");
     return;
@@ -241,13 +261,14 @@ function handleRequest(req, res) {
   }
 }
 
+// the runner of type awx every call below is given ; its uri is set once the server listens
+const myawx = { name: "myawx", type: "awx", uri: "", token: "t" };
+
 before(async () => {
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   const uri = `http://127.0.0.1:${server.address().port}`;
-  // test awx config
-  AwxModel.findByName = async () => ({ name: "myawx", uri });
-  AwxModel.findByProperty = async () => ({ name: "myawx", uri });
-  AwxModel.getAuthorization = () => ({});
+  // the runner row the AWX functions get (a runner of type awx)
+  myawx.uri = uri;
 });
 after(() => {
   // drop keep-alive sockets and the logger file streams, so the test process can exit
@@ -278,7 +299,7 @@ function allOutput() {
 
 test("successful workflow job: node outputs, summary and graph json", { timeout: 30000 }, async () => {
   awxState.wfFinalStatus = "successful";
-  const result = await Awx.trackJob("myawx", workflowLaunchJob(), 7, 0);
+  const result = await Awx.trackJob(myawx, workflowLaunchJob(), 7, 0);
   assert.equal(result, true);
   assert.equal(jobRow.status, "success");
   const out = allOutput();
@@ -308,7 +329,7 @@ test("successful workflow job: node outputs, summary and graph json", { timeout:
 
 test("failed workflow job: failed node and failed job status", { timeout: 30000 }, async () => {
   awxState.wfFinalStatus = "failed";
-  const result = await Awx.trackJob("myawx", workflowLaunchJob(), 7, 0);
+  const result = await Awx.trackJob(myawx, workflowLaunchJob(), 7, 0);
   assert.match(result, /completed with status failed/);
   assert.equal(jobRow.status, "failed");
   const out = allOutput();
@@ -321,11 +342,20 @@ test("failed workflow job: failed node and failed job status", { timeout: 30000 
 
 test("aborting a workflow job cancels it on the workflow endpoint", { timeout: 30000 }, async () => {
   awxState.abortAfterPoll = 1;
-  const result = await Awx.trackJob("myawx", workflowLaunchJob(), 7, 0);
+  const result = await Awx.trackJob(myawx, workflowLaunchJob(), 7, 0);
   assert.equal(result, "Aborted workflow job");
   assert.equal(jobRow.status, "aborted");
   assert.deepEqual(cancelCalls, ["/api/v2/workflow_jobs/1/cancel/"]);
   assert.equal(jobRow.abort_requested, 0); // reset after the abort
+});
+
+test("a cancel AWX already runs (405) still ends the job aborted, the flag is not reverted", { timeout: 30000 }, async () => {
+  awxState.abortAfterPoll = 1;
+  awxState.cancelAnswers405 = true;
+  const result = await Awx.trackJob(myawx, workflowLaunchJob(), 7, 0);
+  assert.equal(result, "Aborted workflow job");
+  assert.equal(jobRow.status, "aborted");
+  assert.doesNotMatch(allOutput(), /Abort request denied/);
 });
 
 test("regular (non workflow) job tracking is unchanged", { timeout: 30000 }, async () => {
@@ -336,7 +366,7 @@ test("regular (non workflow) job tracking is unchanged", { timeout: 30000 }, asy
     status: "pending",
     related: { stdout: "/api/v2/jobs/55/stdout/" },
   };
-  const result = await Awx.trackJob("myawx", launchJob, 8, 0);
+  const result = await Awx.trackJob(myawx, launchJob, 8, 0);
   assert.equal(result, true);
   assert.equal(jobRow.status, "success");
   assert.deepEqual(JSON.parse(jobRow.awx_artifacts), { myfact: "myvalue" });
@@ -350,8 +380,8 @@ test("regular (non workflow) job tracking is unchanged", { timeout: 30000 }, asy
 });
 
 test("abortJob hits the jobs endpoint by default and workflow_jobs for workflows", async () => {
-  await Awx.abortJob("myawx", 55);
-  await Awx.abortJob("myawx", 1, true);
+  await Awx.abortJob(myawx, 55);
+  await Awx.abortJob(myawx, 1, true);
   assert.deepEqual(cancelCalls, ["/api/v2/jobs/55/cancel/", "/api/v2/workflow_jobs/1/cancel/"]);
 });
 
@@ -375,7 +405,7 @@ function longJob() {
 
 test("a long running job assembles its output exactly once per line", { timeout: 60000 }, async () => {
   awxState.longPolls = 12;
-  const result = await Awx.trackJob("myawx", longJob(), 8, 0);
+  const result = await Awx.trackJob(myawx, longJob(), 8, 0);
   assert.equal(result, true);
   assert.equal(jobRow.status, "success");
   const out = allOutput();
@@ -402,7 +432,7 @@ test("the stack does not grow with the number of polls", { timeout: 60000 }, asy
   };
   try {
     awxState.longPolls = 25;
-    await Awx.trackJob("myawx", longJob(), 9, 0);
+    await Awx.trackJob(myawx, longJob(), 9, 0);
   } finally {
     Awx.getJobTextOutput = realGet;
     Error.stackTraceLimit = realLimit;
@@ -428,7 +458,7 @@ test("a deviating stdout takes the increment-issue path, once", { timeout: 60000
   try {
     awxState.longPolls = 8;
     awxState.deviations = [4];
-    const result = await Awx.trackJob("myawx", longJob(), 10, 0);
+    const result = await Awx.trackJob(myawx, longJob(), 10, 0);
     assert.equal(result, true, "tracking must still run to completion");
   } finally {
     Job.printJobOutput = realPrint;
@@ -456,7 +486,7 @@ test("two deviations in a row : the SECOND-last output is the re-base, not the l
   try {
     awxState.longPolls = 7;
     awxState.deviations = [4, 5];
-    assert.equal(await Awx.trackJob("myawx", longJob(), 11, 0), true);
+    assert.equal(await Awx.trackJob(myawx, longJob(), 11, 0), true);
   } finally {
     Job.printJobOutput = realPrint;
   }

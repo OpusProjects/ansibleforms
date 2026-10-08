@@ -24,8 +24,9 @@ import ip from "../lib/ip.js";
 import { shellQuote } from "../lib/shell.js";
 import { assertUrlAllowed } from "../lib/hostfilter.js";
 import credentialModel from "../models/credential.model.v2.js";
+import Errors from "../lib/errors.js";
 import Helpers from '../lib/common.js';
-import { vaultRead, mapVaultPayloadToCredential } from "../lib/vault.js";
+import { readSecret, mapPayloadToCredential, parseInlineSecret } from "../secrets/providers/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -216,18 +217,29 @@ const fnCredentials = async function(name,fallbackname="",credJqe=null){
   var result=undefined
   if(name){
     try{
-      // Inline HashiCorp Vault lookup: "vault:secret/data/foo" or "vault:foo"
-      // (the latter uses VAULT_DEFAULT_MOUNT). No DB credential row required.
-      if (typeof name === "string" && name.toLowerCase().startsWith("vault:")) {
-        const path = name.slice(6).trim()
-        const payload = await vaultRead(path)
+      // Straight from a secret store, no credential row needed :
+      //   "secret:<store>:<ref>"  e.g. "secret:cyberark:Safe=Linux;Object=root"
+      //   "vault:<path>"          the store named `vault` (HashiCorp Vault)
+      const inline = parseInlineSecret(name)
+      if (inline) {
+        const payload = await readSecret(inline.store, inline.ref)
         let projected = payload
         if (credJqe) {
           projected = await jq.run(combinedJqDef + credJqe, payload, { input: "json", output: "json" })
         }
-        result = mapVaultPayloadToCredential(projected)
+        result = mapPayloadToCredential(projected)
       } else {
-        result = await credentialModel.findByName(name,fallbackname)
+        // the exact name first, with every column of the row ; then the name as a
+        // regex, then the fallback - as the docs have always promised
+        result = await credentialModel.findByName(name)
+        if (!result) {
+          try {
+            result = await credentialModel.resolveCredential(name, fallbackname)
+          } catch (e) {
+            if (!(e instanceof Errors.NotFoundError)) throw e
+            logger.warning(`fnCredentials : no credential matches '${name}'${fallbackname ? ` or '${fallbackname}'` : ""}`)
+          }
+        }
         if (result && credJqe) {
           // Allow callers to reshape a stored credential too (rare, but symmetric).
           result = await jq.run(combinedJqDef + credJqe, result, { input: "json", output: "json" })

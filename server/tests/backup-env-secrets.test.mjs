@@ -45,7 +45,6 @@ vi.mock("../src/lib/logger.js", () => ({
 const appConfig = (await import("./__mocks__/app.config.js")).default;
 const before = { ...appConfig };
 appConfig.configPath = path.join(tmp, "config.yaml");
-appConfig.formsPath = path.join(tmp, "forms.yaml");
 appConfig.formsFolderPath = path.join(tmp, "forms");
 appConfig.backupPath = path.join(tmp, "backups");
 

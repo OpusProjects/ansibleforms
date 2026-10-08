@@ -1,10 +1,10 @@
 <script setup>
-import axios from "axios";
-import { toast } from "vue-sonner";
-import TokenStorage from "@/lib/TokenStorage";
-import State from "@/lib/State";
-import Profile from "@/lib/Profile";
-import { useAppStore } from "@/stores/app";
+import axios from 'axios';
+import { toast } from 'vue-sonner';
+import TokenStorage from '@/lib/TokenStorage';
+import State from '@/lib/State';
+import Profile from '@/lib/Profile';
+import { useAppStore } from '@/stores/app';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
@@ -17,7 +17,7 @@ const busy = ref(false);
 
 // keep in sync with the server (logo.controller.js) ; the server re-validates
 // the type with magic-byte sniffing and enforces the size limit anyway
-const allowedTypes = ["image/png", "image/jpeg", "image/webp", "image/gif", "image/svg+xml"];
+const allowedTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/svg+xml'];
 const maxBytes = 900 * 1024;
 
 function onFileChange(e) {
@@ -27,24 +27,26 @@ function onFileChange(e) {
   if (!file) return;
   if (!allowedTypes.includes(file.type)) {
     toast.error(t('logo.invalidType'));
-    fileInput.value.value = "";
+    fileInput.value.value = '';
     return;
   }
   if (file.size > maxBytes) {
     toast.error(t('logo.tooLarge'));
-    fileInput.value.value = "";
+    fileInput.value.value = '';
     return;
   }
   selectedFile.value = file;
   const reader = new FileReader();
-  reader.onload = () => { preview.value = reader.result; };
+  reader.onload = () => {
+    preview.value = reader.result;
+  };
   reader.readAsDataURL(file);
 }
 
 function clearPreview() {
   selectedFile.value = null;
   preview.value = null;
-  fileInput.value.value = "";
+  fileInput.value.value = '';
 }
 
 async function upload() {
@@ -52,12 +54,12 @@ async function upload() {
   busy.value = true;
   try {
     const formData = new FormData();
-    formData.append("logo", selectedFile.value);
+    formData.append('logo', selectedFile.value);
     await axios.post(`/api/v2/logo`, formData, TokenStorage.getAuthenticationMultipart());
     toast.success(t('logo.uploaded'));
     selectedFile.value = null;
     preview.value = null;
-    fileInput.value.value = "";
+    fileInput.value.value = '';
     await State.loadLogo();
   } catch (err) {
     const error = err.response?.data?.error || err.message;
@@ -90,12 +92,25 @@ onMounted(async () => {
 <template>
   <AppNav />
   <div class="flex-shrink-0">
-    <main class="d-flex flex-nowrap container-xxl">
+    <main class="d-flex flex-nowrap af-settings-layout">
       <AppSidebar />
-      <AppSettings v-if="authenticated" icon="image" :title="t('logo.title')" :description="t('logo.description')">
+      <AppSettings v-if="authenticated" icon="image" :title="t('sidebar.logo')" :description="t('logo.description')">
         <template #actions>
-          <BsButton icon="upload" :colorClass="!selectedFile || busy ? 'secondary' : 'primary'" :disabled="!selectedFile || busy" @click="upload()">{{ t('logo.uploadButton') }}</BsButton>
-          <BsButton v-if="store.customLogo && !store.logoIsDefault" cssClass="ms-3" icon="trash" :disabled="busy" @click="removeLogo()">{{ t('logo.remove') }}</BsButton>
+          <BsButton
+            icon="upload"
+            :colorClass="!selectedFile || busy ? 'secondary' : 'primary'"
+            :disabled="!selectedFile || busy"
+            @click="upload()"
+            >{{ t('logo.uploadButton') }}</BsButton
+          >
+          <BsButton
+            v-if="store.customLogo && !store.logoIsDefault"
+            cssClass="ms-3"
+            icon="trash"
+            :disabled="busy"
+            @click="removeLogo()"
+            >{{ t('logo.remove') }}</BsButton
+          >
         </template>
         <template #default>
           <div class="row">
@@ -114,9 +129,16 @@ onMounted(async () => {
               </div>
             </div>
           </div>
-          <hr class="my-3">
+          <hr class="my-3" />
           <div>
-            <input ref="fileInput" class="form-control" style="max-width: 400px;" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" @change="onFileChange" />
+            <input
+              ref="fileInput"
+              class="form-control"
+              style="max-width: 400px"
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+              @change="onFileChange"
+            />
           </div>
           <div class="form-text mt-3">{{ t('logo.constraints') }}</div>
         </template>
@@ -130,7 +152,7 @@ onMounted(async () => {
   max-height: 40px;
 }
 /* an svg without width/height has no size of its own (see .logo in BsNavBar.vue) */
-.logo-preview[src^="data:image/svg+xml"] {
+.logo-preview[src^='data:image/svg+xml'] {
   height: 40px;
   width: auto;
 }

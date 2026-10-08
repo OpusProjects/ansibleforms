@@ -198,21 +198,27 @@ describe('the data table paginator', () => {
     // AppAdminMulti reloads every 60s in two steps (itemList=[], then the new array), so
     // the paginator was remounted twice a minute and threw the reader back to page 1.
     const block = src.slice(src.indexOf('const filterVersion'), src.indexOf('// ─── Cell rendering'));
-    expect(block).toMatch(/watch\(\[globalFilter, columnFilters\]/);
-    expect(block).not.toMatch(/watch\(filteredItems, \(\) => \{ filterVersion/);
+    expect(block).toMatch(/watch\(\s*\[globalFilter, columnFilters\]/);
+    expect(block).not.toMatch(/watch\(filteredItems, \(\) => \{\s*filterVersion/);
   });
 
   it('still clears the shift-select anchor when the data changes', () => {
     const block = src.slice(src.indexOf('const filterVersion'), src.indexOf('// ─── Cell rendering'));
-    expect(block).toMatch(/watch\(filteredItems, \(\) => \{ anchorIndex = null; \}\)/);
+    expect(block).toMatch(/watch\(filteredItems, \(\) => \{\s*anchorIndex = null;\s*\}\)/);
   });
 
   it('hiding a column drops its filter', () => {
     // the filter inputs render only for visible columns, but filteredItems applies every
     // entry - so a hidden column kept filtering with no control left to clear it
-    const fn = src.slice(src.indexOf('function toggleColumn'), src.indexOf('// Restore column visibility'));
-    expect(fn).toMatch(/delete next\[key\]/);
-    expect(fn).toMatch(/columnFilters\.value = next/);
+    const block = src.slice(src.indexOf('function toggleColumn'), src.indexOf('// Restore column visibility'));
+    const drop = block.slice(block.indexOf('function dropFiltersOfHidden'));
+    expect(drop).toMatch(/delete next\[k\]/);
+    expect(drop).toMatch(/columnFilters\.value = next/);
+    // both ways of hiding a column go through it : the picker and a preset
+    const toggle = block.slice(0, block.indexOf('\n}\n'));
+    expect(toggle).toMatch(/dropFiltersOfHidden\(s\)/);
+    const preset = block.slice(block.indexOf('function applyPreset'));
+    expect(preset.slice(0, preset.indexOf('\n}\n'))).toMatch(/dropFiltersOfHidden\(s\)/);
   });
 });
 
@@ -263,7 +269,7 @@ describe('the paginator does not emit a slice from an out-of-range page', () => 
 
   it('change() skips while the page is beyond the last one', () => {
     const fn = src.slice(src.indexOf('function change()'), src.indexOf('// COMPUTED'));
-    expect(fn).toMatch(/if\(pages\.value\.length && page\.value > pages\.value\.length\) return/);
+    expect(fn).toMatch(/if ?\(pages\.value\.length && page\.value > pages\.value\.length\) return/);
   });
 
   it('an empty list still emits, so a cleared table is not stuck', () => {
@@ -298,7 +304,7 @@ describe('admin list pages: dialogs and dependent defaults', () => {
     // setFieldDefaults - which has no "only when empty" guard - overwrote a saved
     // redirect_uri with the computed default. Measured: opening an OAuth2 provider
     // showed the default instead of the stored custom URL, and Save persisted it.
-    const w = src.slice(src.indexOf('fields.value.forEach(field => {\n        if (field.dependency)'), src.length);
+    const w = src.slice(src.indexOf('fields.value.forEach((field) => {\n  if (field.dependency)'), src.length);
     expect(w.slice(0, 400)).toMatch(/if \(loadingItem\.value\) return;/);
   });
 
@@ -314,7 +320,7 @@ describe('the settings page saves both halves or neither', () => {
 
   it('an invalid settings half stops the combined save', () => {
     const fn = src.slice(src.indexOf('async function saveActiveTab'), src.indexOf('async function loadEnvironmentVariables'));
-    expect(fn).toMatch(/if \(await saveSettings\(\) === false\) return;/);
+    expect(fn).toMatch(/if \(\(?await saveSettings\(\)\)? === false\) return;/);
   });
 
   it('and says why instead of returning silently', () => {
@@ -371,7 +377,7 @@ describe('a query field inside a subform is bound to its ROOT form', () => {
   it('the resolver returns what it resolved', () => {
     const fn = form.slice(form.indexOf('function replacePlaceholderInString'), form.indexOf('function replacePlaceholders(item)'));
     expect(fn).toMatch(/resolved\[match\[1\]\] = fieldvalue/);
-    expect(fn).toMatch(/"resolved": resolved/);
+    expect(fn).toMatch(/"?resolved"?: resolved/);
   });
 });
 
@@ -455,7 +461,7 @@ describe('one failed job poll does not end the polling', () => {
 
   it('a sustained outage still gives up', () => {
     expect(fn).toMatch(/pollFailures\.value < 5/);
-    expect(fn).toMatch(/status\.value = "error"/);
+    expect(fn).toMatch(/status\.value = ['"]error['"]/);
   });
 
   it('a successful poll forgets earlier failures', () => {
@@ -492,7 +498,7 @@ describe('form field rules cannot take the whole form down', () => {
 
 describe('a non-numeric prefill is ignored, not submitted as NaN', () => {
   const src = read('src/components/AppForm.vue');
-  const fn = src.slice(src.indexOf('if (item.type == "number")'), src.indexOf('if (item.type == "checkbox")'));
+  const fn = src.slice(src.indexOf("if (item.type == 'number')"), src.indexOf("if (item.type == 'checkbox')"));
 
   it('parseInt is gone', () => {
     // it RETURNS NaN and never throws, so the catch was unreachable: ?count=abc launched
@@ -594,7 +600,7 @@ describe('a stale field response cannot overwrite a newer one', () => {
   });
 
   it('the query response is dropped when it is no longer current', () => {
-    const at = src.indexOf('await axios.post(`/api/v2/query');
+    const at = src.search(/await axios\.post\(\s*`\/api\/v2\/query/);
     const around = src.slice(at - 300, at + 900);
     expect(around).toMatch(/const gen = fieldGeneration\.value\[item\.name\] \|\| 0;/);
     expect(around).toMatch(/if \(!isCurrentGeneration\(item\.name, gen\)\) return;/);
@@ -607,7 +613,7 @@ describe('a refresh does not overwrite what the user is typing', () => {
   it('the refresh path honours the editable toggle', () => {
     // clearing the status makes the next tick re-run the expression over form.value, so a
     // field with editable: true and refresh: "30s" lost the typed value every 30s
-    const fn = src.slice(src.indexOf('if (item.refresh && typeof item.refresh == "string")'), src.indexOf('if (item.refresh && typeof item.refresh == "string")') + 900);
+    const fn = src.slice(src.indexOf("if (item.refresh && typeof item.refresh == 'string')"), src.indexOf("if (item.refresh && typeof item.refresh == 'string')") + 900);
     expect(fn).toMatch(/!fieldOptions\.value\[item\.name\]\?\.editable/);
   });
 });
@@ -629,7 +635,7 @@ describe('a form is not submitted while its fields are still resolving', () => {
 
   it('it resolves on canSubmit and gives up after the timeout', () => {
     const fn = appForm.slice(appForm.indexOf('function awaitStable'), appForm.indexOf('defineExpose({'));
-    expect(fn).toMatch(/if \(canSubmit\.value\) \{ clearInterval\(timer\); resolve\(true\); \}/);
+    expect(fn).toMatch(/if \(canSubmit\.value\) \{\s*clearInterval\(timer\);\s*resolve\(true\);\s*\}/);
     expect(fn).toMatch(/resolve\(false\)/);
     expect(fn).toMatch(/clearInterval\(timer\)/);
   });
@@ -656,7 +662,7 @@ describe('a form is not submitted while its fields are still resolving', () => {
   });
 
   it('the main AppForm carries the ref the gate is reached through', () => {
-    expect(formPage).toMatch(/<AppForm v-if="!wizardActive" ref="mainForm"/);
+    expect(formPage).toMatch(/<AppForm\s+v-if="!wizardActive"\s+ref="mainForm"/);
   });
 });
 
@@ -664,10 +670,10 @@ describe('no rules builder can be taken down by a bad regex', () => {
   // Validation rules are built inside computeds, so a `new RegExp` that throws there
   // kills the whole component - blank form, console error, instead of one field's
   // message. AppForm was fixed first; the same construct existed unguarded in
-  // AppTableField (both halves) and unprotected against a malformed pattern in
+  // the table field (gone since 7.0.0) and unprotected against a malformed pattern in
   // AppAdminMulti and change-password. This test covers every site so a new one cannot
   // reintroduce it.
-  // AppForm and AppTableField build their rules from the shared engine since 6.4 ; the
+  // AppForm builds its rules from the shared engine since 6.4 ; the
   // engine's own guard is run in 'form field rules cannot take the whole form down'
   const sites = [
     ['src/components/AppAdminMulti.vue', 'field.regex.expression'],
@@ -698,7 +704,7 @@ describe('no rules builder can be taken down by a bad regex', () => {
     // a sweep, so a new unguarded site anywhere is caught
     const files = [
       'src/pages/login.vue', 'src/pages/logs.vue', 'src/pages/change-password.vue',
-      'src/components/AppForm.vue', 'src/components/AppTableField.vue', 'src/components/AppAdminMulti.vue',
+      'src/components/AppForm.vue', 'src/components/AppAdminMulti.vue',
       '../server/src/lib/formEngine/validate.js',
     ];
     const unguarded = [];
@@ -717,27 +723,6 @@ describe('no rules builder can be taken down by a bad regex', () => {
   });
 });
 
-describe('a table field does not mutate the array its parent owns', () => {
-  // `rows` WAS props.values - every splice/push/assign wrote straight into it. AppForm
-  // hands the same array object to form[name] AND defaults[name], both by reference, so
-  // deleting a row also mutated the defaults: when the field was later re-evaluated and
-  // "reset to its default", the deleted row never came back and the original prefill of a
-  // stored job was gone for the session. Every mutation already emits update:model-value,
-  // so the copy loses nothing.
-  const src = read('src/components/AppTableField.vue');
-
-  it('both assignments copy', () => {
-    const code = src.replace(/\/\/[^\n]*/g, '');
-    expect(code).not.toMatch(/rows\.value = newValues;/);
-    expect(code).not.toMatch(/rows\.value = props\.values;/);
-    expect([...code.matchAll(/rows\.value = Array\.isArray\([^)]*\) \? \[\.\.\./g)].length).toBe(2);
-  });
-
-  it('changes still reach the parent by emit', () => {
-    expect(src).toMatch(/emit\('update:model-value', rows\.value\)/);
-  });
-});
-
 describe('an emptied dropdown clears the value it had selected', () => {
   // getLabels() wraps its whole body in `if (props.values.length > 0)`, and recalc() -
   // the only thing that emits update:modelValue - lives inside it. So when the list went
@@ -747,9 +732,9 @@ describe('an emptied dropdown clears the value it had selected', () => {
   it('both sibling components recalc when values change', () => {
     for (const f of ['src/components/BsInputSelectAdvancedTable.vue', 'src/components/BsInputSelectAdvancedTable2.vue']) {
       const src = read(f);
-      const at = src.indexOf('watch(() => props.values');
+      const at = src.search(/watch\(\s*\(\) => props\.values/);
       expect(at).toBeGreaterThan(-1);
-      const fn = src.slice(at, src.indexOf('{ deep: true });', at));
+      const fn = src.slice(at, src.indexOf('{ deep: true }', at));
       expect(fn).toMatch(/recalc\(\);/);
     }
   });
@@ -762,7 +747,7 @@ describe('a null first row does not blank the whole select', () => {
   it('both components guard the first element', () => {
     for (const f of ['src/components/BsInputSelectAdvancedTable.vue', 'src/components/BsInputSelectAdvancedTable2.vue']) {
       const code = read(f).replace(/\/\/[^\n]*/g, '');
-      expect(code).toMatch(/if \(!props\.values\[0\] \|\| typeof props\.values\[0\] !== "object"\)/);
+      expect(code).toMatch(/if \(!props\.values\[0\] \|\| typeof props\.values\[0\] !== ['"]object['"]\)/);
     }
   });
 
@@ -777,7 +762,6 @@ describe('the file picker is always reset', () => {
   // the input kept its value: re-picking the SAME path fired no change event and the
   // button was dead until a different file was chosen
   it.each([
-    'src/components/AppTableField.vue',
     'src/components/AppListField.vue',
   ])('%s resets in a finally', (file) => {
     const src = read(file);
@@ -807,32 +791,9 @@ describe('dropdown positioning actually runs', () => {
     // AppForm mutates containerSize.value.x/.width IN PLACE, so the getter returns the
     // same object and a shallow watcher could never fire - the width stayed stale after
     // a window resize until the dropdown was closed and reopened
-    const at = src.indexOf('watch(() => props.containerSize');
+    const at = src.search(/watch\(\s*\(\) => props\.containerSize/);
     expect(at).toBeGreaterThan(-1);
     expect(src.slice(at, at + 240)).toMatch(/\{ deep: true \}/);
-  });
-});
-
-describe('an untouched row is not marked as updated', () => {
-  const src = read('src/components/AppTableField.vue');
-
-  it('the comparison uses what will be stored', () => {
-    // getEditedItemValues() flattens an enum+valueColumn value back to its primitive, and
-    // opening the edit pane inflates it - so comparing the live buffer meant
-    // {host:"web01"} vs {host:{name:"web01",...}} and an untouched row was written back
-    // flagged as changed, reaching the playbook as an update
-    const at = src.indexOf('const stored = getEditedItemValues();');
-    expect(at).toBeGreaterThan(-1);
-    const fn = src.slice(at, at + 700);
-    expect(fn).toMatch(/canonical\(original\) !== canonical\(stored\)/);
-    expect(fn).toMatch(/rows\.value\[editIndex\.value\] = stored;/);
-    expect(fn).not.toMatch(/JSON\.stringify\(original\) !== JSON\.stringify\(edited\)/);
-  });
-
-  it('the comparison ignores property order', () => {
-    const code = src.replace(/\/\/[^\n]*/g, '');
-    expect(code).toMatch(/function canonical\(value\)/);
-    expect(code).toMatch(/Object\.keys\(value\)\.sort\(\)/);
   });
 });
 
@@ -856,7 +817,7 @@ describe('an empty percentage cell is not a progress bar', () => {
   it('the guard requires an actual number', () => {
     const at = src.indexOf('function getProgressHtml');
     const fn = src.slice(at, at + 900);
-    expect(fn).toMatch(/String\(value\)\.trim\(\) !== ""/);
+    expect(fn).toMatch(/String\(value\)\.trim\(\) !== (""|'')/);
     expect(fn).toMatch(/value !== null && value !== undefined/);
   });
 
@@ -884,7 +845,7 @@ describe('applying a default does not steal keyboard focus', () => {
 
   it('select() distinguishes a click from a programmatic default', () => {
     expect(code).toMatch(/function select\(i, fromUser = true\)/);
-    expect(code).toMatch(/if \(fromUser\) emit\("isSelected"\)/);
+    expect(code).toMatch(/if \(fromUser\) emit\(['"]isSelected['"]\)/);
   });
 
   it('every call inside getLabels is marked programmatic', () => {
@@ -917,8 +878,9 @@ describe('a cron field is validated with the same check the editor uses', () => 
   });
 
   it('every cron field uses the shared validator', () => {
-    const cronFields = settings.split('\n').filter(l => /type:\s*"cron"/.test(l));
-    expect(cronFields.length).toBe(3);   // repositories, datasources, schedules
+    // one entry per field object, not per line : a formatted field spans several lines
+    const cronFields = [...settings.matchAll(/\{[^{}]*\}/g)].map(m => m[0]).filter(l => /type:\s*['"]cron['"]/.test(l));
+    expect(cronFields.length).toBe(2);   // repositories, schedules
     for (const line of cronFields) {
       expect(line).toMatch(/validator: cronValidator\(t\)/);
       expect(line).not.toMatch(/regex:/);
@@ -963,21 +925,21 @@ describe('a flat admin list identifies rows by value, not by position', () => {
 
   it('and no flat branch mints an index as an id any more', () => {
     expect(src).not.toMatch(/map\(\(val, idx\) => \(\{ id: idx/);
-    // both api versions have a flat/primitive branch and both must go through it
-    expect([...src.matchAll(/=> flatRow\(val\)/g)].length).toBe(2);
+    // the flat/primitive branch must go through it
+    expect([...src.matchAll(/=> flatRow\(val\)/g)].length).toBe(1);
   });
 
   it('a flat record is looked up by id rather than by array position', () => {
     // itemList[itemId] only worked while a flat id happened to BE the index; it was
     // already wrong for a flat list of objects, whose id comes from the record's own key
     expect(src).not.toMatch(/item\.value = itemList\.value\[itemId\.value\]/);
-    expect(src).toMatch(/itemList\.value\.find\(r => r\[idKey\] === itemId\.value\)/);
+    expect(src).toMatch(/itemList\.value\.find\(\(?r\)? => r\[idKey\] === itemId\.value\)/);
   });
 
   it('bulk delete acts only on rows that are still there', () => {
     const fn = src.slice(src.indexOf('async function bulkDelete'), src.indexOf('// HOOKS'));
     expect(fn).toMatch(/const present = new Map\(itemList\.value\.map/);
-    expect(fn).toMatch(/\.filter\(id => present\.has\(id\)\)/);
+    expect(fn).toMatch(/\.filter\(\(?id\)? => present\.has\(id\)\)/);
     // the old fallback sent ?name=<numeric id> and asked the server to delete an entry
     // literally named "3" - a wrong request rather than an error
     expect(fn).not.toMatch(/row\?\.name \?\? id/);
@@ -1020,7 +982,7 @@ describe('"could not be evaluated" is not raised for a field that is only waitin
   const src = read('src/components/AppForm.vue').replace(/\/\/[^\n]*/g, '');
 
   it('both warning sites skip a field whose dependency is still empty', () => {
-    const sites = [...src.matchAll(/addWarningOnce\(`unresolved:/g)];
+    const sites = [...src.matchAll(/addWarningOnce\(\s*`unresolved:/g)];
     expect(sites).toHaveLength(2);
     for (const m of sites) {
       expect(src.slice(Math.max(0, m.index - 120), m.index)).toMatch(/if \(!dependsOnEmptyField\(item\.name\)\) \{/);
@@ -1035,6 +997,6 @@ describe('"could not be evaluated" is not raised for a field that is only waitin
 
   it('the warning is taken back once the field evaluates', () => {
     const fn = src.slice(src.indexOf('function setFieldStatus'), src.indexOf('function setFieldStatus') + 800);
-    expect(fn).toMatch(/if \(status === "fixed"\) clearWarningOnce\(`unresolved:\$\{fieldname\}`\)/);
+    expect(fn).toMatch(/if \(status === ['"]fixed['"]\) clearWarningOnce\(`unresolved:\$\{fieldname\}`\)/);
   });
 });

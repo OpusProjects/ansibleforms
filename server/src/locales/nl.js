@@ -72,9 +72,12 @@ export default {
     storedJobDeleted: "Opgeslagen invoer verwijderd",
     storedJobNoAccess: "U heeft geen toegang tot deze opgeslagen invoer",
     oauth2Added: "OAuth2 provider toegevoegd",
-    awxAdded: "AAP toegevoegd",
-    awxNotFound: "AAP niet gevonden",
-    awxConnectionOk: "AAP verbinding is OK",
+    secretStoreAdded: "Secret store toegevoegd",
+    secretStoreNotFound: "Secret store niet gevonden",
+    secretStoreConnectionOk: "Secret store verbinding is OK",
+    runnerAdded: "Runner toegevoegd",
+    runnerNotFound: "Runner niet gevonden",
+    runnerConnectionOk: "Runner verbinding is OK",
     userNotFound: "Gebruiker niet gevonden",
     currentPasswordRequired: "Uw huidige wachtwoord is vereist om een nieuw wachtwoord in te stellen",
     currentPasswordWrong: "Het huidige wachtwoord is niet juist",
@@ -168,11 +171,43 @@ export default {
     jobevent: {
       button: "Job bekijken",
       regards: "Met vriendelijke groet,<br>AnsibleForms",
-      launch: "Job is gestart{by}.",
-      relaunch: "Job is herstart{by}.",
-      delete: "Job is verwijderd{by}.",
-      approve: "Job is goedgekeurd{by} en wordt verder uitgevoerd.",
-      reject: "Job is afgewezen{by}.",
+      // without a user, and with the user who did it : a whole sentence
+      // each, so every language puts the name where its word order needs it
+      launch: "Job is gestart.",
+      relaunch: "Job is herstart.",
+      delete: "Job is verwijderd.",
+      approve: "Job is goedgekeurd en wordt verder uitgevoerd.",
+      reject: "Job is afgewezen.",
+      launchBy: "Job is gestart door {user}.",
+      relaunchBy: "Job is herstart door {user}.",
+      deleteBy: "Job is verwijderd door {user}.",
+      approveBy: "Job is goedgekeurd door {user} en wordt verder uitgevoerd.",
+      rejectBy: "Job is afgewezen door {user}.",
+    },
+    // the subjects : "AnsibleForms '<form>' [<type>] (<id>) - <one of these>", and the
+    // approval one when the form gives no title
+    subject: {
+      approval: "AnsibleForms goedkeuringsaanvraag",
+      event: {
+        launch: "Gestart",
+        relaunch: "Herstart",
+        delete: "Verwijderd",
+        approve: "Goedgekeurd",
+        reject: "Afgewezen",
+      },
+      status: {
+        success: "Geslaagd",
+        failed: "Mislukt",
+        aborted: "Afgebroken",
+        rejected: "Afgewezen",
+        abandoned: "Achtergelaten",
+        warning: "Waarschuwing",
+      },
+    },
+    // the test mail of the mail settings
+    test: {
+      subject: "Testbericht",
+      body: "<p>Dit is een testbericht van AnsibleForms</p>",
     },
   },
 }

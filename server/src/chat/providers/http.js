@@ -1,6 +1,7 @@
 'use strict';
 import { Agent, fetch as undiciFetch } from 'undici';
 import { ChatError } from '../errors.js';
+import { stripTrailingSlashes } from '../../lib/url.js';
 
 // "Ignore certificate errors" : a proxy on a self-signed certificate. Its own fetch with its
 // own agent, so only these calls skip the check - never the rest of the server.
@@ -75,7 +76,7 @@ export function networkReason(err) {
 /** a url with a path appended in front of its query string (Azure keeps api-version there) */
 export function withPath(base, path) {
   const [head, query] = String(base).split('?');
-  return `${head.replace(/\/+$/, '')}${path}${query ? `?${query}` : ''}`;
+  return `${stripTrailingSlashes(head)}${path}${query ? `?${query}` : ''}`;
 }
 
 /** the url with ?api-version=... when the settings name one and the url does not carry it */

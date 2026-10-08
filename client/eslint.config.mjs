@@ -23,6 +23,8 @@ export default defineConfig([
       sourceType: 'module',
       globals: {
         ...globals.browser,
+        // the client's build identity, defined at build time by vite.config.mjs
+        __CLIENT_BUILD__: 'readonly',
         ...globals.node,
         ...autoImportGlobals,
       },

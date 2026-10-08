@@ -5,7 +5,16 @@ import TokenStorage from '@/lib/TokenStorage';
 import Helpers from '@/lib/Helpers';
 import yaml from 'yaml';
 import { useI18n } from 'vue-i18n';
-import { authProviders, roleOptionKeys, roleOptionDefaults, roleOptionLabel, parseProviderEntry, formatProviderEntry, roleToEditable, serializeRole } from '@/config/roles';
+import {
+  authProviders,
+  roleOptionKeys,
+  roleOptionDefaults,
+  roleOptionLabel,
+  parseProviderEntry,
+  formatProviderEntry,
+  roleToEditable,
+  serializeRole,
+} from '@/config/roles';
 import { constantsToArray, arrayToConstants } from '@/config/constants';
 
 // Detect ytt templating: any line starting (after optional whitespace) with `#@`
@@ -55,7 +64,7 @@ export const DEFAULT_CATEGORY_ICON = 'bars';
 // get one here too, otherwise saving fails validation on a field the user
 // never touched.
 function normalizeCategories(cats) {
-  return (cats || []).map(c => {
+  return (cats || []).map((c) => {
     const cat = { name: c.name || '', icon: c.icon || DEFAULT_CATEGORY_ICON };
     if (c.items) cat.items = normalizeCategories(c.items);
     return cat;
@@ -69,7 +78,7 @@ function normalizeCategories(cats) {
 // AppMenuItem.inCategory), which compares the names literally, so a stray space
 // would leave the entry unreachable.
 function buildCategories(cats) {
-  return cats.map(c => {
+  return cats.map((c) => {
     const cat = { name: (c.name || '').trim(), icon: c.icon || DEFAULT_CATEGORY_ICON };
     if (c.items && c.items.length > 0) cat.items = buildCategories(c.items);
     return cat;

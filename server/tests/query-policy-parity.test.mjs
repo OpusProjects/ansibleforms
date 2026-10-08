@@ -1,9 +1,6 @@
-// A guard that only one API version enforces is not a guard.
-//
-// /api/v2/query was bound to the form definition so an ordinary user cannot send SQL of
-// their own. /api/v1/query was left taking req.body.query verbatim, and it is mounted
-// with nothing but `authobj` - so the whole fix was bypassable by changing v2 to v1 in
-// the URL. The policy now lives in lib/queryPolicy.js and both controllers call it.
+// /api/v2/query is bound to the form definition, so an ordinary user cannot send SQL of
+// their own. The policy lives in lib/queryPolicy.js (API v1, which once bypassed it, is
+// gone since 7.0.0).
 import { test, describe, beforeEach, vi } from "vitest";
 import assert from "node:assert/strict";
 import { readFileSync } from "fs";
@@ -36,7 +33,6 @@ const { substitute } = await import("../src/lib/queryPolicy.js");
 // the sql that layer would build from what it was handed
 const ranSql = () => substitute(ranWith.query, ranWith.values);
 
-const v1 = (await import("../src/controllers/v1/query.controller.js")).default;
 const v2 = (await import("../src/controllers/v2/query.controller.js")).default;
 
 function makeRes() {
@@ -64,7 +60,7 @@ beforeEach(() => {
   };
 });
 
-describe.each([["v1", () => v1], ["v2", () => v2]])("%s enforces the same policy", (name, get) => {
+describe.each([["v2", () => v2]])("%s enforces the policy", (name, get) => {
   const controller = get();
 
   test("a raw query from an ordinary user is refused, and never runs", async () => {
@@ -108,12 +104,11 @@ describe.each([["v1", () => v1], ["v2", () => v2]])("%s enforces the same policy
   });
 });
 
-describe("neither controller re-implements the policy", () => {
+describe("the controller does not re-implement the policy", () => {
   const here = path.dirname(fileURLToPath(import.meta.url));
   const read = (p) => readFileSync(path.join(here, p), "utf8");
 
   test.each([
-    ["v1", "../src/controllers/v1/query.controller.js"],
     ["v2", "../src/controllers/v2/query.controller.js"],
   ])("%s delegates to lib/queryPolicy", (name, file) => {
     const src = read(file);

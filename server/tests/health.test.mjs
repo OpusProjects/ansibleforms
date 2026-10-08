@@ -22,23 +22,31 @@ let dbHandler = async () => [];
 vi.mock("../src/models/db.model.js", () => ({
   default: { do: async (sql, vars) => { queries.push(sql); return await dbHandler(sql, vars); } },
 }));
-let vaultState = { configured: false, info: null, error: null };
+let storeState = { stores: [], info: null, error: null };
+let runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000", is_default: 1 }], error: null };
+  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000", is_default: 1 }], error: null };
 let ldapRow = null;
 // a fully patched schema by default, matching the mocked manifest above
 let schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
-vi.mock("../src/lib/vault.js", () => ({
+// the secret stores : rows from the model, the connection test from the provider registry
+vi.mock("../src/models/secretStore.model.js", () => ({
+  default: { findAll: async () => storeState.stores },
+}));
+// the runners : one reachable RTE by default, the healthy case since 7
+vi.mock("../src/models/runner.model.js", () => ({
   default: {
-    isConfigured: () => vaultState.configured,
-    vaultCheck: async () => { if (vaultState.error) throw new Error(vaultState.error); return vaultState.info; },
+    findAll: async () => runnerState.runners,
+    check: async (runner) => { if (runnerState.error) throw new Error(runnerState.error); return { version: "7.3.0", name: runner.name }; },
   },
-  setCacheTtl: () => 0,
+}));
+vi.mock("../src/secrets/providers/index.js", () => ({
+  checkStore: async () => { if (storeState.error) throw new Error(storeState.error); return storeState.info; },
 }));
 vi.mock("../src/models/schema.model.js", () => ({
   default: { isProvisioned: async () => true },
   // The real manifest shape : an empty one must not silently report 'complete'.
   // Two entries, so a finding can be attributed to the right one - and both are real
-  // patch names, because there is one patch function per MAJOR version (4, 5, 6) and
-  // no patchVersion7 exists.
+  // patch names, because there is one patch function per MAJOR version (4 to 7).
   SCHEMA_MANIFEST: {
     base: { tables: ["jobs", "settings"] },
     patches: {
@@ -64,10 +72,24 @@ vi.mock("../src/services/cron.service.js", () => ({
       system: new Map([["nightlyBackup", { nextRun: () => new Date("2030-01-01T00:00:00Z") }]]),
       schedules: new Map(),
       repositories: new Map(),
-      datasources: new Map(),
+    },
+    // the real describe(), over the mocked registry
+    describe() {
+      const tasks = [...this.jobs.system.entries()].map(([name, t]) => {
+        const next = t.nextRun();
+        return { name, nextRun: next ? next.toISOString() : null };
+      });
+      return { counts: { system: this.jobs.system.size, schedules: this.jobs.schedules.size, repositories: this.jobs.repositories.size }, tasks, lastResync: null };
     },
   },
 }));
+// this process is the worker by default (AF_ROLE unset, the lock held) ; an app node is not
+let holdsLock = true;
+let nodesState = [];
+vi.mock("../src/lib/workerLock.js", () => ({ holdsWorkerLock: () => holdsLock }));
+vi.mock("../src/lib/nodes.js", () => ({ listNodes: async () => nodesState }));
+// the designer lock row, or null when free
+let lockRow = null;
 
 const appConfig = (await import("./__mocks__/app.config.js")).default;
 const Cmd = (await import("./__mocks__/cmd.js")).default;
@@ -95,18 +117,22 @@ beforeEach(async () => {
   appConfig.backupPath = path.join(tmpRoot, "backups");
   appConfig.lockPath = path.join(tmpRoot, "ansibleForms.lock");
   appConfig.configPath = path.join(tmpRoot, "config.yaml");
-  appConfig.formsPath = path.join(tmpRoot, "forms.yaml");
   appConfig.formsFolderPath = path.join(tmpRoot, "forms");
   appConfig.mysqldumpCommand = "mariadb-dump";
   // real directory : repositoriesCheck now asks whether each row has a working tree on disk
   appConfig.repoPath = path.join(tmpRoot, "repositories");
   await fs.mkdir(appConfig.repoPath, { recursive: true });
   await fs.mkdir(appConfig.backupPath, { recursive: true });
-  vaultState = { configured: false, info: null, error: null };
+  storeState = { stores: [], info: null, error: null };
+  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000", is_default: 1 }], error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
+  lockRow = null;
+  holdsLock = true;
+  nodesState = [{ id: "af-test", role: "all", version: "7.3.0", isWorker: true, alive: true, ageSeconds: 3, self: true }];
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {
     if (/VERSION\(\)/.test(sql)) return [{ version: "8.4.9" }];
+    if (/FROM AnsibleForms.`designer_lock`/.test(sql)) return lockRow ? [lockRow] : [];
     if (/repositories/.test(sql)) return [];
     if (/FROM AnsibleForms.`ldap`/.test(sql)) return ldapRow ? [ldapRow] : [];
     if (/information_schema.tables/.test(sql)) return schemaState.tables.map((t) => ({ t }));
@@ -157,7 +183,7 @@ describe("health reports problems, not just ok", () => {
   test("a lock held right now is ok, and names the holder", async () => {
     const now = new Date();
     const stamp = now.toISOString().slice(0, 19).replace("T", " ");
-    await fs.writeFile(appConfig.lockPath, `username: alice\ntype: local\ncreated: ${stamp}\n`);
+    lockRow = { data: JSON.stringify({ username: "alice", type: "local", created: stamp }) };
     const r = await Health.check();
     assert.equal(statusOf(r, "designerLock"), "ok");
     assert.match(checkOf(r, "designerLock").value, /alice/);
@@ -166,7 +192,7 @@ describe("health reports problems, not just ok", () => {
   test("a lock held for longer than the threshold is a warning", async () => {
     const old = new Date(Date.now() - 30 * 3600000);
     const stamp = old.toISOString().slice(0, 19).replace("T", " ");
-    await fs.writeFile(appConfig.lockPath, `username: alice\ntype: local\ncreated: ${stamp}\n`);
+    lockRow = { data: JSON.stringify({ username: "alice", type: "local", created: stamp }) };
     const r = await Health.check();
     assert.equal(statusOf(r, "designerLock"), "warning");
     assert.match(checkOf(r, "designerLock").value, /alice for \d+h/);
@@ -174,13 +200,13 @@ describe("health reports problems, not just ok", () => {
   });
 
   test("a lock with no timestamp is a warning : it cannot be shown to be active", async () => {
-    await fs.writeFile(appConfig.lockPath, "username: alice\ntype: local\n");
+    lockRow = { data: JSON.stringify({ username: "alice", type: "local" }) };
     const r = await Health.check();
     assert.equal(statusOf(r, "designerLock"), "warning");
     assert.match(checkOf(r, "designerLock").detail.reason, /no usable creation time/);
   });
 
-  test("no lock file is ok", async () => {
+  test("no lock is ok", async () => {
     await writeBackup(folderDaysAgo(0), "-- dump\n");
     const r = await Health.check();
     assert.equal(statusOf(r, "designerLock"), "ok");
@@ -224,7 +250,8 @@ describe("health reports problems, not just ok", () => {
   });
 
   test("a failed repository is an error and healthy ones are counted", async () => {
-    vaultState = { configured: false, info: null, error: null };
+    storeState = { stores: [], info: null, error: null };
+  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000", is_default: 1 }], error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {
@@ -304,7 +331,8 @@ describe("health reports problems, not just ok", () => {
   });
 
   test("a database failure becomes that row's error, not a broken page", async () => {
-    vaultState = { configured: false, info: null, error: null };
+    storeState = { stores: [], info: null, error: null };
+  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000", is_default: 1 }], error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {
@@ -313,22 +341,45 @@ describe("health reports problems, not just ok", () => {
     };
     const r = await Health.check();
     assert.equal(statusOf(r, "database"), "error");
-    // every other check still reported (14 since the secrets check was removed)
-    assert.equal(r.checks.length, 15);
+    // every other check still reported (17 : runners and nodes joined in 7)
+    assert.equal(r.checks.length, 17);
   });
 
-  // An AWX/AAP-only instance has no local ansible and does not need one, so the row is
-  // omitted rather than reading 'not installed' for ever.
-  test("the ansible row is absent when there is no local ansible", async () => {
+  // Since 7 jobs run on runners : none at all means no form can run a job
+  test("runners : none is a warning that says what to add", async () => {
+    runnerState = { runners: [], error: null };
+    const r = await Health.check();
+    assert.equal(statusOf(r, "runners"), "warning");
+    assert.match(checkOf(r, "runners").detail.reason, /Connections > Runners/);
+  });
+
+  test("runners : no default RTE is a warning, playbook forms without runner: would fail", async () => {
+    runnerState = { runners: [{ name: "rte-1", type: "rte" }, { name: "aap", type: "awx", is_default: 1 }], error: null };
+    const r = await Health.check();
+    assert.equal(statusOf(r, "runners"), "warning");
+    assert.equal(checkOf(r, "runners").value, "no default RTE");
+  });
+
+  test("runners : an unreachable one is an error naming it", async () => {
+    runnerState = { runners: [{ name: "rte-1", type: "rte" }, { name: "aap", type: "awx" }], error: "the RTE at http://rte:8000 is unreachable : ECONNREFUSED" };
+    const r = await Health.check();
+    assert.equal(statusOf(r, "runners"), "error");
+    assert.match(checkOf(r, "runners").value, /2 of 2 runner\(s\) need attention : rte-1, aap/);
+  });
+
+  // Since 7 the app runs no playbook itself (an RTE does), so it never asks for an ansible
+  // version - even where one happens to be installed.
+  test("there is no ansible row : the app does not run ansible-playbook", async () => {
     const saved = Cmd.executeSilentCommand;
+    const asked = [];
     Cmd.executeSilentCommand = async (cmd) => {
-      if (String(cmd?.command || '').startsWith('ansible-playbook')) throw new Error('command not found');
-      return 'mock-output';
+      asked.push(String(cmd?.command || ''));
+      return 'ansible-playbook [core 2.17.9]';
     };
     try {
       const r = await Health.check();
-      assert.equal(infoOf(r, "ansible"), undefined, "no ansible row when the tool is missing");
-      // and the rest of the block is unaffected
+      assert.equal(infoOf(r, "ansible"), undefined);
+      assert.equal(asked.some((c) => c.startsWith('ansible-playbook')), false, "ansible is never called");
       assert.ok(infoOf(r, "version"), "other info rows still present");
     } finally {
       Cmd.executeSilentCommand = saved;
@@ -347,27 +398,27 @@ describe("health reports problems, not just ok", () => {
     assert.match(w.value, /folders writable$/);
   });
 
-  // Vault is optional, so an unconfigured instance is not a fault - but once configured a
-  // dead server or an expired token breaks every vault-backed credential.
-  test("vault is ok when not configured, and makes no network call", async () => {
+  // Secret stores are optional, so an instance without one is not a fault - but once one is
+  // used a dead server or an expired token breaks every credential that reads from it.
+  test("secret stores are ok when none is configured, and make no network call", async () => {
     const r = await Health.check();
-    assert.equal(statusOf(r, "vault"), "ok");
-    assert.equal(checkOf(r, "vault").value, "not configured");
+    assert.equal(statusOf(r, "secretStores"), "ok");
+    assert.equal(checkOf(r, "secretStores").value, "none configured");
   });
 
   test("a vault token near the end of its ttl is a warning", async () => {
-    vaultState = { configured: true, error: null, info: { addr: "https://v:8200", namespace: null, kvVersion: 2, defaultMount: "secret", renewable: true, ttl: 2 * 24 * 3600, policies: ["default"] } };
+    storeState = { stores: [{ name: "vault", type: "vault", url: "https://v:8200" }], error: null, info: { addr: "https://v:8200", namespace: null, kvVersion: 2, defaultMount: "secret", renewable: true, ttl: 2 * 24 * 3600, policies: ["default"] } };
     const r = await Health.check();
-    assert.equal(statusOf(r, "vault"), "warning");
-    assert.match(checkOf(r, "vault").value, /expires in 2d/);
-    assert.match(checkOf(r, "vault").detail.reason, /renews this token/i);
+    assert.equal(statusOf(r, "secretStores"), "warning");
+    assert.match(checkOf(r, "secretStores").value, /expires in 2d/);
+    assert.match(checkOf(r, "secretStores").detail.reason, /renews this token/i);
   });
 
-  test("a token that does not expire is ok, and an unreachable vault is an error", async () => {
-    vaultState = { configured: true, error: null, info: { addr: "https://v:8200", namespace: null, kvVersion: 2, defaultMount: "secret", renewable: false, ttl: 0, policies: [] } };
-    assert.equal(statusOf(await Health.check(), "vault"), "ok");
-    vaultState = { configured: true, error: "Could not reach Vault", info: null };
-    assert.equal(statusOf(await Health.check(), "vault"), "error");
+  test("a token that does not expire is ok, and an unreachable store is an error", async () => {
+    storeState = { stores: [{ name: "vault", type: "vault", url: "https://v:8200" }], error: null, info: { addr: "https://v:8200", namespace: null, kvVersion: 2, defaultMount: "secret", renewable: false, ttl: 0, policies: [] } };
+    assert.equal(statusOf(await Health.check(), "secretStores"), "ok");
+    storeState = { stores: [{ name: "vault", type: "vault", url: "https://v:8200" }], error: "Could not reach Vault", info: null };
+    assert.equal(statusOf(await Health.check(), "secretStores"), "error");
   });
 
   // The page must never BIND to ldap : that is an authentication attempt against the
@@ -462,6 +513,35 @@ describe("health reports problems, not just ok", () => {
     assert.match(JSON.stringify(checkOf(r, "scheduler").detail), /nightlyBackup/);
   });
 
+  // an app node (AF_ROLE=app) runs no scheduler : it shows the worker's, from its node row
+  test("an app node shows the scheduler of the live worker", async () => {
+    holdsLock = false;
+    nodesState = [
+      { id: "app-1", role: "app", version: "7.3.0", isWorker: false, alive: true, ageSeconds: 2, self: true },
+      { id: "worker-1", role: "worker", version: "7.3.0", isWorker: true, alive: true, ageSeconds: 4, self: false,
+        info: { scheduler: { counts: { system: 7, schedules: 2, repositories: 1 }, tasks: [{ name: "nightlyBackup", nextRun: "2030-01-01T00:00:00.000Z" }] } } },
+    ];
+    const r = await Health.check();
+    assert.equal(statusOf(r, "scheduler"), "ok");
+    assert.equal(checkOf(r, "scheduler").detail.worker, "worker-1");
+    assert.match(checkOf(r, "scheduler").value, /7 system, 2 schedules/);
+  });
+
+  test("an app node without a live worker reports it : nothing runs in the background", async () => {
+    holdsLock = false;
+    nodesState = [{ id: "app-1", role: "app", version: "7.3.0", isWorker: false, alive: true, ageSeconds: 2, self: true }];
+    const r = await Health.check();
+    assert.equal(statusOf(r, "scheduler"), "error");
+    assert.equal(checkOf(r, "scheduler").value, "no worker");
+  });
+
+  test("nodes on different versions are a warning", async () => {
+    nodesState.push({ id: "app-2", role: "app", version: "7.2.0", isWorker: false, alive: true, ageSeconds: 5, self: false });
+    const r = await Health.check();
+    assert.equal(statusOf(r, "nodes"), "warning");
+    assert.match(checkOf(r, "nodes").value, /7\.3 and 7\.2/);
+  });
+
   test("every check is always present", async () => {
     const r = await Health.check();
     const keys = r.checks.map((c) => c.key).sort();
@@ -470,7 +550,7 @@ describe("health reports problems, not just ok", () => {
     // runtime moved to `info` because they have no failing value.
     assert.deepEqual(keys, [
       "backupTooling", "configSeed", "database", "designerLock", "disk", "expressions",
-      "jobs", "lastBackup", "ldap", "repositories", "scheduler", "schema", "storage", "vault", "writable",
+      "jobs", "lastBackup", "ldap", "nodes", "repositories", "runners", "scheduler", "schema", "secretStores", "storage", "writable",
     ]);
     // and every info entry is status-free by construction
     assert.ok(r.info.length > 0);
@@ -480,7 +560,8 @@ describe("health reports problems, not just ok", () => {
 
 describe("the database check names the engine, not just a version number", () => {
   test("MySQL is identified from @@version_comment", async () => {
-    vaultState = { configured: false, info: null, error: null };
+    storeState = { stores: [], info: null, error: null };
+  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000", is_default: 1 }], error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {
@@ -495,7 +576,8 @@ describe("the database check names the engine, not just a version number", () =>
   });
 
   test("MariaDB is identified, and the suffix is not repeated", async () => {
-    vaultState = { configured: false, info: null, error: null };
+    storeState = { stores: [], info: null, error: null };
+  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000", is_default: 1 }], error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {
@@ -517,8 +599,7 @@ describe("the database check names the engine, not just a version number", () =>
     const r = await Health.check();
     // version is the first row : it is what every support conversation opens with
     assert.equal(r.info[0].key, "version");
-    // 'ansible' is not listed : the global Cmd mock returns an empty version, which is
-    // the no-local-ansible case, and that row is omitted (covered by its own test)
+    // no 'ansible' : the app runs no playbook since 7 (covered by its own test)
     for (const key of ["version", "baseUrl", "authentication", "retention", "mail", "logs", "uptime", "timezone", "node", "platform"]) {
       assert.ok(infoOf(r, key), `expected an info entry for ${key}`);
     }
@@ -552,7 +633,8 @@ describe("the checks added after the first release round", () => {
   });
 
   test("a job stuck in running is a warning", async () => {
-    vaultState = { configured: false, info: null, error: null };
+    storeState = { stores: [], info: null, error: null };
+  runnerState = { runners: [{ name: "rte-1", type: "rte", uri: "http://rte:8000", is_default: 1 }], error: null };
   ldapRow = null;   // ldap disabled unless a test says otherwise
   schemaState = { tables: ["jobs", "settings"], columns: ["settings.default_theme"], indexes: ["jobs.idx_jobs_retention"] };
   dbHandler = async (sql) => {

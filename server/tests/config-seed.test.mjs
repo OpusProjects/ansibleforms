@@ -34,7 +34,7 @@ vi.mock("../src/models/db.model.js", () => ({
 const { validateSeed, interpolateEnv } = await import("../src/lib/seed-schema.js");
 const appConfig = (await import("./__mocks__/app.config.js")).default;
 appConfig.encryptionSecret ||= "0123456789abcdef0123456789abcdef";
-const { buildRecord, listSections, canonicalJson, applyChat } = await import("../src/lib/seed.js");
+const { buildRecord, listSections, canonicalJson, applyChat, differs } = await import("../src/lib/seed.js");
 const seedCrypto = (await import("../src/lib/crypto.js")).default;
 const CrudModel = (await import("../src/models/crud.model.js")).default;
 const Schema = (await import("../src/models/schema.model.js")).default;
@@ -150,13 +150,35 @@ describe("the seed schema refuses anything it does not understand", () => {
   // Two records claiming the same singleton flag never converge : each apply zeroes the
   // others and sets the last, so the flag alternates on every boot and the seed reports
   // an update for ever. ajv cannot express it, same as the duplicate-name rule.
-  test("is_default on two awx entries is rejected", () => {
+  test("is_default on two runners of one type is rejected", () => {
     assert.throws(
-      () => validateSeed({ awx: { items: [
-        { name: "a", uri: "u", is_default: true },
-        { name: "b", uri: "u", is_default: true },
+      () => validateSeed({ runners: { items: [
+        { name: "a", type: "awx", uri: "u", is_default: true },
+        { name: "b", type: "awx", uri: "u", is_default: true },
       ] } }),
-      /is_default on more than one awx entry : a, b/
+      /is_default on more than one runner of type awx : a, b/
+    );
+  });
+
+  test("one default per type is fine : the default rte and the default awx", () => {
+    assert.equal(validateSeed({ runners: { items: [
+      { name: "rte", type: "rte", uri: "u", is_default: true },
+      { name: "aap", type: "awx", uri: "u", is_default: true },
+    ] } }), true);
+  });
+
+  test("the 7.x awx: section still validates, its items count as runners of type awx", () => {
+    // deprecated alias : a default there and one under runners of type awx are two defaults
+    assert.throws(
+      () => validateSeed({
+        awx: { items: [{ name: "old", uri: "u", is_default: true }] },
+        runners: { items: [{ name: "new", type: "awx", uri: "u", is_default: true }] },
+      }),
+      /is_default on more than one runner of type awx : new, old/
+    );
+    assert.throws(
+      () => validateSeed({ awx: { items: [{ name: "x", uri: "u" }] }, runners: { items: [{ name: "x", type: "rte", uri: "u" }] } }),
+      /duplicate runners names : x/
     );
   });
 
@@ -355,6 +377,51 @@ describe("a JSON column is compared canonically, or the row rewrites for ever", 
   test("null and scalars round-trip", () => {
     assert.equal(canonicalJson(null), "null");
     assert.equal(canonicalJson("x"), '"x"');
+  });
+});
+
+describe("secret stores are seedable", () => {
+  const store = { name: "vault", type: "vault", url: "https://vault:8200", token: "${VAULT_TOKEN}", kv_version: 2, cache_ttl_seconds: "60", extra: { a: 1 } };
+
+  test("a secret store and a credential reading from it validate", () => {
+    assert.doesNotThrow(() => validateSeed({
+      secret_stores: { items: [store] },
+      credentials: { items: [{ name: "db", secret_store: "vault", secret_ref: "secret/db" }] },
+    }));
+  });
+
+  test("a store without its type is rejected", () => {
+    assert.throws(() => validateSeed({ secret_stores: { items: [{ name: "v", url: "u" }] } }), /validation failed/);
+  });
+
+  test("an unknown store field is rejected", () => {
+    assert.throws(() => validateSeed({ secret_stores: { items: [{ ...store, tokn: "x" }] } }), /validation failed/);
+  });
+
+  test("stores are applied before the credentials that name them", () => {
+    const keys = listSections.map((s) => s.key);
+    assert.ok(keys.indexOf("secret_stores") < keys.indexOf("credentials"));
+  });
+
+  // extra is a TEXT column holding JSON : an object declared for it must compare by
+  // content, or the row rewrites on every boot
+  test("an object declared for a JSON text column compares by content", () => {
+    assert.equal(differs({ extra: { b: 2, a: 1 } }, { extra: '{"a":1,"b":2}' }), false);
+    assert.equal(differs({ extra: { a: 1 } }, { extra: '{"a":2}' }), true);
+    assert.equal(differs({ extra: { a: 1 } }, { extra: null }), true);
+  });
+});
+
+describe("runners are seedable", () => {
+  test("a runner validates, and lands before the credentials that may run on it", () => {
+    assert.doesNotThrow(() => validateSeed({ runners: { items: [{ name: "rte-vmware", type: "rte", uri: "https://rte:8000", token: "${RTE_TOKEN}", is_default: true }] } }));
+    const keys = listSections.map((s) => s.key);
+    assert.ok(keys.includes("runners"));
+  });
+
+  test("a runner needs name, type and uri ; an unknown field is rejected", () => {
+    assert.throws(() => validateSeed({ runners: { items: [{ name: "x", type: "rte" }] } }), /validation failed/);
+    assert.throws(() => validateSeed({ runners: { items: [{ name: "x", type: "rte", uri: "u", url: "u" }] } }), /validation failed/);
   });
 });
 

@@ -1,86 +1,95 @@
+// The height of the header bar (BsNavBar) ; the settings sidebar (BsSidebar) sticks
+// right below it, so both read it from here. The bar has a 1px bottom border on top of its
+// height : what sticks under it, and sizes itself to the rest of the window, uses the full
+// offset, or the page comes out 1px taller than the window and scrolls.
 :root {
-    --bs-body-color: var(--af-body-color);
-    --bs-body-color-rgb: var(--af-body-color-rgb);
-    --bs-body-bg: var(--af-body-bg);
-    --bs-body-bg-rgb: var(--af-body-bg-rgb);
+  --af-header-height: 68px;
+  --af-header-offset: calc(var(--af-header-height) + 1px);
+}
+
+:root {
+  --bs-body-color: var(--af-body-color);
+  --bs-body-color-rgb: var(--af-body-color-rgb);
+  --bs-body-bg: var(--af-body-bg);
+  --bs-body-bg-rgb: var(--af-body-bg-rgb);
 }
 
 // Darker-orange outline button used for the designer "unsaved / unpushed"
 // indicators (issue #414) ; Bootstrap's warning (#ffc107) reads too light/yellow.
 .btn-outline-orange {
-    @include button-outline-variant(#d97400);
+  @include button-outline-variant(#d97400);
 }
 
 // Override Bootstrap's subtle background colors with theme-aware colors
 .bg-primary-subtle {
-    background-color: var(--af-bg-primary-subtle-color) !important;
+  background-color: var(--af-bg-primary-subtle-color) !important;
 }
 
 .bg-secondary-subtle {
-    background-color: var(--af-bg-secondary-subtle-color) !important;
+  background-color: var(--af-bg-secondary-subtle-color) !important;
 }
 
 .bg-success-subtle {
-    background-color: var(--af-bg-success-subtle-color) !important;
+  background-color: var(--af-bg-success-subtle-color) !important;
 }
 
 .bg-danger-subtle {
-    background-color: var(--af-bg-danger-subtle-color) !important;
+  background-color: var(--af-bg-danger-subtle-color) !important;
 }
 
 .bg-warning-subtle {
-    background-color: var(--af-bg-warning-subtle-color) !important;
+  background-color: var(--af-bg-warning-subtle-color) !important;
 }
 
 .bg-info-subtle {
-    background-color: var(--af-bg-info-subtle-color) !important;
+  background-color: var(--af-bg-info-subtle-color) !important;
 }
 
 .bg-light-subtle {
-    background-color: var(--af-bg-light-subtle-color) !important;
+  background-color: var(--af-bg-light-subtle-color) !important;
 }
 
 .bg-dark-subtle {
-    background-color: var(--af-bg-dark-subtle-color) !important;
+  background-color: var(--af-bg-dark-subtle-color) !important;
 }
 
 // Theme-aware overlay circle colors for icons
 .text-overlay-circle-primary {
-    color: var(--af-overlay-circle-primary) !important;
+  color: var(--af-overlay-circle-primary) !important;
 }
 
 .text-overlay-circle-secondary {
-    color: var(--af-overlay-circle-secondary) !important;
+  color: var(--af-overlay-circle-secondary) !important;
 }
 
 .text-overlay-circle-success {
-    color: var(--af-overlay-circle-success) !important;
+  color: var(--af-overlay-circle-success) !important;
 }
 
 .text-overlay-circle-danger {
-    color: var(--af-overlay-circle-danger) !important;
+  color: var(--af-overlay-circle-danger) !important;
 }
 
 .text-overlay-circle-warning {
-    color: var(--af-overlay-circle-warning) !important;
+  color: var(--af-overlay-circle-warning) !important;
 }
 
 .text-overlay-circle-info {
-    color: var(--af-overlay-circle-info) !important;
+  color: var(--af-overlay-circle-info) !important;
 }
 
 // Add subtle border to overlay circles for better definition in light theme
 .overlay-circle-border {
-    filter: drop-shadow(0 0 1px var(--af-overlay-circle-border));
+  filter: drop-shadow(0 0 1px var(--af-overlay-circle-border));
 }
 
 // Theme-aware overlay icon color (icon on top of circle)
 .text-overlay-icon {
-    color: var(--af-overlay-icon-color) !important;
+  color: var(--af-overlay-icon-color) !important;
 }
 
 // Placeholder styling for input fields
-[data-bs-theme=light] {
+[data-bs-theme='light'] {
   input::placeholder,
   textarea::placeholder,
   select::placeholder {
@@ -90,17 +99,23 @@
   }
 }
 
-[data-bs-theme=dark] {
+[data-bs-theme='dark'] {
   input::placeholder,
   textarea::placeholder,
   select::placeholder {
-    color: #6c757d !important;
-    opacity: 0.5 !important;
+    color: #8b949e !important;
+    opacity: 0.85 !important;
     font-style: italic;
+  }
+  // an unchecked switch : Bootstrap's dark knob and border are barely visible on the dark
+  // background, so both get a lighter grey
+  .form-switch .form-check-input:not(:checked) {
+    --bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba%28255, 255, 255, 0.65%29'/%3e%3c/svg%3e");
+    border-color: rgba(255, 255, 255, 0.35);
   }
 }
 
-[data-bs-theme=color] {
+[data-bs-theme='color'] {
   input::placeholder,
   textarea::placeholder,
   select::placeholder {
@@ -118,17 +133,34 @@
   opacity: 0 !important;
 }
 // Nav tabs with flush card connection
-// Bootstrap's bottom border on the nav is kept on purpose : it is the baseline
-// that closes the top edge of whatever sits under the tab strip (the flush card
-// below overlaps it, a plain `border border-top-0` panel - like the child lists
-// in AppAdminMulti - leans on it).
+// The strip keeps to one line : when the tabs do not fit, it scrolls sideways (with
+// its scrollbar under the tabs) instead of wrapping to a second row.
+// A scrolling element clips what reaches outside its padding box, so the baseline
+// that closes the top edge of whatever sits under the strip is drawn INSIDE it (an
+// inset shadow on its last pixel row) rather than as Bootstrap's bottom border,
+// and the tabs no longer hang 1px below the strip : the active tab's background
+// covers the baseline itself. The flush card below still overlaps that row, and a
+// plain `border border-top-0` panel - like the child lists in AppAdminMulti - still
+// leans on it.
+.nav-tabs {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-bottom: 0;
+  box-shadow: inset 0 -1px 0 var(--bs-border-color);
+  scrollbar-width: thin;
+}
+.nav-tabs .nav-item {
+  flex-shrink: 0;
+}
 .nav-tabs .nav-item:first-child {
   padding-left: 0;
 }
 .nav-tabs .nav-link {
   border: 1px solid var(--bs-border-color);
   border-bottom-color: transparent;
-  margin-bottom: -1px;
+  margin-bottom: 0;
+  white-space: nowrap;
   color: var(--bs-secondary-color);
 }
 // Bootstrap's own `:hover` rule wins over the base rule above and repaints the
@@ -153,10 +185,15 @@
 }
 // The inset marker above replaces Bootstrap's `:focus-visible` box-shadow while
 // `outline: 0` keeps applying, which leaves the active tab without any focus
-// indicator : keep the marker and add the focus ring next to it.
+// indicator : keep the marker and add the focus ring next to it. The ring is drawn
+// inside the tab, as the scrolling strip would cut off one drawn around it.
+.nav-tabs .nav-link:focus-visible {
+  box-shadow: inset 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+}
 .nav-tabs .nav-link.active:focus-visible {
-  box-shadow: inset 0 2px 0 var(--bs-primary),
-              0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+  box-shadow:
+    inset 0 2px 0 var(--bs-primary),
+    inset 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
 }
 // The card AppSettings renders right under a tab strip (it stamps
 // `tab-card-flush-card` on it as soon as the #tabs slot is filled) : pull it up
@@ -202,6 +239,66 @@
   flex: 1 1 auto;
   min-height: 12rem;
   overflow: auto;
+}
+// The settings pages (admin/* and the server log) use the full width : the sidebar sits
+// against the left edge and the content keeps only a small gap on the right, so wide
+// screens are not wasted on centred margins (the tab strip fits on one row there)
+.af-settings-layout {
+  width: 100%;
+  padding-left: 0;
+  padding-right: 2rem; // the same room on the right as between the sidebar and the content
+  column-gap: 2rem; // room between the sidebar and the content
+}
+// The page next to the sidebar may shrink below the width of its content. A flex item
+// does not by default (min-width: auto), so content that scrolls on its own made the page
+// wider than the window instead of scrolling inside it : the settings page's tab strip
+// (1954px wide at 1900px, its Save button cut off) and the awx workflow of a job page
+// (2200px, the job's buttons and output cut off).
+.af-settings-layout > .section {
+  min-width: 0;
+}
+
+// The forms page's category list behaves like the settings sidebar : the same panel
+// color, pinned below the header, one screen high and scrolling on its own. On a phone
+// it stacks above the forms and scrolls with the page.
+.af-forms-row {
+  column-gap: 2rem;
+}
+// the view switch (and the warnings button) sit on the search bar's row, instead of on a
+// row of their own above it ; the search bar is a plain input, so all three are as high
+.af-forms-toolbar > .btn {
+  display: inline-flex;
+  align-items: center;
+}
+
+// the category entries look like the settings and designer menu entries (Bootstrap
+// nav-pills) : rounded corners, the same padding, and the same grey hover
+.af-forms-sidebar .menu-item {
+  padding: 0.5rem 1rem !important;
+  border-radius: var(--bs-nav-pills-border-radius, var(--bs-border-radius));
+  transition: background-color 0.15s ease-in-out;
+  &:not(.active):not(.bg-primary-forced):hover {
+    background-color: var(--bs-secondary-bg);
+  }
+}
+.af-forms-sidebar {
+  min-width: 300px;
+  @media (min-width: 768px) {
+    position: sticky;
+    top: 0; // the top of the scrolling area (#app), which starts below the header
+    align-self: flex-start;
+    height: calc(100vh - var(--af-header-offset));
+    overflow-y: auto;
+  }
+}
+
+// a full height page that also shows the settings sidebar (logs) : the sidebar and the
+// section sit side by side, and the section takes the remaining width
+.af-fill-page > main.af-with-sidebar {
+  flex-direction: row;
+}
+.af-fill-page > main.af-with-sidebar > .section {
+  min-width: 0;
 }
 
 // Vue Datepicker: align the input + popup background with Bootstrap's

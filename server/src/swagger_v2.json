@@ -11,13 +11,14 @@
     { "name": "user", "description": "User management and profile" },
     { "name": "group", "description": "Group management" },
     { "name": "settings", "description": "Application settings and configuration" },
+    { "name": "secretstore", "description": "Secret stores (HashiCorp Vault, ...) that credentials read from" },
+    { "name": "runner", "description": "Runners : where a playbook runs (an RTE container)" },
     { "name": "config", "description": "Form configuration (config.yaml) and designer support" },
     { "name": "ssh", "description": "SSH key management" },
     { "name": "log", "description": "Application log access and download" },
     { "name": "repository", "description": "Git repository management" },
     { "name": "query", "description": "Database query execution" },
     { "name": "expression", "description": "JavaScript expression evaluation" },
-    { "name": "awx", "description": "AWX configuration and management" },
     { "name": "job", "description": "Job management and operations" },
     { "name": "backup", "description": "Backup and restore operations" },
     { "name": "credential", "description": "Credential management and database connection testing" },
@@ -469,54 +470,6 @@
         }
       }
     },
-    "/settings/legacyCheck": {
-      "get": {
-        "tags": ["settings"],
-        "summary": "Check for a legacy forms.yaml",
-        "description": "Returns whether this is a genuine legacy install: a forms.yaml is present and no config.yaml exists yet.",
-        "security": [ { "bearerAuth": [] } ],
-        "responses": {
-          "200": {
-            "description": "Legacy check performed successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "hasLegacy": { "type": "boolean", "description": "True when forms.yaml exists and config.yaml does not" }
-                  }
-                }
-              }
-            }
-          },
-          "500": { "description": "Failed to check for a legacy forms.yaml" }
-        }
-      }
-    },
-    "/settings/convertLegacy": {
-      "put": {
-        "tags": ["settings"],
-        "summary": "Convert forms.yaml to config.yaml",
-        "description": "Renames the legacy forms.yaml to config.yaml. Fails when there is no forms.yaml, or when a config.yaml already exists (it is never overwritten).",
-        "security": [ { "bearerAuth": [] } ],
-        "responses": {
-          "200": {
-            "description": "Legacy file converted successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": { "type": "string" }
-                  }
-                }
-              }
-            }
-          },
-          "500": { "description": "No forms.yaml to convert, config.yaml already exists, or the conversion failed" }
-        }
-      }
-    },
     "/config/mode": {
       "get": {
         "tags": ["config"],
@@ -546,7 +499,7 @@
       "get": {
         "tags": ["config"],
         "summary": "List form names",
-        "description": "Returns a sorted, de-duplicated flat list of the form names, for the form dropdowns of schedules and datasources. Subforms are excluded because they cannot be launched standalone.",
+        "description": "Returns a sorted, de-duplicated flat list of the form names, for the form dropdown of schedules. Subforms are excluded because they cannot be launched standalone.",
         "security": [ { "bearerAuth": [] } ],
         "responses": {
           "200": {
@@ -1253,55 +1206,104 @@
         }
       }
     },
-    "/awx": {
+    "/runner": {
       "get": {
         "security": [ { "bearerAuth": [] } ],
-        "tags": ["awx"],
-        "summary": "List all AWX or filter by name",
-        "parameters": [ { "name": "name", "in": "query", "schema": { "type": "string" }, "required": false } ],
-        "responses": { "200": { "description": "AWX list or single AWX" } }
+        "tags": ["runner"],
+        "summary": "List runners, or one by name (token masked)", "parameters": [ { "name": "name", "in": "query", "required": false, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Runner list or single runner" } }
       },
       "post": {
         "security": [ { "bearerAuth": [] } ],
-        "tags": ["awx"],
-        "summary": "Create a new AWX",
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Awx" } } } },
-        "responses": { "201": { "description": "AWX created" } }
+        "tags": ["runner"],
+        "summary": "Create a runner", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Runner" } } } },
+        "responses": { "201": { "description": "Runner created" }, "400": { "description": "Unknown type or invalid field" } }
       }
     },
-    "/awx/{id}": {
+    "/runner/types": {
       "get": {
         "security": [ { "bearerAuth": [] } ],
-        "tags": ["awx"],
-        "summary": "Get AWX by ID",
-        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
-        "responses": { "200": { "description": "AWX object" }, "404": { "description": "Not found" } }
+        "tags": ["runner"],
+        "summary": "The runner types and what each can run",
+        "responses": { "200": { "description": "Type list" } }
+      }
+    },
+    "/runner/{id}": {
+      "get": {
+        "security": [ { "bearerAuth": [] } ],
+        "tags": ["runner"],
+        "summary": "Get a runner by ID (token masked)", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Runner" }, "404": { "description": "Not found" } }
       },
       "put": {
         "security": [ { "bearerAuth": [] } ],
-        "tags": ["awx"],
-        "summary": "Update AWX by ID",
-        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Awx" } } } },
-        "responses": { "200": { "description": "AWX updated" }, "404": { "description": "Not found" } }
+        "tags": ["runner"],
+        "summary": "Update a runner by ID; a masked token is left unchanged", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Runner" } } } },
+        "responses": { "200": { "description": "Runner updated" }, "404": { "description": "Not found" } }
       },
       "delete": {
         "security": [ { "bearerAuth": [] } ],
-        "tags": ["awx"],
-        "summary": "Delete AWX by ID",
-        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
-        "responses": { "200": { "description": "AWX deleted" }, "404": { "description": "Not found" } }
+        "tags": ["runner"],
+        "summary": "Delete a runner by ID", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Runner deleted" }, "404": { "description": "Not found" } }
       }
     },
-    "/awx/check/{id}": {
-    },
-    "/awx/{id}/check": {
+    "/runner/{id}/check": {
       "post": {
         "security": [ { "bearerAuth": [] } ],
-        "tags": ["awx"],
-        "summary": "Check AWX connection by ID",
-        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
-        "responses": { "200": { "description": "Check result" }, "404": { "description": "Not found" } }
+        "tags": ["runner"],
+        "summary": "Test the connection to a runner", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Connection OK, with the runner health" }, "400": { "description": "Unreachable, refused, or a different release" } }
+      }
+    },
+    "/secretstore": {
+      "get": {
+        "security": [ { "bearerAuth": [] } ],
+        "tags": ["secretstore"],
+        "summary": "List secret stores, or one by name (token and client_key masked)", "parameters": [ { "name": "name", "in": "query", "required": false, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Secret store list or single secret store" } }
+      },
+      "post": {
+        "security": [ { "bearerAuth": [] } ],
+        "tags": ["secretstore"],
+        "summary": "Create a secret store", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SecretStore" } } } },
+        "responses": { "201": { "description": "Secret store created" }, "400": { "description": "Unknown type or invalid field" } }
+      }
+    },
+    "/secretstore/{id}": {
+      "get": {
+        "security": [ { "bearerAuth": [] } ],
+        "tags": ["secretstore"],
+        "summary": "Get a secret store by ID (token and client_key masked)", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Secret store" }, "404": { "description": "Not found" } }
+      },
+      "put": {
+        "security": [ { "bearerAuth": [] } ],
+        "tags": ["secretstore"],
+        "summary": "Update a secret store by ID; a masked token or client_key is left unchanged", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SecretStore" } } } },
+        "responses": { "200": { "description": "Secret store updated" }, "404": { "description": "Not found" } }
+      },
+      "delete": {
+        "security": [ { "bearerAuth": [] } ],
+        "tags": ["secretstore"],
+        "summary": "Delete a secret store by ID", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Secret store deleted" }, "404": { "description": "Not found" } }
+      }
+    },
+    "/secretstore/{id}/check": {
+      "post": {
+        "security": [ { "bearerAuth": [] } ],
+        "tags": ["secretstore"],
+        "summary": "Test the connection to a secret store without reading a secret", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Connection OK, with details" }, "404": { "description": "Not found" } }
+      }
+    },
+    "/secretstore/{id}/mounts": {
+      "get": {
+        "security": [ { "bearerAuth": [] } ],
+        "tags": ["secretstore"],
+        "summary": "The KV mounts a HashiCorp Vault token can see", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Mount list" } }
       }
     },
     "/job": {
@@ -2032,7 +2034,7 @@
           "config"
         ],
         "summary": "Apply the config seed now",
-        "description": "Re-applies the file in CONFIG_SEED_PATH immediately, even when it has not changed (the same as SIGHUP). See docs/seed.md. Requires settings access.",
+        "description": "Re-applies the file in CONFIG_SEED_PATH immediately, even when it has not changed (the same as SIGHUP). See https://ansibleforms.com/seed. Requires settings access.",
         "security": [
           {
             "bearerAuth": []
@@ -2537,26 +2539,45 @@
       }
     },
     "schemas": {
-      "Awx": {
+      "Runner": {
         "type": "object",
-        "description": "AWX configuration object.",
+        "description": "Where a job runs. type rte : a runtime environment container (AF_ROLE=rte) for playbooks. type awx : AWX / Ansible Automation Platform / Ascender for templates.",
+        "required": ["name", "type", "uri"],
         "properties": {
-          "id": { "type": "integer", "description": "Unique identifier for the AWX config.", "example": 1 },
-          "name": { "type": "string", "description": "Name of the AWX instance.", "example": "awx-main" },
-          "description": { "type": "string", "description": "Description of the AWX instance.", "example": "Main AWX server for production" },
-          "is_default": { "type": "boolean", "description": "Whether this AWX is the default.", "example": true },
-          "uri": { "type": "string", "description": "Base URL of the AWX instance.", "example": "https://awx.example.com" },
-          "use_credentials": { "type": "boolean", "description": "Use username/password instead of token.", "example": false },
-          "username": { "type": "string", "description": "Username for AWX (if use_credentials is true).", "example": "admin" },
-          "password": { "type": "string", "description": "Password for AWX (if use_credentials is true).", "example": "secret" },
-          "token": { "type": "string", "description": "API token for AWX (if use_credentials is false).", "example": "awxapitoken123" },
-          "ignore_certs": { "type": "boolean", "description": "Ignore SSL certificate errors.", "example": false },
-          "ca_bundle": { "type": "string", "description": "CA bundle for SSL verification.", "example": "-----BEGIN CERTIFICATE-----..." }
-        },
-        "security": [
-          { "bearerAuth": [] }
-        ],
-        "required": ["name", "uri"]
+          "name": { "type": "string", "example": "rte-vmware" },
+          "type": { "type": "string", "enum": ["rte", "awx"] },
+          "description": { "type": "string" },
+          "uri": { "type": "string", "example": "https://rte-vmware:8000" },
+          "token": { "type": "string", "description": "rte : its RTE_TOKEN. awx : an API token (or use_credentials)" },
+          "use_credentials": { "type": "boolean", "description": "awx : sign in with username and password instead of a token" },
+          "username": { "type": "string" },
+          "password": { "type": "string", "description": "Stored encrypted ; shown masked" },
+          "ignore_certs": { "type": "boolean" },
+          "ca_bundle": { "type": "string" },
+          "is_default": { "type": "boolean", "description": "Used by playbook forms that name no runner" }
+        }
+      },
+      "SecretStore": {
+        "type": "object",
+        "description": "A secret store. Which fields are used depends on the type.",
+        "required": ["name", "type", "url"],
+        "properties": {
+          "name": { "type": "string", "example": "vault" },
+          "type": { "type": "string", "enum": ["vault", "cyberark_ccp"] },
+          "description": { "type": "string" },
+          "url": { "type": "string", "example": "https://vault.example.com:8200" },
+          "token": { "type": "string", "description": "HashiCorp Vault token" },
+          "namespace": { "type": "string", "description": "Vault Enterprise namespace" },
+          "kv_version": { "type": "integer", "enum": [1, 2], "default": 2 },
+          "default_mount": { "type": "string", "example": "secret" },
+          "app_id": { "type": "string", "description": "CyberArk AppID" },
+          "client_cert": { "type": "string", "description": "CyberArk client certificate (PEM)" },
+          "client_key": { "type": "string", "description": "CyberArk client key (PEM), stored encrypted" },
+          "ignore_certs": { "type": "boolean" },
+          "ca_bundle": { "type": "string" },
+          "cache_ttl_seconds": { "type": "integer", "minimum": 0, "default": 60, "description": "0 reads the secret on every use" },
+          "extra": { "type": "string", "description": "JSON object with options of the store type" }
+        }
       },
       "Credential": {
         "type": "object",
@@ -2564,8 +2585,8 @@
         "properties": {
           "id": { "type": "integer", "description": "Unique identifier for the credential.", "example": 1 },
           "name": { "type": "string", "description": "Credential name.", "example": "db-main" },
-          "user": { "type": "string", "description": "Database user (leave empty when using vault_path).", "example": "dbuser" },
-          "password": { "type": "string", "description": "Database password (leave empty when using vault_path).", "example": "secret" },
+          "user": { "type": "string", "description": "Database user (leave empty when using a secret store).", "example": "dbuser" },
+          "password": { "type": "string", "description": "Database password (leave empty when using a secret store).", "example": "secret" },
           "host": { "type": "string", "description": "Database host.", "example": "localhost" },
           "port": { "type": "integer", "description": "Database port.", "example": 3306 },
           "db_name": { "type": "string", "description": "Database name.", "example": "mydb" },
@@ -2573,7 +2594,9 @@
           "is_database": { "type": "boolean", "description": "Is this a database credential?", "example": true },
           "description": { "type": "string", "description": "Description of the credential.", "example": "Main DB credential" },
           "db_type": { "type": "string", "description": "Type of database (mysql, postgres, etc).", "example": "mysql" },
-          "vault_path": { "type": "string", "description": "Optional HashiCorp Vault path. When set, user and password are read from Vault at this path instead of from the local DB columns.", "example": "secret/data/myapp/prod" }
+          "secret_store": { "type": "string", "description": "Name of the secret store user and password are read from.", "example": "vault" },
+          "secret_ref": { "type": "string", "description": "Where the secret lives in the store, e.g. a Vault path.", "example": "secret/myapp/prod" },
+          "vault_path": { "type": "string", "deprecated": true, "description": "Deprecated since 7, removed in 8 : the same as secret_store 'vault' with this secret_ref.", "example": "secret/data/myapp/prod" }
         },
         "required": ["name"]
   },

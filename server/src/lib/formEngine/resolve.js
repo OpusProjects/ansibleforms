@@ -33,8 +33,8 @@ import { buildFormOutput, listMarkers, canonicalJson } from './output.js';
  *     to choose, and the field is reported as needing input.
  */
 
-const DYNAMIC_TYPES = ["expression", "enum", "table", "html", "yaml", "list", "query"];
-const VALUE_TYPES = ["expression", "html", "yaml", "table", "list"];   // the expression yields the VALUE
+const DYNAMIC_TYPES = ["expression", "enum", "html", "yaml", "list", "query"];
+const VALUE_TYPES = ["expression", "html", "yaml", "list"];   // the expression yields the VALUE
 const OPTION_TYPES = ["enum", "query"];                                // the expression yields the OPTIONS
 export const DEFAULT_MAX_OPTIONS = 200;
 // list rows resolved per launch, all nesting levels together : a row runs its subform's
@@ -47,7 +47,7 @@ export function normalizeFields(fields) {
     const item = { ...f };
     if (item.type == "local") {
       item.hide = item.hide ?? true;
-      item.output = item.output ?? (item.noOutput !== undefined ? !item.noOutput : false);
+      item.output = item.output ?? false;
       item.type = "expression";
       item.runLocal = true;
     }
@@ -198,7 +198,7 @@ export async function resolveForm({
 
   const has = (name) => Object.prototype.hasOwnProperty.call(input, name);
   const valueComputed = (f) => isDynamicField(f) && VALUE_TYPES.includes(f.type)
-    && !(has(f.name) && (f.editable || f.type === 'list' || f.type === 'table'));
+    && !(has(f.name) && (f.editable || f.type === 'list'));
   // `__auto__` on a choice field means "the browser picks" : here the caller picks, always
   const needsInput = (f, value) => !valueComputed(f)
     && ((OPTION_TYPES.includes(f.type) && value === '__auto__') || (!!f.required && isEmptyValue(value, f.type)));
@@ -391,7 +391,7 @@ export async function resolveForm({
     if (isExpression) {
       if (['html', 'expression', 'yaml'].includes(f.type)) patch.value = result;
       if (f.type === 'enum') s.options = [].concat(result ?? []);
-      if (f.type === 'table' || f.type === 'list') patch.value = (dflt ? [].concat(dflt) : [].concat(result ?? []));
+      if (f.type === 'list') patch.value = (dflt ? [].concat(dflt) : [].concat(result ?? []));
       if (result == undefined && dflt != undefined && f.type === 'expression') {
         patch.value = dflt;
         patch.source = 'default';

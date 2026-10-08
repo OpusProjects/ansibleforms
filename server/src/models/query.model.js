@@ -1,6 +1,6 @@
 'use strict';
 import logger from "../lib/logger.js";
-import Credential from "./credential.model.js";
+import Credential from "./credential.model.v2.js";
 import mysql from "../lib/mysql.js";
 import mssql from "../lib/mssql.js";
 import postgres from "../lib/postgres.js";
@@ -56,7 +56,7 @@ Query.findAll = async function (query,jqExpression="",cfg,noLog,values=null) {
     var res
     if(!c.type){ // if no type is given, we try to find the credential
       logger.debug(`[${c.name}] No type is passed, looking up credential`)
-      var cred = await Credential.findByName(c.name)
+      var cred = await Credential.resolveCredential(c.name)
       c.type = cred.db_type || "mysql"
     }
     // substituted per datasource, now that the engine is known - see the `values` note

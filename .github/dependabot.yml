@@ -3,7 +3,8 @@ version: 2
 # Dependabot NEVER proposes a major version : every entry ignores semver-major updates.
 # Majors carry breaking changes by definition, so they are done by hand (npm outdated,
 # read the changelog, decide) and never arrive through a routine-looking pull request.
-# Minor and patch updates are grouped into one pull request per entry per week.
+# Updates are never grouped : every dependency gets its own pull request, so each one can be
+# reviewed, tested and reverted on its own.
 #
 # Every pull request title here must pass the PR / Title check (Conventional Commits), so
 # each entry sets a commit-message prefix : build(deps) for what ships in the image, ci for
@@ -20,9 +21,6 @@ updates:
     ignore:
       - dependency-name: '*'
         update-types: ['version-update:semver-major']
-    groups:
-      client:
-        patterns: ['*']
 
   - package-ecosystem: npm
     directory: /server
@@ -34,9 +32,6 @@ updates:
     ignore:
       - dependency-name: '*'
         update-types: ['version-update:semver-major']
-    groups:
-      server:
-        patterns: ['*']
 
   - package-ecosystem: github-actions
     directory: /
@@ -47,11 +42,10 @@ updates:
     ignore:
       - dependency-name: '*'
         update-types: ['version-update:semver-major']
-    groups:
-      actions:
-        patterns: ['*']
 
-  # Watches the digest pin on the base image in Dockerfile.
+  # Moves the digest pins (the docker updater reads every file named *Dockerfile* in the
+  # directory) : node:24-bookworm(-slim) in Dockerfile, the app, and base-server in
+  # Dockerfile.rte when ansibleforms/base-images publishes a new base image.
   - package-ecosystem: docker
     directory: /
     schedule:
@@ -77,9 +71,6 @@ updates:
     ignore:
       - dependency-name: '*'
         update-types: ['version-update:semver-major', 'version-update:semver-minor']
-    groups:
-      client-6x:
-        patterns: ['*']
 
   - package-ecosystem: npm
     directory: /server
@@ -92,9 +83,6 @@ updates:
     ignore:
       - dependency-name: '*'
         update-types: ['version-update:semver-major', 'version-update:semver-minor']
-    groups:
-      server-6x:
-        patterns: ['*']
 
   - package-ecosystem: docker
     directory: /

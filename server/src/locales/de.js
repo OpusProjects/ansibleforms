@@ -72,9 +72,12 @@ export default {
     storedJobDeleted: "Gespeicherter Job geloescht",
     storedJobNoAccess: "Du hast keinen Zugriff auf diesen gespeicherten Job",
     oauth2Added: "OAuth2-Anbieter hinzugefuegt",
-    awxAdded: "AAP hinzugefuegt",
-    awxNotFound: "AAP nicht gefunden",
-    awxConnectionOk: "AAP-Verbindung ist OK",
+    secretStoreAdded: "Secret Store hinzugefuegt",
+    secretStoreNotFound: "Secret Store nicht gefunden",
+    secretStoreConnectionOk: "Verbindung zum Secret Store ist OK",
+    runnerAdded: "Runner hinzugefügt",
+    runnerNotFound: "Runner nicht gefunden",
+    runnerConnectionOk: "Runner-Verbindung ist OK",
     userNotFound: "Benutzer nicht gefunden",
     currentPasswordRequired: "Zum Festlegen eines neuen Passworts ist Ihr aktuelles Passwort erforderlich",
     currentPasswordWrong: "Das aktuelle Passwort ist nicht korrekt",
@@ -168,11 +171,43 @@ export default {
     jobevent: {
       button: "Job anzeigen",
       regards: "Viele Gruesse,<br>AnsibleForms",
-      launch: "Job wurde gestartet{by}.",
-      relaunch: "Job wurde neu gestartet{by}.",
-      delete: "Job wurde geloescht{by}.",
-      approve: "Job wurde freigegeben{by} und wird weiter ausgefuehrt.",
-      reject: "Job wurde abgelehnt{by}.",
+      // without a user, and with the user who did it : a whole sentence
+      // each, so every language puts the name where its word order needs it
+      launch: "Job wurde gestartet.",
+      relaunch: "Job wurde neu gestartet.",
+      delete: "Job wurde geloescht.",
+      approve: "Job wurde freigegeben und wird weiter ausgefuehrt.",
+      reject: "Job wurde abgelehnt.",
+      launchBy: "Job wurde von {user} gestartet.",
+      relaunchBy: "Job wurde von {user} neu gestartet.",
+      deleteBy: "Job wurde von {user} geloescht.",
+      approveBy: "Job wurde von {user} freigegeben und wird weiter ausgefuehrt.",
+      rejectBy: "Job wurde von {user} abgelehnt.",
+    },
+    // the subjects : "AnsibleForms '<form>' [<type>] (<id>) - <one of these>", and the
+    // approval one when the form gives no title
+    subject: {
+      approval: "AnsibleForms Freigabeanfrage",
+      event: {
+        launch: "Gestartet",
+        relaunch: "Neu gestartet",
+        delete: "Gelöscht",
+        approve: "Freigegeben",
+        reject: "Abgelehnt",
+      },
+      status: {
+        success: "Erfolgreich",
+        failed: "Fehlgeschlagen",
+        aborted: "Abgebrochen",
+        rejected: "Abgelehnt",
+        abandoned: "Verworfen",
+        warning: "Warnung",
+      },
+    },
+    // the test mail of the mail settings
+    test: {
+      subject: "Testnachricht",
+      body: "<p>Dies ist eine Testnachricht von AnsibleForms</p>",
     },
   },
 }

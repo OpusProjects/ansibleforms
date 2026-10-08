@@ -1,5 +1,5 @@
 {
-  "name": "a list of subform rows, models, valueColumn, noOutput and a hidden field in the extravars",
+  "name": "a list of subform rows, models, valueColumn, output: false and a hidden field in the extravars",
   "mirrors": "Helpers.js buildFormOutput",
   "form": {
     "name": "t",
@@ -78,7 +78,7 @@
       {
         "name": "internal",
         "type": "text",
-        "noOutput": true
+        "output": false
       },
       {
         "name": "disks",

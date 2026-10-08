@@ -1,5 +1,8 @@
 // The schedule queue has a concurrency guard that was dead.
 //
+// (Since 7 the claim is a conditional update : two processes reading the same queued row
+// launch it once.)
+//
 // init/index.js refuses to dequeue while any schedule is state='running', and the cron
 // trigger refuses to queue one that is 'running' or 'queued'. But NOTHING ever wrote
 // 'running': queue() wrote 'queued' and launch() wrote 'idle' when it was done. So the
@@ -24,6 +27,22 @@ vi.mock("../src/models/job.model.js", () => ({
   default: { launch: async (args) => { launched = args; return launchImpl(args); } },
 }));
 
+// the claim is one conditional statement : it takes the row only while it is still 'queued'
+vi.mock("../src/models/db.model.js", () => ({
+  default: {
+    do: async (sql) => {
+      if (/SET state='running',.* WHERE id=\? AND state='queued'/.test(sql)) {
+        if (row.state !== "queued") return { affectedRows: 0 };
+        row.state = "running";
+        writes.push("running");
+        return { affectedRows: 1 };
+      }
+      return [];
+    },
+    tryDo: async () => [],
+  },
+}));
+
 // the cron service is only touched for one-time schedules
 vi.mock("../src/services/cron.service.js", () => ({
   default: { removeScheduleJob: () => {}, addScheduleJob: () => {} },
@@ -38,7 +57,7 @@ let writes = [];
 beforeEach(() => {
   launched = null;
   launchImpl = async () => ({ id: 42 });
-  row = { id: 1, name: "nightly", form: "myform", extra_vars: "a: 1", one_time_run: 0 };
+  row = { id: 1, name: "nightly", form: "myform", extra_vars: "a: 1", one_time_run: 0, state: "queued" };
   writes = [];
   CrudModel.findById = async () => ({ ...row });
   CrudModel.findAll = async () => [{ ...row }];
@@ -72,6 +91,16 @@ describe("a launch claims the schedule", () => {
     assert.equal(writes[writes.length - 1], "idle",
       "a stuck 'running' would block every later schedule");
     assert.equal(row.status, "failed");
+  });
+});
+
+describe("two processes, one launch", () => {
+  test("a schedule another process claimed first is not launched again", async () => {
+    await Schedule.launch(1);
+    launched = null;
+    row.state = "running"; // the other process holds it
+    await Schedule.launch(1);
+    assert.equal(launched, null, "the second launch must find the row no longer queued and stop");
   });
 });
 

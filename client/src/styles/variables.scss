@@ -1,15 +1,13 @@
-
-
-$blue:    #008cba;
-$indigo:  #6610f2;
-$purple:  #744fc6;
-$pink:    #ef959c;
-$red:     #dc3545;
-$orange:  #ff8800;
-$yellow:  #ede7b1;
-$green:   #198754;
-$teal:    #9db5b2;
-$cyan:    #0190ce;
+$blue: #008cba;
+$indigo: #6610f2;
+$purple: #744fc6;
+$pink: #ef959c;
+$red: #dc3545;
+$orange: #ff8800;
+$yellow: #ede7b1;
+$green: #198754;
+$teal: #9db5b2;
+$cyan: #0190ce;
 
 $grid-breakpoints: (
   xs: 0,
@@ -17,7 +15,7 @@ $grid-breakpoints: (
   md: 768px,
   lg: 992px,
   xl: 1200px,
-  xxl: 1600px
+  xxl: 1600px,
 );
 
 $container-max-widths: (
@@ -25,7 +23,7 @@ $container-max-widths: (
   md: 720px,
   lg: 960px,
   xl: 1140px,
-  xxl: 1800px
+  xxl: 1800px,
 );
 
 $offcanvas-horizontal-width: 75vw;

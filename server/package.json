@@ -7,19 +7,23 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/ansibleguy76/ansibleforms.git"
+    "url": "git://github.com/ansibleforms/ansibleforms.git"
   },
   "description": "The nodejs backend for the ansible forms web applications",
   "scripts": {
     "start": "NODE_ENV=production node ./",
     "dev": "NODE_ENV=development nodemon --watch src --watch schema --watch config ./index.js",
+    "dev:rte": "NODE_ENV=development AF_ROLE=rte PORT=${PORT:-8010} HTTPS=0 RTE_TOKEN=dev-rte-token-not-a-secret nodemon --watch src --watch config ./index.js",
+    "dev:app": "NODE_ENV=development AF_ROLE=app nodemon --watch src --watch schema --watch config ./index.js",
+    "dev:app2": "NODE_ENV=development AF_ROLE=app PORT=8001 nodemon --watch src --watch schema --watch config ./index.js",
+    "dev:worker": "NODE_ENV=development AF_ROLE=worker PORT=8020 HTTPS=0 nodemon --watch src --watch config ./index.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint . --fix",
     "lint:check": "eslint ."
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "~1.30.1",
+    "@modelcontextprotocol/sdk": "~1.32.0",
     "@outlinewiki/passport-azure-ad-oauth2": "~0.1.0",
     "ajv": "~8.20.0",
     "axios": "~1.20.0",
@@ -42,13 +46,13 @@
     "luxon": "3.7.2",
     "moment": "~2.31.0",
     "moment-timezone": "0.6.5",
-    "mongodb": "~7.6.0",
+    "mongodb": "~7.7.0",
     "mssql": "~12.7.2",
     "multer": "~2.4.0",
     "mysql2": "~3.24.5",
     "node-cache": "~5.1.2",
     "node-jq": "~6.3.1",
-    "nodemailer": "~10.0.13",
+    "nodemailer": "~10.0.14",
     "openid-client": "^6.8.8",
     "oracledb": "~7.0.1",
     "passport": "~0.7.0",
@@ -56,7 +60,7 @@
     "passport-jwt": "~4.0.1",
     "pg": "~8.23.1",
     "read-last-lines": "~1.10.0",
-    "shell-quote": "1.10.0",
+    "shell-quote": "1.12.0",
     "swagger-ui-express": "~5.0.1",
     "thenby": "~1.4.1",
     "undici": "~7.30.0",
@@ -68,9 +72,9 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@vitest/coverage-v8": "^5.0.2",
-    "eslint": "~10.11.0",
-    "globals": "^17.12.0",
+    "@vitest/coverage-v8": "^5.0.3",
+    "eslint": "~10.12.0",
+    "globals": "^17.13.0",
     "nodemon": "~3.1.14",
     "vitest": "^5.0.3"
   },

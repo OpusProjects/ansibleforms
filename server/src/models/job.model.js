@@ -1,22 +1,13 @@
 "use strict";
-import axios from "axios";
 import fs from "fs";
-import yaml from "yaml";
 import moment from "moment";
-import os from "os";
-import { exec } from "child_process";
 import Helpers from "../lib/common.js";
 import Errors from "../lib/errors.js";
 import Settings from "./settings.model.js";
 import logger from "../lib/logger.js";
-import Cmd from "../lib/cmd.js";
-import { shellQuote } from "../lib/shell.js";
 import { safeParse } from "../lib/safejson.js";
-import ansibleConfig from "../../config/ansible.config.js";
 import loggerConfig from "../../config/log.config.js";
-import dbConfig from "../../config/db.config.js";
 import appConfig from "../../config/app.config.js";
-import Repository from "./repository.model.js";
 import mysql from "./db.model.js";
 import Form from "./form.model.js";
 import Expression from "./expression.model.js";
@@ -26,11 +17,15 @@ import { createFormServices } from "../lib/formServices.js";
 import { validateLaunch, describeLaunchErrors, compareExtravars } from "../lib/launchValidation.js";
 import { filterRawFormData, readModelPath, maskPasswords } from "../lib/formEngine/output.js";
 import { sha256 } from "../lib/formEngine/node/hash.js";
-import Credential from "./credential.model.v2.js";
-import AwxModel from "./awx.model.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import i18n from "../lib/i18n.js";
+import { dispatch } from "../runners/orchestrator.js";
+import { getRunner } from "../runners/index.js";
+import Runner from "./runner.model.js";
+import { stripTrailingSlashes } from "../lib/url.js";
+import { nodeId } from "../lib/role.js";
+import { NODE_DEAD_SECONDS } from "../lib/nodes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -42,6 +37,7 @@ function pushForminfoToExtravars(formObj, extravars, creds = {}) {
   const topFields = [
     "template",
     "awx",
+    "runner",
     "playbook",
     "tags",
     "limit",
@@ -178,199 +174,10 @@ function setUserExtravars(extravars, user, formObj, replay = false) {
   return extravars;
 }
 
-function delay(t, v) {
-  return new Promise((resolve) => setTimeout(resolve, t, v));
-}
-
 function getTimestamp() {
   return moment.utc(Date.now()).format("YYYY-MM-DD HH:mm:ss");
 }
 
-var Exec = function () {};
-// start a command with db output
-Exec.executeCommand = (cmd, jobid, counter) => {
-  // a counter to order the output (as it's very fast and the database can mess up the order)
-  var jobstatus = "success";
-  var command = cmd.command;
-  var directory = cmd.directory;
-  var description = cmd.description;
-  var extravars = cmd.extravars;
-  var hiddenExtravars = cmd.hiddenExtravars;
-  var extravarsFileName = cmd.extravarsFileName;
-  var hiddenExtravarsFileName = cmd.hiddenExtravarsFileName;
-  var keepExtravars = cmd.keepExtravars;
-  var task = cmd.task;
-  const ac = new AbortController();
-
-  // execute the procces
-  return new Promise((resolve, reject) => {
-    logger.debug(`${description}, ${directory} > ${Helpers.logSafe(command)}`);
-    try {
-      if (extravarsFileName) {
-        logger.debug(`Storing extravars to file ${extravarsFileName}`);
-        var filepath = path.join(directory, extravarsFileName);
-        fs.writeFileSync(filepath, extravars);
-
-        logger.debug(
-          `Storing hidden extravars to file ${hiddenExtravarsFileName}`
-        );
-        var he_filepath = path.join(directory, hiddenExtravarsFileName);
-        fs.writeFileSync(he_filepath, hiddenExtravars);
-      } else {
-        logger.warning("No filename was given");
-      }
-
-      // adding abort signal
-      var child = exec(command, {
-        cwd: directory,
-        signal: ac.signal,
-        maxBuffer: appConfig.processMaxBuffer,
-        encoding: "UTF-8",
-      });
-
-      // Store the process ID and host identifier in the database for job control
-      if (child.pid) {
-        const hostname = os.hostname();
-        logger.info(`[Job ${jobid}] Process started with PID: ${child.pid} on host: ${hostname}`);
-        mysql.do("UPDATE AnsibleForms.`jobs` SET pid=?, host=? WHERE id=?", [child.pid, hostname, jobid])
-          .then(() => {
-            logger.debug(`[Job ${jobid}] PID ${child.pid} and host ${hostname} stored in database`);
-          })
-          .catch((err) => {
-            logger.error(`[Job ${jobid}] Failed to store PID and host in database: ${err.message}`);
-          });
-      }
-
-      // capture the abort event, logging only
-      ac.signal.addEventListener(
-        "abort",
-        () => {
-          logger.warning("Operator aborted the process");
-        },
-        { once: true }
-      );
-
-      // add output eventlistener to the process to save output
-      child.stdout.on("data", function (data) {
-        // save the output to database
-        Job.createOutput({
-          output: data,
-          output_type: "stdout",
-          job_id: jobid,
-          order: ++counter,
-        })
-          .catch((error) => {
-            logger.error("Failed to create output : ", error);
-          });
-      });
-      // add error eventlistener to the process to save output
-      child.stderr.on("data", async function (data) {
-        // save the output to database
-        try {
-          await Job.createOutput({
-            output: data,
-            output_type: "stderr",
-            job_id: jobid,
-            order: ++counter,
-          });
-        } catch (error) {
-          logger.error("Failed to create output: ", error);
-        }
-      });
-
-      // add exit eventlistener to the process to handle status update
-      child.on("exit", async function (data) {
-        // Clear the PID and host from the database as the process has ended
-        logger.debug(`[Job ${jobid}] Process with PID ${child.pid} has exited`);
-        await mysql.do("UPDATE AnsibleForms.`jobs` SET pid=NULL, host=NULL WHERE id=?", [jobid])
-          .catch((err) => {
-            logger.error(`[Job ${jobid}] Failed to clear PID and host from database: ${err.message}`);
-          });
-        
-        // if the exit was an actual request ; set aborted
-        if (child.signalCode == "SIGTERM") {
-          const abort_requested = await Job.isAbortRequested(jobid);
-          if (abort_requested) {
-            await Job.resetAbortRequested(jobid); // reset the abort requested flag
-            await Job.endJobStatus(
-              jobid,
-              ++counter,
-              "stderr",
-              "aborted",
-              `${task} was aborted by the operator`
-            );
-            reject(`${task} was aborted by the operator`);
-          } else {
-            await Job.endJobStatus(
-              jobid,
-              ++counter,
-              "stderr",
-              "failed",
-              `${task} was aborted by the main process.  Likely some buffer or memory error occured.  Also check the maxBuffer option.`
-            );
-            reject(`${task} was aborted by the main process`);
-          }
-        } else {
-          // if the exit was natural; set the jobstatus (either success or failed)
-          if (data != 0) {
-            jobstatus = "failed";
-            logger.error(`[${jobid}] Failed with code ${data}`);
-            await Job.endJobStatus(
-              jobid,
-              ++counter,
-              "stderr",
-              jobstatus,
-              `[ERROR]: ${task} failed with status (${data})`
-            );
-            reject(`${task} failed with status (${data})`);
-          } else {
-            await Job.endJobStatus(
-              jobid,
-              ++counter,
-              "stdout",
-              jobstatus,
-              `ok: [${task} finished] with status (${data})`
-            );
-            resolve(true);
-          }
-        }
-        if (extravarsFileName && !keepExtravars) {
-          logger.debug(`Removing extavars file ${filepath}`);
-          fs.unlinkSync(filepath);
-        }
-        if (hiddenExtravarsFileName) {
-          fs.unlinkSync(he_filepath);
-        }
-      });
-      // add error eventlistener to the process; set failed
-      child.on("error", async function (data) {
-        // Clear the PID and host from the database as the process has errored
-        logger.debug(`[Job ${jobid}] Process with PID ${child.pid} encountered an error`);
-        await mysql.do("UPDATE AnsibleForms.`jobs` SET pid=NULL, host=NULL WHERE id=?", [jobid])
-          .catch((err) => {
-            logger.error(`[Job ${jobid}] Failed to clear PID and host from database: ${err.message}`);
-          });
-        
-        await Job.endJobStatus(
-          jobid,
-          ++counter,
-          "stderr",
-          "failed",
-          `${task} failed : ` + data
-        );
-      });
-    } catch (e) {
-      Job.endJobStatus(
-        jobid,
-        ++counter,
-        "stderr",
-        "failed",
-        `${task} failed : ` + e
-      );
-      reject();
-    }
-  });
-};
 //job stuff... interaction with job database
 var Job = function (job) {
   if (job.form && job.form != "") {
@@ -404,18 +211,47 @@ var Job = function (job) {
 Job.create = async function (record) {
   // create job
   logger.notice(`Creating job`);
-  const res = await mysql.do("INSERT INTO AnsibleForms.`jobs` set ?", record);
+  // the node that follows this job (tracks it on its runner, drives its steps) : when that
+  // node restarts or dies, its jobs are ended rather than left 'running' for good
+  const res = await mysql.do("INSERT INTO AnsibleForms.`jobs` set ?", { tracker: nodeId, ...record });
   return res.insertId;
 };
 Job.abandon = async function (all = false) {
   // abandon jobs
   logger.notice(`Abandoning jobs`);
+  // Only jobs no runner claimed : one running on an RTE (jobs.host = its name) carries
+  // on when the app restarts, and that RTE cleans up its own jobs when it restarts. The
+  // app runs no playbook itself, so it never claims one.
   var sql =
-    "UPDATE AnsibleForms.`jobs` set status='abandoned',abort_requested=0 where (status='running' or abort_requested) "; // remove all jobs
+    "UPDATE AnsibleForms.`jobs` set status='abandoned',abort_requested=0 where (status='running' or abort_requested) and host IS NULL ";
   if (!all) {
     sql = sql + "and (start < (NOW() - INTERVAL 1 DAY))"; // remove jobs that are 1 day old
   }
   const res = await mysql.do(sql);
+  return res.changedRows;
+};
+// At a process start : the jobs this node followed died with its previous run. `untracked`
+// adds the jobs no node follows (started before 7) ; only the worker's start passes it, so
+// they are swept once per database, not by every app node that starts.
+Job.abandonOwn = async function (tracker, { untracked = false } = {}) {
+  const res = await mysql.do(
+    "UPDATE AnsibleForms.`jobs` set status='abandoned',abort_requested=0 where (status='running' or abort_requested) and host IS NULL and (tracker=?" +
+      (untracked ? " or tracker IS NULL" : "") + ")",
+    [tracker]);
+  return res.changedRows;
+};
+// The worker, every minute : the jobs of a node that stopped answering (its row in `nodes`
+// is older than NODE_DEAD_SECONDS, or gone) - a container that was replaced and will never
+// come back under the same name to clean up after itself. A job belongs to the RTE running it
+// (jobs.host) when there is one - it carries on when the app node that started it goes - and
+// otherwise to the node following it (jobs.tracker).
+Job.abandonDeadNodes = async function (self = nodeId) {
+  const owner = "COALESCE(j.host, j.tracker)";
+  const res = await mysql.do(
+    "UPDATE AnsibleForms.`jobs` j set j.status='abandoned',j.abort_requested=0 " +
+    `where (j.status='running' or j.abort_requested) and ${owner} IS NOT NULL and ${owner}<>? ` +
+    `and NOT EXISTS (SELECT 1 FROM AnsibleForms.\`nodes\` n WHERE n.id=${owner} AND n.last_seen > (NOW() - INTERVAL ? SECOND))`,
+    [self, NODE_DEAD_SECONDS], true);
   return res.changedRows;
 };
 Job.resetAbortRequested = async function (id) {
@@ -476,6 +312,12 @@ Job.printJobOutput = async (data, type, jobid, counter, incrementIssue) => {
     order: counter,
   });
 };
+// the last output line written for a job ; the next one is this + 1. Every writer (the
+// app, an RTE) continues from the database, so two of them never collide.
+Job.lastOrder = async function (jobId) {
+  const res = await mysql.do("SELECT COALESCE(MAX(`order`),0) AS last FROM AnsibleForms.`job_output` WHERE job_id=?", [jobId]);
+  return Number(res?.[0]?.last) || 0;
+};
 Job.isAbortRequested = async function (id) {
   const res = await mysql.do(
     "SELECT abort_requested FROM AnsibleForms.`jobs` WHERE id=?;",
@@ -517,12 +359,11 @@ Job.abort = async function (user, id) {
   }
 
   // A multistep runs each step as a job of its own (jobs.parent_id = the multistep), and
-  // that step's runner only reacts to its OWN row : a playbook (Exec.executeCommand) is
-  // stopped by killing its PID and reads its own flag on exit to end as aborted, and an
-  // AWX job (Awx.trackJob(Workflow Job)) polls its own flag to cancel it. Flagging just the
-  // multistep made it skip the steps that had not started yet, while the step already
-  // running carried on to the end : a playbook kept running for as long as it took, and an
-  // AWX job was never cancelled. So the running step gets the same abort as a single job.
+  // that step's runner - Exec.executeCommand for a playbook, Awx.trackJob(Workflow
+  // Job) for AWX - only watches the flag of its OWN row. Flagging just the multistep made it
+  // skip the steps that had not started yet, while the step already running carried on to
+  // the end : a playbook kept running for as long as it took, and an AWX job was never
+  // cancelled. So the running step gets the same abort as a single job would.
   // Ownership was checked on the multistep above, and its steps run as the same user.
   const runningSteps = await mysql.do(
     "SELECT id FROM AnsibleForms.`jobs` WHERE parent_id=? AND status='running'",
@@ -540,10 +381,9 @@ Job.abort = async function (user, id) {
   return res;
 };
 /**
- * Flags one running job for abort and, when its playbook runs on this host, kills its
- * process (Cmd.killChildren). The flag is what the runner reads : a playbook ends as
- * aborted when it exits with the flag set, and an AWX job is cancelled by Awx.trackJob
- * when it sees the flag. A playbook on another host only gets the flag set.
+ * Flags one running job for abort and asks its runner to cancel it right away (an RTE stops
+ * the playbook, AWX cancels its job). The flag is what actually counts : the runner polls it
+ * and stops the job itself if the direct cancel did not reach it.
  * No access check here - callers do that (Job.abort, and the multistep runner for its
  * own steps).
  *
@@ -559,37 +399,47 @@ Job.requestAbort = async function (id) {
   );
   
   if (res.changedRows == 1) {
-    // Get the PID and host from the database
-    const pidResult = await mysql.do(
-      "SELECT pid, host FROM AnsibleForms.`jobs` WHERE id=?",
-      [id]
-    );
-    
-    const pid = pidResult[0]?.pid;
-    const jobHost = pidResult[0]?.host;
-    const currentHost = os.hostname();
-    
-    if (pid && jobHost) {
-      // Only attempt to kill if this is the correct host
-      if (jobHost === currentHost) {
-        logger.info(`[Job ${id}] Killing process with PID ${pid} on host ${currentHost}`);
-        try {
-          await Cmd.killChildren(pid);
-          logger.info(`[Job ${id}] Successfully sent kill signal to PID ${pid}`);
-        } catch (err) {
-          logger.error(`[Job ${id}] Failed to kill PID ${pid}: ${err.message}`);
-          // Don't throw - the abort flag is set, so the process will still abort on next output
-        }
-      } else {
-        logger.warning(`[Job ${id}] Process is running on different host (job on '${jobHost}', current '${currentHost}'). Abort flag set, waiting for that instance to handle termination.`);
-      }
-    } else if (!pid && !jobHost) {
-      logger.warning(`[Job ${id}] No PID/host found for job, abort flag set but cannot kill process directly`);
-    } else {
-      logger.warning(`[Job ${id}] Incomplete PID info (pid: ${pid}, host: ${jobHost}), abort flag set`);
-    }
+    // The runner running the job sees the flag within seconds and stops it ; a direct
+    // cancel on the runner (an RTE, AWX) stops it at once.
+    cancelOnRunner(id).catch((e) => logger.debug(`[Job ${id}] cancel on the runner failed : ${e.message}`));
   }
   return res;
+};
+// the runner a job was handed to, from jobs.runner (set by the orchestrator)
+async function cancelOnRunner(id) {
+  const rows = await mysql.do("SELECT runner FROM AnsibleForms.`jobs` WHERE id=?", [id]);
+  const name = rows?.[0]?.runner;
+  if (!name) return;
+  const row = await Runner.findByName(name);
+  if (!row) return;
+  const impl = getRunner(row.type);
+  if (impl.cancel) await impl.cancel({ jobId: id, runner: row });
+}
+/**
+ * Replaces the stdout a tracker stored while a job ran with the job's final, complete stdout.
+ *
+ * The final stdout is written first, at the order of the first tracked row, and only then
+ * are the chunks it replaces deleted, so the job never shows an empty log in between. Only
+ * stdout rows are replaced : the error lines written meanwhile (an abort request, a notice)
+ * stay.
+ *
+ * Args:
+ *   jobId (number): the job.
+ *   fromOrder (number): the order of the first row the tracker could have written.
+ *   output (string): the final stdout.
+ *
+ * Returns:
+ *   Promise<void>: settles once the stdout is replaced.
+ */
+Job.replaceTrackedOutput = async function (jobId, fromOrder, output) {
+  if (!output) return;
+  const res = await mysql.do("INSERT INTO AnsibleForms.`job_output` set ?;", [
+    { output, output_type: "stdout", job_id: jobId, order: fromOrder },
+  ]);
+  await mysql.do(
+    "DELETE FROM AnsibleForms.`job_output` WHERE job_id=? AND output_type='stdout' AND `order`>=? AND id<>?",
+    [jobId, fromOrder, res.insertId]
+  );
 };
 Job.deleteOutput = async function (record) {
   // delete last output
@@ -794,11 +644,11 @@ Job.findById = async function (user, id, asText, logSafe = false) {
   
   if (user.roles.includes("admin") || user.options?.showAllJobLogs) {
     query =
-      "SELECT j.id,j.form,j.target,j.status,CONVERT_TZ(j.start, 'UTC', ?) AS start,CONVERT_TZ(j.end, 'UTC', ?) AS end,j.user,j.user_type,j.job_type,j.extravars,j.credentials,j.notifications,j.approval,j.step,j.parent_id,j.awx_id,j.awx_artifacts,j.awx_workflow,j.abort_requested,j.raw_form_data,sj.subjobs,j2.no_of_records,o.counter FROM AnsibleForms.jobs j LEFT JOIN (SELECT parent_id,GROUP_CONCAT(id separator ',') subjobs FROM AnsibleForms.jobs GROUP BY parent_id) sj ON sj.parent_id=j.id,(SELECT COUNT(id) no_of_records FROM AnsibleForms.jobs)j2,(SELECT max(`order`)+1 counter FROM AnsibleForms.job_output WHERE job_output.job_id=?)o WHERE j.id=?;";
+      "SELECT j.id,j.form,j.target,j.status,CONVERT_TZ(j.start, 'UTC', ?) AS start,CONVERT_TZ(j.end, 'UTC', ?) AS end,j.user,j.user_type,j.job_type,j.extravars,j.credentials,j.notifications,j.approval,j.step,j.parent_id,j.awx_id,j.awx_artifacts,j.awx_workflow,j.job_log,j.abort_requested,j.raw_form_data,sj.subjobs,j2.no_of_records,o.counter FROM AnsibleForms.jobs j LEFT JOIN (SELECT parent_id,GROUP_CONCAT(id separator ',') subjobs FROM AnsibleForms.jobs GROUP BY parent_id) sj ON sj.parent_id=j.id,(SELECT COUNT(id) no_of_records FROM AnsibleForms.jobs)j2,(SELECT max(`order`)+1 counter FROM AnsibleForms.job_output WHERE job_output.job_id=?)o WHERE j.id=?;";
     params = [safeTimezone, safeTimezone, id, id];
   } else {
     query =
-      "SELECT j.id,j.form,j.target,j.status,CONVERT_TZ(j.start, 'UTC', ?) AS start,CONVERT_TZ(j.end, 'UTC', ?) AS end,j.user,j.user_type,j.job_type,j.extravars,j.credentials,j.notifications,j.approval,j.step,j.parent_id,j.awx_id,j.awx_artifacts,j.awx_workflow,j.abort_requested,j.raw_form_data,sj.subjobs,j2.no_of_records,o.counter FROM AnsibleForms.jobs j LEFT JOIN (SELECT parent_id,GROUP_CONCAT(id separator ',') subjobs FROM AnsibleForms.jobs GROUP BY parent_id) sj ON sj.parent_id=j.id,(SELECT COUNT(id) no_of_records FROM AnsibleForms.jobs WHERE user=? AND user_type=?)j2,(SELECT max(`order`)+1 counter FROM AnsibleForms.job_output WHERE job_output.job_id=?)o WHERE j.id=? AND ((j.user=? AND j.user_type=?) OR (j.status='approve'));";
+      "SELECT j.id,j.form,j.target,j.status,CONVERT_TZ(j.start, 'UTC', ?) AS start,CONVERT_TZ(j.end, 'UTC', ?) AS end,j.user,j.user_type,j.job_type,j.extravars,j.credentials,j.notifications,j.approval,j.step,j.parent_id,j.awx_id,j.awx_artifacts,j.awx_workflow,j.job_log,j.abort_requested,j.raw_form_data,sj.subjobs,j2.no_of_records,o.counter FROM AnsibleForms.jobs j LEFT JOIN (SELECT parent_id,GROUP_CONCAT(id separator ',') subjobs FROM AnsibleForms.jobs GROUP BY parent_id) sj ON sj.parent_id=j.id,(SELECT COUNT(id) no_of_records FROM AnsibleForms.jobs WHERE user=? AND user_type=?)j2,(SELECT max(`order`)+1 counter FROM AnsibleForms.job_output WHERE job_output.job_id=?)o WHERE j.id=? AND ((j.user=? AND j.user_type=?) OR (j.status='approve'));";
     params = [safeTimezone, safeTimezone, user.username, user.type, id, id, user.username, user.type];
   }
   try {
@@ -829,31 +679,8 @@ Job.findById = async function (user, id, asText, logSafe = false) {
       true
     );
 
-    // Try to read job_log_<jobid>.log if it exists
-    // The log is written by the playbook to: <playbook_dir>/.joblogs/job_log_<id>.log
-    // playbook_dir = ansible base path + optional playbookSubPath (from extravars)
-    let jobLogContent = null;
-    try {
-      const ansibleBasePath = (await Repository.getAnsiblePath()) || ansibleConfig.path;
-      let playbookSubPath = "";
-      const ev = safeParse(job.extravars, {}, `job.extravars id=${id}`);
-      playbookSubPath = ev.__playbookSubPath__ || "";
-      const playbookDir = playbookSubPath
-        ? path.join(ansibleBasePath, playbookSubPath)
-        : ansibleBasePath;
-      const logPath = path.join(playbookDir, ".joblogs", `job_log_${id}.log`);
-      if (fs.existsSync(logPath)) {
-        jobLogContent = fs.readFileSync(logPath, "utf-8");
-      }
-    } catch (e) {
-      // logger.warning, not .warn : this logger is built with winston.config.syslog.levels,
-      // which has no `warn`. The TypeError thrown here escaped to the outer catch, which
-      // returns [] - so a job whose extravars made the try block throw became permanently
-      // unviewable (200 with an empty body) and the AccessDeniedError path never fired.
-      logger.warning(`Could not read job_log_${id}.log: ${e.message}`);
-    }
-
-    return { ...job, ...{ output: Helpers.formatOutput(res, asText), job_log: jobLogContent } };
+    // the job log file a playbook writes is stored on the job by the runner (jobs.job_log)
+    return { ...job, ...{ output: Helpers.formatOutput(res, asText), job_log: job.job_log ?? null } };
   } catch (err) {
     // Rethrow. This used to `return []`, which swallowed the AccessDeniedError thrown a
     // few lines up - the comment above already described the symptom while the cause was
@@ -887,7 +714,7 @@ Job.getRawFormData = async function (user, id) {
     if (!formObj) {
       throw new Errors.NotFoundError(`Form '${job.form}' not found or you don't have access to it`);
     }
-    logger.info(`Form loaded, checking disableRelaunch: ${formObj.disableRelaunch}, allowRelaunch: ${formObj.allowRelaunch}`);
+    logger.info(`Form loaded, checking allowRelaunch: ${formObj.allowRelaunch}`);
     
     assertRelaunchable(job, formObj, user);
     
@@ -938,7 +765,7 @@ Job.getRawFormData = async function (user, id) {
  *     rawFormData next to arbitrary extravars would pass. Computed fields are the server's
  *     evaluation. A wizard form cannot be checked yet, so it is refused.
  *
- * A launch without rawFormData (the v1 API, or a raw REST call leaving it out) cannot be
+ * A launch without rawFormData (a raw REST call leaving it out) cannot be
  * validated, and with enforcement on that is itself a refusal : otherwise leaving it out
  * would be the way around the check.
  *
@@ -964,7 +791,7 @@ async function guardLaunch({ form, formConfig, formObj, user, rawFormData, extra
   const hasFields = (formObj?.fields || []).length > 0;
   let result;
   if (!hasRaw && hasFields) {
-    result = { ok: false, reason: 'no rawFormData was sent (v1 API or a raw REST call), so the field values cannot be validated' };
+    result = { ok: false, reason: 'no rawFormData was sent (a raw REST call), so the field values cannot be validated' };
   } else {
     try {
       result = await validateLaunch({
@@ -1140,67 +967,16 @@ Job.launch = async function ({
     // Send launch notification
     await Job.sendEventNotification(jobid, 'launch', user);
     
-    // the rest is now happening in the background
-    // if credentials are requested, we now get them.
-    var credentials = {};
-
-    // perhaps credentials were passed through extravars, they have precedence over the others !
-    try {
-      const afCreds = extravars.__credentials__ || creds || {};
-      if (afCreds) {
-        for (const [key, value] of Object.entries(afCreds)) {
-          if (value == "__self__") {
-            credentials[key] = {
-              host: dbConfig.host,
-              user: dbConfig.user,
-              port: dbConfig.port,
-              password: dbConfig.password,
-            };
-          } else {
-            logger.notice(`found cred for key ${key}`);
-
-            // if it were AF credentials, we get the credential now
-            try {
-              if (value.includes(",")) {
-                // If value contains a comma, split it and call with two parameters
-                const [part1, part2] = value.split(",").map((val) => val.trim());
-                credentials[key] = await Credential.findByNameRegex(part1, part2);
-              } else {
-                // If no comma, call with one parameter
-                credentials[key] = await Credential.findByNameRegex(value);
-              }
-            } catch (err) {
-              // Log only, do not fail the job : the credential simply stays unset and
-              // the playbook runs without that extra var, as it did before 6.3.
-              logger.error(`Cannot resolve credential '${key}' : ${err.message || err}`);
-            }
-          }
-        }
-      }
-    } catch (err) {
-      var message = `Failed to process credentials : ${err.message}`;
-      logger.error(message);
-    }
-
-    if (jobtype == "ansible") {
-      return await Ansible.launch(
+    // the rest is now happening in the background : the approval gate, then the runner,
+    // which resolves the credentials itself
+    if (jobtype == "ansible" || jobtype == "awx") {
+      return await dispatch({
+        jobId: jobid,
+        jobType: jobtype,
         extravars,
-        credentials,
-        jobid,
-        null,
-        parentId ? null : formObj.approval // if multistep: no individual approvals checks
-      );
-    }
-    if (jobtype == "awx") {
-      return await Awx.launch(
-        extravars,
-        credentials,
-        jobid,
-        null,
-        parentId ? null : formObj.approval, // if multistep: no individual approvals checks,
-        null,
-        notifications
-      );
+        credentialMap: creds,
+        approval: parentId ? null : formObj.approval, // if multistep: no individual approvals checks
+      });
     }
     if (jobtype == "multistep") {
       return await Multistep.launch({
@@ -1277,64 +1053,32 @@ Job.continue = async function ({ form, user, credentials = {}, extravars = {}, j
   // interleaved output, and jobs.pid overwritten by whichever started second, so a later
   // abort killed only one of them. Job.abort already uses this pattern.
   const claimed = await mysql.do(
-    "UPDATE AnsibleForms.`jobs` SET status='running' WHERE id=? AND status='approve'",
-    [jobid]
+    // and the node continuing it follows it from here
+    "UPDATE AnsibleForms.`jobs` SET status='running', tracker=? WHERE id=? AND status='approve'",
+    [nodeId, jobid]
   );
   if (!claimed.affectedRows) {
     logger.warning(`Job ${jobid} is no longer awaiting approval, not continuing`);
     return;
   }
 
-  // the rest is now happening in the background
-  // if credentials are requested, we now get them.
-  credentials = {};
-  if (creds) {
-    for (const [key, value] of Object.entries(creds)) {
-      if (value == "__self__") {
-        credentials[key] = {
-          host: dbConfig.host,
-          user: dbConfig.user,
-          port: dbConfig.port,
-          password: dbConfig.password,
-        };
-      } else {
-        try {
-          if (value.includes(",")) {
-            // If value contains a comma, split it and call with two parameters (fall back credential)
-            const parts = value.split(",").map((val) => val.trim());
-            credentials[key] = await Credential.findByNameRegex(parts[0], parts[1]);
-          } else {
-            // If no comma, call with one parameter
-            credentials[key] = await Credential.findByNameRegex(value);
-          }
-        } catch (err) {
-          logger.error("Failed to find credentials by name : ", err);
-        }
-      }
-    }
-  }
+  // A runner reads the job row, so the row holds the extravars this run continues with :
+  // pushForminfoToExtravars above may have added what the form gained since the launch.
+  const storedExtravars = { ...extravars };
+  delete storedExtravars.__jobid__;
+  await mysql.do("UPDATE AnsibleForms.`jobs` SET extravars=? WHERE id=?", [JSON.stringify(storedExtravars), jobid]);
 
   // Launch job in background and return immediately
   const executeApprovedJob = async () => {
-    if (jobtype == "ansible") {
-      return await Ansible.launch(
+    if (jobtype == "ansible" || jobtype == "awx") {
+      return await dispatch({
+        jobId: jobid,
+        jobType: jobtype,
         extravars,
-        credentials,
-        jobid,
-        ++counter,
-        formObj.approval,
-        true
-      );
-    }
-    if (jobtype == "awx") {
-      return await Awx.launch(
-        extravars,
-        credentials,
-        jobid,
-        ++counter,
-        formObj.approval,
-        true
-      );
+        credentialMap: creds,
+        approval: formObj.approval,
+        approved: true,
+      });
     }
     if (jobtype == "multistep") {
       return await Multistep.launch({
@@ -1361,7 +1105,7 @@ Job.continue = async function ({ form, user, credentials = {}, extravars = {}, j
 };
 /**
  * Whether this user may relaunch this job of this form : the form allows it
- * (allowRelaunch, or the deprecated disableRelaunch) and the user's roles grant
+ * (allowRelaunch) and the user's roles grant
  * allowJobRelaunch. Shared by the plain replay, the raw form data read and the relaunch
  * with changes, so they can never disagree.
  */
@@ -1373,11 +1117,7 @@ function assertRelaunchable(job, formObj, user) {
   if (!seesAll && !(job.user === user?.username && (job.user_type ?? user?.type) === user?.type)) {
     throw new Errors.AccessDeniedError(`You can only relaunch your own jobs`);
   }
-  // Support deprecated 'disableRelaunch: true' — use 'allowRelaunch: false' instead
-  if (formObj.disableRelaunch !== undefined) {
-    logger.warning(`Form '${job.form}' uses deprecated 'disableRelaunch' property. Please use 'allowRelaunch: false' instead.`);
-  }
-  if (formObj.disableRelaunch === true || formObj.allowRelaunch === false) {
+  if (formObj.allowRelaunch === false) {
     throw new Errors.AccessDeniedError(`Form '${job.form}' has job relaunch disabled`);
   }
   if (!user?.options?.allowJobRelaunch) {
@@ -1637,7 +1377,7 @@ Job._buildAndSendEmail = async function ({
 }) {
   try {
     const config = await Settings.findUrl();
-    const url = config.url?.replace(/\/$/g, "");
+    const url = config.url ? stripTrailingSlashes(config.url) : config.url;
 
     if (!url) {
       logger.warning(
@@ -1646,8 +1386,11 @@ Job._buildAndSendEmail = async function ({
       return false;
     }
 
-    // Read template
-    var buffer = fs.readFileSync(`${__dirname}/../templates/${templatePath}`);
+    // Read template : the bundled ones live in templates/email, but a copy mounted
+    // where they used to be (src/templates, documented before 7) still overrides it
+    var legacyTemplate = `${__dirname}/../templates/${templatePath}`;
+    var templateFile = fs.existsSync(legacyTemplate) ? legacyTemplate : `${__dirname}/../../templates/email/${templatePath}`;
+    var buffer = fs.readFileSync(templateFile);
     var message = buffer.toString();
     
     // Default replacements
@@ -1698,7 +1441,7 @@ Job.sendApprovalNotification = async function (approval, extravars, jobid) {
   
   var subject =
     Helpers.replacePlaceholders(approval.title, extravars) ||
-    "AnsibleForms Approval Request";
+    i18n.t(null, 'email.subject.approval');
   var approvalMessage = Helpers.replacePlaceholders(
     approval.message,
     extravars
@@ -1748,7 +1491,7 @@ Job.sendStatusNotification = async function (jobid) {
     }
     
     // Send the mail
-    var subject = `AnsibleForms '${job.form}' [${job.job_type}] (${jobid}) - ${job.status}`;
+    var subject = Job.mailSubject(job, jobid, Job.mailWord('status', job.status));
     
     return await Job._buildAndSendEmail({
       recipients: notifications.recipients,
@@ -1796,19 +1539,10 @@ Job.sendEventNotification = async function (jobid, eventType, user = null) {
       return false;
     }
 
-    // Event-specific subject and message content
-    const eventTitles = {
-      'launch': 'Launched',
-      'relaunch': 'Relaunched',
-      'delete': 'Deleted',
-      'approve': 'Approved',
-      'reject': 'Rejected'
-    };
-    
-    const byStr = user ? ' by ' + user.username : '';
-    const eventMessage = i18n.t(null, `email.jobevent.${eventType}`, { by: byStr });
+    // Event-specific subject and message content, in the server's language
+    const eventMessage = Job.eventMessage(eventType, user);
 
-    var subject = `AnsibleForms '${job.form}' [${job.job_type}] (${jobid}) - ${eventTitles[eventType]}`;
+    var subject = Job.mailSubject(job, jobid, Job.mailWord('event', eventType));
     
     return await Job._buildAndSendEmail({
       recipients: notifications.recipients,
@@ -1826,6 +1560,58 @@ Job.sendEventNotification = async function (jobid, eventType, user = null) {
     logger.error(`Failed to send ${eventType} notification: `, err);
     return false;
   }
+};
+/**
+ * The subject of a job mail : "AnsibleForms '<form>' [<type>] (<id>) - <word>".
+ *
+ * Args:
+ *   job (object): the job, for its form name and job type.
+ *   jobid (number): the job id.
+ *   word (string): what happened, already translated (see Job.mailWord).
+ *
+ * Returns:
+ *   string: the subject line.
+ */
+Job.mailSubject = function (job, jobid, word) {
+  return `AnsibleForms '${job.form}' [${job.job_type}] (${jobid}) - ${word}`;
+};
+
+/**
+ * The translated word a job mail subject ends with, in the server's language.
+ *
+ * Args:
+ *   kind (string): 'event' (launch, relaunch, ...) or 'status' (success, failed, ...).
+ *   value (string): the event or the job status.
+ *
+ * Returns:
+ *   string: the translation, or the value itself when it has none (a status added later
+ *     still reads, untranslated, rather than as a translation key).
+ */
+Job.mailWord = function (kind, value) {
+  const key = `email.subject.${kind}.${value}`;
+  const word = i18n.t(null, key);
+  return word === key ? value : word;
+};
+
+/**
+ * The sentence of a job event mail, in the server's language.
+ *
+ * With a user it is a whole translated sentence naming them ("Job has been launched by
+ * admin."), not an English " by admin" pasted into one : the word order differs per
+ * language, and Japanese and Catalan put the name before the verb. The name is escaped,
+ * because the message goes into the html mail as it is.
+ *
+ * Args:
+ *   eventType (string): launch, relaunch, delete, approve or reject.
+ *   user (object): the user who did it, or nothing when no one is known.
+ *
+ * Returns:
+ *   string: the translated sentence.
+ */
+Job.eventMessage = function (eventType, user) {
+  const username = user?.username;
+  if (!username) return i18n.t(null, `email.jobevent.${eventType}`);
+  return i18n.t(null, `email.jobevent.${eventType}By`, { user: Helpers.htmlEscape(String(username)) });
 };
 Job.reject = async function (user, id) {
   const job = await Job.findById(user, id, true);
@@ -1889,7 +1675,7 @@ Multistep.launch = async function ({
     if (!approved) {
       await Job.sendApprovalNotification(approval, extravars, jobid);
       await Job.printJobOutput(
-        `APPROVE [${form}] ${"*".repeat(69 - form.length)}`,
+        `APPROVE [${form}] ${"*".repeat(Math.max(0, 69 - String(form).length))}`,
         "stdout",
         jobid,
         counter + 1
@@ -1966,7 +1752,7 @@ Multistep.launch = async function ({
             logger.notice("Approve needed for " + step.name);
             await Job.sendApprovalNotification(step.approval, extravars, jobid);
             await Job.printJobOutput(
-              `APPROVE [${step.name}] ${"*".repeat(69 - step.name.length)}`,
+              `APPROVE [${step.name}] ${"*".repeat(Math.max(0, 69 - String(step.name).length))}`,
               "stdout",
               jobid,
               ++counter
@@ -2085,7 +1871,9 @@ Multistep.launch = async function ({
                     `Step ${step.name} (jobid ${jobSuccess.id}) : could not read the step status, treating it as failed`
                   );
                 }
-                if (childStatus === 'failed' || childStatus === 'aborted') {
+                // only success or warning passes : abandoned (a runner restarted mid-step),
+                // rejected and anything unknown did not complete the step
+                if (childStatus !== 'success' && childStatus !== 'warning') {
                   throw new Errors.ApiError(
                     `Step ${step.name} (jobid ${jobSuccess.id}) ${childStatus}`
                   );
@@ -2228,1122 +2016,6 @@ Multistep.launch = async function ({
   }
 };
 // Ansible stuff
-var Ansible = function () {};
-Ansible.launch = async (
-  ev,
-  credentials,
-  jobid,
-  counter,
-  approval,
-  approved = false
-) => {
-  if (!counter) {
-    counter = 0;
-  } else {
-    counter++;
-  }
-
-  // we make a copy, we don't want to mutate the original
-  var extravars = { ...ev };
-  // ansible can have multiple inventories
-  var inventory = [];
-  var invent = extravars?.__inventory__;
-  if (invent) {
-    inventory.push(invent); // push the main inventory
-  }
-  if (extravars["__inventory__"]) {
-    [].concat(extravars["__inventory__"]).forEach((item) => {
-      if (typeof item == "string") {
-        inventory.push(item); // add extra inventories
-      } else {
-        logger.warning("Non-string inventory entry");
-      }
-    });
-  }
-
-  var playbook = extravars?.__playbook__;
-  var tags = extravars?.__tags__ || "";
-  var check = extravars?.__check__ || false;
-  var verbose = extravars?.__verbose__ || false;
-  var limit = extravars?.__limit__ || "";
-  var keepExtravars = extravars?.__keepExtravars__ || false;
-  var diff = extravars?.__diff__ || false;
-  var ansibleCredentials = extravars?.__ansibleCredentials__ || "";
-  var vaultCredentials = extravars?.__vaultCredentials__ || "";
-  var playbookSubPath = extravars?.__playbookSubPath__ || "";
-  if (approval) {
-    if (!approved) {
-      await Job.sendApprovalNotification(approval, ev, jobid);
-      await Job.printJobOutput(
-        `APPROVE [${playbook}] ${"*".repeat(69 - playbook.length)}`,
-        "stdout",
-        jobid,
-        counter + 1
-      );
-      await Job.update(
-        {
-          status: "approve",
-          approval: JSON.stringify(approval),
-          end: getTimestamp(),
-        },
-        jobid
-      );
-      return true;
-    } else {
-      logger.notice("Continuing ansible " + playbook + " it has been approved");
-    }
-  }
-  // merge credentials now
-  extravars = { ...extravars, ...credentials };
-  // convert to string for the command
-  extravars = JSON.stringify(extravars);
-  // define hiddenExtravars
-  var hiddenExtravars = {};
-  try {
-    if (ansibleCredentials) {
-      const runCredential = await Credential.findByNameRegex(ansibleCredentials);
-      hiddenExtravars.ansible_user = runCredential.user;
-      hiddenExtravars.ansible_password = runCredential.password;
-    }
-    // convert to string for the command
-    hiddenExtravars = JSON.stringify(hiddenExtravars);
-  } catch (err) {
-    logger.error("Failed to get ansible credentials : ", err);
-    await Job.endJobStatus(
-      jobid,
-      counter + 1,
-      "stderr",
-      "failed",
-      "[ERROR]: Failed to get ansible credentials"
-    );
-    return false;
-  }
-  // define vaultPassword
-  var vaultPassword = "";
-  try {
-    if (vaultCredentials) {
-      const vaultCredential = await Credential.findByNameRegex(vaultCredentials);
-      vaultPassword = vaultCredential.password;
-    }
-  } catch (err) {
-    logger.error("Failed to get vault credentials : ", err);
-    await Job.endJobStatus(
-      jobid,
-      counter + 1,
-      "stderr",
-      "failed",
-      "[ERROR]: Failed to get vault credentials"
-    );
-    return false;
-  }
-  // make extravars file
-  const extravarsFileName = `extravars_${jobid}.json`;
-  const hiddenExtravarsFileName = `he_${extravarsFileName}`;
-  logger.debug(`Extravars File: ${extravarsFileName}`);
-  // prepare my ansible command
-
-  var command;
-  if (!vaultPassword) {
-    command = `ansible-playbook -e '@${extravarsFileName}' -e '@${hiddenExtravarsFileName}'`;
-  } else {
-    command = `echo ${Buffer.from(vaultPassword).toString(
-      "base64"
-    )} | base64 -d | ansible-playbook -e '@${extravarsFileName}' -e '@${hiddenExtravarsFileName}' --vault-password-file=/bin/cat`;
-  }
-
-  // All form-controlled segments below MUST be wrapped in shellQuote().
-  // The command runs through `exec` (i.e. /bin/sh -c), so any unquoted value
-  // ending up in the string is a shell injection vector.
-  inventory.forEach((item) => {
-    command += ` -i ${shellQuote(item)}`;
-  });
-  if (tags) {
-    command += ` -t ${shellQuote(tags)}`;
-  }
-  if (check) {
-    command += ` --check`;
-  }
-  if (diff) {
-    command += ` --diff`;
-  }
-  if (verbose) {
-    command += ` -vvv`;
-  }
-  if (limit) {
-    command += ` --limit ${shellQuote(limit)}`;
-  }
-
-  command += ` ${shellQuote(playbook)}`;
-  var directory = await Repository.getAnsiblePath();
-  directory = directory || ansibleConfig.path;
-  if (playbookSubPath) {
-    directory = path.join(directory, playbookSubPath);
-  }
-  var cmdObj = {
-    directory: directory,
-    command: command,
-    description: "Running playbook",
-    task: "Playbook",
-    extravars: extravars,
-    hiddenExtravars: hiddenExtravars,
-    extravarsFileName: extravarsFileName,
-    hiddenExtravarsFileName: hiddenExtravarsFileName,
-    keepExtravars: keepExtravars,
-  };
-
-  logger.notice("Running from directory : " + cmdObj.directory);
-  logger.notice("Running playbook : " + playbook);
-  logger.debug("extravars : " + extravars);
-  logger.debug("inventory : " + inventory);
-  logger.debug("check : " + check);
-  logger.debug("diff : " + diff);
-  logger.debug("tags : " + tags);
-  logger.debug("limit : " + limit);
-  // in the background, start the commands
-  try {
-    await Exec.executeCommand(cmdObj, jobid, counter);
-    return true;
-  } catch (err) {
-    logger.error("Ansible job failed : ", err);
-    return false;
-  }
-};
-
-// awx stuff, interaction with awx
-var Awx = function () {};
-Awx.abortJob = async function (awxName, id, isWorkflow = false) {
-  const awxConfig = awxName
-    ? await AwxModel.findByName(awxName)
-    : await AwxModel.findByProperty("is_default", 1);
-  if (!awxConfig) throw new Errors.ApiError("Failed to get AWX configuration");
-  logger.info(`aborting awx ${isWorkflow ? "workflow " : ""}job ${id}`);
-  const axiosConfig = AwxModel.getAuthorization(awxConfig);
-  // workflow jobs have their own cancel endpoint
-  const jobsPath = isWorkflow ? "/workflow_jobs/" : "/jobs/";
-  try {
-    const axiosResult = await axios.post(
-      awxConfig.uri + appConfig.awxApiPrefix + jobsPath + id + "/cancel/",
-      {},
-      axiosConfig
-    );
-    const job = axiosResult.data;
-    return job;
-  } catch (error) {
-    if (error.response && error.response.status === 405) {
-      const message = `cannot cancel job id ${id}`;
-      logger.error(message);
-      throw new Errors.ConflictError(message);
-    } else {
-      logger.error("Failed to abort awx job : ", error);
-      throw new Errors.ApiError(
-        `Failed to abort awx job ${id} : ${error.message}`
-      );
-    }
-  }
-};
-Awx.launch = async function (
-  ev,
-  credentials,
-  jobid,
-  counter,
-  approval,
-  approved = false
-) {
-  var message;
-  if (!counter) {
-    counter = 0;
-  } else {
-    counter++;
-  }
-
-  // we make a copy, we don't mutate the original
-  var extravars = { ...ev };
-
-  // get awx data from the extravars
-  var invent = extravars?.__inventory__;
-  var execenv = extravars?.__executionEnvironment__;
-  var instanceGroups = [].concat(extravars?.__instanceGroups__ || []); // always array ! force to array
-  var tags = extravars?.__tags__ || "";
-  var scmBranch = extravars?.__scmBranch__ || "";
-  var check = extravars?.__check__ || false;
-  var verbose = extravars?.__verbose__ || false;
-  var limit = extravars?.__limit__ || "";
-  var diff = extravars?.__diff__ || false;
-  var template = extravars?.__template__;
-  var awxName = extravars?.__awx__;
-
-  var awxCredentials = extravars?.__awxCredentials__ || [];
-  if (approval) {
-    if (!approved) {
-      await Job.sendApprovalNotification(approval, ev, jobid);
-      await Job.printJobOutput(
-        `APPROVE [${template}] ${"*".repeat(69 - template.length)}`,
-        "stdout",
-        jobid,
-        counter + 1
-      );
-      await Job.update(
-        {
-          status: "approve",
-          approval: JSON.stringify(approval),
-          end: getTimestamp(),
-        },
-        jobid
-      );
-      return true;
-    } else {
-      logger.notice("Continuing awx " + template + " it has been approved");
-    }
-  }
-  try {
-    const jobTemplate = await Awx.findJobTemplateByName(awxName, template);
-    logger.debug("Found jobtemplate, id = " + jobTemplate.id);
-    await Awx.launchTemplate(
-      awxName,
-      jobTemplate,
-      ev,
-      invent,
-      tags,
-      limit,
-      check,
-      diff,
-      verbose,
-      credentials,
-      awxCredentials,
-      execenv,
-      instanceGroups,
-      scmBranch,
-      jobid,
-      ++counter
-    );
-    return true;
-  } catch (err) {
-    message = "failed to launch awx template " + template + "\n" + err.message;
-    // any error, we just end the job, no need to throw an error.
-    await Job.endJobStatus(jobid, counter + 1, "stdout", "failed", message);
-    throw new Errors.ApiError(message);
-  }
-};
-Awx.launchTemplate = async function (
-  awxName,
-  template,
-  ev,
-  invent,
-  tags,
-  limit,
-  check,
-  diff,
-  verbose,
-  credentials,
-  awxCredentials,
-  execenv,
-  instanceGroups,
-  scmBranch,
-  jobid,
-  counter
-) {
-  var message;
-  if (!counter) {
-    counter = 0;
-  }
-  // get existing credentials in the template, and then add the external ones.
-  var awxCredentialList = [];
-  try {
-    awxCredentialList = await Awx.findCredentialsByTemplate(
-      awxName,
-      template.id
-    );
-    logger.notice(`Found ${awxCredentialList.length} existing creds`);
-  } catch (e) {
-    logger.warning("No credentials available... could be workflow template");
-  }
-  // add external ones
-  for (let i = 0; i < awxCredentials.length; i++) {
-    var ac = awxCredentials[i];
-    var credId = await Awx.findCredentialByName(awxName, ac);
-    logger.debug(`Found awx credential '${ac}'; id = ${credId}`);
-    awxCredentialList.push(credId);
-  }
-  awxCredentialList = [...new Set(awxCredentialList)];
-
-  // get inventory
-  var inventory = await Awx.findInventoryByName(awxName, invent);
-  // get execution environment
-  var executionEnvironment = await Awx.findExecutionEnvironmentByName(
-    awxName,
-    execenv
-  );
-
-  // get instance groups
-  var instanceGroupIds = [];
-  for (let index = 0; index < instanceGroups.length; index++) {
-    instanceGroupIds.push(
-      await Awx.findInstanceGroupByName(awxName, instanceGroups[index])
-    );
-  }
-
-  // get config and go
-
-  const awxConfig = awxName
-    ? await AwxModel.findByName(awxName)
-    : await AwxModel.findByProperty("is_default", 1);
-  if (!awxConfig) throw new Errors.ApiError("Failed to get AWX configuration");
-
-  var extravars = { ...ev }; // we make a copy of the main extravars
-  // merge credentials now
-  extravars = { ...extravars, ...credentials };
-  extravars = JSON.stringify(extravars);
-  // prep the post data
-  var postdata = {
-    extra_vars: extravars,
-  };
-  if (awxCredentialList.length > 0) {
-    postdata.credentials = awxCredentialList;
-  }
-  if (executionEnvironment) {
-    postdata.execution_environment = executionEnvironment.id;
-  }
-  if (instanceGroups) {
-    postdata.instance_groups = instanceGroupIds.map((x) => x.id);
-  }
-  if (inventory) {
-    postdata.inventory = inventory.id;
-  }
-  if (check) {
-    postdata.job_type = "check";
-  } else {
-    postdata.job_type = "run";
-  }
-  if (diff) {
-    postdata.diff_mode = true;
-  } else {
-    postdata.diff_mode = false;
-  }
-  if (verbose) {
-    postdata.verbosity = 3;
-  }
-  if (limit) {
-    postdata.limit = limit;
-  }
-  if (scmBranch) {
-    postdata.scm_branch = scmBranch;
-  }
-  if (tags) {
-    postdata.job_tags = tags;
-  }
-
-  logger.notice("Running template : " + template.name);
-  logger.info("extravars : " + extravars);
-  logger.info("inventory : " + inventory);
-  logger.info("execution_environment : " + executionEnvironment);
-  logger.info("instance_groups : " + instanceGroups);
-  logger.info("credentials : " + awxCredentialList);
-  logger.info("check : " + check);
-  logger.info("diff : " + diff);
-  logger.info("verbose : " + verbose);
-  logger.info("tags : " + tags);
-  logger.info("limit : " + limit);
-  logger.info("scm_branch : " + scmBranch);
-  // post
-  if (template.related === undefined) {
-    message = `Failed to launch, no launch attribute found for template ${template.name}`;
-    logger.error(message);
-    await Job.endJobStatus(jobid, counter + 1, "stderr", "failed", message);
-    throw new Errors.ConflictError(message);
-  } else {
-    // prepare axiosConfig
-    const axiosConfig = AwxModel.getAuthorization(awxConfig);
-    // logger.debug("Lauching awx with data : " + JSON.stringify(postdata))
-    logger.debug("Launching awx template");
-    // launch awx job
-    var axiosResult;
-    try {
-      axiosResult = await axios.post(
-        awxConfig.uri + template.related.launch,
-        postdata,
-        axiosConfig
-      );
-    } catch (error) {
-      message = `failed to launch ${template.name}`;
-      if (error.response) {
-        logger.error("", error.response.data);
-        message += "\r\n" + yaml.stringify(error.response.data);
-        await Job.endJobStatus(
-          jobid,
-          counter + 1,
-          "stderr",
-          // "failed", not "success". endJobStatus writes the status AND sends the status
-          // notification built from it, so a template AWX refused to launch (a missing
-          // survey variable, a credential that is not prompt-on-launch) mailed everyone
-          // "- success" and then a second mail "- failed" once Awx.launch's own catch
-          // corrected the row.
-          "failed",
-          `Failed to launch template ${template.name}. ${message}`
-        );
-      } else {
-        logger.error("Failed to launch : ", error);
-        await Job.endJobStatus(
-          jobid,
-          counter + 1,
-          "stderr",
-          // "failed", not "success". endJobStatus writes the status AND sends the status
-          // notification built from it, so a template AWX refused to launch (a missing
-          // survey variable, a credential that is not prompt-on-launch) mailed everyone
-          // "- success" and then a second mail "- failed" once Awx.launch's own catch
-          // corrected the row.
-          "failed",
-          `Failed to launch template ${template.name}. ${error}`
-        );
-      }
-      throw new Errors.ApiError(message);
-    }
-
-    // get awx job (= remote job !!)
-    var job = axiosResult.data;
-    if (job) {
-      logger.info(`awx job id = ${job.id}`);
-      // log launch
-      await Job.update({ awx_id: job.id }, jobid);
-      await Job.printJobOutput(
-        `Launched template ${template.name} with jobid ${job.id}`,
-        "stdout",
-        jobid,
-        ++counter
-      );
-      // track the job in the background
-      return Awx.trackJob(awxName, job, jobid, counter + 1);
-    } else {
-      // no awx job, end failed
-      message = `could not launch job template ${template.name}`;
-      await Job.endJobStatus(
-        jobid,
-        counter,
-        "stderr",
-        "failed",
-        `Failed to launch template ${template.name}`
-      );
-      logger.error(message);
-      throw new Errors.ApiError(message);
-    }
-  }
-};
-
-/**
- * Poll an AWX job to completion.
- *
- * This is a LOOP, and must stay one. It used to call itself for the next poll, once a
- * second, for as long as the job ran - so an hour-long template built up ~3600 nested
- * async frames, and every one of them held its own `o` / `previousoutput` alive: AWX has
- * no incremental output, so those are each a full copy of the job's stdout so far. A job
- * with a few MB of output therefore retained hundreds of MB until it finished and the
- * whole chain finally unwound, on top of a real risk of exhausting the stack.
- *
- * Each place that used to recurse now assigns the next iteration's parameters and
- * `continue`s, so only the current poll's output is reachable.
- */
-Awx.trackJob = async function (
-  awxName,
-  job,
-  jobid,
-  counter,
-  previousoutput,
-  previousoutput2 = undefined,
-  lastrun = false,
-  retryCount = 0
-) {
-  // workflow jobs have no stdout of their own, we track them node by node
-  if (job.type === "workflow_job" || job.related?.workflow_nodes) {
-    return Awx.trackWorkflowJob(awxName, job, jobid, counter);
-  }
-  const awxConfig = awxName
-    ? await AwxModel.findByName(awxName)
-    : await AwxModel.findByProperty("is_default", 1);
-  if (!awxConfig) throw new Error("Failed to get AWX configuration");
-  var message;
-  // prepare axiosConfig
-  const axiosConfig = AwxModel.getAuthorization(awxConfig);
-  for (;;) {
-  logger.info(`searching for job with id ${job.id}`);
-  try {
-    // get job info
-    const axiosResult = await axios.get(awxConfig.uri + job.url, axiosConfig);
-    var j = axiosResult.data;
-    if (j) {
-      // logger.debug(inspect(j))
-      logger.debug(`awx job status : ` + j.status);
-      try {
-        // get text output
-        const o = await Awx.getJobTextOutput(awxName, job);
-
-        var incrementIssue = false;
-        var output = o;
-        // AWX has no incremental output, so we always need to substract previous output
-        // we substract the previous output
-        if (output && previousoutput) {
-          // does the previous output fit in the new
-          if (output.includes(previousoutput)) {
-            output = output.substring(previousoutput.length);
-          } else {
-            if (output && previousoutput2) {
-              // here we have an output problem, the incremental of AWX can sometimes deviate
-              // and the last output was wrong, in this case we remove the last output from the db and take the second last output
-              // as last reference.
-              incrementIssue = true;
-              // logger.error("Incremental problem")
-              output = output.substring(previousoutput2.length);
-            }
-          }
-        }
-        // the increment issue (if true) will remove the last entry before add the new (corrected) one.
-        const abort_requested = await Job.printJobOutput(
-          output,
-          "stdout",
-          jobid,
-          ++counter,
-          incrementIssue
-        );
-        if (abort_requested) {
-          await Job.printJobOutput(
-            "Abort requested",
-            "stderr",
-            jobid,
-            ++counter
-          );
-          try {
-            // we try to abort the job
-            await Awx.abortJob(awxName, j.id);
-            await Job.resetAbortRequested(jobid);
-            await Job.endJobStatus(
-              jobid,
-              ++counter,
-              "stderr",
-              "aborted",
-              "Aborted job",
-              j.artifacts
-            );
-            return "Aborted job";
-          } catch (error) {
-            // abort failed... , revert abort request
-            await Job.printJobOutput(
-              "Abort request denied, reverting abort request",
-              "stderr",
-              jobid,
-              ++counter
-            );
-            await Job.resetAbortRequested(jobid);
-            // next poll (was: recurse) - previousoutput becomes the second last
-            job = j;
-            ++counter;
-            previousoutput2 = previousoutput;
-            previousoutput = o;
-            lastrun = j.finished;
-            retryCount = 0;
-            continue;
-          }
-        } else {
-          if (j.finished && lastrun) {
-            if (j.status === "successful") {
-              await Job.endJobStatus(
-                jobid,
-                ++counter,
-                "stdout",
-                "success",
-                `Successfully completed template ${j.name}`,
-                j.artifacts
-              );
-              return true;
-            } else {
-              // if error, end with status (aborted or failed)
-              var status = "failed";
-              message = `Template ${j.name} completed with status ${j.status}`;
-              if (j.status == "canceled") {
-                status = "aborted";
-                message = `Template ${j.name} was aborted`;
-                await Job.resetAbortRequested(jobid);
-              }
-              await Job.endJobStatus(
-                jobid,
-                ++counter,
-                "stderr",
-                status,
-                message,
-                j.artifacts
-              );
-              return message;
-            }
-          } else {
-            // not finished, try again
-            await delay(1000);
-            if (j.finished) {
-              logger.debug("Getting final stdout");
-            }
-            // next poll (was: recurse). After an increment issue the SECOND last output
-            // is the reliable reference, so it is the one carried forward.
-            job = j;
-            ++counter;
-            previousoutput2 = incrementIssue ? previousoutput2 : previousoutput;
-            previousoutput = o;
-            lastrun = j.finished;
-            retryCount = 0;
-            continue;
-          }
-        }
-      } catch (err) {
-        message = err.toString();
-        logger.error(message);
-        retryCount++;
-        if (retryCount == 10) {
-          return Promise.resolve(message);
-        } else {
-          logger.warning(`Retrying jobid ${jobid} [${retryCount}]`);
-          await delay(1000);
-          // retry the SAME poll : job, counter and both outputs stay as they were
-          continue;
-        }
-      }
-    } else {
-      message = `could not find job with id ${job.id}`;
-      logger.error(message);
-      retryCount++;
-      if (retryCount == 10) {
-        return Promise.resolve(message);
-      } else {
-        logger.warning(`Retrying jobid ${jobid} [${retryCount}]`);
-        await delay(1000);
-        // retry the SAME poll, as above
-        continue;
-      }
-    }
-  } catch (e) {
-    logger.error("Failed to track job : ", e);
-    return e.message;
-  }
-  }
-};
-// format a workflow (node) status line ; Helpers.formatOutput() colors these by status
-function workflowStatusLine(prefix, name, status, banner = false) {
-  var line = `${prefix} [${name}] (${status})`;
-  if (banner) line += " " + "*".repeat(Math.max(5, 79 - line.length));
-  return line;
-}
-// get the nodes of an awx workflow job, simplified to what we need for output and visualization
-Awx.getWorkflowNodes = async function (awxName, job) {
-  const awxConfig = awxName
-    ? await AwxModel.findByName(awxName)
-    : await AwxModel.findByProperty("is_default", 1);
-  if (!awxConfig) throw new Errors.ApiError("Failed to get AWX configuration");
-  if (!job.related?.workflow_nodes) return [];
-  const axiosConfig = AwxModel.getAuthorization(awxConfig);
-  var results = [];
-  var url = job.related.workflow_nodes;
-  // the node list is paginated, follow the next links
-  while (url) {
-    const axiosResult = await axios.get(awxConfig.uri + url, axiosConfig);
-    results = results.concat(axiosResult.data?.results || []);
-    url = axiosResult.data?.next;
-  }
-  return results.map((n) => ({
-    id: n.id,
-    name:
-      n.summary_fields?.job?.name ||
-      n.summary_fields?.unified_job_template?.name ||
-      `node ${n.id}`,
-    type:
-      n.summary_fields?.job?.type ||
-      n.summary_fields?.unified_job_template?.unified_job_type ||
-      "job",
-    status:
-      n.summary_fields?.job?.status || (n.do_not_run ? "skipped" : "pending"),
-    elapsed: n.summary_fields?.job?.elapsed || 0,
-    job: n.job,
-    job_url: n.related?.job,
-    success_nodes: n.success_nodes || [],
-    failure_nodes: n.failure_nodes || [],
-    always_nodes: n.always_nodes || [],
-    do_not_run: n.do_not_run || false,
-  }));
-};
-// track an awx workflow job ; poll the workflow nodes, dump the output of every
-// finished node and store the workflow graph as json for visualization
-Awx.trackWorkflowJob = async function (
-  awxName,
-  job,
-  jobid,
-  counter,
-  printedNodeIds = [],
-  previousWorkflowJson = "",
-  retryCount = 0
-) {
-  const awxConfig = awxName
-    ? await AwxModel.findByName(awxName)
-    : await AwxModel.findByProperty("is_default", 1);
-  if (!awxConfig) throw new Error("Failed to get AWX configuration");
-  const axiosConfig = AwxModel.getAuthorization(awxConfig);
-  try {
-    // get workflow job info
-    const axiosResult = await axios.get(awxConfig.uri + job.url, axiosConfig);
-    var j = axiosResult.data;
-    if (!j) throw new Error(`could not find workflow job with id ${job.id}`);
-    logger.debug(`awx workflow job status : ` + j.status);
-    // get the workflow nodes
-    const nodes = await Awx.getWorkflowNodes(awxName, j);
-    // store the workflow graph json, the client uses this to visualize the workflow
-    const workflowJson = JSON.stringify({
-      id: j.id,
-      name: j.name,
-      status: j.status,
-      nodes,
-    });
-    if (workflowJson != previousWorkflowJson) {
-      await Job.update({ awx_workflow: workflowJson }, jobid);
-    }
-    // dump the output of the nodes that just finished (in completion order)
-    const finishedStatuses = ["successful", "failed", "error", "canceled"];
-    const finishedNodes = nodes.filter(
-      (n) =>
-        n.job &&
-        finishedStatuses.includes(n.status) &&
-        !printedNodeIds.includes(n.id)
-    );
-    for (const node of finishedNodes) {
-      var nodeOutput = "";
-      try {
-        // get the child job (job, project_update, workflow_approval, ...) and grab its output
-        const childResult = await axios.get(
-          awxConfig.uri + node.job_url,
-          axiosConfig
-        );
-        nodeOutput =
-          (await Awx.getJobTextOutput(awxName, childResult.data)) || "";
-      } catch (e) {
-        logger.warning(
-          `Failed to get output of workflow node ${node.name} : ${e.message}`
-        );
-      }
-      const banner = workflowStatusLine(
-        "WORKFLOW NODE",
-        node.name,
-        node.status,
-        true
-      );
-      await Job.printJobOutput(
-        `${banner}\n${nodeOutput}`.trim(),
-        "stdout",
-        jobid,
-        ++counter
-      );
-      printedNodeIds.push(node.id);
-    }
-    // check for abort request
-    const abort_requested = await Job.isAbortRequested(jobid);
-    if (abort_requested) {
-      await Job.printJobOutput("Abort requested", "stderr", jobid, ++counter);
-      try {
-        // we try to abort the workflow job
-        await Awx.abortJob(awxName, j.id, true);
-        await Job.resetAbortRequested(jobid);
-        await Job.endJobStatus(
-          jobid,
-          ++counter,
-          "stderr",
-          "aborted",
-          "Aborted workflow job"
-        );
-        return "Aborted workflow job";
-      } catch (error) {
-        // abort failed... , revert abort request
-        await Job.printJobOutput(
-          "Abort request denied, reverting abort request",
-          "stderr",
-          jobid,
-          ++counter
-        );
-        await Job.resetAbortRequested(jobid);
-      }
-    }
-    if (j.finished) {
-      // print a summary of all the nodes with their status
-      var summary = [workflowStatusLine("WORKFLOW", j.name, j.status, true)];
-      nodes.forEach((node) => {
-        summary.push(workflowStatusLine("WORKFLOW NODE", node.name, node.status));
-      });
-      await Job.printJobOutput(summary.join("\n"), "stdout", jobid, ++counter);
-      if (j.status === "successful") {
-        await Job.endJobStatus(
-          jobid,
-          ++counter,
-          "stdout",
-          "success",
-          `Successfully completed workflow ${j.name}`
-        );
-        return true;
-      } else {
-        // if error, end with status (aborted or failed)
-        var status = "failed";
-        var message = `Workflow ${j.name} completed with status ${j.status}`;
-        if (j.status == "canceled") {
-          status = "aborted";
-          message = `Workflow ${j.name} was aborted`;
-          await Job.resetAbortRequested(jobid);
-        }
-        await Job.endJobStatus(jobid, ++counter, "stderr", status, message);
-        return message;
-      }
-    }
-    // not finished, try again
-    await delay(1000);
-    return await Awx.trackWorkflowJob(
-      awxName,
-      j,
-      jobid,
-      ++counter,
-      printedNodeIds,
-      workflowJson
-    );
-  } catch (err) {
-    const message = err.toString();
-    logger.error(message);
-    retryCount++;
-    if (retryCount == 10) {
-      return Promise.resolve(message);
-    } else {
-      logger.warning(`Retrying jobid ${jobid} [${retryCount}]`);
-      await delay(1000);
-      return await Awx.trackWorkflowJob(
-        awxName,
-        job,
-        jobid,
-        counter,
-        printedNodeIds,
-        previousWorkflowJson,
-        retryCount
-      );
-    }
-  }
-};
-Awx.getJobTextOutput = async function (awxName, job) {
-  if (!job) return undefined;
-
-  const awxConfig = awxName
-    ? await AwxModel.findByName(awxName)
-    : await AwxModel.findByProperty("is_default", 1);
-  if (!awxConfig) throw new Errors.ApiError("Failed to get AWX configuration");
-  if (job.related === undefined) {
-    throw new Errors.ConflictError(
-      "No related attribute found for job " + job.id
-    );
-  } else {
-    if (!job.related.stdout) {
-      // workflow job... just return status
-      return job.status;
-    }
-    // prepare axiosConfig
-    const axiosConfig = AwxModel.getAuthorization(awxConfig);
-    const axiosResult = await axios.get(
-      awxConfig.uri + job.related.stdout + "?format=txt",
-      axiosConfig
-    );
-    return axiosResult.data;
-  }
-};
-Awx.findJobTemplateByName = async function (awxName, name) {
-  if (!name) return undefined;
-
-  const awxConfig = awxName
-    ? await AwxModel.findByName(awxName)
-    : await AwxModel.findByProperty("is_default", 1);
-  if (!awxConfig) throw new Errors.ApiError("Failed to get AWX configuration");
-  var message;
-  logger.info(`searching job template ${name}`);
-  // prepare axiosConfig
-  const axiosConfig = AwxModel.getAuthorization(awxConfig);
-  var axiosResult = await axios.get(
-    awxConfig.uri +
-      appConfig.awxApiPrefix +
-      "/job_templates/?name=" +
-      encodeURI(name),
-    axiosConfig
-  );
-  var job_template = axiosResult.data.results.find(function (x) {
-    return x.name == name;
-  });
-  if (job_template) {
-    return job_template;
-  } else {
-    logger.info("Template not found, looking for workflow job template");
-    // trying workflow job templates
-    axiosResult = await axios.get(
-      awxConfig.uri +
-        appConfig.awxApiPrefix +
-        "/workflow_job_templates/?name=" +
-        encodeURI(name),
-      axiosConfig
-    );
-    job_template = axiosResult.data.results.find(function (x) {
-      return x.name == name;
-    });
-    if (job_template) {
-      return job_template;
-    } else {
-      message = `could not find job template ${name}`;
-      logger.error(message);
-      throw new Errors.NotFoundError(message);
-    }
-  }
-};
-Awx.findCredentialByName = async function (awxName, name) {
-  if (!name) return undefined;
-
-  const awxConfig = awxName
-    ? await AwxModel.findByName(awxName)
-    : await AwxModel.findByProperty("is_default", 1);
-  if (!awxConfig) throw new Errors.ApiError("Failed to get AWX configuration");
-  var message;
-  logger.info(`searching credential ${name}`);
-  // prepare axiosConfig
-  const axiosConfig = AwxModel.getAuthorization(awxConfig);
-  const axiosResult = await axios.get(
-    awxConfig.uri +
-      appConfig.awxApiPrefix +
-      "/credentials/?name=" +
-      encodeURI(name),
-    axiosConfig
-  );
-  var credential = axiosResult.data.results.find(function (x) {
-    return x.name == name;
-  });
-  if (credential) {
-    return credential.id;
-  } else {
-    message = `could not find credential ${name}`;
-    logger.error(message);
-    throw new Errors.NotFoundError(message);
-  }
-};
-Awx.findExecutionEnvironmentByName = async function (awxName, name) {
-  if (!name) return undefined;
-
-  const awxConfig = awxName
-    ? await AwxModel.findByName(awxName)
-    : await AwxModel.findByProperty("is_default", 1);
-  if (!awxConfig) throw new Errors.ApiError("Failed to get AWX configuration");
-  var message;
-  logger.info(`searching execution environment ${name}`);
-  // prepare axiosConfig
-  const axiosConfig = AwxModel.getAuthorization(awxConfig);
-  message = `could not find execution environment ${name}`;
-  var axiosResult;
-  try {
-    axiosResult = await axios.get(
-      awxConfig.uri +
-        appConfig.awxApiPrefix +
-        "/execution_environments/?name=" +
-        encodeURI(name),
-      axiosConfig
-    );
-  } catch (error) {
-    throw new Errors.ApiError(`${message}, ${error.message}`);
-  }
-  var execution_environment = axiosResult.data.results.find(function (x) {
-    return x.name == name;
-  });
-  if (execution_environment) {
-    return execution_environment;
-  } else {
-    logger.error(message);
-    throw new Errors.NotFoundError(message);
-  }
-};
-Awx.findInstanceGroupByName = async function (awxName, name) {
-  if (!name) return undefined;
-
-  const awxConfig = awxName
-    ? await AwxModel.findByName(awxName)
-    : await AwxModel.findByProperty("is_default", 1);
-  if (!awxConfig) throw new Errors.ApiError("Failed to get AWX configuration");
-  var message;
-  logger.info(`searching instance group ${name}`);
-  // prepare axiosConfig
-  const axiosConfig = AwxModel.getAuthorization(awxConfig);
-  message = `could not find instance group ${name}`;
-  var axiosResult;
-  try {
-    axiosResult = await axios.get(
-      awxConfig.uri +
-        appConfig.awxApiPrefix +
-        "/instance_groups/?name=" +
-        encodeURI(name),
-      axiosConfig
-    );
-  } catch (error) {
-    throw new Errors.ApiError(`${message}, ${error.message}`);
-  }
-  var instance_group = axiosResult.data.results.find(function (x) {
-    return x.name == name;
-  });
-  if (instance_group) {
-    return instance_group;
-  } else {
-    logger.error(message);
-    throw new Errors.NotFoundError(message);
-  }
-};
-Awx.findCredentialsByTemplate = async function (awxName, id) {
-  const awxConfig = awxName
-    ? await AwxModel.findByName(awxName)
-    : await AwxModel.findByProperty("is_default", 1);
-  if (!awxConfig) throw new Errors.ApiError("Failed to get AWX configuration");
-  logger.info(`searching credentials for template id ${id}`);
-  // prepare axiosConfig
-  const axiosConfig = AwxModel.getAuthorization(awxConfig);
-  const axiosResult = await axios.get(
-    awxConfig.uri +
-      appConfig.awxApiPrefix +
-      "/job_templates/" +
-      id +
-      "/credentials/",
-    axiosConfig
-  );
-  if (axiosResult.data?.results?.length) {
-    return axiosResult.data.results.map((x) => x.id);
-  }
-  return [];
-};
-Awx.findInventoryByName = async function (awxName, name) {
-  if (!name) return undefined;
-
-  const awxConfig = awxName
-    ? await AwxModel.findByName(awxName)
-    : await AwxModel.findByProperty("is_default", 1);
-  if (!awxConfig) throw new Errors.ApiError("Failed to get AWX configuration");
-  var message;
-  logger.info(`searching inventory ${name}`);
-  // prepare axiosConfig
-  const axiosConfig = AwxModel.getAuthorization(awxConfig);
-  message = `could not find inventory ${name}`;
-  var axiosResult;
-  try {
-    axiosResult = await axios.get(
-      awxConfig.uri +
-        appConfig.awxApiPrefix +
-        "/inventories/?name=" +
-        encodeURI(name),
-      axiosConfig
-    );
-  } catch (error) {
-    throw new Errors.ApiError(`${message}, ${error.message}`);
-  }
-  var inventory = axiosResult.data.results.find(function (x) {
-    return x.name == name;
-  });
-  if (inventory) {
-    return inventory;
-  } else {
-    logger.error(message);
-    throw new Errors.NotFoundError(message);
-  }
-};
-
 export default Job;
-// named export of the awx interaction functions (mainly for testing)
-export { Awx, Exec, Multistep, stripReservedExtravars, setUserExtravars, guardLaunch, launchValidationMode, pushForminfoToExtravars };
+// named export for the tests
+export { Multistep, stripReservedExtravars, setUserExtravars, guardLaunch, launchValidationMode, pushForminfoToExtravars };

@@ -5,8 +5,8 @@ For maintainers. Contributors only need [CONTRIBUTING.md](CONTRIBUTING.md).
 Everything below runs in GitHub Actions. Nothing is built or pushed from a laptop, and no
 version number or changelog line is ever typed by hand.
 
-There are two release lines: `main` (the next major, released as `7.0.0-beta.N`) and
-`release/6.x` (patches of the current one). Everything below works the same on both; each
+There are two release lines: `main` (the newest major, 7) and `release/6.x` (patches of
+the previous one). Everything below works the same on both; each
 branch has its own release pull request, manifest and `CHANGELOG.md`.
 
 ## How a release happens
@@ -34,15 +34,13 @@ feature PR ──squash──▶ main ──▶ release-please updates the open 
 
 ### The image tags
 
-| Release | Tags |
-|---|---|
-| `6.5.3` | `6.5.3`, and `6.5`, `6`, `latest` - each only while it is the highest of its kind |
-| `7.0.0-beta.2` | `7.0.0-beta.2`, `7-beta`, `next` - never `latest` |
-| release candidate | `6.5.3-rc.551.1`, `6-rc`, `latest-rc` |
-
-So a patch on 6 after 7.0.0 is out moves `6.5` and `6` but not `latest`, and re-publishing an
-old tag never moves anything backwards. `latest` reaches 7 with the final 7.0.0. The release
-workflow also keeps GitHub's "Latest release" badge on the highest final version.
+The tags and what they point to are listed once, for users, under
+[Image tags](https://ansibleforms.com/installation#image-tags) (`installation.md` in
+[ansibleforms/website](https://github.com/ansibleforms/website)). Do not repeat or change them elsewhere.
+publish.yml implements that list: `latest`, `<major>` and `<major>.<minor>` only move when
+the release is the highest of its kind, so a patch on an older line never moves them
+backwards. The release workflow also keeps GitHub's "Latest release" badge on the highest
+version.
 
 ### Changing the changelog wording before a release
 
@@ -51,12 +49,20 @@ or `release-please--branches--release/6.x`) and push. Once the release exists, y
 
 ### Forcing a specific version
 
-Merge any pull request whose **description** ends with a `Release-As:` line. The squash
-commit carries the description as its body, and release-please then proposes that version:
+Set `"release-as"` in `release-please-config.json`, in a pull request with a `feat:` or `fix:`
+title, and merge it. release-please then proposes exactly that version. Remove the setting
+again in the next pull request after the release, or every later release is proposed as that
+same version.
 
+```json
+  "release-type": "simple",
+  "release-as": "7.0.0",
 ```
-Release-As: 7.0.0
-```
+
+A `Release-As:` line in the pull request description does **not** work reliably: GitHub
+appends `Co-authored-by` lines after it when it squashes, so it is no longer read as a
+footer. And a pull request with a hidden type (`ci:`, `docs:`, `chore:`) never opens a
+release on its own, whatever it says.
 
 ## Release candidates
 
@@ -66,12 +72,14 @@ enter the pull request number. That publishes:
 - `ghcr.io/ansibleforms/ansibleforms:<next>-rc.<pr>.<run>`, for example `6.4.0-rc.512.7`
 - `ghcr.io/ansibleforms/ansibleforms:latest-rc`
 
-and a comment on the pull request lists the tags. The UI and the Status page of that image
+A comment on the pull request lists the tags. The UI and the Status page of that image
 show the rc version.
 
 `<next>` is the version the pull request would release. On the release pull request it is
 exactly the upcoming version, so a candidate of that pull request tests the whole release.
 Run the workflow again after new pushes to get a newer candidate.
+
+A test server does not need an image copied to it: it can pull `latest-rc`.
 
 Only pull requests from branches of this repository publish. A fork's code never runs with
 the registry credentials.
@@ -83,14 +91,19 @@ refuses when `server/package.json` at that tag names another version.
 
 ## The base image
 
-The 6.x line builds on `ansibleguy/ansibleforms-base` from Docker Hub, pinned by digest in
-`Dockerfile` (the 2026.09.25-3 build). That image is frozen: nothing publishes to Docker Hub
-any more, and the base is no longer built from this branch.
+`ghcr.io/ansibleforms/base-server` holds node, python, ansible and the os packages. The RTE
+(`Dockerfile.rte`), which runs the playbooks, builds from it. The app (`Dockerfile`) does not:
+it needs only node, git, ssh, the mariadb client and ytt, and builds from the official
+`node:24-bookworm-slim` image (pinned by digest, moved by Dependabot). base-server is
+built in [ansibleforms/base-images](https://github.com/ansibleforms/base-images) and
+versioned by date (`2026.10.05`, plus `latest`), independent of the application.
 
-The base of current versions is `ghcr.io/ansibleforms/base-server`, built in
-[ansibleforms/base-images](https://github.com/ansibleforms/base-images). To move 6.x onto it,
-point the `FROM` lines in `Dockerfile` at a `base-server` digest and build a release
-candidate to test it.
+- **Build it:** in base-images, a merged change to `base-server/` publishes a new build, or
+  Actions → **Build** → Run workflow rebuilds it with fresh packages.
+- **Use it:** `Dockerfile.rte` pins the base by digest, so a new base changes
+  nothing until the pin moves. Dependabot opens a `build(deps): bump base-server` pull
+  request for that. Build a release candidate of it to test the app on the new base, then
+  merge it. Retitle it `fix(base): ...` if the update should appear in the changelog.
 
 ## A patch release of 6.x
 
@@ -99,29 +112,13 @@ cherry-pick). release-please keeps a "chore: release 6.5.x" pull request open on
 branch; merging it releases and publishes, exactly like on main. Its config bumps the patch
 only, so a stray `feat:` cannot make a 6.6.0.
 
-## Starting and ending the 7 betas
-
-- The first 7 pull request on main sets `"prerelease": true`, `"versioning": "prerelease"`
-  and `"prerelease-type": "beta"` in `release-please-config.json`, and ends its description
-  with `Release-As: 7.0.0-beta.0`. Every later merge into main counts the beta up.
-- When 7 is ready: remove those three settings and merge a pull request ending with
-  `Release-As: 7.0.0`. Its publish moves `latest` to 7.
-
-## Local scripts
-
-- `publish-local.sh` builds the application image on your machine, without pushing.
-
-A test server does not need an image copied to it: it can pull `latest-rc`.
-
 ## Setup this depends on
 
 | What | Where | Used by |
 |---|---|---|
-| GitHub App `ansibleforms-release` (contents and pull requests: read and write) | installed on this repository only | release.yml |
+| GitHub App `ansibleforms-release` (contents and pull requests: read and write) | installed on this repository, on `ansibleforms/website` (the release rebuilds the site) and on `ansibleforms/helm-charts` (the release moves the chart's default image) | release.yml |
 | `RELEASE_APP_CLIENT_ID` | repository variable: the App's client ID | release.yml |
 | `RELEASE_APP_PRIVATE_KEY` | repository secret | release.yml |
-| `PAT_TOKEN` | repository secret, used by release.yml until `RELEASE_APP_CLIENT_ID` is set | release.yml |
-| `github-pages` environment | deployment branch `main` (it also builds the frozen `release/6.x` docs under `/v6/`) | pages.yml |
 | ruleset on `main` and `release/*` | pull request required, squash only, required checks, no force push | everything |
 
 The App token is needed because a pull request opened with the default `GITHUB_TOKEN`

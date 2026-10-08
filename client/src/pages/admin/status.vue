@@ -6,7 +6,7 @@ import axios from 'axios';
 import TokenStorage from '@/lib/TokenStorage';
 import Profile from '@/lib/Profile';
 import Helpers from '@/lib/Helpers.js';
-import dayjs from 'dayjs';
+import Time from '@/lib/Time';
 
 const { t } = useI18n();
 
@@ -52,13 +52,12 @@ function infoLabel(key) {
   return t('health.info' + key.charAt(0).toUpperCase() + key.slice(1));
 }
 
-
 async function load() {
   loading.value = true;
   try {
     const res = await axios.get('/api/v2/health', TokenStorage.getAuthentication());
     result.value = res.data.result ?? res.data;
-    checkedAt.value = dayjs().format('HH:mm:ss');
+    checkedAt.value = Time.format(new Date(), 'HH:mm:ss');
   } catch (err) {
     toast.error(Helpers.parseAxiosResponseError(err, t('health.failedLoad')));
   } finally {
@@ -102,22 +101,42 @@ onMounted(async () => {
 <template>
   <AppNav />
   <div class="flex-shrink-0">
-    <main class="d-flex flex-nowrap container-xxl">
+    <main class="d-flex flex-nowrap af-settings-layout">
       <AppSidebar />
-      <AppSettings v-if="authenticated" icon="heart-pulse" :title="t('health.title')" :description="t('health.description')">
+      <AppSettings
+        v-if="authenticated"
+        icon="heart-pulse"
+        :title="t('health.title')"
+        :description="t('health.description')"
+      >
         <template #tabs>
           <!-- same markup as admin/settings.vue : AppSettings adds tab-card-flush-card to
                the card when this slot is filled, so the card joins the tabs -->
           <ul class="nav nav-tabs mb-0">
             <li class="nav-item">
-              <a class="nav-link" :class="{ active: activeTab === 'checks' }" href="#" @click.prevent="activeTab = 'checks'">
+              <a
+                class="nav-link"
+                :class="{ active: activeTab === 'checks' }"
+                href="#"
+                @click.prevent="activeTab = 'checks'"
+              >
                 <FaIcon icon="heart-pulse" class="me-1" />
                 {{ t('health.sectionChecks') }}
-                <span v-if="attention" class="badge ms-1" :class="summary.error ? 'text-bg-danger' : 'text-bg-warning'">{{ attention }}</span>
+                <span
+                  v-if="attention"
+                  class="badge ms-1"
+                  :class="summary.error ? 'text-bg-danger' : 'text-bg-warning'"
+                  >{{ attention }}</span
+                >
               </a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" :class="{ active: activeTab === 'info' }" href="#" @click.prevent="activeTab = 'info'">
+              <a
+                class="nav-link"
+                :class="{ active: activeTab === 'info' }"
+                href="#"
+                @click.prevent="activeTab = 'info'"
+              >
                 <FaIcon icon="circle-info" class="me-1" />
                 {{ t('health.sectionInfo') }}
               </a>
@@ -136,20 +155,34 @@ onMounted(async () => {
             <tbody>
               <template v-for="c in result.checks" :key="c.key">
                 <tr>
-                  <td style="width:2.5rem">
+                  <td style="width: 2.5rem">
                     <span class="badge rounded-pill" :class="indicatorClass(c.status)">&nbsp;</span>
                   </td>
-                  <td class="fw-bold" style="width:16rem">{{ checkLabel(c.key) }}</td>
+                  <td class="fw-bold" style="width: 16rem">{{ checkLabel(c.key) }}</td>
                   <td>
                     {{ displayValue(c.value) }}
                     <!-- a percentage reads instantly as a bar and needs interpreting as text -->
-                    <div v-if="typeof c.detail?.usedPercent === 'number'" class="progress health-bar mt-1" role="presentation">
-                      <div class="progress-bar" :class="barClass(c.status)" :style="{ width: c.detail.usedPercent + '%' }"></div>
+                    <div
+                      v-if="typeof c.detail?.usedPercent === 'number'"
+                      class="progress health-bar mt-1"
+                      role="presentation"
+                    >
+                      <div
+                        class="progress-bar"
+                        :class="barClass(c.status)"
+                        :style="{ width: c.detail.usedPercent + '%' }"
+                      ></div>
                     </div>
                   </td>
-                  <td class="text-end health-action" style="width:3rem">
-                    <BsButton v-if="c.detail" :isIconButton="true" colorClass="secondary" cssClass="btn-sm"
-                      :icon="expanded[c.key] ? 'chevron-up' : 'chevron-down'" @click="toggle(c.key)" />
+                  <td class="text-end health-action" style="width: 3rem">
+                    <BsButton
+                      v-if="c.detail"
+                      :isIconButton="true"
+                      colorClass="secondary"
+                      cssClass="btn-sm"
+                      :icon="expanded[c.key] ? 'chevron-up' : 'chevron-down'"
+                      @click="toggle(c.key)"
+                    />
                   </td>
                 </tr>
                 <!-- the detail row has to sit inside this same v-for, or every
@@ -172,11 +205,17 @@ onMounted(async () => {
               <tbody>
                 <template v-for="i in info" :key="i.key">
                   <tr>
-                    <td class="fw-bold" style="width:18.5rem">{{ infoLabel(i.key) }}</td>
+                    <td class="fw-bold" style="width: 18.5rem">{{ infoLabel(i.key) }}</td>
                     <td>{{ displayValue(i.value) }}</td>
-                    <td class="text-end health-action" style="width:3rem">
-                      <BsButton v-if="i.detail" :isIconButton="true" colorClass="secondary" cssClass="btn-sm"
-                        :icon="expanded['i-' + i.key] ? 'chevron-up' : 'chevron-down'" @click="toggle('i-' + i.key)" />
+                    <td class="text-end health-action" style="width: 3rem">
+                      <BsButton
+                        v-if="i.detail"
+                        :isIconButton="true"
+                        colorClass="secondary"
+                        cssClass="btn-sm"
+                        :icon="expanded['i-' + i.key] ? 'chevron-up' : 'chevron-down'"
+                        @click="toggle('i-' + i.key)"
+                      />
                     </td>
                   </tr>
                   <tr v-if="expanded['i-' + i.key] && i.detail">
@@ -190,7 +229,9 @@ onMounted(async () => {
           </template>
         </template>
         <template #actions>
-          <BsButton cssClass="ms-3" :icon="loading ? 'spinner' : 'refresh'" @click="load()">{{ t('health.refresh') }}</BsButton>
+          <BsButton cssClass="ms-3" :icon="loading ? 'spinner' : 'refresh'" @click="load()">{{
+            t('health.refresh')
+          }}</BsButton>
         </template>
       </AppSettings>
     </main>
@@ -211,10 +252,18 @@ onMounted(async () => {
    Do NOT swap these for bg-success/text-bg-success - those are themed to subtle
    --af-bg-* values meant to sit behind dark TEXT, and as bare swatches they measured
    1.08:1 in the light theme. */
-.health-ind-ok { background-color: #198754 !important; }
-.health-ind-warning { background-color: #b37700 !important; }
-.health-ind-error { background-color: #dc3545 !important; }
-.health-ind-unknown { background-color: #6c757d !important; }
+.health-ind-ok {
+  background-color: #198754 !important;
+}
+.health-ind-warning {
+  background-color: #b37700 !important;
+}
+.health-ind-error {
+  background-color: #dc3545 !important;
+}
+.health-ind-unknown {
+  background-color: #6c757d !important;
+}
 /* Every row is the same height whether or not it carries an expand button. Without this
    a row with a chevron is 40px and one without is 33px, so the list looks ragged.
    `height` on a table cell behaves as a minimum, so this lifts the short rows without

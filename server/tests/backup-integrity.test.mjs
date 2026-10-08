@@ -60,7 +60,6 @@ beforeEach(async () => {
   cmdCalls = [];
   appConfig.backupPath = tmpRoot;
   appConfig.configPath = path.join(tmpRoot, "src", "config.yaml");
-  appConfig.formsPath = path.join(tmpRoot, "src", "forms.yaml");
   appConfig.formsFolderPath = path.join(tmpRoot, "src", "forms");
   appConfig.mysqldumpCommand = "mariadb-dump";
   appConfig.mysqlCommand = "mariadb";

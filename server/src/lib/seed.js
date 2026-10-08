@@ -4,7 +4,7 @@
 // When CONFIG_SEED_PATH is set, that file is read at startup and the objects it
 // declares (awx, credentials, oauth2 providers, repositories, ldap, mail/url) are
 // upserted into the database. This is the piece that lets a whole instance be
-// rebuilt from git on an empty database - see docs/seed.md.
+// rebuilt from git on an empty database - see https://ansibleforms.com/seed.
 //
 // Objects that come from the seed are flagged `managed` : the seed re-applies them on
 // every start and the API refuses to change them, so the file stays authoritative.
@@ -27,11 +27,12 @@ import yaml from "yaml";
 import logger from "./logger.js";
 import crypto from "./crypto.js";
 import appConfig from "../../config/app.config.js";
-import { validateSeed, interpolateEnv } from "./seed-schema.js";
+import { validateSeed, interpolateEnv, foldAwxIntoRunners } from "./seed-schema.js";
 import CrudModel from "../models/crud.model.js";
-import Awx from "../models/awx.model.js";
 import OAuth2 from "../models/oauth2.model.js";
 import Credential from "../models/credential.model.v2.js";
+import SecretStore from "../models/secretStore.model.js";
+import Runner from "../models/runner.model.js";
 import Repository from "../models/repository.model.js";
 import Ldap from "../models/ldap.model.js";
 import Settings from "../models/settings.model.js";
@@ -49,12 +50,23 @@ const seedOpts = { fromSeed: true };
 // returning, so a declared plaintext password can be compared with what is stored.
 const listSections = [
   {
-    key: "awx",
-    modelName: "awx",
-    label: "awx",
-    create: (d) => Awx.create(d, seedOpts),
-    update: (d, row) => Awx.update(d, row.id, seedOpts),
-    remove: (row) => Awx.delete(row.id, seedOpts),
+    // before the credentials that name them
+    key: "secret_stores",
+    modelName: "secretstore",
+    label: "secret store",
+    defaults: { description: "" },
+    create: (d) => SecretStore.create(d, seedOpts),
+    update: (d, row) => SecretStore.update(d, row.id, seedOpts),
+    remove: (row) => SecretStore.delete(row.id, seedOpts),
+  },
+  {
+    key: "runners",
+    modelName: "runner",
+    label: "runner",
+    defaults: { description: "" },
+    create: (d) => Runner.create(d, seedOpts),
+    update: (d, row) => Runner.update(d, row.id, seedOpts),
+    remove: (row) => Runner.delete(row.id, seedOpts),
   },
   {
     key: "credentials",
@@ -113,7 +125,8 @@ export function canonicalJson(value) {
 // would make the audit trail claim a change on every restart and make the applied
 // counts meaningless. Comparison is loose (String()) because a port declared as 389
 // comes back from MySQL as "389" in a varchar column.
-function differs(declared, stored) {
+// Exported for the tests of the JSON comparisons.
+export function differs(declared, stored) {
   for (const [key, value] of Object.entries(declared)) {
     if (key === "managed") continue;
     const before = stored[key];
@@ -137,6 +150,14 @@ function differs(declared, stored) {
         try { parsed = JSON.parse(value); } catch { parsed = value; }
       }
       if (canonicalJson(before) !== canonicalJson(parsed)) return true;
+      continue;
+    }
+    // the other way round : an object declared for a TEXT column holding JSON
+    // (secret_stores.extra), which String() would turn into "[object Object]"
+    if (typeof value === "object") {
+      let parsed;
+      try { parsed = JSON.parse(before ?? "null"); } catch { parsed = before; }
+      if (canonicalJson(parsed) !== canonicalJson(value)) return true;
       continue;
     }
     if (String(before ?? "") !== String(value)) return true;
@@ -322,7 +343,24 @@ export async function applyChat(declared, summary) {
  * Applies the seed file when CONFIG_SEED_PATH is set. Returns a summary, or null when
  * no seed is configured. Throws on anything wrong : the caller treats that as fatal.
  */
-export async function applyConfigSeed({ schemaIsReady = true } = {}) {
+// One apply at a time : the boot, the reload poll and SIGHUP each find-then-create per
+// section, so two at once could create the same row twice. Each waits for the one before.
+let seedRun = Promise.resolve();
+function oneAtATime(fn) {
+  const run = seedRun.then(fn, fn);
+  seedRun = run.catch(() => {});
+  return run;
+}
+
+export function applyConfigSeed(opts) {
+  return oneAtATime(() => applySeedNow(opts));
+}
+
+export function reloadConfigSeed(opts) {
+  return oneAtATime(() => reloadSeedNow(opts));
+}
+
+async function applySeedNow({ schemaIsReady = true } = {}) {
   const seedPath = appConfig.configSeedPath;
   if (!seedPath) return null;
 
@@ -330,7 +368,7 @@ export async function applyConfigSeed({ schemaIsReady = true } = {}) {
   // including a single addIndex that could not apply, which schemaCheck itself grades only a
   // WARNING ("slow, not broken"). Refusing to start on that turned an upgrade into a
   // CrashLoopBackOff with no way in: the app never listens, so POST /api/v2/schema - the
-  // documented manual repair, and the readiness probe in docs/seed.md - is unreachable, and
+  // documented manual repair, and the readiness probe in https://ansibleforms.com/seed - is unreachable, and
   // the only escape is editing the Deployment to unset CONFIG_SEED_PATH. It also contradicted
   // schema.model.js's own note that a missing ALTER grant "does not stop the app".
   //
@@ -361,6 +399,10 @@ export async function applyConfigSeed({ schemaIsReady = true } = {}) {
   }
   doc = interpolateEnv(doc);
   validateSeed(doc);
+  if (doc.awx) {
+    logger.warning("The config seed's awx: section is deprecated since 7 and removed in 8 : declare those connections under runners: with type: awx");
+    doc = foldAwxIntoRunners(doc);
+  }
 
   const summary = { created: [], updated: [], released: [], pruned: [], adopted: [], recloned: [], unchanged: 0 };
 
@@ -451,7 +493,7 @@ function recordFailure(hash, err, trigger) {
  *   applied   - re-applied, with the summary
  *   failed    - threw ; the previous configuration is kept
  */
-export async function reloadConfigSeed({ force = false, trigger = "poll" } = {}) {
+async function reloadSeedNow({ force = false, trigger = "poll" } = {}) {
   const seedPath = appConfig.configSeedPath;
   if (!seedPath) return { status: "off" };
 
@@ -477,7 +519,7 @@ export async function reloadConfigSeed({ force = false, trigger = "poll" } = {})
 
   logger.notice(`Config seed re-apply triggered (${trigger})`);
   try {
-    const summary = await applyConfigSeed();
+    const summary = await applySeedNow();
     return { status: "applied", summary };
   } catch (e) {
     return recordFailure(hash, e, trigger);
