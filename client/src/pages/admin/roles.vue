@@ -126,6 +126,8 @@ const tableItems = computed(() =>
 const columns = computed(() => [
   {
     key: 'name',
+    // a share of the width, so it follows the screen : the description gets the rest
+    width: '30%',
     label: t('settings.settingsPage.name'),
     sortable: true,
     filterable: true,

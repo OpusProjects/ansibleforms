@@ -218,3 +218,13 @@
   border-color: var(--bs-border-color);
   opacity: 1;
 }
+
+/* a row that opens something when clicked (BsDataTable without rowClickSelects : an edit dialog,
+   a role's page) : its first column in the blue of an active tab, the theme's primary */
+.af-table td.af-row-open {
+  color: var(--bs-primary);
+  font-weight: 500;
+}
+.af-table tbody tr:hover > td.af-row-open {
+  text-decoration: underline;
+}
