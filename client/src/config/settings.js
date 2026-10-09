@@ -3,7 +3,7 @@
 import { editorStyle } from './editorStyle';
 import Helpers from '@/lib/Helpers';
 import i18n from '@/plugins/i18n';
-import { describeCron } from '@/config/cron';
+import { describeCron } from '@/config/cronDescribe';
 import { cronValidationMessage } from './cron';
 import { headerWidth } from '@/lib/tableCells';
 
