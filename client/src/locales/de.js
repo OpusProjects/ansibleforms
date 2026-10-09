@@ -540,6 +540,7 @@ export default {
       save: 'Speichern',
       unsavedChanges: 'Sie haben ungespeicherte Änderungen. Diese Seite verlassen und sie verwerfen?',
       seedManaged: 'Konfigurations-Seed',
+      seedManagedField: 'In der Config-Seed-Datei gesetzt: dort ändern, dann neu starten.',
       seedManagedNotice:
         'Diese Konfiguration stammt aus der Konfigurations-Seed-Datei und ist hier schreibgeschützt. Ändern Sie sie in der Seed-Datei und starten Sie neu.',
       loading: 'Laedt...',

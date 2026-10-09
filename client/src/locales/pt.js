@@ -535,6 +535,7 @@ export default {
       save: 'Guardar',
       unsavedChanges: 'Tem alterações por guardar. Sair desta página e perdê-las?',
       seedManaged: 'Config seed',
+      seedManagedField: 'Definido no ficheiro config seed: altere-o lá e reinicie.',
       seedManagedNotice:
         'Esta configuração provém do ficheiro de config seed e aqui é só de leitura. Altere-a no ficheiro de seed e reinicie.',
       loading: 'A carregar...',

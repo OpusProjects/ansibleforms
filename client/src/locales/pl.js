@@ -533,6 +533,7 @@ export default {
       save: 'Zapisz',
       unsavedChanges: 'Masz niezapisane zmiany. Opuścić tę stronę i je utracić?',
       seedManaged: 'Config seed',
+      seedManagedField: 'Ustawione w pliku config seed: zmień je tam, potem uruchom ponownie.',
       seedManagedNotice:
         'Ta konfiguracja pochodzi z pliku config seed i jest tutaj tylko do odczytu. Zmień ją w pliku seed, a następnie uruchom ponownie.',
       loading: 'Wczytywanie...',

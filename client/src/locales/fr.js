@@ -539,6 +539,7 @@ export default {
       save: 'Enregistrer',
       unsavedChanges: 'Vous avez des modifications non enregistrées. Quitter cette page et les perdre ?',
       seedManaged: 'Seed de configuration',
+      seedManagedField: 'Défini dans le fichier config seed : modifiez-le là, puis redémarrez.',
       seedManagedNotice:
         'Cette configuration provient du fichier seed de configuration et est en lecture seule ici. Modifiez-la dans le fichier seed, puis redémarrez.',
       loading: 'Chargement...',
