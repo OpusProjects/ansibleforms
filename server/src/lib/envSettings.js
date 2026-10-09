@@ -69,6 +69,8 @@ const LIVE = {
   NIGHTLY_BACKUP_RETENTION: { key: 'nightlyBackupRetention', parse: v => parseInt(v, 10) || 0 },
   MYSQLDUMP_COMMAND: { key: 'mysqldumpCommand', parse: v => v },
   MYSQL_COMMAND: { key: 'mysqlCommand', parse: v => v },
+  // backup.model passes it to every dump and restore it runs ; the same fallback as app.config
+  BACKUP_COMMAND_TIMEOUT_SECONDS: { key: 'backupCommandTimeoutSeconds', parse: v => (parseInt(v, 10) > 0 ? parseInt(v, 10) : 3600) },
   GIT_CLONE_COMMAND: { key: 'gitCloneCommand', parse: v => v },
   GIT_PULL_COMMAND: { key: 'gitPullCommand', parse: v => v },
   GIT_PUSH_COMMAND: { key: 'gitPushCommand', parse: v => v },
