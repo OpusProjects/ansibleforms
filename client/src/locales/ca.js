@@ -606,6 +606,13 @@ export default {
       showGroup: 'Mostra el grup',
       deleteGroup: 'Suprimeix el grup',
       editGroup: 'Edita el grup',
+      addUserToGroup: 'Afegeix un usuari',
+      removeFromGroup: 'Treu del grup',
+      noUsers: 'Encara no hi ha usuaris en aquest grup.',
+      everyUserIn: 'Tots els usuaris ja són en aquest grup.',
+      groupNotFound: "No hi ha cap grup amb l'id '{id}'.",
+      nameRequired: 'Cal un nom',
+      stillHasUsers: 'Treu primer els seus usuaris: un grup amb usuaris no es pot suprimir',
     },
     repositories: {
       label: 'Repositori',

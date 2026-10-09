@@ -603,6 +603,13 @@ export default {
       showGroup: 'グループを表示',
       deleteGroup: 'グループを削除',
       editGroup: 'グループを編集',
+      addUserToGroup: 'ユーザーを追加',
+      removeFromGroup: 'グループから削除',
+      noUsers: 'このグループにはまだユーザーがいません。',
+      everyUserIn: 'すべてのユーザーがすでにこのグループに所属しています。',
+      groupNotFound: "ID '{id}' のグループはありません。",
+      nameRequired: '名前が必要です',
+      stillHasUsers: '先にユーザーを削除してください: ユーザーがいるグループは削除できません',
     },
     repositories: {
       label: 'リポジトリ',
