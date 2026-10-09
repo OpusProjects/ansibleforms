@@ -61,8 +61,8 @@
      the checkbox off as soon as the table narrowed */
   th.bs-dt-select,
   td.bs-dt-select {
-    width: calc(1.25rem + 1em + 0.5rem);
-    padding-right: 0.5rem;
+    /* in rem : the header's smaller font made 1em narrower than the rows' checkbox */
+    width: calc(1.25rem + 1rem + 0.5rem);
   }
   /* the row menu's dots (BsDataTable's row-actions) : as far from the right edge as the first
      column is from the left one */
@@ -182,4 +182,11 @@
 .af-pill-label {
   display: block;
   text-box: trim-both cap alphabetic;
+}
+
+/* the selection column's right padding : after the rules above for every cell and header (the
+   class twice to outrank them), so the checkbox and its 0.5rem fit the column */
+.af-table.af-table th.bs-dt-select,
+.af-table.af-table td.bs-dt-select {
+  padding-right: 0.5rem;
 }
