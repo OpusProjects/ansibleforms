@@ -33,6 +33,7 @@ const mcpSettings = () => import('@/pages/admin/mcp.vue');
 const mailSettings = () => import('@/pages/admin/mailSettings.vue');
 const logo = () => import('@/pages/admin/logo.vue');
 const repositories = () => import('@/pages/admin/repositories.vue');
+const repository = () => import('@/pages/admin/repository.vue');
 const schedules = () => import('@/pages/admin/schedules.vue');
 const storedJobs = () => import('@/pages/admin/stored-jobs.vue');
 const settings = () => import('@/pages/admin/settings.vue');
@@ -150,6 +151,12 @@ const routes = [
   { path: '/admin/mailSettings', name: '/admin/mailSettings', component: mailSettings, beforeEnter: checkSettings },
   { path: '/admin/logo', name: '/admin/logo', component: logo, beforeEnter: checkSettings },
   { path: '/admin/repositories', name: '/admin/repositories', component: repositories, beforeEnter: checkSettings },
+  {
+    path: '/admin/repositories/:name',
+    name: '/admin/repositories/:name',
+    component: repository,
+    beforeEnter: checkSettings,
+  },
   // moved under /jobs (7) : bookmarks to the old addresses still land on the page
   { path: '/admin/schedules', redirect: '/jobs/schedules' },
   { path: '/admin/stored-jobs', redirect: '/jobs/stored' },
