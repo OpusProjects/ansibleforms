@@ -172,7 +172,7 @@ onMounted(async () => {
         :description="t('settings.settingsPage.constantsDescription')"
       >
         <template #default>
-          <div class="pt-2">
+          <div>
             <div v-if="loadError" class="alert alert-danger" role="alert">
               {{ t('settings.common.failedToLoad') }} : {{ loadError }}
             </div>
@@ -180,60 +180,63 @@ onMounted(async () => {
               <FaIcon icon="sliders-h" class="empty-state-icon" />
               <span>{{ t('settings.settingsPage.noConstants') }}</span>
             </div>
-            <table v-else class="table table-sm table-bordered mb-2 config-table">
-              <thead>
-                <tr>
-                  <th>{{ t('settings.settingsPage.key') }}</th>
-                  <th>{{ t('settings.settingsPage.value') }}</th>
-                  <th class="col-action"></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="entry in flatConstants" :key="entry.row._uid">
-                  <td>
-                    <div class="d-flex align-items-center" :style="{ paddingLeft: entry.depth * 1.5 + 'rem' }">
-                      <FaIcon
-                        v-if="entry.depth > 0"
-                        icon="level-up-alt"
-                        class="text-muted fa-rotate-90 flex-shrink-0 me-2"
-                        style="font-size: 0.75rem"
-                      />
-                      <input class="form-control form-control-sm" v-model="entry.row.key" :disabled="readOnly" />
-                    </div>
-                  </td>
-                  <td>
-                    <!-- a textarea, not an input : a list is written as yaml, which
+            <!-- the table runs to the card's edges, with the grey header bar of the other tables -->
+            <div v-else class="af-table-frame">
+              <table class="table af-table config-table">
+                <thead>
+                  <tr>
+                    <th>{{ t('settings.settingsPage.key') }}</th>
+                    <th>{{ t('settings.settingsPage.value') }}</th>
+                    <th class="col-action"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="entry in flatConstants" :key="entry.row._uid">
+                    <td>
+                      <div class="d-flex align-items-center" :style="{ paddingLeft: entry.depth * 1.5 + 'rem' }">
+                        <FaIcon
+                          v-if="entry.depth > 0"
+                          icon="level-up-alt"
+                          class="text-muted fa-rotate-90 flex-shrink-0 me-2"
+                          style="font-size: 0.75rem"
+                        />
+                        <input class="form-control form-control-sm" v-model="entry.row.key" :disabled="readOnly" />
+                      </div>
+                    </td>
+                    <td>
+                      <!-- a textarea, not an input : a list is written as yaml, which
                          needs more than one line. It renders as a single row until the
                          value actually has one, so a plain constant looks unchanged. -->
-                    <textarea
-                      v-if="!isParent(entry.row)"
-                      class="form-control form-control-sm"
-                      :rows="constantValueRows(entry.row.value)"
-                      v-model="entry.row.value"
-                      :disabled="readOnly"
-                      :placeholder="t('settings.settingsPage.constantValuePlaceholder')"
-                    ></textarea>
-                    <span v-else class="text-muted fst-italic small">{{
-                      t('settings.settingsPage.subkeyCount', entry.row.children.length)
-                    }}</span>
-                  </td>
-                  <td class="text-center">
-                    <div v-if="!readOnly" class="d-flex justify-content-center gap-1">
-                      <button
-                        class="btn btn-sm btn-outline-secondary"
-                        @click="addSubconstant(entry.row)"
-                        :title="t('settings.settingsPage.addSubconstant')"
-                      >
-                        <FaIcon icon="plus" />
-                      </button>
-                      <button class="btn btn-sm btn-outline-danger" @click="removeConstant(entry.row)">
-                        <FaIcon icon="trash" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                      <textarea
+                        v-if="!isParent(entry.row)"
+                        class="form-control form-control-sm"
+                        :rows="constantValueRows(entry.row.value)"
+                        v-model="entry.row.value"
+                        :disabled="readOnly"
+                        :placeholder="t('settings.settingsPage.constantValuePlaceholder')"
+                      ></textarea>
+                      <span v-else class="text-muted fst-italic small">{{
+                        t('settings.settingsPage.subkeyCount', entry.row.children.length)
+                      }}</span>
+                    </td>
+                    <td class="text-center">
+                      <div v-if="!readOnly" class="d-flex justify-content-center gap-1">
+                        <button
+                          class="btn btn-sm btn-outline-secondary"
+                          @click="addSubconstant(entry.row)"
+                          :title="t('settings.settingsPage.addSubconstant')"
+                        >
+                          <FaIcon icon="plus" />
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" @click="removeConstant(entry.row)">
+                          <FaIcon icon="trash" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </template>
         <template #actions>

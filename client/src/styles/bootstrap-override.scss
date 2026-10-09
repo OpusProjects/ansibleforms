@@ -379,7 +379,8 @@
 }
 
 // Shared config admin pages (categories, roles, constants): fixed-layout
-// config tables and the "no items yet" empty-state placeholder.
+// config tables and the "no items yet" empty-state placeholder. The placeholder has no box of
+// its own : the page's card is the only frame around it.
 .config-table {
   table-layout: fixed;
 }
@@ -411,9 +412,6 @@
   padding: 2rem 1rem;
   color: var(--bs-secondary-color);
   font-style: italic;
-  border: 1px dashed var(--bs-border-color);
-  border-radius: 0.375rem;
-  margin-bottom: 0.5rem;
 }
 .empty-state-icon {
   font-size: 1.5rem;

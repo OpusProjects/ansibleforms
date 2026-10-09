@@ -221,7 +221,7 @@ onMounted(async () => {
         :description="t('settings.settingsPage.rolesDescription')"
       >
         <template #default>
-          <div class="pt-2">
+          <div>
             <div v-if="loadError" class="alert alert-danger" role="alert">
               {{ t('settings.common.failedToLoad') }} : {{ loadError }}
             </div>
@@ -229,38 +229,58 @@ onMounted(async () => {
               <FaIcon icon="user-shield" class="empty-state-icon" />
               <span>{{ t('settings.settingsPage.noRoles') }}</span>
             </div>
-            <div v-for="{ role, rIdx } in sortedRoles" :key="role._uid" class="border rounded mb-2">
-              <div
-                class="d-flex align-items-center justify-content-between px-3 py-2 role-header"
-                @click="toggleRole(role._uid)"
-              >
-                <div class="d-flex align-items-center gap-2">
-                  <FaIcon :icon="expandedRoles[role._uid] ? 'chevron-down' : 'chevron-right'" class="text-muted" />
-                  <strong>{{ role.name || '(unnamed)' }}</strong>
-                  <span v-if="isRequiredRole(role)" class="badge bg-secondary-subtle text-muted">{{
-                    t('settings.settingsPage.requiredItem')
-                  }}</span>
-                </div>
-                <button
-                  v-if="!isRequiredRole(role) && !readOnly"
-                  class="btn btn-sm btn-outline-danger"
-                  @click.stop="removeRole(rIdx)"
-                >
-                  <FaIcon icon="trash" />
-                </button>
-              </div>
-              <div v-show="expandedRoles[role._uid]" class="px-3 pb-3">
-                <AppRoleEditor
-                  v-model:role="roles[rIdx]"
-                  :readOnly="readOnly"
-                  :authProviders="authProviders"
-                  :localGroups="sortedLocalGroups"
-                  :localUsers="sortedLocalUsers"
-                  :optionKeys="roleOptionKeys"
-                  :optionLabel="roleOptionLabel"
-                  :nextUid="nextUid"
-                />
-              </div>
+            <!-- the roles as a table running to the card's edges, with the grey header bar of
+                 the other tables : a role opens under its row -->
+            <div v-else class="af-table-frame">
+              <table class="table af-table roles-table">
+                <thead>
+                  <tr>
+                    <th>{{ t('settings.settingsPage.name') }}</th>
+                    <th class="col-action"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template v-for="{ role, rIdx } in sortedRoles" :key="role._uid">
+                    <tr class="role-header" @click="toggleRole(role._uid)">
+                      <td>
+                        <div class="d-flex align-items-center gap-2">
+                          <FaIcon
+                            :icon="expandedRoles[role._uid] ? 'chevron-down' : 'chevron-right'"
+                            class="text-muted"
+                          />
+                          <strong>{{ role.name || '(unnamed)' }}</strong>
+                          <span v-if="isRequiredRole(role)" class="badge bg-secondary-subtle text-muted">{{
+                            t('settings.settingsPage.requiredItem')
+                          }}</span>
+                        </div>
+                      </td>
+                      <td class="text-end">
+                        <button
+                          v-if="!isRequiredRole(role) && !readOnly"
+                          class="btn btn-sm btn-outline-danger"
+                          @click.stop="removeRole(rIdx)"
+                        >
+                          <FaIcon icon="trash" />
+                        </button>
+                      </td>
+                    </tr>
+                    <tr v-show="expandedRoles[role._uid]" class="role-body">
+                      <td colspan="2">
+                        <AppRoleEditor
+                          v-model:role="roles[rIdx]"
+                          :readOnly="readOnly"
+                          :authProviders="authProviders"
+                          :localGroups="sortedLocalGroups"
+                          :localUsers="sortedLocalUsers"
+                          :optionKeys="roleOptionKeys"
+                          :optionLabel="roleOptionLabel"
+                          :nextUid="nextUid"
+                        />
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
             </div>
           </div>
         </template>
@@ -284,13 +304,19 @@ onMounted(async () => {
 .role-header {
   cursor: pointer;
   user-select: none;
-  /* Rows carrying a delete button are taller than the reserved 'admin' / 'public' rows,
-     which have none - measured 47px against 40px, so the list looked ragged. 47px is a
-     btn-sm row (31px) plus this header's py-2 (16px); as a minimum the button still
-     governs the height and the buttonless rows simply match it. */
-  min-height: 47px;
 }
-.role-header:hover {
-  background-color: var(--bs-tertiary-bg);
+/* a row with a delete button and one without (admin, public) : the same height, the
+   button's (a btn-sm, 31px) */
+.role-header > td {
+  height: calc(31px + 24px);
+}
+/* an opened role : its editor under the row, on the page's background, no hover */
+.roles-table tbody tr.role-body:hover > td {
+  background: var(--bs-body-bg);
+}
+.roles-table tbody tr.role-body > td {
+  padding-top: 0.5rem;
+  padding-bottom: 1rem;
+  text-box: normal;
 }
 </style>

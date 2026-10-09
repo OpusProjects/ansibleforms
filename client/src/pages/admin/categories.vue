@@ -209,7 +209,7 @@ onMounted(async () => {
         :description="t('settings.settingsPage.categoriesDescription')"
       >
         <template #default>
-          <div class="pt-2">
+          <div>
             <div v-if="loadError" class="alert alert-danger" role="alert">
               {{ t('settings.common.failedToLoad') }} : {{ loadError }}
             </div>
@@ -222,121 +222,113 @@ onMounted(async () => {
               <FaIcon icon="th-list" class="empty-state-icon" />
               <span>{{ t('settings.settingsPage.noCategories') }}</span>
             </div>
-            <table v-else class="table table-sm table-bordered mb-2 config-table">
-              <thead>
-                <tr>
-                  <th>{{ t('settings.settingsPage.name') }}</th>
-                  <th>{{ t('settings.settingsPage.icon') }}</th>
-                  <th class="col-action-move"></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="row in flatCats" :key="row.cat._uid">
-                  <td>
-                    <div class="d-flex align-items-center" :style="{ paddingLeft: row.depth * 1.5 + 'rem' }">
-                      <FaIcon
-                        v-if="row.depth > 0"
-                        icon="level-up-alt"
-                        class="text-muted me-2 fa-rotate-90"
-                        style="font-size: 0.75rem"
-                      />
-                      <input
-                        class="form-control form-control-sm"
-                        v-model="row.cat.name"
-                        :disabled="isDefaultCategory(row.cat, row.depth) || readOnly"
-                      />
-                    </div>
-                  </td>
-                  <td>
-                    <div class="d-flex align-items-center gap-2">
-                      <FaIcon :icon="row.cat.icon || 'question'" class="text-muted" />
-                      <select
-                        class="form-select form-select-sm"
-                        v-model="row.cat.icon"
-                        :disabled="isDefaultCategory(row.cat, row.depth) || readOnly"
-                      >
-                        <!-- a hand-written icon that is not in the list would show as nothing
+            <!-- the table runs to the card's edges, with the grey header bar of the other tables -->
+            <div v-else class="af-table-frame">
+              <table class="table af-table config-table">
+                <thead>
+                  <tr>
+                    <th>{{ t('settings.settingsPage.name') }}</th>
+                    <th>{{ t('settings.settingsPage.icon') }}</th>
+                    <th class="col-action-move"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in flatCats" :key="row.cat._uid">
+                    <td>
+                      <div class="d-flex align-items-center" :style="{ paddingLeft: row.depth * 1.5 + 'rem' }">
+                        <FaIcon
+                          v-if="row.depth > 0"
+                          icon="level-up-alt"
+                          class="text-muted me-2 fa-rotate-90"
+                          style="font-size: 0.75rem"
+                        />
+                        <input
+                          class="form-control form-control-sm"
+                          v-model="row.cat.name"
+                          :disabled="isDefaultCategory(row.cat, row.depth) || readOnly"
+                        />
+                      </div>
+                    </td>
+                    <td>
+                      <div class="d-flex align-items-center gap-2">
+                        <FaIcon :icon="row.cat.icon || 'question'" class="text-muted" />
+                        <select
+                          class="form-select form-select-sm"
+                          v-model="row.cat.icon"
+                          :disabled="isDefaultCategory(row.cat, row.depth) || readOnly"
+                        >
+                          <!-- a hand-written icon that is not in the list would show as nothing
                              selected, as if the category had no icon at all : offer it as an
                              option so it stays visible and is not replaced unnoticed -->
-                        <option v-if="row.cat.icon && !availableIcons.includes(row.cat.icon)" :value="row.cat.icon">
-                          {{ row.cat.icon }}
-                        </option>
-                        <option v-for="ic in availableIcons" :key="ic" :value="ic">{{ ic }}</option>
-                      </select>
-                    </div>
-                  </td>
-                  <td class="text-center align-middle">
-                    <!-- reorganize : indent makes the row above the parent, outdent lifts
+                          <option v-if="row.cat.icon && !availableIcons.includes(row.cat.icon)" :value="row.cat.icon">
+                            {{ row.cat.icon }}
+                          </option>
+                          <option v-for="ic in availableIcons" :key="ic" :value="ic">{{ ic }}</option>
+                        </select>
+                      </div>
+                    </td>
+                    <td class="text-center align-middle">
+                      <!-- reorganize : indent makes the row above the parent, outdent lifts
                          it back out. Paired into two groups so six controls read as four
                          things, and disabled rather than hidden so nothing shifts around
                          under the pointer as rows move. -->
-                    <div
-                      v-if="!isDefaultCategory(row.cat, row.depth) && !readOnly"
-                      class="d-flex justify-content-center gap-1 cat-actions"
-                    >
-                      <!-- one group of four, not four buttons : the row already carries an
+                      <div
+                        v-if="!isDefaultCategory(row.cat, row.depth) && !readOnly"
+                        class="d-flex justify-content-center gap-1 cat-actions"
+                      >
+                        <!-- one group of four, not four buttons : the row already carries an
                            add and a delete, and the cell has to hold all six at whatever
                            base font size the browser is using -->
-                      <div class="btn-group btn-group-sm" role="group">
+                        <div class="btn-group btn-group-sm" role="group">
+                          <button
+                            class="btn btn-outline-secondary"
+                            :disabled="!canMoveUp(categories, row.cat)"
+                            @click="moveUp(row.cat)"
+                            :title="t('settings.settingsPage.moveUp')"
+                          >
+                            <FaIcon icon="chevron-up" />
+                          </button>
+                          <button
+                            class="btn btn-outline-secondary"
+                            :disabled="!canMoveDown(categories, row.cat)"
+                            @click="moveDown(row.cat)"
+                            :title="t('settings.settingsPage.moveDown')"
+                          >
+                            <FaIcon icon="chevron-down" />
+                          </button>
+                          <button
+                            class="btn btn-outline-secondary"
+                            :disabled="!canIndent(categories, row.cat)"
+                            @click="indent(row.cat)"
+                            :title="t('settings.settingsPage.indentCategory')"
+                          >
+                            <FaIcon icon="indent" />
+                          </button>
+                          <button
+                            class="btn btn-outline-secondary"
+                            :disabled="!canOutdent(categories, row.cat)"
+                            @click="outdent(row.cat)"
+                            :title="t('settings.settingsPage.outdentCategory')"
+                          >
+                            <FaIcon icon="outdent" />
+                          </button>
+                        </div>
                         <button
-                          class="btn btn-outline-secondary"
-                          :disabled="!canMoveUp(categories, row.cat)"
-                          @click="moveUp(row.cat)"
-                          :title="t('settings.settingsPage.moveUp')"
+                          class="btn btn-sm btn-outline-secondary"
+                          @click="addSubcategory(row.cat)"
+                          :title="t('settings.settingsPage.addSubcategory')"
                         >
-                          <FaIcon icon="chevron-up" />
+                          <FaIcon icon="plus" />
                         </button>
-                        <button
-                          class="btn btn-outline-secondary"
-                          :disabled="!canMoveDown(categories, row.cat)"
-                          @click="moveDown(row.cat)"
-                          :title="t('settings.settingsPage.moveDown')"
-                        >
-                          <FaIcon icon="chevron-down" />
-                        </button>
-                        <button
-                          class="btn btn-outline-secondary"
-                          :disabled="!canIndent(categories, row.cat)"
-                          @click="indent(row.cat)"
-                          :title="t('settings.settingsPage.indentCategory')"
-                        >
-                          <FaIcon icon="indent" />
-                        </button>
-                        <button
-                          class="btn btn-outline-secondary"
-                          :disabled="!canOutdent(categories, row.cat)"
-                          @click="outdent(row.cat)"
-                          :title="t('settings.settingsPage.outdentCategory')"
-                        >
-                          <FaIcon icon="outdent" />
+                        <button class="btn btn-sm btn-outline-danger" @click="removeCategory(row.cat)">
+                          <FaIcon icon="trash" />
                         </button>
                       </div>
-                      <button
-                        class="btn btn-sm btn-outline-secondary"
-                        @click="addSubcategory(row.cat)"
-                        :title="t('settings.settingsPage.addSubcategory')"
-                      >
-                        <FaIcon icon="plus" />
-                      </button>
-                      <button class="btn btn-sm btn-outline-danger" @click="removeCategory(row.cat)">
-                        <FaIcon icon="trash" />
-                      </button>
-                    </div>
-                    <!-- the row it sits on is as tall as the button rows around it, so the
-                         badge is centred in both directions rather than sitting on the
-                         cell's text baseline -->
-                    <div
-                      v-else-if="isDefaultCategory(row.cat, row.depth)"
-                      class="d-flex justify-content-center align-items-center"
-                    >
-                      <span class="badge bg-secondary-subtle text-muted">{{
-                        t('settings.settingsPage.requiredItem')
-                      }}</span>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </template>
         <template #actions>
