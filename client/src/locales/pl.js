@@ -392,6 +392,7 @@ export default {
     search: 'Szukaj',
     noData: 'Brak dostępnych danych',
     actions: 'Akcje',
+    pageSize: 'Wierszy na stronę',
     previous: 'Poprzednia',
     next: 'Następna',
     apply: 'Zastosuj',

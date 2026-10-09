@@ -391,6 +391,7 @@ export default {
     search: 'Search',
     noData: 'No data available',
     actions: 'Actions',
+    pageSize: 'Rows per page',
     previous: 'Previous',
     next: 'Next',
     apply: 'Apply',

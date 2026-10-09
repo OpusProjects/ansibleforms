@@ -171,18 +171,20 @@ onMounted(() => {
 });
 </script>
 <template>
-  <nav aria-label="Job pagination">
+  <!-- the page size, then the page boxes : the size outside the list, so Previous is its first
+       box and gets the rounded left corners, as Next the right ones -->
+  <nav aria-label="Pagination" class="af-pager-nav">
+    <select class="form-select af-page-size" v-model="pageSize" :aria-label="t('common.pageSize')">
+      <option :value="10">10</option>
+      <option :value="25">25</option>
+      <option :value="50">50</option>
+      <option :value="100">100</option>
+    </select>
     <ul class="pagination justify-content-end user-select-none">
-      <li class="me-2">
-        <select class="form-select" v-model="pageSize">
-          <option :value="10">10</option>
-          <option :value="25">25</option>
-          <option :value="50">50</option>
-          <option :value="100">100</option>
-        </select>
-      </li>
       <li role="button" class="page-item" :class="{ disabled: page <= 1 }">
-        <a class="page-link" @click="setPage(page - 1)">{{ t('common.previous') }}</a>
+        <a class="page-link" @click="setPage(page - 1)"
+          ><FaIcon icon="angles-left" class="af-pager-arrow me-1" />{{ t('common.previous') }}</a
+        >
       </li>
       <li role="button" class="page-item" :class="{ active: 1 == page }">
         <a class="page-link" v-if="showFirstPage" @click="setPage(1)" aria-label="Goto page 1">1</a>
@@ -212,7 +214,9 @@ onMounted(() => {
         >
       </li>
       <li role="button" class="page-item" :class="{ disabled: page >= pages.length }">
-        <a class="page-link" @click="setPage(page + 1)">{{ t('common.next') }}</a>
+        <a class="page-link" @click="setPage(page + 1)"
+          >{{ t('common.next') }}<FaIcon icon="angles-right" class="af-pager-arrow ms-1"
+        /></a>
       </li>
     </ul>
   </nav>
@@ -226,5 +230,19 @@ onMounted(() => {
    compensating class. */
 .pagination {
   margin-bottom: 0;
+}
+/* the page size and the boxes on one line, at the right */
+.af-pager-nav {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+.af-page-size {
+  width: auto;
+}
+/* Previous and Next : a double arrow on their outer side, a little smaller than the words */
+.af-pager-arrow {
+  font-size: 0.8em;
 }
 </style>

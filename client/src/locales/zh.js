@@ -386,6 +386,7 @@ export default {
     search: '搜索',
     noData: '暂无数据',
     actions: '操作',
+    pageSize: '每页行数',
     previous: '上一页',
     next: '下一页',
     apply: '应用',

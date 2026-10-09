@@ -1145,17 +1145,6 @@ onBeforeUnmount(() => {
               </tr>
             </tbody>
           </table>
-          <div class="af-table-footer">
-            <span class="af-table-count me-auto">{{ jobsRange }}</span>
-            <BsPagination
-              v-if="!isLoading"
-              :dataList="parentJobs"
-              :buttonsShown="7"
-              :index="displayedJobIndex"
-              name="jobs"
-              @change="setDisplayJobs"
-            />
-          </div>
         </div>
         <div v-if="job && isJobPage" class="row af-job-output">
           <div class="col">
@@ -1318,6 +1307,21 @@ onBeforeUnmount(() => {
             </div>
           </div>
         </div>
+        <!-- the list's pager : the rows shown, the page size and boxes, under the card as every
+             table's -->
+        <template #footer>
+          <div v-if="!isJobPage" class="af-table-pager">
+            <span class="af-table-count">{{ jobsRange }}</span>
+            <BsPagination
+              v-if="!isLoading"
+              :dataList="parentJobs"
+              :buttonsShown="7"
+              :index="displayedJobIndex"
+              name="jobs"
+              @change="setDisplayJobs"
+            />
+          </div>
+        </template>
       </AppSettings>
     </main>
   </div>

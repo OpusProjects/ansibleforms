@@ -397,6 +397,7 @@ export default {
     search: 'Rechercher',
     noData: 'Aucune donnee disponible',
     actions: 'Actions',
+    pageSize: 'Lignes par page',
     previous: 'Precedent',
     next: 'Suivant',
     apply: 'Appliquer',

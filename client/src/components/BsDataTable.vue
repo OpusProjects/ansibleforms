@@ -27,6 +27,8 @@
  *  idKey          String  Field used as row id (default 'id')
  *  rowClickSelects Boolean A plain click on a row selects it (default) ; false leaves the
  *                         selection to the checkboxes and only emits row-click
+ *  pagerTo        String  A selector the pager (the rows shown, the page boxes) moves to :
+ *                         under the page's card (AppSettings' footer), as every table has it
  *  toolbarTo      String  A selector the toolbar (search, columns, export) moves to, such as
  *                         the page's title line, as the Forms page has its search there
  *  framed         Boolean The table in a bordered box : a grey header bar with small
@@ -68,6 +70,7 @@ const props = defineProps({
   rowClickSelects: { type: Boolean, default: true },
   framed: { type: Boolean, default: false },
   toolbarTo: { type: String, default: null },
+  pagerTo: { type: String, default: null },
 });
 
 const emit = defineEmits(['update:selectedIds', 'row-click']);
@@ -261,7 +264,7 @@ const pageItems = ref([]);
 // the toolbar buttons : the page's own buttons (BsButton : outline primary, normal size) in
 // the framed bar, small and grey otherwise
 const toolButton = computed(() => (props.framed ? 'btn-outline-primary' : 'btn-sm btn-outline-secondary'));
-// the rows of the page among the filtered ones, for the framed footer : 1-25 of 140
+// the rows of the page among the filtered ones, for the pager : 1-25 of 140
 const pageRange = computed(() => {
   const total = filteredItems.value.length;
   if (!total || !pageItems.value.length) return t('dataTable.rangeOf', { from: 0, to: 0, total });
@@ -269,7 +272,7 @@ const pageRange = computed(() => {
   return t('dataTable.rangeOf', { from, to: from + pageItems.value.length - 1, total });
 });
 
-// where the pager is (page, page size), for the framed footer's range
+// where the pager is (page, page size), for the pager's range
 const pagerState = ref({ page: 1, pageSize: props.pageSize });
 function onPageChange(slice, state) {
   pageItems.value = slice;
@@ -699,18 +702,21 @@ function exportCsv() {
       </table>
     </div>
 
-    <!-- Pagination : a footer bar of the frame when framed, with the rows shown -->
-    <div :class="framed ? 'af-table-footer' : 'mt-2'">
-      <span v-if="framed" class="af-table-count me-auto">{{ pageRange }}</span>
-      <BsPagination
-        :key="filterVersion"
-        :dataList="filteredItems"
-        :perPage="pageSize"
-        :buttonsShown="7"
-        :name="name"
-        @change="onPageChange"
-      />
-    </div>
+    <!-- The pager : the rows shown on the left, the page size and boxes on the right ; under
+         the page's card with pagerTo (styles/tables.scss, .af-table-pager), else under the table -->
+    <Teleport defer :to="pagerTo || 'body'" :disabled="!pagerTo">
+      <div class="af-table-pager" :class="{ 'af-table-pager-inline': !pagerTo }">
+        <span class="af-table-count">{{ pageRange }}</span>
+        <BsPagination
+          :key="filterVersion"
+          :dataList="filteredItems"
+          :perPage="pageSize"
+          :buttonsShown="7"
+          :name="name"
+          @change="onPageChange"
+        />
+      </div>
+    </Teleport>
   </div>
 </template>
 
