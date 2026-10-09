@@ -26,19 +26,19 @@ describe('Time.format', () => {
   beforeEach(() => localStorage.removeItem('af_timezone'));
 
   test('shows UTC when nothing is picked', () => {
-    expect(Time.format('2026-10-06T00:23:03.000Z')).toBe('2026-10-06 00:23:03');
+    expect(Time.format('2026-10-06T00:23:03.000Z')).toBe('2026-10-06 00:23:03 UTC');
   });
 
   test('converts to the picked zone', () => {
     prefer('Europe/Madrid'); // UTC+2 in October
-    expect(Time.format('2026-10-06T00:23:03.000Z')).toBe('2026-10-06 02:23:03');
+    expect(Time.format('2026-10-06T00:23:03.000Z')).toBe('2026-10-06 02:23:03 CEST');
     prefer('America/New_York'); // UTC-4 in October : the day changes
-    expect(Time.format('2026-10-06T00:23:03.000Z')).toBe('2026-10-05 20:23:03');
+    expect(Time.format('2026-10-06T00:23:03.000Z')).toBe('2026-10-05 20:23:03 EDT');
   });
 
   test('honours an explicit offset in the input', () => {
     // a backup date the server put in LOG_TZ = Europe/Madrid
-    expect(Time.format('2026-07-26T02:21:46.000+02:00')).toBe('2026-07-26 00:21:46');
+    expect(Time.format('2026-07-26T02:21:46.000+02:00')).toBe('2026-07-26 00:21:46 UTC');
   });
 
   test('"browser" follows the browser zone', () => {
@@ -47,14 +47,29 @@ describe('Time.format', () => {
   });
 
   test('takes a pattern, a Date and epoch milliseconds', () => {
-    expect(Time.format('2026-10-06T00:23:03Z', 'HH:mm')).toBe('00:23');
-    expect(Time.format(new Date('2026-10-06T00:23:03Z'))).toBe('2026-10-06 00:23:03');
-    expect(Time.format(Date.UTC(2026, 9, 6, 0, 23, 3))).toBe('2026-10-06 00:23:03');
+    expect(Time.format('2026-10-06T00:23:03Z', 'HH:mm')).toBe('00:23 UTC');
+    // a date alone has no zone name
+    expect(Time.format('2026-10-06T00:23:03Z', 'YYYY-MM-DD')).toBe('2026-10-06');
+    expect(Time.format(new Date('2026-10-06T00:23:03Z'))).toBe('2026-10-06 00:23:03 UTC');
+    expect(Time.format(Date.UTC(2026, 9, 6, 0, 23, 3))).toBe('2026-10-06 00:23:03 UTC');
   });
 
   test('an unknown zone falls back to UTC instead of failing', () => {
     prefer('Not/AZone');
-    expect(Time.format('2026-10-06T00:23:03Z')).toBe('2026-10-06 00:23:03');
+    expect(Time.format('2026-10-06T00:23:03Z')).toBe('2026-10-06 00:23:03 UTC');
+  });
+
+  test('names the zone the way its own region does, and its season', () => {
+    const d = (iso) => new Date(iso);
+    expect(Time.zoneName(d('2026-10-06T12:00:00Z'), 'Europe/Madrid')).toBe('CEST');
+    expect(Time.zoneName(d('2026-01-06T12:00:00Z'), 'Europe/Madrid')).toBe('CET');
+    expect(Time.zoneName(d('2026-07-06T12:00:00Z'), 'Europe/London')).toBe('BST');
+    expect(Time.zoneName(d('2026-10-06T12:00:00Z'), 'Asia/Kolkata')).toBe('IST');
+    expect(Time.zoneName(d('2026-01-06T12:00:00Z'), 'America/Los_Angeles')).toBe('PST');
+    expect(Time.zoneName(d('2026-01-06T12:00:00Z'), 'Australia/Sydney')).toBe('AEDT');
+    // no locale names it : its offset
+    expect(Time.zoneName(d('2026-10-06T12:00:00Z'), 'Asia/Tokyo')).toBe('GMT+9');
+    expect(Time.zoneName(d('2026-10-06T12:00:00Z'), 'UTC')).toBe('UTC');
   });
 
   test('never echoes what it cannot read', () => {
@@ -68,8 +83,8 @@ describe('Helpers.formatServerDate', () => {
   beforeEach(() => prefer('Europe/Madrid'));
 
   test('converts zoned timestamps to the user zone', () => {
-    expect(Helpers.formatServerDate('2026-10-06T00:23:03.000Z')).toBe('2026-10-06 02:23:03');
-    expect(Helpers.formatServerDate('2026-07-26T02:21:46.000+02:00')).toBe('2026-07-26 02:21:46');
+    expect(Helpers.formatServerDate('2026-10-06T00:23:03.000Z')).toBe('2026-10-06 02:23:03 CEST');
+    expect(Helpers.formatServerDate('2026-07-26T02:21:46.000+02:00')).toBe('2026-07-26 02:21:46 CEST');
   });
 
   test('keeps the wall clock of a timestamp without a zone', () => {

@@ -686,6 +686,8 @@ export default function getSettings(t) {
         // server computes it, schedule.model.js)
         {
           key: 'next_run',
+          // wide enough for a date, its time and its zone's name, never cut
+          width: '14rem',
           label: t('settings.schedules.nextRun'),
           type: 'datetime',
           noInput: true,
@@ -695,6 +697,8 @@ export default function getSettings(t) {
         { key: 'state', label: t('settings.fields.state'), noInput: true },
         {
           key: 'last_run',
+          // wide enough for a date, its time and its zone's name, never cut
+          width: '14rem',
           label: t('settings.fields.lastRun'),
           type: 'datetime',
           noInput: true,
@@ -731,8 +735,22 @@ export default function getSettings(t) {
         { key: 'form_name', icon: 'play', label: t('settings.fields.form') },
         { key: 'username', icon: 'user', label: t('settings.storedJobs.userTypeName') },
         { key: 'form_data', hidden: true },
-        { key: 'created_at', icon: 'calendar', label: t('settings.fields.createdAt'), type: 'datetime' },
-        { key: 'expires_at', icon: 'calendar', label: t('settings.fields.expiresAt'), type: 'datetime' },
+        {
+          key: 'created_at',
+          icon: 'calendar',
+          label: t('settings.fields.createdAt'),
+          type: 'datetime',
+          // in the user's zone, with its name : the raw value is a UTC ISO string
+          render: (v) => Helpers.formatServerDate(v),
+        },
+        {
+          key: 'expires_at',
+          icon: 'calendar',
+          label: t('settings.fields.expiresAt'),
+          type: 'datetime',
+          // in the user's zone, with its name : the raw value is a UTC ISO string
+          render: (v) => Helpers.formatServerDate(v),
+        },
       ],
     },
     knownhosts: {
