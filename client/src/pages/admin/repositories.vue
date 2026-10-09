@@ -9,18 +9,7 @@ const settings = computed(() => getSettings(t));
 import TokenStorage from '@/lib/TokenStorage';
 
 const adminMulti = ref(null);
-const currentRepo = ref(null);
-const showRepoOutput = ref(false);
 const authenticated = ref(false);
-
-function previewOutput(repo) {
-  currentRepo.value = repo;
-  showRepoOutput.value = true;
-}
-
-function offcanvasClose() {
-  showRepoOutput.value = false;
-}
 
 async function triggerClone(repo) {
   adminMulti.value.setItemProperty({ id: repo.name, key: 'status', value: 'running' });
@@ -63,13 +52,9 @@ onMounted(async () => {
         :settings="settings.repositories"
         :apiVersion="2"
         @trigger="triggerClone"
-        @preview="previewOutput"
         @reset="triggerReset"
         @sync="triggerSync"
       />
-      <BsOffCanvas :title="t('admin.lastOutput')" :show="showRepoOutput" @close="offcanvasClose">
-        <pre>{{ currentRepo?.output || t('admin.loading') }}</pre>
-      </BsOffCanvas>
     </main>
   </div>
 </template>

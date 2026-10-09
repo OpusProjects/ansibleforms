@@ -70,7 +70,7 @@ function cronCell(value) {
  * Returns:
  *   string: the cell's HTML, escaped.
  */
-function statusPill(t, value) {
+export function statusPill(t, value) {
   if (!value) return '–';
   const known = { running: PILL.blue, success: PILL.green, failed: PILL.red };
   const label = known[value] ? t(`jobs.menu.${value}`) : value;
@@ -344,6 +344,8 @@ export default function getSettings(t) {
       icon: 'fab,git',
       idKey: 'name',
       selectable: false,
+      // a row opens the repository's page
+      openPage: (item) => `/admin/repositories/${encodeURIComponent(item.name)}`,
       // Scheduled pull off : no schedule ; the switch itself is not stored
       beforeSave: ({ pull_scheduled, ...item }) => (pull_scheduled ? item : { ...item, cron: '' }),
       // the dialog in steps : what the repository is, the credentials to reach it, what it is used
@@ -355,19 +357,44 @@ export default function getSettings(t) {
         { key: 'schedule', label: t('settings.repositories.stepSchedule') },
       ],
       actions: [
+        // in the row menu : editing, then git (Pull, Push, Reset), then its credentials, then its
+        // output (both on its page), then Delete last, each apart ; the same icons as its page's buttons
         { name: 'edit', icon: 'pencil', title: t('settings.repositories.editRepository'), color: 'edit' },
-        { name: 'delete', icon: 'trash', title: t('settings.repositories.deleteRepository'), color: 'delete' },
-        { name: 'change_password', icon: 'lock', title: t('settings.common.changePassword'), color: 'change' },
-        { name: 'trigger', icon: 'play', title: t('settings.common.trigger'), color: 'test' },
-        { name: 'preview', icon: 'info-circle', title: t('settings.common.showOutput'), color: 'preview' },
-        { name: 'reset', icon: 'redo', title: t('settings.repositories.resetRepository'), color: 'refresh' },
         {
+          name: 'trigger',
+          icon: 'download',
+          title: t('settings.repositories.pull'),
+          color: 'test',
+          dividerBefore: true,
+        },
+        {
+          // only a repository the app writes to (forms, settings) is pushed back
           name: 'sync',
           icon: 'upload',
-          title: t('settings.repositories.syncRepository'),
+          title: t('settings.repositories.push'),
           color: 'test',
           dependency: ['use_for_forms', 'use_for_config'],
         },
+        { name: 'reset', icon: 'redo', title: t('settings.repositories.reset'), color: 'refresh' },
+        {
+          // the credential git uses : its page's Credentials tab
+          name: 'change_credentials',
+          icon: 'key',
+          title: t('settings.repositories.changeCredentials'),
+          color: 'change',
+          dividerBefore: true,
+          to: (r) => ({ path: `/admin/repositories/${encodeURIComponent(r.name)}`, query: { tab: 'access' } }),
+        },
+        {
+          // what git said the last time : its page's Last Output tab
+          name: 'preview',
+          icon: 'terminal',
+          title: t('settings.common.showOutput'),
+          color: 'preview',
+          dividerBefore: true,
+          to: (r) => ({ path: `/admin/repositories/${encodeURIComponent(r.name)}`, query: { tab: 'output' } }),
+        },
+        { name: 'delete', icon: 'trash', title: t('settings.repositories.deleteRepository'), color: 'delete' },
       ],
       fields: [
         { key: 'id', hidden: true, noInput: true },
