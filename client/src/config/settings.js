@@ -79,7 +79,7 @@ export function runnerKind(r) {
 
 export const SECRET_STORE_TYPES = [
   { value: 'vault', label: 'HashiCorp Vault' },
-  { value: 'cyberark_ccp', label: 'CyberArk Central Credential Provider' },
+  { value: 'cyberark_ccp', label: 'CyberArk Central Credential Provider', short: 'CyberArk CCP' },
 ];
 
 export default function getSettings(t) {
@@ -1442,6 +1442,23 @@ export default function getSettings(t) {
       description: t('settings.secretStores.description'),
       icon: 'vault',
       selectable: false,
+      // the dialog in steps : what the store is, its type, where it is, how the app logs in, the
+      // type's options
+      steps: [
+        { key: 'store', label: t('settings.secretStores.stepStore') },
+        { key: 'type', label: t('settings.secretStores.stepType') },
+        { key: 'connection', label: t('settings.secretStores.stepConnection') },
+        { key: 'auth', label: t('settings.secretStores.stepAuth') },
+        { key: 'options', label: t('settings.secretStores.stepOptions') },
+      ],
+      // the switches are not stored : ignore_certs, a CA bundle and a namespace are
+      beforeSave: ({ skip_verify, custom_ca, vault_enterprise, ...item }) => ({
+        ...item,
+        // no namespace but in a Vault Enterprise
+        namespace: item.type === 'vault' && vault_enterprise ? item.namespace || '' : '',
+        ignore_certs: !!skip_verify,
+        ca_bundle: !skip_verify && custom_ca ? item.ca_bundle || '' : '',
+      }),
       actions: [
         { name: 'edit', title: t('settings.secretStores.editStore'), icon: 'pencil', color: 'edit' },
         { name: 'delete', title: t('settings.secretStores.deleteStore'), icon: 'trash', color: 'delete' },
@@ -1469,17 +1486,37 @@ export default function getSettings(t) {
           help: t('settings.secretStores.nameHelp'),
         },
         {
+          // HashiCorp Vault or CyberArk CCP : radio buttons ; the list shows its name
           key: 'type',
-          icon: 'vault',
-          line: 0,
+          step: 'type',
           label: t('settings.secretStores.type'),
           required: true,
           filterable: true,
-          type: 'select',
-          parent: 'secretStoreTypes',
-          values: SECRET_STORE_TYPES,
-          valueKey: 'value',
-          labelKey: 'label',
+          type: 'radio',
+          // a short name beside the radio, the rest in its hint ; Vault last, its Vault Enterprise
+          // switch right under it
+          options: [...SECRET_STORE_TYPES].reverse().map(({ value, short, label }) => ({
+            value,
+            label: short || label,
+            hint: t(`settings.secretStores.type_${value}Hint`),
+          })),
+          initial: (r) => r?.type || 'vault',
+          render: (v) => escapeHtml(SECRET_STORE_TYPES.find((x) => x.value === v)?.label || v || ''),
+        },
+        {
+          // a Vault Enterprise : its namespaces (not stored : a namespace is, see beforeSave)
+          key: 'vault_enterprise',
+          step: 'type',
+          type: 'checkbox',
+          flush: true,
+          label: t('settings.secretStores.enterprise'),
+          help: t('settings.secretStores.enterpriseHelp'),
+          initial: (r) => !!String(r?.namespace || '').trim(),
+          noTable: true,
+          dependency: 'type',
+          dependencyValues: ['vault'],
+          // a CyberArk has no namespaces
+          defaultMap: { cyberark_ccp: false },
         },
         {
           key: 'description',
@@ -1491,15 +1528,22 @@ export default function getSettings(t) {
         },
         {
           key: 'url',
+          step: 'connection',
           icon: 'globe',
           line: 1,
           label: t('settings.fields.uri'),
           required: true,
-          placeholder: 'https://vault.example.com:8200',
+          // an example of the type chosen
+          placeholder: (r) =>
+            r.type === 'cyberark_ccp' ? 'https://ccp.example.com' : 'https://vault.example.com:8200',
           dependency: 'type',
         },
         {
           key: 'token',
+          step: 'auth',
+          // shown when editing too, as ******** : left empty, the stored one stays
+          onEdit: true,
+          keepHelp: t('settings.common.tokenKeep'),
           icon: 'lock',
           line: 1,
           label: t('settings.fields.token'),
@@ -1511,28 +1555,27 @@ export default function getSettings(t) {
         },
         {
           key: 'namespace',
+          step: 'options',
+          // only for a Vault Enterprise
           icon: 'folder',
           line: 2,
           label: t('settings.secretStores.namespace'),
           help: t('settings.secretStores.namespaceHelp'),
           required: false,
           hidden: true,
-          dependency: 'type',
-          dependencyValues: ['vault'],
+          dependency: 'vault_enterprise',
         },
         {
+          // KV v2 or v1 : radio buttons
           key: 'kv_version',
-          icon: 'code-branch',
-          line: 2,
+          step: 'options',
           label: t('settings.secretStores.kvVersion'),
-          type: 'select',
-          parent: 'kvVersions',
-          values: [
-            { value: 2, label: 'KV v2' },
-            { value: 1, label: 'KV v1' },
+          type: 'radio',
+          options: [
+            { value: 2, label: 'KV v2', hint: t('settings.secretStores.kv2Hint') },
+            { value: 1, label: 'KV v1', hint: t('settings.secretStores.kv1Hint') },
           ],
-          valueKey: 'value',
-          labelKey: 'label',
+          initial: (r) => Number(r?.kv_version) || 2,
           required: false,
           hidden: true,
           dependency: 'type',
@@ -1540,6 +1583,7 @@ export default function getSettings(t) {
         },
         {
           key: 'default_mount',
+          step: 'options',
           icon: 'folder-open',
           line: 2,
           label: t('settings.secretStores.defaultMount'),
@@ -1552,6 +1596,7 @@ export default function getSettings(t) {
         },
         {
           key: 'app_id',
+          step: 'auth',
           icon: 'id-badge',
           line: 2,
           label: t('settings.secretStores.appId'),
@@ -1563,6 +1608,7 @@ export default function getSettings(t) {
         },
         {
           key: 'client_cert',
+          step: 'auth',
           icon: 'certificate',
           type: 'textarea',
           line: 2,
@@ -1576,6 +1622,7 @@ export default function getSettings(t) {
         },
         {
           key: 'client_key',
+          step: 'auth',
           icon: 'key',
           type: 'textarea',
           line: 2,
@@ -1589,6 +1636,7 @@ export default function getSettings(t) {
         },
         {
           key: 'cache_ttl_seconds',
+          step: 'options',
           icon: 'clock',
           line: 3,
           type: 'number',
@@ -1599,28 +1647,51 @@ export default function getSettings(t) {
           dependency: 'type',
         },
         {
-          key: 'ignore_certs',
-          line: 4,
+          // the certificate not checked at all : off by default (not stored : ignore_certs is)
+          key: 'skip_verify',
+          step: 'connection',
           type: 'checkbox',
+          label: t('settings.runners.skipVerify'),
+          initial: (r) => !!r?.ignore_certs,
+          noTable: true,
+        },
+        {
+          // checked against a private authority : its certificates below
+          key: 'custom_ca',
+          step: 'connection',
+          type: 'checkbox',
+          label: t('settings.runners.customCa'),
+          initial: (r) => !!String(r?.ca_bundle || '').trim(),
+          noTable: true,
+          dependency: 'skip_verify',
+          negateDependency: true,
+          // skipping the verification turns it off : its CA bundle goes with it
+          defaultMap: { true: false },
+        },
+        {
+          // a column only : the dialog asks skip_verify
+          key: 'ignore_certs',
           label: t('settings.ldap.ignoreCerts'),
+          type: 'checkbox',
+          noInput: true,
           hidden: true,
-          dependency: 'type',
         },
         {
           key: 'ca_bundle',
+          step: 'connection',
           icon: 'certificate',
           type: 'textarea',
           line: 5,
           label: t('settings.fields.caBundle'),
-          help: t('settings.secretStores.caBundleHelp'),
+          help: t('settings.runners.caBundleHelp'),
           required: false,
-          dependency: 'ignore_certs',
-          negateDependency: true,
+          dependency: 'custom_ca',
           placeholder: '-----BEGIN CERTIFICATE-----',
           hidden: true,
         },
         {
           key: 'extra',
+          step: 'options',
           icon: 'code',
           type: 'textarea',
           line: 6,
