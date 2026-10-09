@@ -125,26 +125,6 @@ const Helpers = {
         return 'Unknown job status';
     }
   },
-  getColorClassByStatus(status, prefix = 'text') {
-    // get the color class by status
-    // used in the job list
-    switch (status) {
-      case 'running':
-        return prefix + '-info';
-      case 'success':
-        return prefix + '-success';
-      case 'failed':
-        return prefix + '-danger';
-      case 'approve':
-      case 'warning':
-      case 'aborted':
-      case 'rejected':
-      case 'abandoned':
-        return prefix + '-warning';
-      default:
-        return 'body';
-    }
-  },
   // A server timestamp in the user's time zone (Profile > Preferences, lib/Time.js).
   //
   // The server sends ISO strings with their zone : 'Z' for database columns, an explicit

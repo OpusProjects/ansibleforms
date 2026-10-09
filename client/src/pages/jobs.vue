@@ -12,11 +12,11 @@ import utc from 'dayjs/plugin/utc';
 import YAML from 'yaml';
 import Time from '@/lib/Time';
 import BsColumnPicker from '@/components/BsColumnPicker.vue';
-import { PILL, headerWidth } from '@/lib/tableCells';
+import { headerWidth } from '@/lib/tableCells';
 
 // INIT
 
-const { t, te } = useI18n();
+const { t } = useI18n();
 
 const router = useRouter();
 const route = useRoute();
@@ -834,25 +834,6 @@ function jobBackground(job) {
   return job.id == jobId.value ? 'table-selected' : '';
 }
 
-// a job's status as a pill, as the audit log's outcomes and a repository's status : running
-// blue, success green, failed red, waiting or stopped amber, anything else grey
-const STATUS_PILL = {
-  running: PILL.blue,
-  success: PILL.green,
-  failed: PILL.red,
-  approve: PILL.amber,
-  warning: PILL.amber,
-  aborted: PILL.amber,
-  rejected: PILL.amber,
-  abandoned: PILL.amber,
-};
-function statusPillClass(status) {
-  return STATUS_PILL[status] || PILL.grey;
-}
-function statusLabel(status) {
-  return te(`jobs.menu.${status}`) ? t(`jobs.menu.${status}`) : status;
-}
-
 // EVENTS
 
 // mounted
@@ -1204,9 +1185,7 @@ onBeforeUnmount(() => {
                       </template>
                     </td>
                     <td v-else-if="col.key === 'status'" role="button" class="text-start" @click="getJob(j.id)">
-                      <span class="badge rounded-pill fw-semibold af-pill" :class="statusPillClass(j.status)"
-                        ><span class="af-pill-label">{{ statusLabel(j.status) }}</span></span
-                      >
+                      <AppStatusPill :status="j.status" />
                     </td>
                     <!-- the form in the link blue, as a list's name : the row opens the job -->
                     <td
@@ -1327,9 +1306,7 @@ onBeforeUnmount(() => {
                         {{ c.target }}
                       </td>
                       <td v-else-if="col.key === 'status'" role="button" class="text-start" @click="getJob(c.id)">
-                        <span class="badge rounded-pill fw-semibold af-pill" :class="statusPillClass(c.status)"
-                          ><span class="af-pill-label">{{ statusLabel(c.status) }}</span></span
-                        >
+                        <AppStatusPill :status="c.status" />
                       </td>
                       <td v-else role="button" class="text-start" @click="getJob(c.id)" :title="cellText(c, col)">
                         {{ cellText(c, col) }}
@@ -1358,10 +1335,8 @@ onBeforeUnmount(() => {
           <div class="col">
             <h3 class="af-job-title">
               {{ t('jobs.jobTitle', { id: jobId }) }}
-              <span class="badge rounded-pill text-bg-info">{{ job.job_type || 'ansible' }}</span>
-              <span class="badge rounded-pill" :class="Helpers.getColorClassByStatus(job.status, 'text-bg')">{{
-                job.status
-              }}</span>
+              <AppStatusPill :label="job.job_type || 'ansible'" tone="grey" />
+              <AppStatusPill :status="job.status" />
             </h3>
             <BsButton
               v-if="store.profile.options?.showExtraVars"
@@ -1421,11 +1396,7 @@ onBeforeUnmount(() => {
                   <template #title>
                     <h3 v-if="subjob" class="af-job-title">
                       {{ t('jobs.mainJob') }} (jobid {{ jobId }})
-                      <span
-                        class="badge rounded-pill status"
-                        :class="Helpers.getColorClassByStatus(job.status, 'bg')"
-                        >{{ job.status }}</span
-                      >
+                      <AppStatusPill :status="job.status" />
                     </h3>
                   </template>
                 </AppAnsibleOutput>
@@ -1435,11 +1406,7 @@ onBeforeUnmount(() => {
                   <template #title>
                     <h3 class="af-job-title">
                       {{ t('jobs.currentStep') }} (jobid {{ subjobId }})
-                      <span
-                        class="badge rounded-pill status"
-                        :class="Helpers.getColorClassByStatus(subjob.status, 'bg')"
-                        >{{ subjob.status }}</span
-                      >
+                      <AppStatusPill :status="subjob.status" />
                     </h3>
                   </template>
                 </AppAnsibleOutput>

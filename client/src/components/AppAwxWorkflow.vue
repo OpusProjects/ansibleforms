@@ -57,18 +57,6 @@ function statusColor(status) {
   return statusColors[status] || 'var(--bs-secondary)';
 }
 
-// badge class for the workflow status
-const statusBadges = {
-  successful: 'text-bg-success',
-  failed: 'text-bg-danger',
-  error: 'text-bg-danger',
-  running: 'text-bg-info',
-  canceled: 'text-bg-warning',
-};
-function statusBadge(status) {
-  return statusBadges[status] || 'text-bg-secondary';
-}
-
 // a smooth bezier link between 2 points
 function linkPath(x1, y1, x2, y2) {
   const dx = Math.max(30, (x2 - x1) / 2);
@@ -159,9 +147,7 @@ const graph = computed(() => {
     <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
       <h5 class="mb-0">
         {{ workflow.name }}
-        <sup
-          ><span class="badge rounded-pill" :class="statusBadge(workflow.status)">{{ workflow.status }}</span></sup
-        >
+        <sup><AppStatusPill :status="workflow.status" /></sup>
       </h5>
       <div class="awx-workflow-legend small text-body-secondary">
         <span class="me-3"
