@@ -869,6 +869,8 @@ export default {
       model: 'Model',
       modelHelp: 'Tak, jak nazywa go dostawca',
       apiKey: 'Klucz API',
+      credential: 'Poświadczenie',
+      credentialHelp: 'Poświadczenie api: jego hasło to klucz',
       apiKeyHelp: 'Przechowywany w postaci zaszyfrowanej',
       baseUrl: 'Bazowy adres URL',
       baseUrlHelp: 'Puste = domyślny adres dostawcy',

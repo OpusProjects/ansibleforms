@@ -933,6 +933,8 @@ export default {
       model: 'Modelo',
       modelHelp: 'Como lo nombra el proveedor',
       apiKey: 'Clave API',
+      credential: 'Credencial',
+      credentialHelp: 'Una credencial api: su contraseña es la clave',
       apiKeyHelp: 'Guardada cifrada',
       baseUrl: 'URL base',
       baseUrlHelp: 'Vacía = valor por defecto del proveedor',

@@ -19,7 +19,7 @@ import { chatForms } from './forms.js';
 export function createChatService({
   deps,
   complete = providerComplete,
-  loadSettings = () => ChatSettings.find(),
+  loadSettings = () => ChatSettings.findResolved(),
   audit = (entry) => Audit.log(entry),
   enabled = () => appConfig.enableChat,
 } = {}) {

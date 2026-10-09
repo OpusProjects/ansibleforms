@@ -178,6 +178,8 @@ CREATE TABLE `chat_settings` (
   `request_user` varchar(100) DEFAULT NULL,
   `extra_headers` text DEFAULT NULL,
   `ignore_certs` tinyint(4) DEFAULT 0,
+  -- an api credential whose password is the key, instead of api_key
+  `credential` varchar(250) DEFAULT NULL,
   `managed` tinyint(4) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 -- create job_output and jobs tables

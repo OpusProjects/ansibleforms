@@ -935,6 +935,8 @@ export default {
       model: 'Model',
       modelHelp: 'Zoals de provider het noemt',
       apiKey: 'API-sleutel',
+      credential: 'Referentie',
+      credentialHelp: 'Een api-referentie: het wachtwoord is de sleutel',
       apiKeyHelp: 'Versleuteld opgeslagen',
       baseUrl: 'Base URL',
       baseUrlHelp: 'Leeg = standaard van de provider',

@@ -848,6 +848,8 @@ export default {
       model: '模型',
       modelHelp: '按提供商的命名',
       apiKey: 'API 密钥',
+      credential: '凭据',
+      credentialHelp: 'api 凭据：其密码即密钥',
       apiKeyHelp: '加密存储',
       baseUrl: '基础 URL',
       baseUrlHelp: '留空 = 提供商的默认值',
