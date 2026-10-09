@@ -209,7 +209,10 @@ defineProps({
   </template>
   <template v-else-if="isHorizontal">
     <div class="row" :class="{ 'mb-3': !isInline, 'd-flex align-items-center': isInline }">
-      <label :for="uid" class="form-label fw-bold col-form-label col-sm-2"
+      <label
+        :for="uid"
+        class="form-label fw-bold col-form-label col-sm-2"
+        :class="{ 'af-label-tall': ['editor', 'textarea'].includes(type) }"
         >{{ type != 'checkbox' ? label : ''
         }}<span v-if="required && type != 'checkbox'" class="text-danger ms-1">*</span></label
       >
@@ -272,7 +275,10 @@ defineProps({
         class="col-sm-10"
         :class="{ 'mb-3': !isInline, 'd-flex align-items-center': isInline }"
       >
-        <label :for="uid" class="form-label fw-bold col-form-label col-sm-2"
+        <label
+          :for="uid"
+          class="form-label fw-bold col-form-label col-sm-2"
+          :class="{ 'af-label-tall': ['editor', 'textarea'].includes(type) }"
           >{{ label }}<span v-if="required && type != 'checkbox'" class="text-danger ms-1">*</span></label
         >
         <BsInputSelectAdvanced
@@ -541,5 +547,10 @@ defineProps({
 }
 .invalid-feedback {
   display: block !important;
+}
+/* beside a tall box (an editor, a textarea) the label starts level with its first line : the
+   top padding that centres it on a one line input would put it below */
+.af-label-tall {
+  padding-top: 0.2rem;
 }
 </style>

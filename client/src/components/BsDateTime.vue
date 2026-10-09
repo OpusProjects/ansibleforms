@@ -8,6 +8,9 @@
 /*      name: String                                              */
 /*      dateType: String                                          */
 /*      icon: String                                              */
+/*      teleport: Boolean - the calendar opened on the page's     */
+/*         body : in a dialog, whose scrolling body would cut it  */
+/*         off                                                    */
 /*                                                                */
 /*  @emit:                                                        */
 /*      change: Event                                              */
@@ -35,6 +38,7 @@ const props = defineProps({
   icon: { type: String, default: 'calendar' },
   placeholder: { type: String, default: '' },
   convertToUtc: { type: Boolean, default: false },
+  teleport: { type: Boolean, default: false },
 });
 
 // DATA
@@ -429,6 +433,7 @@ watch(
     :time-picker="dateType == 'time'"
     :is-24="true"
     :dark="theme == 'dark'"
+    :teleport="teleport ? 'body' : undefined"
   >
     <template #dp-input>
       <div class="input-group mt-2">
@@ -453,5 +458,12 @@ watch(
 <style scoped lang="scss">
 .invalid-feedback {
   display: block !important;
+}
+</style>
+<style lang="scss">
+/* a calendar opened on the page's body (teleport) : above the dialog it was opened from */
+body > .dp__outer_menu_wrap,
+body > .dp--menu-wrapper {
+  z-index: 1070;
 }
 </style>

@@ -664,6 +664,10 @@ export default {
       description:
         'Automatyzuj przesyłanie formularzy według cyklicznego harmonogramu cron lub jednorazowego uruchomienia.',
       editSchedule: 'Edytuj harmonogram',
+      stepSchedule: 'Harmonogram',
+      stepWhen: 'Kiedy',
+      stepExtraVars: 'Extra vars',
+      nextRun: 'Następne uruchomienie',
       deleteSchedule: 'Usuń harmonogram',
       runSchedule: 'Uruchom harmonogram',
       placeholderName: 'Nazwa harmonogramu',
