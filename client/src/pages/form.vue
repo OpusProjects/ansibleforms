@@ -28,7 +28,6 @@ const currentForm = ref(null); // holds the current form
 const formConfig = ref({}); // holds the form configuration
 const constants = ref({}); // holds the constants
 const formLoaded = ref(false); // flag to know if form is loaded
-const showHelp = ref(false); // flag to show/hide help
 const mainForm = ref(null); // the non-wizard AppForm, for its awaitStable gate
 const formNotFound = ref(false); // flag to know if form is not found
 // why it could not be loaded, when we know : shown instead of the generic message so a
@@ -53,7 +52,7 @@ const filterOutput = ref(true); // flag to show/hide filter output
 // Edit stack for nested subform editing.
 //
 // Each entry represents a subform currently being edited:
-//   { id, title, subtitle, subform, snapshot, draft, showHelp, onSave }
+//   { id, title, subtitle, subform, snapshot, draft, onSave }
 // - `snapshot` is a deep clone of the row at the time editing began and is
 //   passed to <AppForm :initialData>. The edited value comes back via the
 //   `@save` event and is forwarded to the list field's `onSave` callback.
@@ -82,7 +81,6 @@ function pushEdit({ title, subtitle, subform, row, parentData, onSave }) {
     snapshot,
     parentData: parentData ? Helpers.safeDeepClone(parentData) : null,
     draft: {},
-    showHelp: subform?.showHelp === true,
     onSave,
   });
   editStack.push(entry);
@@ -1594,11 +1592,6 @@ async function loadForm() {
         if (stepName) wizardDrafts[stepName] = {};
       });
     }
-
-    // see if the help should be show initially
-    if (currentForm.value?.showHelp && currentForm.value.showHelp === true) {
-      showHelp.value = true;
-    }
   }
 }
 
@@ -1669,7 +1662,6 @@ onBeforeUnmount(() => {
               :text="activeEntry ? activeEntry.subform.help : currentForm.help"
               markdown
               placement="bottom"
-              :startOpen="activeEntry ? activeEntry.showHelp : showHelp"
               :label="t('form.showHelp')"
             />
           </h3>
