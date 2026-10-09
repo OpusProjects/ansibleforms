@@ -24,13 +24,47 @@ class CredentialModel extends CrudModel {
     return data;
   }
 
+  // the types a credential can be : what it is for
+  static TYPES = ['ssh', 'git', 'api', 'database'];
+
+  /**
+   * Keeps a credential's type and its is_database flag in step : the type sets the flag, and
+   * a write that only sends the flag (an older client, the seed) gets the matching type -
+   * database, or ssh on a create.
+   *
+   * Args:
+   *   data (object): the record written.
+   *   creating (boolean): a create (a credential without a type is an ssh one).
+   *
+   * Returns:
+   *   object: the record.
+   *
+   * Raises:
+   *   Error: an unknown type.
+   */
+  static mirrorType(data, creating = false) {
+    if (data.credential_type !== undefined && data.credential_type !== null && data.credential_type !== '') {
+      if (!this.TYPES.includes(data.credential_type)) {
+        throw new Errors.BadRequestError(`Unknown credential type '${data.credential_type}' : one of ${this.TYPES.join(', ')}`);
+      }
+      data.is_database = data.credential_type === 'database' ? 1 : 0;
+    } else if (data.is_database !== undefined) {
+      if (data.is_database && data.is_database !== '0') data.credential_type = 'database';
+      else if (creating) data.credential_type = 'ssh';
+    } else if (creating) {
+      // the column's default makes it a database credential : say so
+      data.credential_type = 'database';
+    }
+    return data;
+  }
+
   // opts carries { fromSeed:true } for the declarative config seed only
   static async create(data, opts = {}) {
-    return super.create(this.modelName, this.mirrorVaultPath(data), opts);
+    return super.create(this.modelName, this.mirrorType(this.mirrorVaultPath(data), true), opts);
   }
 
   static async update(data, id, opts = {}) {
-    return super.update(this.modelName, this.mirrorVaultPath(data), id, opts);
+    return super.update(this.modelName, this.mirrorType(this.mirrorVaultPath(data)), id, opts);
   }
 
   static async delete(id, opts = {}) {

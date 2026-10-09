@@ -36,6 +36,8 @@ const crudConfigs = {
       { name: 'db_name' },
       { name: 'secure', isBoolean: true },
       { name: 'is_database', isBoolean: true, setDefault: true },
+      // what it is for : ssh, git, api or database (is_database follows it)
+      { name: 'credential_type' },
       { name: 'description' },
       { name: 'db_type' },
       { name: 'vault_path' },

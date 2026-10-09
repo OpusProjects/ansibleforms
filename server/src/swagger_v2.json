@@ -2595,6 +2595,7 @@
           "db_name": { "type": "string", "description": "Database name.", "example": "mydb" },
           "secure": { "type": "boolean", "description": "Use secure connection.", "example": false },
           "is_database": { "type": "boolean", "description": "Is this a database credential?", "example": true },
+          "credential_type": { "type": "string", "enum": ["ssh", "git", "api", "database"], "description": "What the credential is for ; is_database follows it", "example": "git" },
           "description": { "type": "string", "description": "Description of the credential.", "example": "Main DB credential" },
           "db_type": { "type": "string", "description": "Type of database (mysql, postgres, etc).", "example": "mysql" },
           "secret_store": { "type": "string", "description": "Name of the secret store user and password are read from.", "example": "vault" },
