@@ -1032,6 +1032,7 @@ export default {
         "Ces chemins de catégorie n'existent plus : {paths}. Les formulaires qui les référencent n'apparaîtront sous aucune catégorie tant qu'ils ne sont pas mis à jour.",
       addSubconstant: 'Ajouter une sous-cle',
       addRole: 'Ajouter un role',
+      newRole: 'Nouveau rôle',
       addConstant: 'Ajouter une constante',
       addSubkey: 'Ajouter une sous-cle',
       subkeyCount: '{n} sous-cle | {n} sous-cles',

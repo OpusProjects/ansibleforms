@@ -1011,6 +1011,7 @@ export default {
         '次のカテゴリパスは存在しなくなりました: {paths}。これらを参照するフォームは、更新されるまでカテゴリの下に表示されません。',
       addSubconstant: 'サブキーを追加',
       addRole: 'ロールを追加',
+      newRole: '新しいロール',
       addConstant: '定数を追加',
       addSubkey: 'サブキーを追加',
       subkeyCount: '{n} 個のサブキー',

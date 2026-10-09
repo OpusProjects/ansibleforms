@@ -1023,6 +1023,7 @@ export default {
         'Questi percorsi di categoria non esistono più: {paths}. I formulari che li referenziano non appariranno sotto alcuna categoria finché non vengono aggiornati.',
       addSubconstant: 'Aggiungi sottochiave',
       addRole: 'Aggiungi ruolo',
+      newRole: 'Nuovo ruolo',
       addConstant: 'Aggiungi costante',
       addSubkey: 'Aggiungi sotto-chiave',
       subkeyCount: '{n} sotto-chiave | {n} sotto-chiavi',

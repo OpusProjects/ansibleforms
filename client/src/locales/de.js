@@ -1036,6 +1036,7 @@ export default {
         'Diese Kategoriepfade existieren nicht mehr: {paths}. Formulare, die sie referenzieren, erscheinen unter keiner Kategorie, bis sie angepasst werden.',
       addSubconstant: 'Unterschlüssel hinzufügen',
       addRole: 'Rolle hinzufuegen',
+      newRole: 'Neue Rolle',
       addConstant: 'Konstante hinzufuegen',
       addSubkey: 'Unterschluessel hinzufuegen',
       subkeyCount: '{n} Unterschluessel | {n} Unterschluessel',

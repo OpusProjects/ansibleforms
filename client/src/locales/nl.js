@@ -1024,6 +1024,7 @@ export default {
         'Deze categoriepaden bestaan niet meer: {paths}. Formulieren die ernaar verwijzen verschijnen onder geen enkele categorie totdat ze zijn bijgewerkt.',
       addSubconstant: 'Subsleutel toevoegen',
       addRole: 'Rol toevoegen',
+      newRole: 'Nieuwe rol',
       addConstant: 'Constante toevoegen',
       addSubkey: 'Subsleutel toevoegen',
       subkeyCount: '{n} subsleutel | {n} subsleutels',

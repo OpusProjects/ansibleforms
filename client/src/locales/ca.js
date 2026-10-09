@@ -1030,6 +1030,7 @@ export default {
         "Aquestes rutes de categoria ja no existeixen: {paths}. Els formularis que hi fan referència no apareixeran sota cap categoria fins que s'actualitzin.",
       addSubconstant: 'Afegeix una subclau',
       addRole: 'Afegeix un rol',
+      newRole: 'Rol nou',
       addConstant: 'Afegeix una constant',
       addSubkey: 'Afegeix una subclau',
       subkeyCount: '{n} subclau | {n} subclaus',

@@ -47,11 +47,6 @@ function isRequiredRole(role) {
   return role._required === true;
 }
 
-// The 'public' role applies to everyone; the schema pins it to no groups/users.
-function isPublicRole(role) {
-  return role._public === true;
-}
-
 // Stamp the flags from the names as loaded. Must run after every load/reload.
 // These are internal fields ; serializeRole rebuilds the role from known keys,
 // so they never reach the yaml (the schema sets additionalProperties:false).
@@ -65,15 +60,17 @@ function stampRoleFlags() {
 const sortedLocalGroups = computed(() => [...localGroups.value].sort());
 const sortedLocalUsers = computed(() => [...localUsers.value].sort());
 
-function onProviderChange(entry, type) {
-  entry.name =
-    entry.provider === 'local' ? (type === 'group' ? sortedLocalGroups.value[0] : sortedLocalUsers.value[0]) || '' : '';
-}
+// ─── the New role dialog ──────────────────────────────────────────────────────
+// A new role is filled in a dialog, not as an empty row at the end of the list : it joins the
+// list, and the config is saved, only when the dialog is saved.
+const newRole = ref(null);
 
+/**
+ * Opens the New role dialog on an empty role.
+ */
 function addRole() {
-  const uid = nextUid();
-  const newRole = {
-    _uid: uid,
+  newRole.value = {
+    _uid: nextUid(),
     _required: false,
     _public: false,
     name: '',
@@ -84,8 +81,21 @@ function addRole() {
     // permissions away now that every flag is written explicitly
     options: roleOptionDefaults(''),
   };
-  roles.value.push(newRole);
-  expandedRoles.value[uid] = true;
+}
+
+/**
+ * Adds the role of the dialog to the list and saves the config. The dialog stays open, and
+ * the role leaves the list again, when the save is refused (a name taken, the config locked).
+ */
+async function createRole() {
+  const role = newRole.value;
+  roles.value.push(role);
+  if (await saveRoles()) {
+    newRole.value = null;
+  } else {
+    const index = roles.value.indexOf(role);
+    if (index >= 0) roles.value.splice(index, 1);
+  }
 }
 
 function removeRole(index) {
@@ -94,22 +104,6 @@ function removeRole(index) {
 
 function toggleRole(uid) {
   expandedRoles.value[uid] = !expandedRoles.value[uid];
-}
-
-function addGroup(role) {
-  role.groups.push({ _uid: nextUid(), provider: 'local', name: sortedLocalGroups.value[0] || '' });
-}
-
-function removeGroup(role, index) {
-  role.groups.splice(index, 1);
-}
-
-function addUser(role) {
-  role.users.push({ _uid: nextUid(), provider: 'local', name: sortedLocalUsers.value[0] || '' });
-}
-
-function removeUser(role, index) {
-  role.users.splice(index, 1);
 }
 
 async function loadLocalGroups() {
@@ -159,7 +153,7 @@ async function saveRoles() {
   const problem = validateRoles();
   if (problem) {
     toast.warning(problem);
-    return;
+    return false;
   }
   // Roles reload as fresh objects (new _uid) on save, so remember which roles
   // were expanded by their stable identity (name) and restore afterwards. The
@@ -173,11 +167,12 @@ async function saveRoles() {
   // (423 while the designer holds the lock, or a 409) disabled the name field and hid the
   // delete button on the role the user had just renamed, with no way back except a reload
   // that discarded the whole edit.
-  if (!saved) return;
+  if (!saved) return false;
   stampRoleFlags();
   expandedRoles.value = Object.fromEntries(
     roles.value.filter((r) => expandedNames.has(r.name)).map((r) => [r._uid, true]),
   );
+  return true;
 }
 
 onMounted(async () => {
@@ -188,6 +183,23 @@ onMounted(async () => {
 });
 </script>
 <template>
+  <BsModal v-if="newRole" size="lg" @close="newRole = null">
+    <template #title> <FaIcon icon="user-shield" class="me-2" />{{ t('settings.settingsPage.newRole') }} </template>
+    <template #default>
+      <AppRoleEditor
+        v-model:role="newRole"
+        :authProviders="authProviders"
+        :localGroups="sortedLocalGroups"
+        :localUsers="sortedLocalUsers"
+        :optionKeys="roleOptionKeys"
+        :optionLabel="roleOptionLabel"
+        :nextUid="nextUid"
+      />
+    </template>
+    <template #footer>
+      <BsButton icon="save" @click="createRole()">{{ t('settings.common.save') }}</BsButton>
+    </template>
+  </BsModal>
   <AppNav />
   <div class="flex-shrink-0">
     <main class="d-flex flex-nowrap af-settings-layout">
@@ -228,94 +240,16 @@ onMounted(async () => {
                 </button>
               </div>
               <div v-show="expandedRoles[role._uid]" class="px-3 pb-3">
-                <BsInput
-                  :isFloating="false"
-                  v-model="role.name"
-                  :label="t('settings.settingsPage.name')"
-                  :disabled="isRequiredRole(role) || readOnly"
+                <AppRoleEditor
+                  v-model:role="roles[rIdx]"
+                  :readOnly="readOnly"
+                  :authProviders="authProviders"
+                  :localGroups="sortedLocalGroups"
+                  :localUsers="sortedLocalUsers"
+                  :optionKeys="roleOptionKeys"
+                  :optionLabel="roleOptionLabel"
+                  :nextUid="nextUid"
                 />
-                <label class="form-label fw-bold">{{ t('settings.settingsPage.groups') }}</label>
-                <div v-for="(grp, gIdx) in role.groups" :key="grp._uid" class="d-flex align-items-center gap-2 mb-2">
-                  <select
-                    class="form-select provider-select"
-                    v-model="grp.provider"
-                    :disabled="readOnly || isPublicRole(role)"
-                    @change="onProviderChange(grp, 'group')"
-                  >
-                    <option v-for="p in authProviders" :key="p" :value="p">{{ p }}</option>
-                  </select>
-                  <select
-                    v-if="grp.provider === 'local'"
-                    class="form-select"
-                    v-model="grp.name"
-                    :disabled="readOnly || isPublicRole(role)"
-                  >
-                    <option v-for="g in sortedLocalGroups" :key="g" :value="g">{{ g }}</option>
-                  </select>
-                  <input
-                    v-else
-                    class="form-control"
-                    v-model="grp.name"
-                    placeholder="groupname"
-                    :disabled="readOnly || isPublicRole(role)"
-                  />
-                  <button v-if="!readOnly" class="btn btn-sm btn-outline-danger" @click="removeGroup(role, gIdx)">
-                    <FaIcon icon="times" />
-                  </button>
-                </div>
-                <div
-                  v-if="!readOnly && !isPublicRole(role)"
-                  :class="[role.groups.length > 0 ? 'mt-3' : 'mt-1', 'mb-4']"
-                >
-                  <BsButton icon="plus" @click="addGroup(role)">{{ t('settings.settingsPage.addGroup') }}</BsButton>
-                </div>
-                <label class="form-label fw-bold">{{ t('settings.settingsPage.users') }}</label>
-                <div v-for="(usr, uIdx) in role.users" :key="usr._uid" class="d-flex align-items-center gap-2 mb-2">
-                  <select
-                    class="form-select provider-select"
-                    v-model="usr.provider"
-                    :disabled="readOnly || isPublicRole(role)"
-                    @change="onProviderChange(usr, 'user')"
-                  >
-                    <option v-for="p in authProviders" :key="p" :value="p">{{ p }}</option>
-                  </select>
-                  <select
-                    v-if="usr.provider === 'local'"
-                    class="form-select"
-                    v-model="usr.name"
-                    :disabled="readOnly || isPublicRole(role)"
-                  >
-                    <option v-for="u in sortedLocalUsers" :key="u" :value="u">{{ u }}</option>
-                  </select>
-                  <input
-                    v-else
-                    class="form-control"
-                    v-model="usr.name"
-                    placeholder="username"
-                    :disabled="readOnly || isPublicRole(role)"
-                  />
-                  <button v-if="!readOnly" class="btn btn-sm btn-outline-danger" @click="removeUser(role, uIdx)">
-                    <FaIcon icon="times" />
-                  </button>
-                </div>
-                <div v-if="!readOnly && !isPublicRole(role)" :class="[role.users.length > 0 ? 'mt-3' : 'mt-1', 'mb-4']">
-                  <BsButton icon="plus" @click="addUser(role)">{{ t('settings.settingsPage.addUser') }}</BsButton>
-                </div>
-                <p v-if="isPublicRole(role)" class="text-muted small mt-1 mb-4">
-                  {{ t('settings.settingsPage.publicRoleNote') }}
-                </p>
-                <label class="form-label fw-bold">{{ t('settings.settingsPage.options') }}</label>
-                <div class="row row-cols-2 row-cols-md-3 g-0 role-options mb-3">
-                  <div v-for="optKey in roleOptionKeys" :key="optKey" class="col">
-                    <BsInput
-                      type="checkbox"
-                      :isSwitch="true"
-                      v-model="role.options[optKey]"
-                      :label="roleOptionLabel(optKey)"
-                      :disabled="readOnly"
-                    />
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -337,10 +271,6 @@ onMounted(async () => {
   </div>
 </template>
 <style scoped>
-.provider-select {
-  width: 130px;
-  flex-shrink: 0;
-}
 .role-header {
   cursor: pointer;
   user-select: none;
@@ -352,11 +282,5 @@ onMounted(async () => {
 }
 .role-header:hover {
   background-color: var(--bs-tertiary-bg);
-}
-.role-options {
-  margin-top: -0.5rem;
-}
-.role-options :deep(.mb-3) {
-  margin-bottom: -0.5rem !important;
 }
 </style>
