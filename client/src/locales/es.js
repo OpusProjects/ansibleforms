@@ -718,6 +718,9 @@ export default {
       runAt: 'Ejecutar en',
       runAtHelp: 'La fecha y hora para ejecutar este trabajo una sola vez',
       extraVarsHelp: 'Sin formulario para proporcionar las variables extra, debe agregarlas aquí.',
+      state_idle: 'Inactivo',
+      state_queued: 'En cola',
+      state_running: 'En ejecución',
     },
     runners: {
       label: 'Runner',

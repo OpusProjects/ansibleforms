@@ -714,6 +714,9 @@ export default {
       runAt: 'Run At',
       runAtHelp: 'The date and time to run this job once',
       extraVarsHelp: 'No form to provide the extra vars, you must add them here.',
+      state_idle: 'Idle',
+      state_queued: 'Queued',
+      state_running: 'Running',
     },
     runners: {
       label: 'Runner',

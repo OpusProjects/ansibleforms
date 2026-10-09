@@ -721,6 +721,9 @@ export default {
       runAt: 'Executar Em',
       runAtHelp: 'A data e hora para executar esta tarefa uma vez',
       extraVarsHelp: 'Não há formulário que forneça as extra vars, tem de as adicionar aqui.',
+      state_idle: 'Inativo',
+      state_queued: 'Em fila',
+      state_running: 'Em execução',
     },
     mailServers: {
       label: 'Servidor de correio',
