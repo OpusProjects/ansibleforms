@@ -305,17 +305,21 @@ defineExpose({
           {{ t('settings.common.seedManagedNotice') }}
         </div>
         <slot :name="'tab-top-' + tab.key"></slot>
-        <BsInput
-          v-for="field in toggleFields.filter((f) => tabOf(f) === tab.key)"
-          :key="field.key"
-          type="checkbox"
-          :isSwitch="true"
-          :disabled="isManaged || locked"
-          v-model="item[field.key]"
-          :label="field.label"
-          :help="field.help"
-          class="mb-1"
-        />
+        <!-- a toggle as the switches of the MCP and chat pages : its title, the switch, its help -->
+        <div v-for="field in toggleFields.filter((f) => tabOf(f) === tab.key)" :key="field.key" class="mb-3">
+          <label class="form-label fw-bold af-toggle-title" :for="'tg-' + field.key">{{ field.label }}</label>
+          <div class="form-check form-switch mb-0">
+            <input
+              :id="'tg-' + field.key"
+              v-model="item[field.key]"
+              class="form-check-input"
+              type="checkbox"
+              role="switch"
+              :disabled="isManaged || locked"
+            />
+          </div>
+          <div v-if="field.help" class="form-text">{{ field.help }}</div>
+        </div>
         <template v-for="(cols, rIdx) in rowsOf(tab.key)" :key="rIdx">
           <div v-if="cols && cols.some((f) => isVisible(f))" class="row">
             <div
@@ -351,17 +355,21 @@ defineExpose({
         <FaIcon icon="lock" class="me-2" />
         {{ t('settings.common.seedManagedNotice') }}
       </div>
-      <BsInput
-        v-for="field in toggleFields"
-        :key="field.key"
-        type="checkbox"
-        :isSwitch="true"
-        :disabled="isManaged || locked"
-        v-model="item[field.key]"
-        :label="field.label"
-        :help="field.help"
-        class="mb-1"
-      />
+      <!-- a toggle as the switches of the MCP and chat pages : its title, the switch, its help -->
+      <div v-for="field in toggleFields" :key="field.key" class="mb-3">
+        <label class="form-label fw-bold af-toggle-title" :for="'tg-' + field.key">{{ field.label }}</label>
+        <div class="form-check form-switch mb-0">
+          <input
+            :id="'tg-' + field.key"
+            v-model="item[field.key]"
+            class="form-check-input"
+            type="checkbox"
+            role="switch"
+            :disabled="isManaged || locked"
+          />
+        </div>
+        <div v-if="field.help" class="form-text">{{ field.help }}</div>
+      </div>
       <template v-for="(cols, rIdx) in rows" :key="rIdx">
         <div v-if="cols && cols.some((f) => isVisible(f))" class="row">
           <div
@@ -414,6 +422,10 @@ defineExpose({
 }
 :deep(.card-body .mb-3:has(.form-check) > .form-label) {
   display: none;
+}
+/* a toggle's title stays : it is not the empty label a switch leaves above it */
+.af-toggle-title {
+  display: inline-block !important;
 }
 :deep(.card-body > .mb-3:has(.form-check) > p) {
   margin-top: 0;

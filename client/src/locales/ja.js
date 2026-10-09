@@ -799,6 +799,11 @@ export default {
     ldap: {
       label: 'LDAP',
       enableLdap: 'LDAP を有効にする',
+      enableLdapHelp: 'ユーザーは LDAP または Active Directory のアカウントでサインインします',
+      tabGeneral: '全般',
+      tabServer: 'サーバー',
+      tabUsers: 'ユーザー',
+      tabGroups: 'グループ',
       description: 'ユーザー認証とグループのマッピングのために、LDAP または Active Directory サーバーに接続します。',
       enableTls: 'TLS を有効にする',
       enableTlsDesc: 'LDAP サーバーへの接続に LDAPS (TLS で暗号化) を使用します。',

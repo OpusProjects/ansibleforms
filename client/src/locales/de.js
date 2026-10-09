@@ -869,6 +869,11 @@ export default {
       description:
         'Verbindung zu einem LDAP- oder Active Directory-Server für Benutzerauthentifizierung und Gruppenzuordnung.',
       enableLdap: 'LDAP aktivieren',
+      enableLdapHelp: 'Benutzer melden sich mit ihrem LDAP- oder Active-Directory-Konto an',
+      tabGeneral: 'Allgemein',
+      tabServer: 'Server',
+      tabUsers: 'Benutzer',
+      tabGroups: 'Gruppen',
       enableTls: 'TLS aktivieren',
       enableTlsDesc: 'LDAPS (TLS-verschlüsselte) Verbindung zum LDAP-Server verwenden.',
       ignoreCerts: 'Zertifikate ignorieren',

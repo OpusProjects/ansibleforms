@@ -853,6 +853,11 @@ export default {
     ldap: {
       label: 'LDAP',
       enableLdap: 'Enable LDAP',
+      enableLdapHelp: 'Users sign in with their LDAP or Active Directory account',
+      tabGeneral: 'General',
+      tabServer: 'Server',
+      tabUsers: 'Users',
+      tabGroups: 'Groups',
       description: 'Connect to an LDAP or Active Directory server for user authentication and group mapping.',
       enableTls: 'Enable TLS',
       enableTlsDesc: 'Use LDAPS (TLS-encrypted) connection to the LDAP server.',

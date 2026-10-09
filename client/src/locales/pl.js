@@ -806,6 +806,11 @@ export default {
     ldap: {
       label: 'LDAP',
       enableLdap: 'Włącz LDAP',
+      enableLdapHelp: 'Użytkownicy logują się kontem LDAP lub Active Directory',
+      tabGeneral: 'Ogólne',
+      tabServer: 'Serwer',
+      tabUsers: 'Użytkownicy',
+      tabGroups: 'Grupy',
       description:
         'Połącz się z serwerem LDAP lub Active Directory w celu uwierzytelniania użytkowników i mapowania grup.',
       enableTls: 'Włącz TLS',

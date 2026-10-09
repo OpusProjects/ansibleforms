@@ -7,6 +7,15 @@ import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 const settings = computed(() => getSettings(t));
+
+// the page in tabs : General (the switch), the server and how to bind to it, where the
+// users are, and how their groups are found
+const tabs = computed(() => [
+  { key: 'general', label: t('settings.ldap.tabGeneral'), icon: 'sliders' },
+  { key: 'server', label: t('settings.ldap.tabServer'), icon: 'server' },
+  { key: 'users', label: t('settings.ldap.tabUsers'), icon: 'user' },
+  { key: 'groups', label: t('settings.ldap.tabGroups'), icon: 'users' },
+]);
 import TokenStorage from '@/lib/TokenStorage';
 import yaml from 'yaml';
 
@@ -109,7 +118,13 @@ onMounted(async () => {
   <div class="flex-shrink-0">
     <main class="d-flex flex-nowrap af-settings-layout">
       <AppSidebar />
-      <AppAdminSingle v-if="authenticated" apiVersion="2" :settings="settings.ldap" @test="openTestModal" />
+      <AppAdminSingle
+        v-if="authenticated"
+        apiVersion="2"
+        :settings="settings.ldap"
+        :tabs="tabs"
+        @test="openTestModal"
+      />
     </main>
   </div>
 </template>

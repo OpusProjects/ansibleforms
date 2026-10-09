@@ -869,6 +869,11 @@ export default {
       description:
         "Connexion à un serveur LDAP ou Active Directory pour l'authentification des utilisateurs et le mappage des groupes.",
       enableLdap: 'Activer LDAP',
+      enableLdapHelp: 'Les utilisateurs se connectent avec leur compte LDAP ou Active Directory',
+      tabGeneral: 'Général',
+      tabServer: 'Serveur',
+      tabUsers: 'Utilisateurs',
+      tabGroups: 'Groupes',
       enableTls: 'Activer TLS',
       enableTlsDesc: 'Utiliser une connexion LDAPS (chiffrée TLS) vers le serveur LDAP.',
       ignoreCerts: 'Ignorer les certificats',
