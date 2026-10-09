@@ -815,6 +815,9 @@ export default {
       type_cyberark: 'CyberArk',
       type_cyberarkHint: 'AppID, certyfikat i klucz klienta, którymi loguje się magazyn CyberArk',
       clientKeyKeep: 'Pozostawiony pusty, zapisany klucz klienta zostaje.',
+      notFound: "Nie ma poświadczenia o id '{id}'.",
+      fieldsRequired: 'Nazwa i opis są wymagane.',
+      loginFromStore: 'Użytkownik i hasło są odczytywane z magazynu sekretów, na karcie Magazyn.',
     },
     ssh: {
       label: 'Klucz SSH',

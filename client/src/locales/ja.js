@@ -810,6 +810,9 @@ export default {
       type_cyberark: 'CyberArk',
       type_cyberarkHint: 'CyberArk シークレットストアがログインに使う AppID、クライアント証明書とキー',
       clientKeyKeep: '空のままにすると、保存済みのクライアントキーが維持されます。',
+      notFound: "ID '{id}' の資格情報はありません。",
+      fieldsRequired: '名前と説明は必須です。',
+      loginFromStore: 'ユーザーとパスワードはシークレットストアから読み取られます（ストアタブ）。',
     },
     ssh: {
       label: 'SSH キー',
