@@ -137,8 +137,7 @@ function onClick() {
         {{ menu.name }}
         <FaIcon v-if="hasChildren" :icon="isOpen ? 'chevron-up' : 'chevron-down'" class="ms-2 af-chevron"></FaIcon
       ></span>
-      <span v-if="isHighLighted" class="badge px-3 rounded-pill active">{{ countFormsByCategory(path) }}</span>
-      <span v-else class="badge px-3 rounded-pill">{{ countFormsByCategory(path) }}</span>
+      <AppMenuBadge :count="countFormsByCategory(path)" :active="isHighLighted" />
     </div>
     <Transition name="slidedown">
       <ul
@@ -174,15 +173,6 @@ ul {
 .af-chevron {
   font-size: 0.7em;
   opacity: 0.6;
-}
-
-.badge {
-  background-color: var(--af-bg-badge) !important;
-  color: var(--af-text-badge) !important;
-  &.active {
-    background-color: var(--af-text-badge) !important;
-    color: var(--af-bg-badge) !important;
-  }
 }
 
 .slidedown-enter-active,

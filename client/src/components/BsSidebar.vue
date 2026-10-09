@@ -15,7 +15,7 @@
 /*                                                                */
 /******************************************************************/
 
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 
 const route = useRoute();
@@ -81,11 +81,35 @@ function openActiveSection() {
     save();
   }
 }
-onMounted(openActiveSection);
 watch(() => route.path, openActiveSection);
+
+// The scroll position too : following a link remounts the menu at its top, so the item just
+// clicked could leave the screen. Kept for the browser tab only (sessionStorage), and put
+// back before the new page is painted.
+const panel = ref(null);
+const scrollKey = () => props.storageKey + '_scroll';
+
+function saveScroll() {
+  try {
+    sessionStorage.setItem(scrollKey(), String(panel.value?.scrollTop || 0));
+  } catch (e) {
+    // storage disabled : the menu opens at its top
+  }
+}
+
+onMounted(async () => {
+  openActiveSection();
+  await nextTick();
+  try {
+    const top = Number(sessionStorage.getItem(scrollKey()) || 0);
+    if (panel.value && top > 0) panel.value.scrollTop = top;
+  } catch (e) {
+    // storage disabled : the menu opens at its top
+  }
+});
 </script>
 <template>
-  <div class="af-sidebar d-flex flex-column p-3 bg-body-tertiary">
+  <div ref="panel" class="af-sidebar d-flex flex-column p-3 bg-body-tertiary" @scroll.passive="saveScroll">
     <!-- 16px under the divider before a section title ; an untitled list sets its own
          space instead (see the list below) -->
     <div
@@ -137,12 +161,13 @@ watch(() => route.path, openActiveSection);
                   <FaIcon :icon="item.icon" :fixedwidth="true" />
                   {{ item.title }}
                 </span>
-                <span
+                <AppMenuBadge
                   v-if="item.badge != null"
-                  class="badge rounded-pill flex-shrink-0 ms-2 af-sidebar-badge"
-                  :class="{ 'is-alert': item.badgeAlert, active: item.active }"
-                  >{{ item.badge }}</span
-                >
+                  class="ms-2"
+                  :count="item.badge"
+                  :active="!!item.active"
+                  :alert="!!item.badgeAlert"
+                />
               </span>
             </a>
             <router-link
@@ -190,20 +215,6 @@ watch(() => route.path, openActiveSection);
 .letter-spacing {
   letter-spacing: 0.05em;
   font-size: 0.9rem;
-}
-/* a count next to an entry, styled like the forms page's category counts */
-.af-sidebar-badge {
-  padding: 0.35em 0.75em;
-  background-color: var(--af-bg-badge);
-  color: var(--af-text-badge);
-}
-.af-sidebar-badge.active {
-  background-color: var(--af-text-badge);
-  color: var(--af-bg-badge);
-}
-.af-sidebar-badge.is-alert:not(.active) {
-  background-color: var(--bs-danger);
-  color: #fff;
 }
 /* a disabled entry (the designer before it is started) : a light grey, clearly not clickable */
 .nav-link.disabled {

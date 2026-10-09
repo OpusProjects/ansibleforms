@@ -14,6 +14,8 @@
 /*            menu loads the jobs for its counts once, and a      */
 /*            status opens the jobs list on it.                   */
 /*      status: String - the status the list is filtered on       */
+/*      loaded: Boolean - the jobs list's jobs are loaded (until  */
+/*              then the counts of last time)                     */
 /*                                                                */
 /*  @emits:                                                       */
 /*      select: a status was picked (null : every job)            */
@@ -25,17 +27,20 @@
 /******************************************************************/
 
 import { useI18n } from 'vue-i18n';
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import TokenStorage from '@/lib/TokenStorage';
 import { useAppStore } from '@/stores/app';
+import { remembered } from '@/lib/menuMemory';
 
 // PROPS
 
 const props = defineProps({
   jobs: { type: Array, default: null },
   status: { type: String, default: null },
+  // the jobs list's jobs are loaded : until then the menu counts the jobs it counted last
+  loaded: { type: Boolean, default: true },
 });
 const emit = defineEmits(['select']);
 
@@ -51,6 +56,20 @@ const can = (permission) => !!store.profile?.options?.[permission];
 
 // the jobs for the counts when the page is not the jobs list (scheduled, stored jobs)
 const ownJobs = ref([]);
+const ownLoaded = ref(false);
+// the jobs counted last in this tab (lib/menuMemory.js) : the counts while the page's own jobs
+// load, instead of zeros then the numbers
+const lastJobs = remembered('jobs', null);
+const pageJobs = computed(() => props.jobs ?? ownJobs.value);
+const ready = computed(() => (props.jobs !== null ? props.loaded : ownLoaded.value));
+const countedJobs = computed(() => (ready.value ? pageJobs.value : (lastJobs.value ?? pageJobs.value)));
+watch(
+  [ready, pageJobs],
+  () => {
+    if (ready.value) lastJobs.value = pageJobs.value;
+  },
+  { immediate: true },
+);
 
 // the statuses of the menu, with their names and icons, in the same order and with the
 // same icons as the jobs list's page titles (pages/jobs.vue). The labels are spelled out,
@@ -76,7 +95,7 @@ function pick(status) {
 const sections = computed(() => {
   const sections = [];
   if (can('showJobs')) {
-    const all = (props.jobs ?? ownJobs.value).filter((x) => !x.parent_id);
+    const all = countedJobs.value.filter((x) => !x.parent_id);
     const count = (status) => all.filter((x) => x.status === status).length;
     sections.push({
       title: t('jobs.menu.status'),
@@ -119,6 +138,8 @@ async function loadCounts() {
   } catch (err) {
     // the counts are a hint : without them the menu still works
     ownJobs.value = [];
+  } finally {
+    ownLoaded.value = true;
   }
 }
 

@@ -24,6 +24,8 @@ dayjs.extend(utc);
 // DATA
 
 const jobs = ref([]);
+// the jobs loaded once : until then the menu shows the counts it had
+const jobsLoaded = ref(false);
 const job = ref(null);
 const isLoading = ref(false);
 const lines = ref(1000);
@@ -407,6 +409,7 @@ async function loadJobs() {
       const result = await axios.get(`/api/v2/job?records=${lines.value}`, TokenStorage.getAuthentication());
       if (result.status === 200) {
         jobs.value = result.data.records;
+        jobsLoaded.value = true;
         if (jobId.value) {
           await loadOutput(jobId.value);
         }
@@ -881,7 +884,7 @@ onBeforeUnmount(() => {
       >
     </BsModal>
     <main class="d-flex flex-nowrap af-settings-layout">
-      <AppJobsSidebar :jobs="jobs || []" :status="statusFilter" @select="selectStatus" />
+      <AppJobsSidebar :jobs="jobs || []" :loaded="jobsLoaded" :status="statusFilter" @select="selectStatus" />
       <AppSettings :title="pageTitle.title" :description="pageDescription" :icon="pageTitle.icon">
         <template #headerActions>
           <!-- a job's page : the actions the list offers on its row (same rules), then the way back -->
