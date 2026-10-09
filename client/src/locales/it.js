@@ -641,6 +641,7 @@ export default {
         "I file di variabili vengono caricati da questo repository (sottocartella 'vars' o radice, abilitalo su un solo repository).",
       helpCloneOnStart: "Il repository viene clonato (o aggiornato) automaticamente a ogni avvio dell'applicazione.",
       syncRepository: 'Push to repo',
+      cloneOnStartShort: "Clona all'avvio",
       cloneOnStart: "Clonare all'avvio dell'app?",
       credential: 'Credenziale',
       helpCredential: "Una credenziale di Connessioni > Credenziali: l'utente e la password (o il token) che git usa.",

@@ -9,7 +9,9 @@
  *                           sortValue?(row)→number|string,
  *                           filterType?: 'number' | 'boolean' | 'gt0',
  *                           align?: 'end' (numbers : header, filter and cells to the right),
- *                           width?: a CSS width for the column (the rest share what is left) }]
+ *                           width?: a CSS width for the column (the rest share what is left),
+ *                           hideBelow?: a width in px - the column is left out while the table
+ *                             is narrower, so the wide ones keep room on a small screen }]
  *  pageSize       Number  Initial page size (default 25) — a page size the user
  *                         picked before (cookie, needs `name`) wins over it
  *  name           String  Cookie key for pagination and column persistence ; also
@@ -37,7 +39,7 @@
 
  */
 
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Helpers from '@/lib/Helpers';
 import BsPagination from './BsPagination.vue';
@@ -94,7 +96,23 @@ function emitSelection(ids) {
 // ─── Column visibility ───────────────────────────────────────────────────────
 const hiddenColumns = ref(new Set());
 
-const visibleColumns = computed(() => props.columns.filter((c) => !hiddenColumns.value.has(c.key)));
+// the table's width, followed as it changes : a column with `hideBelow` is left out while the
+// table is narrower (the column picker's choices stay as they are)
+const tableBox = ref(null);
+const tableWidth = ref(Infinity);
+let tableObserver = null;
+onMounted(() => {
+  if (typeof ResizeObserver === 'undefined' || !tableBox.value) return;
+  tableObserver = new ResizeObserver(([entry]) => {
+    tableWidth.value = entry.contentRect.width;
+  });
+  tableObserver.observe(tableBox.value);
+});
+onBeforeUnmount(() => tableObserver?.disconnect());
+
+const visibleColumns = computed(() =>
+  props.columns.filter((c) => !hiddenColumns.value.has(c.key) && !(c.hideBelow && tableWidth.value < c.hideBelow)),
+);
 
 function toggleColumn(key) {
   const s = new Set(hiddenColumns.value);
@@ -552,7 +570,7 @@ function exportCsv() {
     </Teleport>
 
     <!-- Table -->
-    <div class="table-responsive" style="overflow: visible">
+    <div ref="tableBox" class="table-responsive" style="overflow: visible">
       <table
         :class="{ 'af-table': framed }"
         class="table table-sm table-hover mb-0 bs-dt-table"

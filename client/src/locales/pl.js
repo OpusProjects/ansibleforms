@@ -639,6 +639,7 @@ export default {
       helpCloneOnStart:
         'Repozytorium jest automatycznie klonowane (lub aktualizowane przez pull) przy każdym uruchomieniu aplikacji.',
       syncRepository: 'Wypchnij do repozytorium',
+      cloneOnStartShort: 'Klonuj przy starcie',
       cloneOnStart: 'Klonować przy starcie aplikacji?',
       credential: 'Poświadczenie',
       helpCredential:

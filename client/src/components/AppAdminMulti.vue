@@ -60,6 +60,8 @@
 /*  dialogOnly (prop): no list, only the record dialogs : another */
 /*      dialog opens newItem() (exposed) to create a record, and  */
 /*      gets `created` with its name                              */
+/*  field.columnLabel: the column's title, when shorter than the  */
+/*      field's label in the dialog                               */
 /*  action.to: (item) => route - the action goes to a page        */
 /*  action.update: (item) => object - the action saves those      */
 /*      fields of the record (Use for sign-in), then reloads      */
@@ -931,14 +933,16 @@ const dataTableShowRowMenu = computed(() => actions.value.length > 0);
 const dataTableColumns = computed(() => {
   // Include every field as a possible column (so the user can opt any of
   // them in via the column picker). Skip explicit `noTable` opt-outs and
-  // password-like fields whose values are never returned by the API.
+  // password-like fields whose values are never returned by the API. A field with no label
+  // (a record's output, kept for a dialog) is no column : the picker would list it blank.
   const SECRET_KEYS = new Set(['password', 'token', 'client_secret']);
   return fields.value
-    .filter((f) => !f.noTable && !SECRET_KEYS.has(f.key) && f.type !== 'password')
+    .filter((f) => !f.noTable && !SECRET_KEYS.has(f.key) && f.type !== 'password' && (f.columnLabel || f.label))
     .map((f) => {
       const col = {
         key: f.key,
-        label: f.label,
+        // a column may have a shorter title than its field in the dialog (Forms, not Use for forms ?)
+        label: f.columnLabel || f.label,
         sortable: f.sortable !== false,
         filterable: f.filterable || false,
         mobileHidden: f.mobileHidden || false,
@@ -949,6 +953,8 @@ const dataTableColumns = computed(() => {
       };
       // a field may set its column's width (a yes / no column as wide as its header)
       if (f.width) col.width = f.width;
+      // and the table width it needs to be shown (a short column left out on a narrow screen)
+      if (f.hideBelow) col.hideBelow = f.hideBelow;
       // and its alignment (a count : to the right)
       if (f.align) col.align = f.align;
       // how the column filters and sorts : a field can say so itself, and a

@@ -644,6 +644,7 @@ export default {
         "Les fichiers de variables sont chargés depuis ce dépôt (sous-dossier 'vars' ou racine, à activer sur un seul dépôt).",
       helpCloneOnStart: "Le dépôt est cloné (ou mis à jour) automatiquement à chaque démarrage de l'application.",
       syncRepository: 'Push to repo',
+      cloneOnStartShort: 'Cloner au démarrage',
       cloneOnStart: "Cloner au demarrage de l'application ?",
       credential: 'Identifiant',
       helpCredential:

@@ -637,6 +637,7 @@ export default {
         "フォームの変数ファイルはこのリポジトリ ('vars' サブフォルダーまたはルート) から読み込まれます (1 つのリポジトリでのみ有効にしてください)。",
       helpCloneOnStart: 'アプリケーションの起動のたびに、リポジトリが自動的にクローン (または pull) されます。',
       syncRepository: 'リポジトリに push',
+      cloneOnStartShort: '起動時にクローン',
       cloneOnStart: 'アプリ起動時にクローンしますか?',
       credential: '認証情報',
       helpCredential: '接続 > 認証情報 の認証情報です。git が使うユーザー名とパスワード (またはトークン) です。',

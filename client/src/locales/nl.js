@@ -639,6 +639,7 @@ export default {
         "Vars bestanden worden geladen vanuit deze repository ('vars' submap of root, activeer op één repository).",
       helpCloneOnStart: 'De repository wordt automatisch gekloond (of gepulld) bij elke start van de applicatie.',
       syncRepository: 'Push to repo',
+      cloneOnStartShort: 'Klonen bij start',
       cloneOnStart: 'Klonen bij app start?',
       credential: 'Referentie',
       helpCredential:
