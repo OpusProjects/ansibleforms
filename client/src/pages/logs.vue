@@ -157,23 +157,15 @@ onUnmounted(() => {
             ></BsInput>
           </div>
           <div class="ms-2">
-            <BsInput
-              cssClass="ms-2"
-              label=""
-              :isInline="true"
-              :isFloating="false"
-              icon="filter"
-              v-model="filter"
-              :placeholder="t('logs.filterPlaceholder')"
-            ></BsInput>
+            <!-- the search box of the other pages : the placeholder goes on click, an X clears it -->
+            <BsSearch v-model="filter" icon="filter" style="width: 16rem" :placeholder="t('logs.filterPlaceholder')" />
           </div>
-          <!-- view controls only : these decide WHAT the card shows, so they belong
-               above the content they filter. Refresh re-reads the same view, it does
-               not act on anything - the action buttons live under the card. -->
-          <BsButton class="ms-2" icon="refresh" :isIconButton="true" @click="load(true)"></BsButton>
+          <!-- view controls only : these decide WHAT the card shows. Refresh re-reads the same
+               view, it does not act on anything ; the download follows, with the page's buttons -->
+          <BsButton class="ms-2 text-nowrap" icon="refresh" @click="load(true)">{{ t('jobs.refresh') }}</BsButton>
         </template>
         <template #actions>
-          <BsButton cssClass="ms-3" icon="download" @click="download()">{{ t('logs.download') }}</BsButton>
+          <BsButton class="text-nowrap" icon="download" @click="download()">{{ t('logs.download') }}</BsButton>
         </template>
         <template #default>
           <!-- tabindex : the scrolling box is the card body around us, and a
