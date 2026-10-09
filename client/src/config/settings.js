@@ -416,11 +416,16 @@ export default function getSettings(t) {
         { name: 'delete', icon: 'trash', title: t('settings.repositories.deleteRepository'), color: 'delete' },
       ],
       fields: [
-        { key: 'id', hidden: true, noInput: true },
-        { key: 'output', hidden: true, noInput: true },
+        // no columns : the id, and git's output (on the repository's page)
+        { key: 'id', hidden: true, noInput: true, noTable: true },
+        { key: 'output', hidden: true, noInput: true, noTable: true },
         {
           key: 'name',
           icon: 'heading',
+          // the short columns (branch, head, status) close together at a fixed width, the name a
+          // share and the description the rest ; on a narrow table the head, then the branch, are
+          // left out (hideBelow) so the description keeps its room
+          width: '22%',
           label: t('settings.fields.name'),
           placeholder: 'my_repo_name',
           readonly: false,
@@ -430,13 +435,25 @@ export default function getSettings(t) {
         {
           key: 'branch',
           icon: 'code-branch',
+          // a branch name : main, or a short feature branch
+          width: '10.5rem',
+          // left out on a narrow table, after the head
+          hideBelow: 740,
           label: t('settings.fields.branch'),
           placeholder: 'main',
           readonly: false,
         },
-        { key: 'head', label: t('settings.fields.head'), noInput: true },
+        // a commit's 7 characters
+        { key: 'head', label: t('settings.fields.head'), noInput: true, width: '7.75rem', hideBelow: 900 },
         // the last sync's status, as the audit log shows an outcome
-        { key: 'status', label: t('settings.fields.status'), noInput: true, render: (v) => statusPill(t, v) },
+        {
+          key: 'status',
+          label: t('settings.fields.status'),
+          noInput: true,
+          // as wide as its pill
+          width: '8.25rem',
+          render: (v) => statusPill(t, v),
+        },
         {
           // a credential of Connections > Credentials, or a New one : the user and password git
           // uses
@@ -459,8 +476,10 @@ export default function getSettings(t) {
         },
         {
           key: 'user',
-          // in the credential now ; kept on the record for the repositories that still have one
+          // in the credential now ; kept on the record for the repositories that still have one,
+          // no column
           noInput: true,
+          noTable: true,
           icon: 'user',
           label: t('settings.fields.username'),
           placeholder: 'my-user',
@@ -520,6 +539,7 @@ export default function getSettings(t) {
           type: 'checkbox',
           flush: true,
           label: t('settings.repositories.cloneOnStart'),
+          columnLabel: t('settings.repositories.cloneOnStartShort'),
           help: t('settings.repositories.helpCloneOnStart'),
           hidden: true,
         },
@@ -540,6 +560,8 @@ export default function getSettings(t) {
           isSwitch: false,
           type: 'checkbox',
           label: t('settings.repositories.useForConfig'),
+          // the column : its short name, as on the Usage step
+          columnLabel: t('settings.repositories.useConfigShort'),
           help: t('settings.repositories.helpUseForConfig'),
           hidden: true,
         },
@@ -551,6 +573,8 @@ export default function getSettings(t) {
           isSwitch: false,
           type: 'checkbox',
           label: t('settings.repositories.useForForms'),
+          // the column : its short name, as on the Usage step
+          columnLabel: t('settings.repositories.useFormsShort'),
           help: t('settings.repositories.helpUseForForms'),
           hidden: true,
         },
@@ -564,6 +588,8 @@ export default function getSettings(t) {
           isSwitch: false,
           type: 'checkbox',
           label: t('settings.repositories.useForPlaybooks'),
+          // the column : its short name, as on the Usage step
+          columnLabel: t('settings.repositories.usePlaybooksShort'),
           help: t('settings.repositories.helpUseForPlaybooks'),
           hidden: true,
         },
@@ -577,6 +603,8 @@ export default function getSettings(t) {
           isSwitch: false,
           type: 'checkbox',
           label: t('settings.repositories.useForVarsFiles'),
+          // the column : its short name, as on the Usage step
+          columnLabel: t('settings.repositories.useVarsFilesShort'),
           help: t('settings.repositories.helpUseForVarsFiles'),
           hidden: true,
         },

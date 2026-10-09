@@ -641,6 +641,7 @@ export default {
       helpCloneOnStart:
         "El repositori es clona (o s'actualitza amb pull) automàticament cada vegada que s'inicia l'aplicació.",
       syncRepository: 'Envia al repositori',
+      cloneOnStartShort: 'Clona en iniciar',
       cloneOnStart: "Clonar en iniciar l'aplicació ?",
       credential: 'Credencial',
       helpCredential:

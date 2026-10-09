@@ -636,6 +636,7 @@ export default {
         "Form vars files are loaded from this repository ('vars' subfolder or root, enable on one repository only).",
       helpCloneOnStart: 'The repository is cloned (or pulled) automatically at every application start.',
       syncRepository: 'Push to repo',
+      cloneOnStartShort: 'Clone on start',
       cloneOnStart: 'Clone on app start ?',
       credential: 'Credential',
       helpCredential: 'A credential of Connections > Credentials: the username and password (or token) git uses.',

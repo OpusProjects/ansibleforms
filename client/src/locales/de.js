@@ -645,6 +645,7 @@ export default {
         "Vars-Dateien werden aus diesem Repository geladen (Unterordner 'vars' oder Stammverzeichnis, nur fuer ein Repository aktivieren).",
       helpCloneOnStart: 'Das Repository wird bei jedem Start der Anwendung automatisch geklont (oder gepullt).',
       syncRepository: 'Push to repo',
+      cloneOnStartShort: 'Beim Start klonen',
       cloneOnStart: 'Beim Start der App klonen?',
       credential: 'Anmeldedaten',
       helpCredential:

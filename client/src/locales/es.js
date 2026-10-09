@@ -638,6 +638,7 @@ export default {
         "Los archivos de variables se cargan desde este repositorio (subcarpeta 'vars' o raíz, actívalo en un solo repositorio).",
       helpCloneOnStart: 'El repositorio se clona (o actualiza) automáticamente en cada arranque de la aplicación.',
       syncRepository: 'Push to repo',
+      cloneOnStartShort: 'Clonar al iniciar',
       cloneOnStart: '¿Clonar al iniciar la aplicación?',
       credential: 'Credencial',
       helpCredential:

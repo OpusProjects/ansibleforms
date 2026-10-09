@@ -625,6 +625,7 @@ export default {
       helpUseForVarsFiles: "表单变量文件从此仓库加载（'vars' 子文件夹或根目录，仅在一个仓库上启用）。",
       helpCloneOnStart: '每次应用启动时自动克隆（或拉取）此仓库。',
       syncRepository: '推送到仓库',
+      cloneOnStartShort: '启动时克隆',
       cloneOnStart: '应用启动时克隆？',
       credential: '凭据',
       helpCredential: '连接 > 凭据 中的凭据：git 使用的用户名和密码（或令牌）。',
