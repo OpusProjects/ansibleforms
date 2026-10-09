@@ -5,6 +5,7 @@ import { useAppStore } from '@/stores/app';
 import { toast } from 'vue-sonner';
 import { useRoute, useRouter } from 'vue-router';
 import TokenStorage from '@/lib/TokenStorage';
+import { forgetMenus } from '@/lib/menuMemory';
 import Navigate from '@/lib/Navigate';
 
 const store = useAppStore();
@@ -22,6 +23,7 @@ if (userType == 'oidc') {
     .then((res) => {
       // clear all authentication states AFTER getting logout URL
       TokenStorage.clear();
+      forgetMenus();
       State.refreshAuthenticated();
       State.loadProfile();
 
@@ -38,6 +40,7 @@ if (userType == 'oidc') {
       console.log(err);
       // Clear tokens even on error
       TokenStorage.clear();
+      forgetMenus();
       State.refreshAuthenticated();
       State.loadProfile();
       toast.error('Could not log out');
@@ -47,6 +50,7 @@ if (userType == 'oidc') {
 } else {
   // For local/ldap/azuread, clear tokens immediately
   TokenStorage.clear();
+  forgetMenus();
   State.refreshAuthenticated();
   State.loadProfile();
   Navigate.toLogin(router, route);

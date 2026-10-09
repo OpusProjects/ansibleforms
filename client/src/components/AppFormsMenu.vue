@@ -23,7 +23,10 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Form from '@/lib/Form';
 import TokenStorage from '@/lib/TokenStorage';
-import { cachedFormConfig } from '@/lib/formsMenuCache';
+import { remembered } from '@/lib/menuMemory';
+
+// the last categories and forms of this tab (lib/menuMemory.js)
+const cachedFormConfig = remembered('forms', null);
 
 const { t } = useI18n();
 const emit = defineEmits(['select']);
