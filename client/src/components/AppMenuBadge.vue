@@ -37,7 +37,7 @@ defineProps({
 <style scoped>
 /* the menus' blue pill, its number white ; on the selected entry the colors swapped */
 .af-menu-badge {
-  padding: 0.35em 1rem;
+  padding: 0.35em 0.75rem;
   background-color: var(--af-bg-badge);
   color: var(--af-text-badge);
 }
