@@ -96,7 +96,7 @@ const sections = computed(() =>
       title: t('sidebar.sections.logs'),
       items: [
         { title: t('sidebar.audit'), icon: 'clipboard-list', link: '/admin/audit', permission: 'showSettings' },
-        { title: t('sidebar.logs'), icon: 'file-lines', link: '/logs', permission: 'showLogs' },
+        { title: t('sidebar.logs'), icon: 'file-lines', link: '/admin/logs', permission: 'showLogs' },
       ],
     },
   ]

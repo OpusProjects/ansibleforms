@@ -126,7 +126,8 @@ const routes = [
   { path: '/jobs/schedules', name: '/jobs/schedules', component: schedules, beforeEnter: allowScheduledJobs },
   { path: '/jobs/stored', name: '/jobs/stored', component: storedJobs, beforeEnter: allowStoredJobs },
   { path: '/jobs/:id', name: '/jobs/:id', component: jobs, beforeEnter: checkJobs },
-  { path: '/logs', name: '/logs', component: logs, beforeEnter: checkLogs },
+  // the server log : a settings page, under /admin as the others
+  { path: '/admin/logs', name: '/admin/logs', component: logs, beforeEnter: checkLogs },
   { path: '/schema', name: '/schema', component: schema },
   { path: '/error', name: '/error', component: error },
   { path: '/api-docs', name: '/api-docs', component: apidocs },
