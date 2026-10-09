@@ -2269,7 +2269,8 @@ defineExpose({
       </template>
     </BsOffCanvas>
 
-    <div class="d-flex justify-content-between">
+    <!-- the toolbar row : as far under the title line as above the form -->
+    <div class="d-flex justify-content-between af-form-toolbar">
       <div>
         <slot name="toolbarbuttons"></slot>
       </div>
@@ -2821,5 +2822,9 @@ defineExpose({
 }
 pre {
   margin: 0;
+}
+/* the toolbar row (the status icons) : the same space above it as under it, before the form */
+.af-form-toolbar {
+  margin-top: 0.625rem;
 }
 </style>
