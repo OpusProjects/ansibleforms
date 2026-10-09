@@ -107,7 +107,7 @@ and with the same tags as the app :
   the digest it just pushed, and the Docker check (`docker.yml`) does the same through a
   registry that lives only for the job. Built by hand, they default to the published `:7`.
 - The app (`Dockerfile`) needs only node, git, ssh, the mariadb client and ytt, and builds from
-  `node:24-bookworm-slim` (pinned by digest, moved by Dependabot).
+  `node:26-trixie-slim` (pinned by digest, moved by Dependabot).
 - `ghcr.io/ansibleforms/base-server` ([ansibleforms/base-images](https://github.com/ansibleforms/base-images))
   is the base of the 6.x line only.
 

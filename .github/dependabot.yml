@@ -44,7 +44,7 @@ updates:
         update-types: ['version-update:semver-major']
 
   # Moves the digest pins (the docker updater reads every file named *Dockerfile* in the
-  # directory) : node:24-bookworm(-slim) in Dockerfile, the app, and node:24-trixie-slim in
+  # directory) : node:26-trixie(-slim) in Dockerfile, the app, and node:26-trixie-slim in
   # Dockerfile.rte-base. Dockerfile.rte and .rte-legacy build FROM our own layers (BASE_IMAGE).
   - package-ecosystem: docker
     directory: /
