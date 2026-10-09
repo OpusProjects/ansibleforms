@@ -670,8 +670,10 @@ function exportCsv() {
 .bs-dt-select {
   width: 2rem;
 }
-.bs-dt-table tbody td.bs-dt-select,
-.bs-dt-table thead th.bs-dt-select {
+.bs-dt-table tbody td.bs-dt-select.bs-dt-select,
+.bs-dt-table thead th.bs-dt-select.bs-dt-select {
+  /* the class twice : the rule that cuts every cell (below) is as specific otherwise, and
+     comes later, so it won in the rows */
   overflow: visible;
   text-overflow: clip;
 }
