@@ -9,7 +9,8 @@
 /*      title: String                                             */
 /*      description: String - what the page is for, in a popover  */
 /*                   behind an info icon after the title          */
-/*      crumbs: Array of { title, icon } - a title in steps       */
+/*      crumbs: Array of { title, icon, to } - a title in steps,  */
+/*              each a link when it has a route (to)              */
 /*      bare: Boolean - the content without the card around it    */
 /*                                                                */
 /*  @slots:                                                       */
@@ -64,7 +65,13 @@ defineProps({
         <h3 v-if="crumbs.length" :aria-label="title">
           <template v-for="(c, i) in crumbs" :key="i">
             <span v-if="i > 0" class="mx-2 text-body-secondary af-crumb-separator">›</span>
-            <span class="me-2"><FaIcon :icon="c.icon" /></span>{{ c.title }}
+            <!-- a step with a route : a link, in the title's own look -->
+            <router-link v-if="c.to" :to="c.to" class="af-crumb-link"
+              ><span class="me-2"><FaIcon :icon="c.icon" /></span>{{ c.title }}</router-link
+            >
+            <template v-else
+              ><span class="me-2"><FaIcon :icon="c.icon" /></span>{{ c.title }}</template
+            >
           </template>
           <AppInfoPopover v-if="description" :text="description" />
         </h3>
@@ -107,6 +114,12 @@ h3 {
 /* the › between the steps of a title is a small glyph at text size : larger, centered on the
    words, and with no line height of its own, so the title is no taller than one without it
    and the divider under it does not move */
+.af-crumb-link,
+.af-crumb-link:hover,
+.af-crumb-link:focus {
+  color: inherit;
+  text-decoration: none;
+}
 .af-crumb-separator {
   font-size: 1.5em;
   line-height: 0;

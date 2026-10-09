@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRouteTab } from '@/composables/useRouteTab';
 import { toast } from 'vue-sonner';
 import axios from 'axios';
 import TokenStorage from '@/lib/TokenStorage';
@@ -17,7 +18,8 @@ const checkedAt = ref(null);
 const expanded = ref({});
 // Checks is the default : a failure must be what you land on. The count of anything
 // non-ok rides on the tab label, so a user sitting on the other tab still sees it.
-const activeTab = ref('checks');
+// the tab shown, kept in the url (?tab=) : a link or a bookmark opens it, Back returns to the last
+const { activeTab } = useRouteTab('checks', (key) => ['checks', 'info'].includes(key));
 
 // the check keys come from the server (see health.model.js) and are turned into
 // locale keys by concatenation, so 'health.checkDatabase' and friends look

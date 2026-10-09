@@ -4,12 +4,16 @@
 /*  Bootstrap Nav Link component                                  */
 /*                                                                */
 /*  @props:                                                       */
-/*      link: Object - { link, title, icon, badge, indicator }    */
+/*      link: Object - { link, title, icon, badge, indicator,     */
+/*            also }                                              */
+/*            also : other paths the link is active on (Forms on  */
+/*            a form, /form)                                      */
 /*            indicator : { icon, class, title } - a small icon   */
 /*            on the link's icon, with its tooltip                */
 /*                                                                */
 /******************************************************************/
 
+import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 
 // INIT
@@ -18,23 +22,24 @@ const route = useRoute();
 
 // PROPS
 
-defineProps({
+const props = defineProps({
   link: {
     type: Object,
     required: true,
   },
 });
+
+// on its page, a page below it, or a path it is also the link of (link.also)
+const active = computed(() => {
+  const path = route.path;
+  const { link, also = [] } = props.link;
+  if (path == link || (path.includes(link) && link !== '/')) return true;
+  return also.some((p) => path === p || path.startsWith(p + '/'));
+});
 </script>
 <template>
   <li class="nav-item">
-    <router-link
-      :to="link.link"
-      class="nav-link icon-link"
-      :class="{
-        active: route.path == link.link || (route.path.includes(link.link) && link.link !== '/'),
-        'link-body-emphasis': route.path !== link.link,
-      }"
-    >
+    <router-link :to="link.link" class="nav-link icon-link" :class="{ active, 'link-body-emphasis': !active }">
       <span class="af-nav-link-icon" :class="{ 'af-has-indicator': link.indicator }">
         <font-awesome-icon :icon="link.icon" />
         <!-- a small state icon on the link's icon (the designer lock), explained by its tooltip -->
