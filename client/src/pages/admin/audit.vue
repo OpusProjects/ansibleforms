@@ -6,6 +6,7 @@ import axios from 'axios';
 import TokenStorage from '@/lib/TokenStorage';
 import Profile from '@/lib/Profile';
 import Helpers from '@/lib/Helpers.js';
+import { PILL } from '@/lib/tableCells';
 
 const { t, te } = useI18n();
 
@@ -38,10 +39,11 @@ const filterOutcome = ref('');
 // `constructor` and `__proto__` to inherited members, which are truthy - so a row with
 // outcome 'constructor' handed a function to t() and blanked the entire table. And an
 // unrecognised outcome must never be DISPLAYED AS SUCCESS in an audit trail.
+// the outcome as a pill of the shared tables (styles/tables.scss, lib/tableCells.js)
 const outcomeBadge = Object.assign(Object.create(null), {
-  success: 'text-bg-success',
-  failure: 'text-bg-danger',
-  denied: 'text-bg-warning',
+  success: PILL.green,
+  failure: PILL.red,
+  denied: PILL.amber,
 });
 const outcomeLabelKey = Object.assign(Object.create(null), {
   success: 'audit.outcomeSuccess',
@@ -60,7 +62,7 @@ function actionLabel(action) {
 }
 
 function badgeClass(outcome) {
-  return outcomeBadge[outcome] || 'text-bg-secondary';
+  return outcomeBadge[outcome] || PILL.grey;
 }
 function outcomeText(outcome) {
   const key = outcomeLabelKey[outcome];
@@ -74,6 +76,15 @@ function outcomeText(outcome) {
 // buttons and the per-page selector exactly as every other table does, and the slice
 // it emits tells us precisely which absolute rows to fetch from the server.
 const pageIndexes = computed(() => Array.from({ length: total.value }, (_, i) => i));
+// the rows shown, for the footer : 1-25 of 140
+const pageRange = computed(() => {
+  if (!total.value || !records.value.length) return t('dataTable.rangeOf', { from: 0, to: 0, total: total.value });
+  return t('dataTable.rangeOf', {
+    from: offset.value + 1,
+    to: offset.value + records.value.length,
+    total: total.value,
+  });
+});
 
 async function onPageChange(slice, meta) {
   const nextOffset = slice.length ? slice[0] : 0;
@@ -170,43 +181,30 @@ onMounted(async () => {
         :title="t('audit.title')"
         :description="t('audit.description')"
       >
-        <template #default>
-          <!-- Filters live INSIDE the card, in the exact toolbar shape BsDataTable uses:
-               same wrapper classes, and the controls pushed right with ms-auto the way
-               it positions its column picker (see BsDataTable's toolbar). -->
-          <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-            <div class="ms-auto d-flex gap-2">
-              <select
-                v-model="filterActor"
-                class="form-select form-select-sm"
-                style="width: auto"
-                @change="applyFilters"
-              >
-                <option value="">{{ t('audit.allActors') }}</option>
-                <option v-for="a in facets.actors" :key="'ac-' + a" :value="a">{{ a }}</option>
-              </select>
-              <select
-                v-model="filterAction"
-                class="form-select form-select-sm"
-                style="width: auto"
-                @change="applyFilters"
-              >
-                <option value="">{{ t('audit.allActions') }}</option>
-                <option v-for="a in facets.actions" :key="'an-' + a" :value="a">{{ actionLabel(a) }}</option>
-              </select>
-              <select
-                v-model="filterOutcome"
-                class="form-select form-select-sm"
-                style="width: auto"
-                @change="applyFilters"
-              >
-                <option value="">{{ t('audit.allOutcomes') }}</option>
-                <option value="success">{{ t('audit.outcomeSuccess') }}</option>
-                <option value="failure">{{ t('audit.outcomeFailure') }}</option>
-                <option value="denied">{{ t('audit.outcomeDenied') }}</option>
-              </select>
-            </div>
+        <!-- the filters on the title line, as the other tables have their search and columns -->
+        <template #headerActions>
+          <div class="d-flex align-items-center gap-2">
+            <select v-model="filterActor" class="form-select" style="width: auto" @change="applyFilters">
+              <option value="">{{ t('audit.allActors') }}</option>
+              <option v-for="a in facets.actors" :key="'ac-' + a" :value="a">{{ a }}</option>
+            </select>
+            <select v-model="filterAction" class="form-select" style="width: auto" @change="applyFilters">
+              <option value="">{{ t('audit.allActions') }}</option>
+              <option v-for="a in facets.actions" :key="'an-' + a" :value="a">{{ actionLabel(a) }}</option>
+            </select>
+            <select v-model="filterOutcome" class="form-select" style="width: auto" @change="applyFilters">
+              <option value="">{{ t('audit.allOutcomes') }}</option>
+              <option value="success">{{ t('audit.outcomeSuccess') }}</option>
+              <option value="failure">{{ t('audit.outcomeFailure') }}</option>
+              <option value="denied">{{ t('audit.outcomeDenied') }}</option>
+            </select>
+            <!-- after the filters, as the server log has its Refresh on the title line -->
+            <BsButton cssClass="text-nowrap" :icon="loading ? 'spinner' : 'refresh'" @click="load()">{{
+              t('audit.refresh')
+            }}</BsButton>
           </div>
+        </template>
+        <template #default>
           <div v-if="loading && records.length === 0" class="spinner-border" role="status">
             <span class="visually-hidden">{{ t('settings.common.loading') }}</span>
           </div>
@@ -218,73 +216,73 @@ onMounted(async () => {
             <small>{{ t('audit.emptyHint') }}</small>
           </div>
           <template v-else>
-            <!-- same wrapper, classes and cell metrics as BsDataTable, so the audit
-                 table reads as one of the app's tables. Its .bs-dt-table rules are
-                 scoped to that component, so the metrics are repeated below rather
-                 than borrowed - a scoped class cannot cross a component boundary. -->
-            <div class="table-responsive" style="overflow: visible">
-              <table class="table table-sm table-hover mb-0 audit-table">
-                <thead>
-                  <tr>
-                    <th style="width: 12rem">{{ t('audit.time') }}</th>
-                    <th style="width: 10rem">{{ t('audit.actor') }}</th>
-                    <th>{{ t('audit.action') }}</th>
-                    <th style="width: 18rem">{{ t('audit.target') }}</th>
-                    <th style="width: 7rem">{{ t('audit.outcome') }}</th>
-                    <th style="width: 10rem">{{ t('audit.ip') }}</th>
-                    <th style="width: 3rem"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <template v-for="r in records" :key="r.id">
-                    <tr class="audit-row">
-                      <td class="font-monospace">{{ Helpers.formatServerDate(r.created_at) }}</td>
-                      <td>
-                        <span v-if="r.actor">{{ r.actor }}</span>
-                        <span v-else class="text-muted fst-italic">{{ t('audit.system') }}</span>
-                      </td>
-                      <td>{{ actionLabel(r.action) }}</td>
-                      <td>{{ r.target }}</td>
-                      <td>
-                        <span class="badge" :class="badgeClass(r.outcome)">{{ outcomeText(r.outcome) }}</span>
-                      </td>
-                      <td class="font-monospace small text-muted">{{ r.ip }}</td>
-                      <td class="text-end">
-                        <BsButton
-                          v-if="r.detail"
-                          :isIconButton="true"
-                          colorClass="secondary"
-                          cssClass="btn-sm"
-                          :icon="expanded[r.id] ? 'chevron-up' : 'chevron-down'"
-                          @click="toggle(r.id)"
-                        />
-                      </td>
+            <!-- the shared look of the tables (styles/tables.scss) : running to the card's
+                 edges, a grey header bar, the pager in a footer bar -->
+            <div class="af-table-frame">
+              <div class="table-responsive" style="overflow: visible">
+                <table class="table table-sm table-hover mb-0 af-table audit-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 14rem">{{ t('audit.time') }}</th>
+                      <th style="width: 10rem">{{ t('audit.actor') }}</th>
+                      <th>{{ t('audit.action') }}</th>
+                      <th style="width: 18rem">{{ t('audit.target') }}</th>
+                      <th style="width: 7rem">{{ t('audit.outcome') }}</th>
+                      <th style="width: 10rem">{{ t('audit.ip') }}</th>
+                      <th style="width: 3rem"></th>
                     </tr>
-                    <tr v-if="expanded[r.id] && r.detail">
-                      <td colspan="7" class="bg-body-tertiary">
-                        <pre class="mb-0 font-monospace fs-6 audit-detail">{{ JSON.stringify(r.detail, null, 2) }}</pre>
-                      </td>
-                    </tr>
-                  </template>
-                </tbody>
-              </table>
-            </div>
-            <div class="mt-2">
-              <BsPagination
-                :key="filterVersion"
-                :dataList="pageIndexes"
-                :perPage="25"
-                :buttonsShown="7"
-                name="audit"
-                @change="onPageChange"
-              />
+                  </thead>
+                  <tbody>
+                    <template v-for="r in records" :key="r.id">
+                      <tr class="audit-row">
+                        <td class="font-monospace">{{ Helpers.formatServerDate(r.created_at) }}</td>
+                        <td>
+                          <span v-if="r.actor">{{ r.actor }}</span>
+                          <span v-else class="text-muted fst-italic">{{ t('audit.system') }}</span>
+                        </td>
+                        <td>{{ actionLabel(r.action) }}</td>
+                        <td class="audit-target">{{ r.target }}</td>
+                        <td>
+                          <span class="badge rounded-pill border fw-semibold af-pill" :class="badgeClass(r.outcome)"
+                            ><span class="af-pill-label">{{ outcomeText(r.outcome) }}</span></span
+                          >
+                        </td>
+                        <td class="font-monospace small text-muted">{{ r.ip }}</td>
+                        <td class="text-end">
+                          <!-- a plain icon : a button would make the rows with a detail taller -->
+                          <a
+                            v-if="r.detail"
+                            href="#"
+                            class="text-body-secondary af-audit-toggle"
+                            @click.prevent="toggle(r.id)"
+                            ><FaIcon :icon="expanded[r.id] ? 'chevron-up' : 'chevron-down'"
+                          /></a>
+                        </td>
+                      </tr>
+                      <tr v-if="expanded[r.id] && r.detail">
+                        <td colspan="7" class="bg-body-tertiary">
+                          <pre class="mb-0 font-monospace fs-6 audit-detail">{{
+                            JSON.stringify(r.detail, null, 2)
+                          }}</pre>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+              <div class="af-table-footer">
+                <span class="af-table-count me-auto">{{ pageRange }}</span>
+                <BsPagination
+                  :key="filterVersion"
+                  :dataList="pageIndexes"
+                  :perPage="25"
+                  :buttonsShown="7"
+                  name="audit"
+                  @change="onPageChange"
+                />
+              </div>
             </div>
           </template>
-        </template>
-        <template #actions>
-          <BsButton cssClass="ms-3" :icon="loading ? 'spinner' : 'refresh'" @click="load()">{{
-            t('audit.refresh')
-          }}</BsButton>
         </template>
       </AppSettings>
     </main>
@@ -292,27 +290,22 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-/* Mirrors BsDataTable's .bs-dt-table metrics. Those rules live in that component's
-   scoped block, so they cannot reach this markup - repeating them here is what keeps
-   the two tables looking identical. */
-.audit-table {
-  --bs-table-cell-padding-y: 0.45rem;
-  --bs-table-cell-padding-x: 0.65rem;
-}
-.audit-table td,
-.audit-table th {
-  vertical-align: middle;
-  border-color: var(--bs-border-color-translucent);
-}
-/* Only some rows carry a detail chevron, and a btn-sm made those rows 40px against 33px
-   for the rest - so the row height told you which rows had a detail before you read them.
-   A floor on the cell (height acts as a minimum in table layout) levels them; the detail
-   row below is excluded because its content sets its own height. */
-.audit-row td {
-  height: 40px;
-}
+/* the audit table : the shared look (styles/tables.scss) ; its detail row keeps its text
+   whole and wrapped */
 .audit-detail {
   white-space: pre-wrap;
   word-break: break-word;
+  text-box: none;
+}
+.audit-row td {
+  white-space: nowrap;
+}
+/* the target may be long : it wraps, the other cells stay on one line */
+.audit-row td.audit-target {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.af-audit-toggle {
+  padding: 0 0.25rem;
 }
 </style>

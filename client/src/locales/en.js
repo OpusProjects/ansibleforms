@@ -364,6 +364,7 @@ export default {
     cacheMismatchMsg: 'This page still runs an older build than the server. Reload the page to get the new version.',
   },
   common: {
+    filter: 'Filter',
     // the info icon after a page title, that shows the page's description
     aboutThisPage: 'About this page',
     clear: 'Clear',
@@ -387,6 +388,7 @@ export default {
     apply: 'Apply',
   },
   dataTable: {
+    rangeOf: '{from}–{to} of {total}',
     selected: 'selected',
     clearSelection: 'Clear selection',
     selectAll: 'Select all {count}',

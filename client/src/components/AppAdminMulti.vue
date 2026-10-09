@@ -30,6 +30,8 @@ import BsDataTable from './BsDataTable.vue';
 
 // INIT
 
+// where the table's toolbar goes on the title line (one per instance)
+const toolsId = `af-tools-${Math.random().toString(36).slice(2, 10)}`;
 const { t } = useI18n();
 const emit = defineEmits(['test', 'preview', 'trigger', 'reset', 'sync']);
 
@@ -885,9 +887,15 @@ defineExpose({
     </template>
   </BsModal>
   <AppSettings :icon="objectIcon" :title="settings.pageTitle || objectLabelPlural" :description="objectDescription">
+    <!-- the table's search and columns, on the title line as the Forms page has its search -->
+    <template #headerActions>
+      <div :id="toolsId"></div>
+    </template>
     <template #default>
       <BsDataTable
         v-if="!loading && itemList != undefined"
+        framed
+        :toolbarTo="'#' + toolsId"
         :items="itemList"
         :columns="columnsWithManaged"
         :idKey="idKey"
@@ -900,13 +908,19 @@ defineExpose({
         @row-click="onDataTableRowClick"
       >
         <template v-if="dataTableSelectable" #bulk-actions="{ count }">
-          <BsButton v-if="count" cssClass="ms-2 btn-sm btn-outline-danger" icon="trash" @click="bulkDelete">
-            {{ t('common.delete') }} ({{ count }})
-          </BsButton>
+          <!-- in the style of the toolbar's other buttons -->
+          <BsButton v-if="count" icon="trash" @click="bulkDelete"> {{ t('common.delete') }} ({{ count }}) </BsButton>
         </template>
         <template v-if="dataTableShowRowMenu" #row-actions="{ item }">
           <div class="dropdown">
-            <a role="button" class="bs-dt-row-menu px-2" data-bs-toggle="dropdown" data-bs-strategy="fixed">
+            <!-- fixed, so the menu opens over the table's frame instead of being cut by it (the
+                 frame hides its overflow, for its rounded corners) -->
+            <a
+              role="button"
+              class="bs-dt-row-menu px-2"
+              data-bs-toggle="dropdown"
+              data-bs-popper-config='{"strategy":"fixed"}'
+            >
               <font-awesome-icon icon="ellipsis-vertical" />
             </a>
             <ul class="dropdown-menu dropdown-menu-end">

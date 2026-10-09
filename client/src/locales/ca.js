@@ -367,6 +367,7 @@ export default {
       'Aquesta pàgina encara executa una compilació més antiga que la del servidor. Torna a carregar la pàgina per obtenir la versió nova.',
   },
   common: {
+    filter: 'Filtre',
     // the info icon after a page title, that shows the page's description
     aboutThisPage: 'Quant a aquesta pàgina',
     clear: 'Esborra',
@@ -390,6 +391,7 @@ export default {
     apply: 'Aplica',
   },
   dataTable: {
+    rangeOf: '{from}–{to} de {total}',
     selected: 'seleccionats',
     clearSelection: 'Esborra la selecció',
     selectAll: "Selecciona'ls tots ({count})",

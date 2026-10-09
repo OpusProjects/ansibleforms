@@ -364,6 +364,7 @@ export default {
       'このページはサーバーより古いビルドで動作しています。ページを再読み込みして新しいバージョンを取得してください。',
   },
   common: {
+    filter: 'フィルター',
     // the info icon after a page title, that shows the page's description
     aboutThisPage: 'このページについて',
     clear: 'クリア',
@@ -387,6 +388,7 @@ export default {
     apply: '適用',
   },
   dataTable: {
+    rangeOf: '{total} 件中 {from}–{to}',
     selected: '件を選択中',
     clearSelection: '選択を解除',
     selectAll: '{count} 件すべてを選択',

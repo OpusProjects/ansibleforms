@@ -370,6 +370,7 @@ export default {
       'Cette page utilise encore une build plus ancienne que le serveur. Rechargez la page pour obtenir la nouvelle version.',
   },
   common: {
+    filter: 'Filtrer',
     // the info icon after a page title, that shows the page's description
     aboutThisPage: 'À propos de cette page',
     clear: 'Effacer',
@@ -393,6 +394,7 @@ export default {
     apply: 'Appliquer',
   },
   dataTable: {
+    rangeOf: '{from}–{to} sur {total}',
     selected: 'sélectionné(s)',
     clearSelection: 'Effacer la sélection',
     selectAll: 'Tout sélectionner ({count})',

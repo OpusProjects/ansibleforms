@@ -11,6 +11,7 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import YAML from 'yaml';
 import Time from '@/lib/Time';
+import BsColumnPicker from '@/components/BsColumnPicker.vue';
 
 // INIT
 
@@ -121,6 +122,16 @@ function toggleSort(key) {
   } else {
     sortKey.value = key;
     sortDir.value = 1;
+  }
+}
+
+// a preset of the Columns button : its hidden columns, kept like a toggle
+function applyColumnPreset(hidden) {
+  hiddenColumns.value = hidden;
+  try {
+    Helpers.setCookie('dt_cols_jobs', JSON.stringify([...hidden]), 365);
+  } catch (e) {
+    /* ignore */
   }
 }
 
@@ -524,9 +535,18 @@ async function download(id) {
   }
 }
 // display a subset of jobs (by pagination)
-function setDisplayJobs(jobs) {
+// where the pager is, for the footer's range (1-10 of 64)
+const pagerState = ref({ page: 1, pageSize: 10 });
+function setDisplayJobs(jobs, state) {
   displayedJobs.value = jobs;
+  if (state) pagerState.value = state;
 }
+const jobsRange = computed(() => {
+  const total = parentJobs.value.length;
+  if (!total || !displayedJobs.value.length) return t('dataTable.rangeOf', { from: 0, to: 0, total });
+  const from = (pagerState.value.page - 1) * pagerState.value.pageSize + 1;
+  return t('dataTable.rangeOf', { from, to: from + displayedJobs.value.length - 1, total });
+});
 // format time
 // a job time in the user's time zone (Profile > Preferences)
 function formatTime(t) {
@@ -956,195 +976,187 @@ onBeforeUnmount(() => {
                 <option value="1000">1000</option>
               </select>
             </div>
-            <!-- Column picker -->
-            <div class="dropdown me-2">
-              <button
-                class="btn btn-outline-primary dropdown-toggle"
-                type="button"
-                data-bs-toggle="dropdown"
-                data-bs-auto-close="outside"
-              >
-                <font-awesome-icon icon="table-columns" class="me-1" />{{ t('dataTable.columns') }}
-              </button>
-              <ul class="dropdown-menu dropdown-menu-end" style="min-width: 200px">
-                <li v-for="col in columnDefs" :key="'cp-' + col.key" class="dropdown-item">
-                  <label class="form-check mb-0 d-flex align-items-center gap-2" style="cursor: pointer">
-                    <input
-                      type="checkbox"
-                      class="form-check-input"
-                      :checked="!hiddenColumns.has(col.key)"
-                      @change="toggleColumn(col.key)"
-                    />
-                    {{ col.label }}
-                  </label>
-                </li>
-              </ul>
-            </div>
+            <!-- Column picker, with presets (BsColumnPicker, as the other tables) -->
+            <BsColumnPicker
+              class="me-2"
+              :columns="columnDefs"
+              :hidden="hiddenColumns"
+              name="jobs"
+              buttonClass="btn-outline-primary"
+              @toggle="toggleColumn"
+              @apply="applyColumnPreset"
+            />
           </div>
         </template>
-        <table v-if="!isJobPage" class="custom-table table-sm">
-          <thead>
-            <tr class="text-start">
-              <th class="action"></th>
-              <th
-                v-for="col in visibleColumns"
-                :key="col.key"
-                :class="{ 'is-clickable': col.sortable, [col.key]: true }"
-                style="user-select: none; white-space: nowrap"
-                @click="col.sortable ? toggleSort(col.key) : undefined"
-              >
-                {{ col.label }}
-                <span v-if="col.sortable" class="text-muted ms-1" style="font-size: 0.7em">
-                  <template v-if="sortKey === col.key">
-                    <font-awesome-icon :icon="sortDir === 1 ? 'sort-up' : 'sort-down'" />
-                  </template>
-                  <template v-else>
-                    <font-awesome-icon icon="sort" class="opacity-25" />
-                  </template>
-                </span>
-              </th>
-            </tr>
-            <tr v-if="filterableColumns.length" class="bs-dt-filter-row">
-              <th></th>
-              <th v-for="col in visibleColumns" :key="'f-' + col.key">
-                <input
-                  v-if="col.filterable"
-                  v-model="columnFilters[col.key]"
-                  type="search"
-                  class="form-control form-control-sm"
-                  :placeholder="col.label"
-                  @click.stop
-                />
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <template v-for="j in displayedJobs" :key="j.id">
-              <!-- the whole row opens the job (a multistep job's id unfolds its steps instead) : the
-                   actions cell too, where the icons keep their own action -->
-              <tr :class="jobBackground(j)">
-                <td role="button" @click="getJob(j.id)">
-                  <!-- a job waiting for approval is decided, not relaunched or deleted : it only
-                       offers approve and reject -->
-                  <span
-                    role="button"
-                    v-if="j.status != 'running' && j.status != 'approve' && canRelaunchJobs"
-                    class="me-2 text-info"
-                    @click.stop="
-                      tempJobId = j.id;
-                      showRelaunch = true;
-                    "
-                    title="Relaunch job"
-                    ><font-awesome-icon icon="redo"
-                  /></span>
-                  <span
-                    role="button"
-                    v-if="j.status == 'running' && !j.abort_requested"
-                    class="me-2 text-warning"
-                    @click.stop="
-                      tempJobId = j.id;
-                      showAbort = true;
-                    "
-                    title="Abort job"
-                    ><font-awesome-icon icon="ban"
-                  /></span>
-                  <span
-                    role="button"
-                    v-if="j.status != 'approve' && ((j.status != 'running' && !j.abort_requested) || store.isAdmin)"
-                    class="me-2 text-danger"
-                    @click.stop="
-                      tempJobId = j.id;
-                      showDelete = true;
-                    "
-                    title="Delete job"
-                    ><font-awesome-icon icon="trash-alt"
-                  /></span>
-                  <span
-                    role="button"
-                    v-if="j.status == 'approve' && approvalAllowed(j)"
-                    class="me-2 text-success af-approve-icon"
-                    @click.stop="
-                      tempJobId = j.id;
-                      showApproval(j.id);
-                    "
-                    title="Approve job"
-                    ><font-awesome-icon icon="circle-check"
-                  /></span>
-                  <span
-                    role="button"
-                    v-if="j.status == 'approve' && approvalAllowed(j)"
-                    class="me-2 text-danger af-reject-icon"
-                    @click.stop="
-                      tempJobId = j.id;
-                      showApproval(j.id, true);
-                    "
-                    title="Reject job"
-                    ><font-awesome-icon icon="circle-xmark"
-                  /></span>
-                </td>
-                <template v-for="col in visibleColumns" :key="col.key">
-                  <td
-                    v-if="col.key === 'id'"
-                    role="button"
-                    class="text-left"
-                    @click="j.job_type == 'multistep' ? toggleCollapse(j.id) : getJob(j.id)"
-                  >
-                    <span>{{ j.id }}</span>
-                    <template v-if="j.job_type == 'multistep'">
-                      <span class="mx-2 float-end" v-if="!collapsed[j.id]"
-                        ><font-awesome-icon icon="angle-right"
-                      /></span>
-                      <span class="mx-2 float-end" v-else><font-awesome-icon icon="angle-down" /></span>
+        <!-- the list : table and pager framed like the other tables, running to the card's edges -->
+        <div v-if="!isJobPage" class="af-table-frame">
+          <table class="custom-table af-table table-sm">
+            <thead>
+              <tr class="text-start">
+                <th class="action"></th>
+                <th
+                  v-for="col in visibleColumns"
+                  :key="col.key"
+                  :class="{ 'is-clickable': col.sortable, [col.key]: true }"
+                  style="user-select: none; white-space: nowrap"
+                  @click="col.sortable ? toggleSort(col.key) : undefined"
+                >
+                  {{ col.label }}
+                  <span v-if="col.sortable" class="text-muted ms-1" style="font-size: 0.7em">
+                    <template v-if="sortKey === col.key">
+                      <font-awesome-icon :icon="sortDir === 1 ? 'sort-up' : 'sort-down'" />
                     </template>
-                  </td>
-                  <td v-else role="button" class="text-start" @click="getJob(j.id)" :title="cellText(j, col)">
-                    {{ cellText(j, col) }}
-                  </td>
-                </template>
+                    <template v-else>
+                      <font-awesome-icon icon="sort" class="opacity-25" />
+                    </template>
+                  </span>
+                </th>
               </tr>
-              <template v-for="c in childJobs(j.id)" :key="c.id">
-                <tr :class="jobBackground(c)">
-                  <td class="table-info" role="button" @click="getJob(c.id)"></td>
-                  <template v-for="col in visibleColumns" :key="col.key">
-                    <td v-if="col.key === 'id'" role="button" class="text-end" @click="getJob(c.id)">{{ c.id }}</td>
-                    <td
-                      v-else-if="col.key === 'form'"
+              <tr v-if="filterableColumns.length" class="bs-dt-filter-row">
+                <th></th>
+                <th v-for="col in visibleColumns" :key="'f-' + col.key">
+                  <input
+                    v-if="col.filterable"
+                    v-model="columnFilters[col.key]"
+                    type="search"
+                    class="form-control form-control-sm"
+                    :placeholder="col.label"
+                    @click.stop
+                  />
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <template v-for="j in displayedJobs" :key="j.id">
+                <!-- the whole row opens the job (a multistep job's id unfolds its steps instead) : the
+                   actions cell too, where the icons keep their own action -->
+                <tr :class="jobBackground(j)">
+                  <td role="button" @click="getJob(j.id)">
+                    <!-- a job waiting for approval is decided, not relaunched or deleted : it only
+                       offers approve and reject -->
+                    <span
                       role="button"
-                      class="text-start"
-                      @click="getJob(c.id)"
-                      :title="c.target"
+                      v-if="j.status != 'running' && j.status != 'approve' && canRelaunchJobs"
+                      class="me-2 text-info"
+                      @click.stop="
+                        tempJobId = j.id;
+                        showRelaunch = true;
+                      "
+                      title="Relaunch job"
+                      ><font-awesome-icon icon="redo"
+                    /></span>
+                    <span
+                      role="button"
+                      v-if="j.status == 'running' && !j.abort_requested"
+                      class="me-2 text-warning"
+                      @click.stop="
+                        tempJobId = j.id;
+                        showAbort = true;
+                      "
+                      title="Abort job"
+                      ><font-awesome-icon icon="ban"
+                    /></span>
+                    <span
+                      role="button"
+                      v-if="j.status != 'approve' && ((j.status != 'running' && !j.abort_requested) || store.isAdmin)"
+                      class="me-2 text-danger"
+                      @click.stop="
+                        tempJobId = j.id;
+                        showDelete = true;
+                      "
+                      title="Delete job"
+                      ><font-awesome-icon icon="trash-alt"
+                    /></span>
+                    <span
+                      role="button"
+                      v-if="j.status == 'approve' && approvalAllowed(j)"
+                      class="me-2 text-success af-approve-icon"
+                      @click.stop="
+                        tempJobId = j.id;
+                        showApproval(j.id);
+                      "
+                      title="Approve job"
+                      ><font-awesome-icon icon="circle-check"
+                    /></span>
+                    <span
+                      role="button"
+                      v-if="j.status == 'approve' && approvalAllowed(j)"
+                      class="me-2 text-danger af-reject-icon"
+                      @click.stop="
+                        tempJobId = j.id;
+                        showApproval(j.id, true);
+                      "
+                      title="Reject job"
+                      ><font-awesome-icon icon="circle-xmark"
+                    /></span>
+                  </td>
+                  <template v-for="col in visibleColumns" :key="col.key">
+                    <td
+                      v-if="col.key === 'id'"
+                      role="button"
+                      class="text-left"
+                      @click="j.job_type == 'multistep' ? toggleCollapse(j.id) : getJob(j.id)"
                     >
-                      {{ c.target }}
+                      <span>{{ j.id }}</span>
+                      <template v-if="j.job_type == 'multistep'">
+                        <span class="mx-2 float-end" v-if="!collapsed[j.id]"
+                          ><font-awesome-icon icon="angle-right"
+                        /></span>
+                        <span class="mx-2 float-end" v-else><font-awesome-icon icon="angle-down" /></span>
+                      </template>
                     </td>
-                    <td v-else role="button" class="text-start" @click="getJob(c.id)" :title="cellText(c, col)">
-                      {{ cellText(c, col) }}
+                    <td v-else role="button" class="text-start" @click="getJob(j.id)" :title="cellText(j, col)">
+                      {{ cellText(j, col) }}
                     </td>
                   </template>
                 </tr>
+                <template v-for="c in childJobs(j.id)" :key="c.id">
+                  <tr :class="jobBackground(c)">
+                    <td class="table-info" role="button" @click="getJob(c.id)"></td>
+                    <template v-for="col in visibleColumns" :key="col.key">
+                      <td v-if="col.key === 'id'" role="button" class="text-end" @click="getJob(c.id)">{{ c.id }}</td>
+                      <td
+                        v-else-if="col.key === 'form'"
+                        role="button"
+                        class="text-start"
+                        @click="getJob(c.id)"
+                        :title="c.target"
+                      >
+                        {{ c.target }}
+                      </td>
+                      <td v-else role="button" class="text-start" @click="getJob(c.id)" :title="cellText(c, col)">
+                        {{ cellText(c, col) }}
+                      </td>
+                    </template>
+                  </tr>
+                </template>
               </template>
-            </template>
-            <!-- nothing to show : say why, above the pagination -->
-            <tr v-if="!isLoading && parentJobs.length === 0" class="af-empty-row">
-              <!-- 24px above the text ; below it 9px plus the pagination's own 16px margin, so the
+              <!-- nothing to show : say why, above the pagination -->
+              <tr v-if="!isLoading && parentJobs.length === 0" class="af-empty-row">
+                <!-- 24px above the text ; below it 9px plus the pagination's own 16px margin, so the
                    message sits centred between the column filters and the pagination -->
-              <td
-                :colspan="visibleColumns.length + 1"
-                class="text-center text-body-secondary pt-4"
-                style="padding-bottom: 9px"
-              >
-                <FaIcon icon="circle-info" class="me-2" />{{ emptyMessage }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <BsPagination
-          v-if="!isLoading && !isJobPage"
-          :dataList="parentJobs"
-          :buttonsShown="7"
-          :index="displayedJobIndex"
-          name="jobs"
-          @change="setDisplayJobs"
-        />
+                <td
+                  :colspan="visibleColumns.length + 1"
+                  class="text-center text-body-secondary pt-4"
+                  style="padding-bottom: 9px"
+                >
+                  <FaIcon icon="circle-info" class="me-2" />{{ emptyMessage }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="af-table-footer">
+            <span class="af-table-count me-auto">{{ jobsRange }}</span>
+            <BsPagination
+              v-if="!isLoading"
+              :dataList="parentJobs"
+              :buttonsShown="7"
+              :index="displayedJobIndex"
+              name="jobs"
+              @change="setDisplayJobs"
+            />
+          </div>
+        </div>
         <div v-if="job && isJobPage" class="row af-job-output">
           <div class="col">
             <h3 class="af-job-title">
@@ -1354,40 +1366,16 @@ onBeforeUnmount(() => {
 .badge.status {
   font-size: 0.75rem;
 }
+/* the jobs table : the shared look (styles/tables.scss), plus every cell on one line (the
+   action icons side by side, a date not broken in two) */
 .custom-table {
-  width: 100%;
-  margin-bottom: 1rem;
-}
-/* Slim, dense rows for the jobs table — overrides Bootstrap's table-sm
-       defaults so a long jobs list takes much less vertical space. */
-.custom-table th,
-.custom-table td {
-  padding: 0.35rem 0.55rem;
   line-height: 1.2;
-  vertical-align: middle;
-  border-left: 0;
-  border-right: 0;
-  border-color: var(--bs-border-color-translucent);
 }
-/* Header: bottom border only. */
-.custom-table thead th {
-  font-weight: 600;
-  border-top: 0;
-  border-bottom: 1px solid var(--bs-border-color);
-}
-/* Body rows: horizontal separators only. */
 .custom-table tbody td {
-  border-top: 0;
-  border-bottom: 1px solid var(--bs-border-color-translucent);
+  white-space: nowrap;
 }
-/* Filter row: even tighter, with smaller inputs. */
-.custom-table thead tr.bs-dt-filter-row th {
-  padding: 0.15rem 0.3rem;
-  background: var(--bs-tertiary-bg);
-}
-.custom-table thead tr.bs-dt-filter-row .form-control-sm {
-  font-size: 0.8rem;
-  padding: 0.1rem 0.35rem;
+.custom-table th.action {
+  width: 1%;
 }
 tr.table-selected {
   border: 2px solid;

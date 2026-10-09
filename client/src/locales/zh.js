@@ -359,6 +359,7 @@ export default {
     cacheMismatchMsg: '此页面运行的构建仍比服务器的旧。请重新加载页面以获取新版本。',
   },
   common: {
+    filter: '筛选',
     // the info icon after a page title, that shows the page's description
     aboutThisPage: '关于此页面',
     clear: '清除',
@@ -382,6 +383,7 @@ export default {
     apply: '应用',
   },
   dataTable: {
+    rangeOf: '第 {from}–{to} 项，共 {total} 项',
     selected: '已选择',
     clearSelection: '清除选择',
     selectAll: '全选 {count} 项',
