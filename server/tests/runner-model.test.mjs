@@ -83,6 +83,19 @@ describe("what each type needs", () => {
   });
 });
 
+describe("the product of an awx runner (flavour)", () => {
+  test("aap and ascender are kept, an empty one means AWX", async () => {
+    await Runner.create({ name: "f1", type: "awx", uri: "https://aap.example.com/api/controller/v2", token: "t", flavour: "aap" });
+    assert.equal(rows.at(-1).flavour, "aap");
+    await Runner.create({ name: "f2", type: "awx", uri: "https://awx.example.com/api/v2", token: "t", flavour: "" });
+    assert.equal(rows.at(-1).flavour, null);
+  });
+
+  test("an unknown flavour is refused", async () => {
+    await assert.rejects(Runner.create({ name: "f3", type: "awx", uri: "https://x", token: "t", flavour: "tower" }), /Unknown runner flavour 'tower'/);
+  });
+});
+
 describe("one default per type", () => {
   test("a new default rte clears only the other rte, the awx default stays", async () => {
     await Runner.create({ name: "rte-2", type: "rte", uri: "http://rte2", token: "t", is_default: 1 });

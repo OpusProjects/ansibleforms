@@ -14,6 +14,37 @@
 /*      preview: Object                                           */
 /*      trigger: Object                                           */
 /*                                                                */
+/*  settings.steps: [{ key, label, when }] - the record dialog in */
+/*      steps (a wizard) : a field names its step (field.step,    */
+/*      the first one when it names none) ; when(item) keeps a    */
+/*      step to the records it applies to. Creating walks the     */
+/*      steps with Previous / Next and saves on the last ;        */
+/*      editing may jump to any step and save from any            */
+/*  settings.beforeSave: (item) => object - what a create or an   */
+/*      update sends, from the dialog's values                    */
+/*  settings.defaultPicker: { key, groupBy, groups, title,        */
+/*      editLabel } - the default of each group chosen in a       */
+/*      dialog : groupBy (a key, or (row) => group) sorts the     */
+/*      rows, groups [{ key, label, help, icon, describe }] are   */
+/*      its choices ; Save sets them (a runner's : playbooks,     */
+/*      templates)                                                */
+/*  field.initial: (item) => value - a dialog-only field's value  */
+/*      on opening, from the record (not stored ; beforeSave      */
+/*      drops it)                                                 */
+/*  field.type 'radio' with field.options [{ value, label, hint }]*/
+/*      : one choice, radio buttons at the dialog's left edge     */
+/*  field.nested: a radio group that follows up the one above it  */
+/*      (AWX : which product) - indented, with its label as title */
+/*  field.flush: a switch at the dialog's left edge, its help the */
+/*      full width under it                                       */
+/*  field.help / field.placeholder / field.dialogLabel: a text,   */
+/*      or (item) => text, following the record shown (its type) */
+/*  field.onEdit: a password shown when editing too, as ******** ;*/
+/*      left empty it is not sent, so the stored one stays        */
+/*  field.keepHelp: the help of an onEdit field when editing      */
+/*  field.columnType 'checkbox': a yes / no column, for a field   */
+/*      that is no checkbox in the dialog (a radio of true/false) */
+/*                                                                */
 /******************************************************************/
 
 import { ref, onMounted, onBeforeUnmount, computed, nextTick } from 'vue';
@@ -311,6 +342,8 @@ async function loadItem() {
           //     itemPassword.value[field.key] = item.value[field.key]
           // }
         }
+        // the dialog-only fields (a radio of what the record is) : their value from the record
+        setInitialValues();
         delete item.value.password; // remove password ; updates don't need password
         delete item.value.token; // remove token, update don't need token
         delete item.value.client_secret; // do not return client_secret in the API
@@ -402,8 +435,34 @@ function unselectItem() {
   pagination.value.currentId = undefined;
   action.value = '';
 }
+/**
+ * Gives the dialog-only fields (field.initial) their value from the record shown.
+ */
+function setInitialValues() {
+  for (const field of fields.value) {
+    if (typeof field.initial === 'function') item.value[field.key] = field.initial(item.value);
+  }
+}
+
+/**
+ * What a create or an update sends : the dialog's values, shaped by settings.beforeSave.
+ *
+ * Returns:
+ *   object: the request body.
+ */
+function savePayload() {
+  const body =
+    typeof props.settings.beforeSave === 'function' ? props.settings.beforeSave({ ...item.value }) : { ...item.value };
+  // a password shown when editing (onEdit) and left empty : the stored one stays
+  for (const field of fields.value) {
+    if (field.onEdit && field.type == 'password' && !body[field.key]) delete body[field.key];
+  }
+  return body;
+}
+
 function newItem() {
   item.value = {};
+  setInitialValues();
   fields.value.forEach((field) => {
     if (field.type === 'editor' && item.value[field.key] === undefined) {
       item.value[field.key] = '';
@@ -421,7 +480,7 @@ async function createItem() {
   var invalid = isInvalid.value;
   if (!invalid) {
     try {
-      await axios.post(`/api/v${props.apiVersion}/${objectType}/`, item.value, TokenStorage.getAuthentication());
+      await axios.post(`/api/v${props.apiVersion}/${objectType}/`, savePayload(), TokenStorage.getAuthentication());
       toast.success(objectTitle('', t('settings.common.isCreated')));
       loadItems();
     } catch (err) {
@@ -442,7 +501,7 @@ async function updateItem(passwordOnly = false) {
     try {
       await axios.put(
         `/api/v${props.apiVersion}/${objectType}/${itemId.value}`,
-        item.value,
+        passwordOnly ? item.value : savePayload(),
         TokenStorage.getAuthentication(),
       );
       toast.success(objectTitle('', t('settings.common.isUpdated')));
@@ -505,6 +564,8 @@ function showField(field) {
     }
   }
   if (field.type == 'password' && ['new', 'change_password'].includes(action.value)) return depShow;
+  // a password the record's dialog may change (onEdit) : empty, kept as it is
+  if (field.type == 'password' && field.onEdit && action.value == 'edit') return depShow;
   if (field.type != 'password' && action.value == 'change_password') return false;
   if (field.type == 'password' && action.value != 'change_password') return false;
   return depShow;
@@ -589,6 +650,92 @@ const title = computed(() => {
     return objectLabel.value;
   }
 });
+
+/**
+ * A field's help, placeholder or dialog label : a text, or a function of the record shown (a
+ * runner's address help, by its type).
+ *
+ * Args:
+ *   value (string|function): the text, or (item) => text.
+ *
+ * Returns:
+ *   string: the text for the record shown.
+ */
+function textOf(value) {
+  return typeof value === 'function' ? value(item.value || {}) : value;
+}
+
+// ─── wizard ───────────────────────────────────────────────────────────────────
+// A long record dialog in steps : settings.steps lists them ({ key, label }) and a field names
+// its step (`step`, the first step when it names none). Creating walks the steps with Previous
+// / Next and saves on the last ; editing may jump to any step and save from any. Viewing a
+// record and changing its password stay one page.
+// the steps that apply to the record (a step's when(item))
+const steps = computed(() =>
+  (props.settings.steps || []).filter((step) => typeof step.when !== 'function' || step.when(item.value || {})),
+);
+const wizardActive = computed(() => steps.value.length > 0 && ['new', 'edit'].includes(action.value));
+const stepIndex = ref(0);
+// the furthest step reached while creating : the step strip goes back to those, not past them
+const stepReached = ref(0);
+watch(action, () => {
+  stepIndex.value = 0;
+  stepReached.value = 0;
+});
+const isLastStep = computed(() => stepIndex.value === steps.value.length - 1);
+
+/**
+ * Whether a field is on the step shown (every field when the dialog is no wizard).
+ *
+ * Args:
+ *   field (object): the field definition.
+ *
+ * Returns:
+ *   boolean: true when it is shown on this step.
+ */
+function onStep(field) {
+  if (!wizardActive.value) return true;
+  return (field.step || steps.value[0].key) === steps.value[stepIndex.value]?.key;
+}
+
+// the fields of the dialog, in their order : those of the step shown in a wizard
+const dialogFields = computed(() => fields.value.filter(onStep));
+
+/**
+ * The fields of the step shown that fail their rules (a secret is checked by its own action).
+ *
+ * Returns:
+ *   Array: the invalid fields.
+ */
+function stepErrors() {
+  return dialogFields.value.filter(
+    (field) =>
+      showField(field) &&
+      !['password', 'token', 'client_secret'].includes(field.key) &&
+      $v.value.item[field.key]?.$invalid,
+  );
+}
+
+/**
+ * Moves to a step : forward only when the step shown is valid (its errors are then shown),
+ * back always ; while creating, not past the furthest step reached.
+ *
+ * Args:
+ *   index (number): the step to show.
+ */
+function goToStep(index) {
+  if (index < 0 || index >= steps.value.length || index === stepIndex.value) return;
+  if (index > stepIndex.value) {
+    const errors = stepErrors();
+    if (errors.length) {
+      errors.forEach((field) => $v.value.item[field.key].$touch());
+      return;
+    }
+    if (action.value === 'new' && index > stepReached.value + 1) return;
+  }
+  stepIndex.value = index;
+  stepReached.value = Math.max(stepReached.value, index);
+}
 
 const isInvalid = computed(() => {
   // check if any field is invalid, but only check the ones that are not disabled
@@ -680,7 +827,8 @@ const dataTableColumns = computed(() => {
           return escapeHtml(found ? found[f.labelKey] : (val ?? ''));
         };
       }
-      if (f.type === 'checkbox') {
+      // a yes / no column : a checkbox's, or a field's that says so (a radio of true / false)
+      if (f.type === 'checkbox' || f.columnType === 'checkbox') {
         col.type = 'checkbox';
       }
       return col;
@@ -775,7 +923,7 @@ function childTableColumns(fieldList) {
     sortable: f.sortable !== false,
     filterable: f.filterable !== false,
     defaultHidden: !!f.hidden,
-    type: f.type === 'checkbox' ? 'checkbox' : undefined,
+    type: f.type === 'checkbox' || f.columnType === 'checkbox' ? 'checkbox' : undefined,
   }));
 }
 
@@ -803,6 +951,123 @@ function dispatchAction(action, item) {
     default:
       return emit(action.name, item);
   }
+}
+
+// ─── the default of each group, chosen in a dialog (settings.defaultPicker) ─────────────
+const defaultPicker = computed(() => props.settings.defaultPicker || null);
+// the dialog open, and the default each group would get there (group -> row id)
+const defaultsOpen = ref(false);
+const defaultDraft = ref({});
+
+/**
+ * The group of a row : its groupBy key's value, or what groupBy says of it.
+ *
+ * Args:
+ *   row (object): the row.
+ *
+ * Returns:
+ *   string: the group.
+ */
+function defaultGroup(row) {
+  const { groupBy } = defaultPicker.value;
+  return typeof groupBy === 'function' ? groupBy(row) : row?.[groupBy];
+}
+
+/**
+ * The rows a group's default may be, by name.
+ *
+ * Args:
+ *   group (string): the group.
+ *
+ * Returns:
+ *   Array: its rows.
+ */
+function groupRows(group) {
+  return (itemList.value || [])
+    .filter((row) => defaultGroup(row) === group)
+    .sort((a, b) => String(a.name).localeCompare(String(b.name)));
+}
+
+/**
+ * The default of each group now : group -> the id of its default row.
+ *
+ * Returns:
+ *   object: e.g. { playbook: 3, template: 5 }.
+ */
+function currentDefaults() {
+  const { key } = defaultPicker.value;
+  const map = {};
+  for (const row of itemList.value || []) if (row[key]) map[defaultGroup(row)] = row[idKey];
+  return map;
+}
+
+// a group given another default than it has : Save can be pressed
+const defaultDirty = computed(() => {
+  if (!defaultsOpen.value) return false;
+  const now = currentDefaults();
+  return Object.keys(defaultDraft.value).some((group) => defaultDraft.value[group] !== now[group]);
+});
+
+/**
+ * A group whose default the seed set : the server keeps it, so its choice is locked.
+ *
+ * Args:
+ *   group (string): the group.
+ *
+ * Returns:
+ *   boolean: true when its default is a seeded row.
+ */
+function groupLocked(group) {
+  const { key } = defaultPicker.value;
+  return groupRows(group).some((row) => row[key] && isManaged(row));
+}
+
+/** Opens the defaults dialog, with the defaults as they are. */
+function editDefaults() {
+  defaultDraft.value = currentDefaults();
+  defaultsOpen.value = true;
+}
+
+/**
+ * A group's choice in the dialog : the row of that id (the select gives it as text).
+ *
+ * Args:
+ *   group (string): the group.
+ *   value (string): the chosen row's id.
+ */
+function pickDefault(group, value) {
+  const row = groupRows(group).find((r) => String(r[idKey]) === String(value));
+  if (row) defaultDraft.value = { ...defaultDraft.value, [group]: row[idKey] };
+}
+
+/** Closes the dialog without saving : the defaults as they were. */
+function cancelDefaults() {
+  defaultsOpen.value = false;
+  defaultDraft.value = {};
+}
+
+/**
+ * Saves the defaults chosen : each group given another one is updated (the server clears the
+ * group's other defaults), then the dialog closes.
+ */
+async function saveDefaults() {
+  const now = currentDefaults();
+  const changed = Object.entries(defaultDraft.value).filter(([group, id]) => id !== now[group]);
+  for (const [, id] of changed) {
+    const row = (itemList.value || []).find((r) => r[idKey] === id);
+    try {
+      await axios.put(
+        `/api/v${props.apiVersion}/${objectType}/${id}`,
+        { [defaultPicker.value.key]: true },
+        TokenStorage.getAuthentication(),
+      );
+      toast.success(t('settings.common.defaultSaved', { name: row?.name ?? id }));
+    } catch (err) {
+      toast.error(Helpers.parseAxiosResponseError(err, 'Failed to set the default'));
+    }
+  }
+  cancelDefaults();
+  if (changed.length) await loadItems();
 }
 
 function onDataTableRowClick(item) {
@@ -975,12 +1240,71 @@ defineExpose({
       <slot></slot>
     </template>
     <!-- action buttons go BELOW the card, never in the header : see AppSettings -->
-    <template v-if="!noCreate" #actions>
-      <BsButton cssClass="ms-3" icon="plus" @click="newItem()">{{
+    <template v-if="!noCreate || defaultPicker" #actions>
+      <!-- the defaults : a dialog to choose them -->
+      <BsButton v-if="defaultPicker" cssClass="text-nowrap" icon="pencil" @click="editDefaults()">{{
+        defaultPicker.editLabel
+      }}</BsButton>
+      <!-- New : the page's main action, last on the right -->
+      <BsButton v-if="!noCreate" icon="plus" @click="newItem()">{{
         t('settings.common.newItem', { item: objectLabel })
       }}</BsButton>
     </template>
   </AppSettings>
+  <!-- the defaults (settings.defaultPicker) : a choice per group, Save sets them -->
+  <BsModal v-if="defaultPicker && defaultsOpen" size="lg" @close="cancelDefaults">
+    <template #title> <FaIcon :icon="objectIcon" class="me-2" />{{ defaultPicker.title }} </template>
+    <template #default>
+      <!-- 16px between two groups, none after the last : the dialog's padding ends it -->
+      <div
+        v-for="(group, i) in defaultPicker.groups"
+        :key="group.key"
+        class="row"
+        :class="i < defaultPicker.groups.length - 1 ? 'mb-3' : 'mb-0'"
+      >
+        <label class="col-sm-3 col-form-label fw-bold" :for="'af-default-' + group.key">{{ group.label }}</label>
+        <div class="col-sm-9">
+          <div class="input-group">
+            <span class="input-group-text"
+              ><FaIcon :icon="groupLocked(group.key) ? 'lock' : group.icon || objectIcon"
+            /></span>
+            <select
+              :id="'af-default-' + group.key"
+              class="form-select"
+              :value="defaultDraft[group.key] ?? ''"
+              :disabled="groupLocked(group.key) || !groupRows(group.key).length"
+              @change="pickDefault(group.key, $event.target.value)"
+            >
+              <!-- none yet : no row of the group, or none of them chosen -->
+              <option v-if="defaultDraft[group.key] === undefined" value="">
+                {{ groupRows(group.key).length ? t('settings.common.noDefault') : t('settings.common.noneYet') }}
+              </option>
+              <option
+                v-for="row in groupRows(group.key)"
+                :key="row[idKey]"
+                :value="row[idKey]"
+                :disabled="isManaged(row)"
+              >
+                {{ row.name }}{{ group.describe ? ` · ${group.describe(row)}` : '' }}
+              </option>
+            </select>
+          </div>
+          <div class="form-text">
+            {{ groupLocked(group.key) ? t('settings.common.seedManagedNotice') : group.help }}
+          </div>
+        </div>
+      </div>
+    </template>
+    <template #footer>
+      <BsButton
+        icon="save"
+        :colorClass="defaultDirty ? 'primary' : 'secondary'"
+        :disabled="!defaultDirty"
+        @click="saveDefaults()"
+        >{{ t('settings.common.save') }}</BsButton
+      >
+    </template>
+  </BsModal>
   <BsOffCanvas
     v-if="!loading"
     :show="['select', 'edit', 'new', 'change_password'].includes(action)"
@@ -989,14 +1313,43 @@ defineExpose({
     @close="unselectItem"
   >
     <template #actions>
-      <BsButton v-if="action == 'new'" icon="save" @click="createItem()">{{ t('settings.common.save') }}</BsButton>
+      <!-- a wizard : Previous / Next, and Save on the last step (editing : on every step) -->
+      <template v-if="wizardActive">
+        <BsButton v-if="stepIndex > 0" icon="arrow-left" @click="goToStep(stepIndex - 1)">{{
+          t('common.previous')
+        }}</BsButton>
+        <BsButton v-if="!isLastStep" icon="arrow-right" @click="goToStep(stepIndex + 1)">{{
+          t('common.next')
+        }}</BsButton>
+      </template>
+      <BsButton v-if="action == 'new' && (!wizardActive || isLastStep)" icon="save" @click="createItem()">{{
+        t('settings.common.save')
+      }}</BsButton>
       <BsButton v-if="action == 'edit'" icon="save" @click="updateItem()">{{ t('settings.common.save') }}</BsButton>
       <BsButton v-if="action == 'change_password'" icon="lock" @click="updateItem(true)">{{
         t('settings.common.changePassword')
       }}</BsButton>
     </template>
     <template #default>
-      <template v-for="field in fields" :key="field.key">
+      <!-- the steps of a wizard : where you are, and the way back (editing : to any step) -->
+      <ol v-if="wizardActive" class="af-wizard-steps mb-4">
+        <li
+          v-for="(step, i) in steps"
+          :key="step.key"
+          :class="{
+            active: i === stepIndex,
+            done: i < stepIndex,
+            reachable: action === 'edit' || i <= stepReached + 1,
+          }"
+          @click="goToStep(i)"
+        >
+          <span class="af-wizard-n"
+            ><FaIcon v-if="i < stepIndex" icon="check" /><template v-else>{{ i + 1 }}</template></span
+          >
+          <span class="af-wizard-label">{{ step.label }}</span>
+        </li>
+      </ol>
+      <template v-for="field in dialogFields" :key="field.key">
         <!-- DATETIME FIELD -->
         <div v-if="showField(field) && field.type === 'datetime'" class="row mb-3">
           <label class="col-sm-2 col-form-label fw-bold">
@@ -1041,19 +1394,67 @@ defineExpose({
           </div>
         </div>
 
+        <!-- RADIO BUTTONS (type radio) : one choice of field.options, at the dialog's left edge,
+             each its label and a few grey words (hint) on one line -->
+        <div
+          v-if="showField(field) && field.type === 'radio'"
+          class="mb-3 af-radio-group"
+          :class="{ 'af-radio-nested': field.nested }"
+          role="radiogroup"
+          :aria-label="field.label"
+        >
+          <!-- a follow-up choice (nested) : under the option it follows, with its own title -->
+          <div v-if="field.nested" class="af-radio-title">{{ field.label }}</div>
+          <div v-for="opt in field.options" :key="String(opt.value)" class="form-check af-short-check">
+            <input
+              :id="'af-radio-' + field.key + '-' + opt.value"
+              v-model="$v.item[field.key].$model"
+              class="form-check-input"
+              type="radio"
+              :name="'af-radio-' + field.key"
+              :value="opt.value"
+              :disabled="field.readonly"
+            />
+            <label class="form-check-label" :for="'af-radio-' + field.key + '-' + opt.value">
+              <span class="af-short-label">{{ opt.label }}</span>
+              <span v-if="opt.hint" class="text-body-secondary small">{{ opt.hint }}</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- A SWITCH AT THE LEFT EDGE (flush) : no label column before it, its help the full
+             width of the dialog under it -->
+        <div
+          v-else-if="showField(field) && field.type === 'checkbox' && field.flush"
+          class="form-check form-switch af-flush-switch mb-3"
+        >
+          <input
+            :id="'af-switch-' + field.key"
+            v-model="$v.item[field.key].$model"
+            class="form-check-input"
+            type="checkbox"
+            role="switch"
+            :disabled="field.readonly"
+          />
+          <label class="form-check-label" :for="'af-switch-' + field.key">{{ field.label }}</label>
+          <div v-if="textOf(field.help)" class="form-text mt-1">{{ textOf(field.help) }}</div>
+        </div>
+
         <!-- ALL OTHER FIELD TYPES -->
         <BsInput
-          v-if="showField(field) && field.type !== 'datetime' && field.type !== 'cron'"
+          v-else-if="showField(field) && field.type !== 'datetime' && field.type !== 'cron'"
           :isHorizontal="true"
           :type="field.type"
-          :placeholder="field.placeholder"
+          :placeholder="action == 'edit' && field.onEdit ? '********' : textOf(field.placeholder)"
           :icon="field.icon"
-          :help="field.help"
+          :help="
+            action == 'edit' && field.onEdit ? field.keepHelp || t('settings.common.passwordKeep') : textOf(field.help)
+          "
           :readonly="field.readonly"
           v-model="$v.item[field.key].$model"
           :isFloating="false"
           :required="field.required"
-          :label="field.label"
+          :label="textOf(field.dialogLabel) || field.label"
           :hasError="$v.item[field.key].$invalid && $v.item[field.key].$dirty"
           :errors="$v.item[field.key].$errors"
           :valueKey="field.valueKey"
@@ -1086,6 +1487,86 @@ defineExpose({
   </BsOffCanvas>
 </template>
 <style scoped>
+/* the steps of a wizard dialog : numbered, joined by a line, the one shown in the primary
+   colour, those passed with a check */
+.af-wizard-steps {
+  display: flex;
+  gap: 0.5rem;
+  list-style: none;
+  padding: 0;
+  margin-left: 0;
+}
+.af-wizard-steps li {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 3px solid var(--bs-border-color);
+  color: var(--bs-secondary-color);
+  white-space: nowrap;
+  min-width: 0;
+}
+.af-wizard-steps li.reachable {
+  cursor: pointer;
+}
+.af-wizard-steps li.done {
+  border-bottom-color: rgba(var(--bs-primary-rgb), 0.45);
+  color: var(--bs-body-color);
+}
+.af-wizard-steps li.active {
+  border-bottom-color: var(--bs-primary);
+  color: var(--bs-primary);
+  font-weight: 600;
+}
+.af-wizard-n {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  font-size: 0.8rem;
+}
+.af-wizard-steps li.active .af-wizard-n {
+  background: var(--bs-primary);
+  border-color: var(--bs-primary);
+  color: #fff;
+}
+.af-wizard-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* a radio of a group : at the left edge, the list tight */
+.af-short-check {
+  margin-bottom: 0.6rem;
+}
+/* the labels one width, so their grey hints line up in a column */
+.af-short-label {
+  display: inline-block;
+  min-width: 12rem;
+}
+/* a follow-up radio group : indented to the labels of the group above, its title small and
+   bold, a line at its left joining it to the option it follows */
+.af-radio-nested {
+  margin-left: 0.6rem;
+  padding-left: 1rem;
+  border-left: 2px solid var(--af-field-border);
+}
+.af-radio-title {
+  margin-bottom: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--bs-secondary-color);
+}
+.af-radio-nested .af-short-label {
+  /* its hints in line with those above : the indent and the line taken off */
+  min-width: calc(12rem - 1.6rem - 2px);
+}
 /* 3-dot row action trigger: muted by default, inherits color when the row is
    selected/active (dark bg → light icon). */
 .bs-dt-row-menu {

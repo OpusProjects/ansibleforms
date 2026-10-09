@@ -63,6 +63,8 @@ const crudConfigs = {
       { name: 'ignore_certs', isBoolean: true },
       { name: 'ca_bundle' },
       { name: 'is_default', isBoolean: true },
+      // an awx runner : AWX (none), 'aap' or 'ascender' - which product it is
+      { name: 'flavour' },
       { name: 'managed', isBoolean: true },
       { name: 'node_id' }
     ],
