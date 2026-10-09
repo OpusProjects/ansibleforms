@@ -17,7 +17,6 @@
 /*      markdown: Boolean - the text is markdown (a form's help) :*/
 /*                shown formatted, Bootstrap's sanitizer keeping  */
 /*                only its plain tags ; wider, scrolling when long*/
-/*      startOpen: Boolean - open once shown (a form's showHelp)  */
 /*      label: String - what the icon is called (default : About  */
 /*             this page)                                         */
 /*                                                                */
@@ -44,10 +43,6 @@ const props = defineProps({
     default: 'right',
   },
   markdown: {
-    type: Boolean,
-    default: false,
-  },
-  startOpen: {
     type: Boolean,
     default: false,
   },
@@ -121,8 +116,6 @@ onMounted(() => {
   button.value.addEventListener('hidden.bs.popover', () => (open.value = false));
   document.addEventListener('mousedown', onDocument);
   document.addEventListener('keydown', onDocument);
-  // a form whose help is shown from the start
-  if (props.startOpen) setTimeout(() => popover?.show(), 0);
 });
 
 // another language, or another page using the same component : the new text
