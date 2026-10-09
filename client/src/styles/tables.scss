@@ -26,6 +26,11 @@
   margin: calc(-1 * var(--bs-card-spacer-y)) calc(-1 * var(--bs-card-spacer-x));
   border-radius: var(--bs-card-inner-border-radius);
 }
+/* after something else in the card (an alert of the config pages) : the frame starts under
+   it, its sides and bottom still on the card's edges */
+.card-body > div > * + .af-table-frame {
+  margin-top: 0;
+}
 /* under tabs (bootstrap-override.scss, .tab-card-flush-card) the card pads 1.25rem on top and
    zeroes its last child's bottom margin : the frame takes back that padding instead, to the
    bottom edge too */

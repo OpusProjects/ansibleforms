@@ -917,6 +917,7 @@ export default {
       configParseError: '解析表单配置失败。请先修复 YAML 语法错误，再进行更改。',
       configTemplated: '此配置使用 ytt 模板，无法在此处编辑。请改为编辑源模板。',
       publicRoleNote: 'public 角色自动适用于所有人；不能为其分配组和用户。',
+      publicEveryone: '所有人（自动）',
       roleNameRequired: '每个角色都需要名称',
       duplicateRoleName: "角色名称 '{name}' 重复，角色名称必须唯一",
       reservedRoleName: "'{name}' 是保留的角色名称，不能用于其他角色",

@@ -951,6 +951,7 @@ export default {
       configTemplated:
         "Aquesta configuració utilitza plantilles ytt i no es pot editar aquí. Edita la plantilla d'origen.",
       publicRoleNote: "El rol public s'aplica automàticament a tothom; no s'hi poden assignar grups ni usuaris.",
+      publicEveryone: 'Tothom, automàticament',
       roleNameRequired: 'Cada rol necessita un nom',
       duplicateRoleName: "Nom de rol duplicat '{name}', els noms de rol han de ser únics",
       reservedRoleName: "'{name}' és un nom de rol reservat i no es pot utilitzar per a un altre rol",

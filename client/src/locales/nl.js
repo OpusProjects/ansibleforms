@@ -945,6 +945,7 @@ export default {
         'Deze configuratie gebruikt ytt-templating en kan hier niet worden bewerkt. Bewerk in plaats daarvan de bronsjabloon.',
       publicRoleNote:
         'De rol public geldt automatisch voor iedereen; groepen en gebruikers kunnen er niet aan worden toegewezen.',
+      publicEveryone: 'Iedereen, automatisch',
       roleNameRequired: 'Elke rol heeft een naam nodig',
       duplicateRoleName: "Dubbele rolnaam '{name}', rolnamen moeten uniek zijn",
       reservedRoleName: "'{name}' is een gereserveerde rolnaam en kan niet voor een andere rol worden gebruikt",

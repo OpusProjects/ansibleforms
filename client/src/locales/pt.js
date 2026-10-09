@@ -949,6 +949,7 @@ export default {
         'Esta configuração usa templates ytt e não pode ser editada aqui. Edite antes o template de origem.',
       publicRoleNote:
         'A função public aplica-se automaticamente a todos; não lhe podem ser atribuídos grupos nem utilizadores.',
+      publicEveryone: 'Todos, automaticamente',
       roleNameRequired: 'Todas as funções precisam de um nome',
       duplicateRoleName: "Nome de função duplicado '{name}', os nomes das funções têm de ser únicos",
       reservedRoleName: "'{name}' é um nome de função reservado e não pode ser usado para outra função",

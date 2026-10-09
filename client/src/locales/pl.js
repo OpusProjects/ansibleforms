@@ -945,6 +945,7 @@ export default {
         'Ta konfiguracja używa szablonów ytt i nie można jej tutaj edytować. Zamiast tego edytuj szablon źródłowy.',
       publicRoleNote:
         'Rola public dotyczy automatycznie wszystkich; nie można do niej przypisać grup ani użytkowników.',
+      publicEveryone: 'Wszyscy, automatycznie',
       roleNameRequired: 'Każda rola musi mieć nazwę',
       duplicateRoleName: "Zduplikowana nazwa roli '{name}', nazwy ról muszą być unikalne",
       reservedRoleName: "'{name}' to zarezerwowana nazwa roli i nie może być użyta dla innej roli",
