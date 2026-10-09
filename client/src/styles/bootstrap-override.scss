@@ -258,7 +258,10 @@
   /* 1rem to match a plain card : the bottom gap is one number across every page */
   padding-bottom: 1rem;
 }
-.tab-card-flush-card > .card-body > :last-child {
+.tab-card-flush-card > .card-body > :last-child,
+/* a page that wraps each tab's content in a div of its own (shown with v-show) : the last
+   element of that div ends the card too, or its margin doubles the padding under it */
+.tab-card-flush-card > .card-body > div > :last-child {
   margin-bottom: 0 !important;
 }
 
