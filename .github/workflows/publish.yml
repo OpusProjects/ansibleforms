@@ -2,8 +2,8 @@ name: Publish
 
 # Builds and pushes the images, all with the same tags : the application (ansibleforms,
 # Dockerfile) and the runtime environment that runs its playbooks, in three layers -
-# ansibleforms-rte-base (Dockerfile.rte-base), ansibleforms-rte (Dockerfile.rte) and
-# ansibleforms-rte-legacy (Dockerfile.rte-legacy). Called by release.yml when a release is created
+# ansibleforms-rte-base (Dockerfile.rte-base), ansibleforms-rte-core (Dockerfile.rte-core) and
+# ansibleforms-rte-full (Dockerfile.rte-full). Called by release.yml when a release is created
 # and by rc.yml for a release candidate. "Run workflow" re-publishes an existing release tag,
 # for when a push failed half way. The tags are the list in installation.md (Image
 # tags) of ansibleforms/website - change that list and this together, never one of them :
@@ -116,9 +116,9 @@ jobs:
           tags="${tags#,}"
           echo "list=$tags" >> "$GITHUB_OUTPUT"
           echo "$tags" | tr ',' '\n'
-          # the three RTE layers (Dockerfile.rte-base, .rte, .rte-legacy) : the same tags on
+          # the three RTE layers (Dockerfile.rte-base, .rte-core, .rte-full) : the same tags on
           # their own image names
-          for image in rte-base rte rte-legacy; do
+          for image in rte-base rte-core rte-full; do
             list=""
             for n in $names; do
               list="$list,$ghcr-$image:$n"
@@ -174,27 +174,27 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
-          file: Dockerfile.rte
+          file: Dockerfile.rte-core
           push: true
-          tags: ${{ steps.tags.outputs.rte }}
+          tags: ${{ steps.tags.outputs.rte_core }}
           build-args: |
             BASE_IMAGE=${{ steps.tags.outputs.ghcr }}-rte-base@${{ steps.rte_base.outputs.digest }}
             VERSION=${{ env.VERSION }}
-          cache-from: type=gha,scope=rte
-          cache-to: type=gha,mode=max,scope=rte
+          cache-from: type=gha,scope=rte-core
+          cache-to: type=gha,mode=max,scope=rte-core
 
-      - name: Build and push the RTE (legacy)
+      - name: Build and push the RTE (full)
         uses: docker/build-push-action@v7
         with:
           context: .
-          file: Dockerfile.rte-legacy
+          file: Dockerfile.rte-full
           push: true
-          tags: ${{ steps.tags.outputs.rte_legacy }}
+          tags: ${{ steps.tags.outputs.rte_full }}
           build-args: |
-            BASE_IMAGE=${{ steps.tags.outputs.ghcr }}-rte@${{ steps.rte.outputs.digest }}
+            BASE_IMAGE=${{ steps.tags.outputs.ghcr }}-rte-core@${{ steps.rte.outputs.digest }}
             VERSION=${{ env.VERSION }}
-          cache-from: type=gha,scope=rte-legacy
-          cache-to: type=gha,mode=max,scope=rte-legacy
+          cache-from: type=gha,scope=rte-full
+          cache-to: type=gha,mode=max,scope=rte-full
 
       - name: Summary
         run: |
@@ -204,8 +204,8 @@ jobs:
             echo '```'
             echo "${{ steps.tags.outputs.list }}" | tr ',' '\n'
             echo "${{ steps.tags.outputs.rte_base }}" | tr ',' '\n'
-            echo "${{ steps.tags.outputs.rte }}" | tr ',' '\n'
-            echo "${{ steps.tags.outputs.rte_legacy }}" | tr ',' '\n'
+            echo "${{ steps.tags.outputs.rte_core }}" | tr ',' '\n'
+            echo "${{ steps.tags.outputs.rte_full }}" | tr ',' '\n'
             echo '```'
             echo ""
             echo "from \`$(git rev-parse HEAD)\`"

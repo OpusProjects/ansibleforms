@@ -2,6 +2,6 @@
 # library. Keep the tag on the app's release (7, or the exact 7.x.y the app runs).
 #
 #   docker build -f examples/rte/Dockerfile.netapp -t my-rte-netapp .
-FROM ghcr.io/ansibleforms/ansibleforms-rte:7
+FROM ghcr.io/ansibleforms/ansibleforms-rte-core:7
 RUN ansible-galaxy collection install netapp.ontap -p /usr/share/ansible/collections \
  && pip install --no-cache-dir netapp-lib netapp-ontap

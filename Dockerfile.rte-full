@@ -1,0 +1,39 @@
+# The AnsibleForms RTE, layer 3 of 3 - the one to run : the RTE (Dockerfile.rte-core) + the
+# ansible package with its collections, at the version that matches rte-core's ansible-core,
+# the python libraries (docker/rte-full/requirements.txt), the NetApp, AWS and community
+# collections (docker/rte-full/collections.yml) and the os tools the AnsibleForms 6.5 image had.
+# The default of the Helm chart and the docker setup : playbooks from 6.5 find what they used.
+#
+# Want a smaller image ? Take ansibleforms-rte-core and add only what your playbooks use.
+#
+# BASE_IMAGE : CI passes the RTE it built in the same run, by digest (publish.yml).
+ARG BASE_IMAGE=ghcr.io/ansibleforms/ansibleforms-rte-core:7
+FROM ${BASE_IMAGE}
+
+ARG VERSION=
+LABEL org.opencontainers.image.title="AnsibleForms RTE (full)" \
+      org.opencontainers.image.description="The AnsibleForms RTE ready to run : ansible with its collections, and the python libraries and tools the 6.5 image had" \
+      org.opencontainers.image.version="${VERSION}"
+
+# ytt and the mariadb client were in the 6.5 image too : playbooks may call them
+ARG YTT_VERSION=0.55.3
+ARG YTT_SHA256_AMD64=15751b45a819edbf22b3d3eadb5fa9a5a2599128d921660a874bd39c47bb41e1
+ARG YTT_SHA256_ARM64=fed073d52b780a88ce506e68c44f33cedede2dad3d5f4fbe07a2833e45d996ed
+ARG TARGETARCH=amd64
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends libxslt1.1 curl wget vim sudo tzdata mariadb-client \
+ && rm -rf /var/lib/apt/lists/* \
+ && case "$TARGETARCH" in \
+      amd64) sum="$YTT_SHA256_AMD64" ;; \
+      arm64) sum="$YTT_SHA256_ARM64" ;; \
+      *) echo "no ytt for $TARGETARCH" >&2; exit 1 ;; \
+    esac \
+ && curl -fsSL -o /usr/local/bin/ytt "https://github.com/carvel-dev/ytt/releases/download/v${YTT_VERSION}/ytt-linux-${TARGETARCH}" \
+ && echo "$sum  /usr/local/bin/ytt" | sha256sum -c - \
+ && chmod +x /usr/local/bin/ytt
+
+COPY ./docker/rte-full/requirements.txt /tmp/full-requirements.txt
+COPY ./docker/rte-full/collections.yml /tmp/full-collections.yml
+RUN pip install --no-cache-dir -r /tmp/full-requirements.txt \
+ && ansible-galaxy collection install -r /tmp/full-collections.yml -p /usr/share/ansible/collections \
+ && rm /tmp/full-requirements.txt /tmp/full-collections.yml

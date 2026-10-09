@@ -1,4 +1,4 @@
-# The python packages of the ansibleforms-rte image (Dockerfile.rte) : ansible-core and the
+# The python packages of the ansibleforms-rte-core image (Dockerfile.rte-core) : ansible-core and the
 # libraries most playbooks expect - json_query (jmespath), the ipaddr filters (netaddr), uri
 # helpers (requests) and paramiko connections. Dependabot proposes updates.
 ansible-core==2.21.5

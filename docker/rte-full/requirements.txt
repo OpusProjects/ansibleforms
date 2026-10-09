@@ -1,0 +1,23 @@
+# The python packages of the ansibleforms-rte-full image (Dockerfile.rte-full), on top of the
+# RTE's own (docker/rte-core/requirements.txt) : the libraries the AnsibleForms image had before 7.
+# `ansible` is the community package with its collections, at the version that requires
+# rte-core's ansible-core, so both images run the same engine. Dependabot proposes updates
+# (no majors : a new ansible major moves together with ansible-core in rte-core).
+ansible==14.5.0
+beautifulsoup4==4.15.0
+boto3==1.43.110
+botocore==1.43.110
+colorama==0.4.6
+hvac==2.4.0
+jinja2==3.1.6
+lxml==6.1.3
+netapp-lib==2021.6.25
+netapp-ontap==9.19.1.0
+openpyxl==3.1.5
+pandas==3.0.6
+PyMySQL==1.2.3
+pyVim==3.0.3
+pyvmomi==9.1.1.0
+PyYAML==6.0.3
+six==1.17.0
+solidfire-sdk-python==12.3.0.203

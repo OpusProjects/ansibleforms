@@ -1,0 +1,37 @@
+# The AnsibleForms RTE, layer 2 of 3 - the one to build on : the base
+# (Dockerfile.rte-base) + python 3.14, ansible-core and the few libraries most playbooks expect
+# (docker/rte-core/requirements.txt). No collections : add the ones your playbooks use.
+#
+#   FROM ghcr.io/ansibleforms/ansibleforms-rte-core:7
+#   RUN ansible-galaxy collection install vmware.vmware -p /usr/share/ansible/collections
+#   RUN pip install --no-cache-dir pyvmomi
+#
+# More in examples/rte. Ready to run, with the collections and libraries most playbooks use :
+# ansibleforms-rte-full (Dockerfile.rte-full).
+#
+# BASE_IMAGE : CI passes the base it built in the same run, by digest (publish.yml).
+ARG BASE_IMAGE=ghcr.io/ansibleforms/ansibleforms-rte-base:7
+
+# uv brings the python : debian trixie packages 3.13 only, and ansible-core 2.21 runs on 3.14.
+# A standalone CPython build (python-build-standalone), pinned like the rest ; Dependabot moves
+# the uv pin, PYTHON_VERSION moves by hand.
+FROM ghcr.io/astral-sh/uv:0.12.24@sha256:3af4716e991d6956a41e573eab705d0ee08500cd829ed30293eb8472f372c65a AS uv
+
+FROM ${BASE_IMAGE}
+
+ARG VERSION=
+LABEL org.opencontainers.image.title="AnsibleForms RTE (core)" \
+      org.opencontainers.image.description="Runtime environment that runs Ansible playbooks for AnsibleForms : python, ansible-core and the essentials" \
+      org.opencontainers.image.version="${VERSION}"
+
+ARG PYTHON_VERSION=3.14.8
+ENV UV_PYTHON_INSTALL_DIR=/opt/python
+RUN --mount=from=uv,source=/uv,target=/usr/local/bin/uv \
+    uv python install "$PYTHON_VERSION" \
+ && uv venv --seed --python "$PYTHON_VERSION" /venv \
+ && chmod -R a+rX /opt/python /venv
+ENV PATH="/venv/bin:$PATH"
+
+COPY ./docker/rte-core/requirements.txt /tmp/rte-requirements.txt
+RUN pip install --no-cache-dir -r /tmp/rte-requirements.txt && rm /tmp/rte-requirements.txt
+COPY ./server/ansible.cfg /etc/ansible/ansible.cfg

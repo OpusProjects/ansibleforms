@@ -4,12 +4,12 @@
 # choose (examples/rte/Dockerfile.own-ansible).
 #
 #   ansibleforms-rte-base     this image
-#     └ ansibleforms-rte      + python, ansible-core and the essentials (Dockerfile.rte)
-#         └ ansibleforms-rte-legacy   + what the 6.5 image had (Dockerfile.rte-legacy)
+#     └ ansibleforms-rte-core      + python, ansible-core and the essentials (Dockerfile.rte-core)
+#         └ ansibleforms-rte-full   + the ansible package, collections and libraries (Dockerfile.rte-full)
 #
-# trixie, not the app's bookworm : its python 3.13 runs the current ansible-core, bookworm's
-# 3.11 stops at 2.19. Pinned by digest ; Dependabot proposes a new pin as a pull request.
-FROM node:24-trixie-slim@sha256:173f125896c3b47ddf056734c7ea789d04595a6a08769a8f78e0df642781fb66 AS builder
+# Debian trixie, the current stable ; the python of the RTE layers comes from Dockerfile.rte-core
+# (3.14, through uv). Pinned by digest ; Dependabot proposes a new pin as a pull request.
+FROM node:26-trixie-slim@sha256:193fe51b64e77981119c98c2002c9e32a70e2f006fb4d25068ce0558998917f0 AS builder
 
 ARG GIT_SHA=unknown
 ARG BUILD_TIME=unknown
@@ -24,7 +24,7 @@ RUN chmod +x /tmp/generate-build-info.sh && /tmp/generate-build-info.sh . "$GIT_
 # no web interface in an RTE
 RUN rm -f .env.* && rm -rf ./views
 
-FROM node:24-trixie-slim@sha256:173f125896c3b47ddf056734c7ea789d04595a6a08769a8f78e0df642781fb66 AS final
+FROM node:26-trixie-slim@sha256:193fe51b64e77981119c98c2002c9e32a70e2f006fb4d25068ce0558998917f0 AS final
 
 ARG VERSION=
 LABEL org.opencontainers.image.source="https://github.com/ansibleforms/ansibleforms" \

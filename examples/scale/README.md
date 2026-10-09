@@ -7,7 +7,7 @@ One image, started in different roles (`AF_ROLE`):
 | unset | the web app **and** the worker, in one process: the default | 1 |
 | `app` | the web interface and the API | as many as you like, behind a load balancer |
 | `worker` | the background work: the database bootstrap and the config seed, the schedules, the nightly backup, the repository syncs, the cleanups | 1 at work; more wait and take over |
-| `rte` | the playbooks (the `ansibleforms-rte` image) | as many as you like |
+| `rte` | the playbooks (the `ansibleforms-rte-full` image) | as many as you like |
 
 [compose.yaml](compose.yaml) runs two app nodes behind nginx, two workers, one RTE and a database.
 
