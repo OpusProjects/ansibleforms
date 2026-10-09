@@ -74,14 +74,22 @@ class Repository extends CrudModel {
   }
 
   // Override update to handle password properly
+  // the fields an update clears when they are sent empty (see update)
+  static CLEARABLE = ["cron", "credential"]
+
   static async update(data, name, opts = {}) {
     logger.info(`Updating repository ${name}`);
     // Get current record to find id
     const repo = await this.findByName(name);
     if (!repo) throw new Error(`No repository found with name ${name}`);
 
-    // Remove empty fields
+    // Remove empty fields - but a field the dialog can clear, sent empty, is cleared : its
+    // schedule (Scheduled pull off) or its credential. Removed with the others, an empty
+    // value left the old one in place, so a repository could never stop being pulled on
+    // a schedule nor drop its credential.
+    const cleared = Repository.CLEARABLE.filter((key) => key in data && (data[key] === "" || data[key] === null));
     helpers.removeEmptyFields(data);
+    for (const key of cleared) data[key] = null;
 
     // `name` is an editable field (the repositories page renders it so), and the working
     // tree lives at repoPath/<name>. Renaming the row alone left the tree behind under
