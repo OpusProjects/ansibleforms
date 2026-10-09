@@ -410,16 +410,6 @@ onMounted(async () => {
   white-space: pre-line;
 }
 
-.badge {
-  background-color: var(--af-bg-badge) !important;
-  color: var(--af-text-badge) !important;
-
-  &.active {
-    background-color: var(--af-text-badge) !important;
-    color: var(--af-bg-badge) !important;
-  }
-}
-
 .v-enter-active,
 .v-leave-active {
   transition: opacity 0.2s ease;
