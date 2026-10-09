@@ -907,7 +907,7 @@ defineExpose({
   <AppSettings :icon="objectIcon" :title="settings.pageTitle || objectLabelPlural" :description="objectDescription">
     <!-- the table's search and columns, on the title line as the Forms page has its search -->
     <template #headerActions>
-      <div :id="toolsId"></div>
+      <div :id="toolsId" class="af-title-flow"></div>
     </template>
     <template #default>
       <BsDataTable

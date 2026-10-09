@@ -432,3 +432,50 @@
 .modal-body > .row.mb-3:has(.form-switch):has(+ .row .form-switch) {
   margin-bottom: 0.5rem !important;
 }
+
+// The title line's controls (AppSettings) : the view controls (#headerActions, a table's
+// toolbar moved there) and the page's buttons (#actions) in one box at the right, wrapping as
+// a whole - on a narrow screen they share the same rows, right aligned, the search narrowing
+// first. The boxes they come in (the buttons' box, a table's moved toolbar and its target)
+// step aside (display: contents), so each control is an item of this one box.
+// The title line wraps : when the controls do not fit beside the title, they go on a line of
+// their own under it, as a whole, rather than squeezing into rows beside it
+.af-title-line {
+  flex-wrap: wrap;
+  row-gap: 0.5rem;
+  // the space between the title and its controls, beside it ; under it, none
+  column-gap: 1rem;
+}
+.af-title-controls {
+  display: flex;
+  // as wide as its controls on one line (no shrinking) : too wide beside the title, the box
+  // moves under it ; only narrower than the window does it wrap inside
+  flex: 1 0 auto;
+  max-width: 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.af-title-controls > .af-header-buttons,
+.af-title-controls .af-title-flow,
+.af-title-controls .bs-dt-toolbar-moved,
+.af-title-controls .bs-dt-toolbar-moved > .ms-auto {
+  display: contents;
+}
+// the gap spaces them : a control's own leading margin (ms-2, ms-3, from when they sat
+// elsewhere) would double it
+.af-title-controls > *,
+.af-title-controls > .af-header-buttons > *,
+.af-title-controls .bs-dt-toolbar-moved > *,
+.af-title-controls .bs-dt-toolbar-moved > .ms-auto > * {
+  margin-left: 0 !important;
+}
+// a table's search on the title line : from 12rem, growing to 20rem with the room left, so the
+// rows are decided at its smallest and it fills what remains
+.af-title-controls .bs-dt-toolbar-moved .af-table-search {
+  flex: 1 1 12rem;
+  max-width: 20rem;
+  min-width: 10rem;
+}

@@ -59,7 +59,7 @@ defineProps({
 <template>
   <section class="section w-100" :class="{ 'mt-3': title }">
     <div class="container-fluid">
-      <div v-if="title" class="d-flex align-items-center border-bottom mb-3 pb-2">
+      <div v-if="title" class="d-flex align-items-center border-bottom mb-3 pb-2 af-title-line">
         <h3 v-if="crumbs.length" :aria-label="title">
           <template v-for="(c, i) in crumbs" :key="i">
             <span v-if="i > 0" class="mx-2 text-body-secondary af-crumb-separator">›</span>
@@ -81,14 +81,15 @@ defineProps({
           <AppInfoPopover v-if="description" :text="description" />
         </h3>
         <slot name="feedback"></slot>
-        <template v-if="$slots.headerActions || $slots.actions">
-          <div class="flex-fill"></div>
+        <!-- the view controls, then the page's buttons, top right : one box that wraps as a
+             whole, so on a narrow screen every control lines up on the same rows rather than
+             each group wrapping on its own (styles/bootstrap-override.scss, .af-title-controls) -->
+        <div v-if="$slots.headerActions || $slots.actions" class="af-title-controls">
           <slot name="headerActions"></slot>
-          <!-- the page's buttons : top right, after the view controls -->
-          <div v-if="$slots.actions" class="d-flex align-items-center flex-shrink-0 af-header-buttons">
+          <div v-if="$slots.actions" class="af-header-buttons">
             <slot name="actions"></slot>
           </div>
-        </template>
+        </div>
       </div>
       <slot name="tabs"></slot>
       <!-- the 16px under the last card (the margin the designer also gives its card) -->
@@ -132,16 +133,6 @@ h3 {
 }
 /* the buttons after the view controls : the same gap as between those ; a button's own
    leading margin (ms-3, from when they sat under the card) is replaced by it */
-.af-header-buttons {
-  gap: 0.5rem;
-}
-:slotted(.af-header-buttons) > .btn,
-.af-header-buttons > :deep(.btn) {
-  margin-left: 0 !important;
-}
-.af-header-buttons:not(:first-child) {
-  margin-left: 0.5rem;
-}
 .tab-card-flush-card {
   border-top-left-radius: 0;
   border-top-right-radius: 0;
