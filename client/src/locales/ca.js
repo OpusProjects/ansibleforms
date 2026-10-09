@@ -714,8 +714,7 @@ export default {
         "Gestors de secrets externs, com ara HashiCorp Vault, d'on les credencials llegeixen l'usuari i la contrasenya.",
       editStore: 'Edita el magatzem de secrets',
       deleteStore: 'Suprimeix el magatzem de secrets',
-      nameHelp:
-        "Les credencials es refereixen al magatzem amb aquest nom. Anomena 'vault' un HashiCorp Vault perquè les credencials amb una ruta de vault continuïn funcionant.",
+      nameHelp: "Les credencials fan servir aquest nom; anomeneu 'vault' un HashiCorp Vault per a les rutes Vault.",
       type: 'Tipus',
       namespace: 'Espai de noms',
       namespaceHelp: 'Espai de noms de Vault Enterprise. Altrament, deixa-ho buit.',

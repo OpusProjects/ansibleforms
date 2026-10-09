@@ -761,8 +761,7 @@ export default {
         'External secret managers, such as HashiCorp Vault, that credentials read their user and password from.',
       editStore: 'Edit Secret Store',
       deleteStore: 'Delete Secret Store',
-      nameHelp:
-        "Credentials refer to the store by this name. Name a HashiCorp Vault 'vault' to keep credentials with a vault path working.",
+      nameHelp: "Credentials use this name; call a HashiCorp Vault 'vault' so vault paths keep working.",
       type: 'Type',
       namespace: 'Namespace',
       namespaceHelp: 'Vault Enterprise namespace. Leave empty otherwise.',

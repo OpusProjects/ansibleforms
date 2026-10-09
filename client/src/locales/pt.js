@@ -714,8 +714,7 @@ export default {
         'Gestores de segredos externos, como o HashiCorp Vault, a partir dos quais as credenciais leem o seu utilizador e palavra-passe.',
       editStore: 'Editar Cofre de Segredos',
       deleteStore: 'Eliminar Cofre de Segredos',
-      nameHelp:
-        "As credenciais referem-se ao cofre por este nome. Dê o nome 'vault' a um HashiCorp Vault para manter a funcionar as credenciais com um caminho do vault.",
+      nameHelp: "As credenciais usam este nome; chame 'vault' a um HashiCorp Vault para os caminhos Vault.",
       type: 'Tipo',
       namespace: 'Namespace',
       namespaceHelp: 'Namespace do Vault Enterprise. Caso contrário, deixe vazio.',

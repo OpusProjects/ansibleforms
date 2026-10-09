@@ -708,8 +708,7 @@ export default {
       description: '認証情報がユーザーとパスワードを読み取る、HashiCorp Vault などの外部シークレットマネージャーです。',
       editStore: 'シークレットストアを編集',
       deleteStore: 'シークレットストアを削除',
-      nameHelp:
-        "認証情報はこの名前でストアを参照します。Vault パスを持つ認証情報を引き続き機能させるには、HashiCorp Vault に 'vault' という名前を付けてください。",
+      nameHelp: "認証情報はこの名前を使います。Vault パスを使うには HashiCorp Vault を 'vault' と名付けます。",
       type: '種類',
       namespace: 'ネームスペース',
       namespaceHelp: 'Vault Enterprise のネームスペースです。それ以外の場合は空欄にしてください。',

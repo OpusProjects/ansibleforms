@@ -773,8 +773,7 @@ export default {
       description: 'Externe Secret-Manager wie HashiCorp Vault, aus denen Zugangsdaten Benutzer und Passwort lesen.',
       editStore: 'Secret Store bearbeiten',
       deleteStore: 'Secret Store löschen',
-      nameHelp:
-        "Zugangsdaten verweisen mit diesem Namen auf den Store. Nennen Sie einen HashiCorp Vault 'vault', damit Zugangsdaten mit Vault-Pfad weiter funktionieren.",
+      nameHelp: "Zugangsdaten nutzen diesen Namen; einen HashiCorp Vault 'vault' nennen, damit Vault-Pfade gehen.",
       type: 'Typ',
       namespace: 'Namespace',
       namespaceHelp: 'Vault-Enterprise-Namespace. Sonst leer lassen.',

@@ -766,8 +766,7 @@ export default {
         'Gestores de secretos externos, como HashiCorp Vault, de los que las credenciales leen su usuario y contraseña.',
       editStore: 'Editar almacén de secretos',
       deleteStore: 'Eliminar almacén de secretos',
-      nameHelp:
-        "Las credenciales se refieren al almacén con este nombre. Llame 'vault' a un HashiCorp Vault para que las credenciales con una ruta de Vault sigan funcionando.",
+      nameHelp: "Las credenciales usan este nombre; llame 'vault' a un HashiCorp Vault para las rutas de Vault.",
       type: 'Tipo',
       namespace: 'Namespace',
       namespaceHelp: 'Namespace de Vault Enterprise. Si no, déjelo vacío.',
