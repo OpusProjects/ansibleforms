@@ -87,7 +87,8 @@ const jobLogHtml = computed(() => ansiToHtml(props.jobLog));
   font-size: 0.8rem;
   padding: 1rem;
   margin-bottom: 1rem;
-  border: 1px solid var(--bs-light-border-subtle);
+  /* the fields' darker border, as the inputs and a repository's output */
+  border: 1px solid var(--af-field-border);
   border-radius: 5px;
   background-color: var(--af-bg-light-subtle-color);
 
