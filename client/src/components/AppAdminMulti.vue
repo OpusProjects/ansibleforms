@@ -106,6 +106,12 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  // a title in steps (AppSettings' crumbs) : a page that holds the list in one of its tabs
+  // (SSO › Providers)
+  crumbs: {
+    type: Array,
+    default: () => [],
+  },
   busyItems: {
     type: Object,
     default: () => ({}),
@@ -1394,6 +1400,7 @@ defineExpose({
     v-if="!dialogOnly"
     :icon="objectIcon"
     :title="settings.pageTitle || objectLabelPlural"
+    :crumbs="crumbs"
     :description="objectDescription"
   >
     <!-- the table's search and columns, on the title line as the Forms page has its search -->

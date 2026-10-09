@@ -33,6 +33,7 @@ import { useVuelidate } from '@vuelidate/core';
 import { required, helpers, email, sameAs } from '@vuelidate/validators';
 import { useI18n } from 'vue-i18n';
 import { useRouteTab } from '@/composables/useRouteTab';
+import { useRoute } from 'vue-router';
 
 const { t } = useI18n();
 
@@ -60,12 +61,24 @@ const emit = defineEmits(['test', 'import', 'saved', 'saveExtra']);
 
 // the tab shown, kept in the url (?tab=) ; without tabs the url's ?tab is the page's
 const firstTab = computed(() => props.tabs[0]?.key || '');
+const route = useRoute();
 const { activeTab } = props.tabs.length
   ? useRouteTab(
       () => firstTab.value,
       (key) => props.tabs.some((x) => x.key === key),
     )
   : { activeTab: ref('') };
+// a page in tabs says its tab in the title : LDAP › Server, each step a link (the page to its
+// plain address, the tab to itself)
+const crumbs = computed(() => {
+  const tab = props.tabs.find((x) => x.key === activeTab.value);
+  if (!tab) return [];
+  const title = props.settings.pageTitle || objectLabel.value;
+  return [
+    { title, icon: objectIcon.value, to: route.path },
+    { title: tab.label, icon: tab.icon, to: { path: route.path, query: { ...route.query, tab: tab.key } } },
+  ];
+});
 // the tab a field is in : the one it names, or the first
 const tabOf = (field) => field.tab || firstTab.value;
 
@@ -263,7 +276,12 @@ defineExpose({
 });
 </script>
 <template>
-  <AppSettings :icon="objectIcon" :title="settings.pageTitle || objectLabel" :description="objectDescription">
+  <AppSettings
+    :icon="objectIcon"
+    :title="settings.pageTitle || objectLabel"
+    :crumbs="crumbs"
+    :description="objectDescription"
+  >
     <template v-if="tabs.length" #tabs>
       <ul class="nav nav-tabs mb-0">
         <li v-for="tab in tabs" :key="tab.key" class="nav-item">
