@@ -142,7 +142,7 @@
     description: |
       Host the whole application (GUI, REST API and Swagger interface) under a URL subpath, typically behind a reverse proxy.
       For example with `BASE_URL=/ansibleforms`, the application is served under `https://host/ansibleforms/`.
-      Note : when using an OAuth2 identity provider (Entra ID / OIDC), make sure the instance url in the provider settings includes the subpath, so the generated redirect uri matches.
+      Note : when using an SSO identity provider (Entra ID / OIDC), make sure the instance url in the provider settings includes the subpath, so the generated redirect uri matches.
   - name: TRUST_PROXY
     version: 7.0.0
     type: string

@@ -401,7 +401,7 @@ export default function getSettings(t) {
       label: t('settings.oauth2.label'),
       labelPlural: t('settings.oauth2.labelPlural'),
       description: t('settings.oauth2.description'),
-      icon: 'key',
+      icon: 'right-to-bracket',
       selectable: false,
       // the dialog in steps : the provider, how the app signs in with it, its groups. The help a
       // provider needs (the permissions of an Entra ID app, what Open ID was tested with) is in
