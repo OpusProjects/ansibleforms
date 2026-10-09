@@ -5,7 +5,7 @@ import Helpers from '@/lib/Helpers';
 import i18n from '@/plugins/i18n';
 import { describeCron } from '@/config/cronDescribe';
 import { cronValidationMessage } from './cron';
-import { headerWidth } from '@/lib/tableCells';
+import { headerWidth, PILL } from '@/lib/tableCells';
 
 // A cron field is validated with the SAME check the editor uses (config/cron.js), which
 // is the only thing that keeps the two from disagreeing.
@@ -57,6 +57,24 @@ function cronCell(value) {
   if (!words) return escapeHtml(value ?? '');
   // the popover AppAdminMulti opens on hover (data-af-popover), the look of the info popovers
   return `<span class="af-has-popover" data-af-popover="${escapeHtml(words)}">${escapeHtml(value ?? '')}</span>`;
+}
+
+/**
+ * A status as a pill of the shared tables, the colors of the audit log's outcomes : running in
+ * blue, success in green, failed in red, anything else grey ; none, an en dash.
+ *
+ * Args:
+ *   t (function): the vue-i18n translate function.
+ *   value (string): the status (running, success, failed...).
+ *
+ * Returns:
+ *   string: the cell's HTML, escaped.
+ */
+function statusPill(t, value) {
+  if (!value) return '–';
+  const known = { running: PILL.blue, success: PILL.green, failed: PILL.red };
+  const label = known[value] ? t(`jobs.menu.${value}`) : value;
+  return `<span class="badge rounded-pill border fw-semibold af-pill ${known[value] || PILL.grey}"><span class="af-pill-label">${escapeHtml(label)}</span></span>`;
 }
 
 // what a credential is for (its type), in the order the dialog offers them
@@ -371,7 +389,8 @@ export default function getSettings(t) {
           readonly: false,
         },
         { key: 'head', label: t('settings.fields.head'), noInput: true },
-        { key: 'status', label: t('settings.fields.status'), noInput: true },
+        // the last sync's status, as the audit log shows an outcome
+        { key: 'status', label: t('settings.fields.status'), noInput: true, render: (v) => statusPill(t, v) },
         {
           // a credential of Connections > Credentials, or a New one : the user and password git
           // uses
