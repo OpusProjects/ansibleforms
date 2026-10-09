@@ -842,6 +842,46 @@ async function reloadForm(reset = true) {
   key.value++;
 }
 
+// ─── the forms menu (the Forms page's categories, in the left column) ─────────────────────
+
+/**
+ * Whether a form is in a category : one of its categories is it, or below it.
+ *
+ * Args:
+ *   form (object): the form (its categories).
+ *   category (string): a category, as Infra/Linux.
+ *
+ * Returns:
+ *   boolean: true when the form is listed in that category.
+ */
+function formInCategory(form, category) {
+  const own = form?.categories?.length ? form.categories : ['Default'];
+  return own.some((c) => c === category || String(c).startsWith(category + '/'));
+}
+
+// the category highlighted : the one browsed on the Forms page before opening the form (All
+// Forms included), when the form is in it ; else the form's own first category
+const menuCategory = computed(() => {
+  let browsed = null;
+  try {
+    browsed = sessionStorage.getItem('af_forms_category');
+  } catch (e) {
+    // no storage : the form's own category
+  }
+  if (browsed === '' || (browsed && formInCategory(currentForm.value, browsed))) return browsed;
+  return currentForm.value?.categories?.[0] || '';
+});
+
+/**
+ * Opens the Forms page on a category of the menu.
+ *
+ * Args:
+ *   category (string): the category ; empty for All Forms.
+ */
+function openCategory(category) {
+  router.push(category ? { path: '/', query: { category: encodeURIComponent(category) } } : { path: '/' });
+}
+
 function toggleShowExtraVars() {
   showExtraVars.value = !showExtraVars.value;
   // Generate JSON immediately when opening extravars panel to avoid delay
@@ -1646,8 +1686,9 @@ onBeforeUnmount(() => {
   <AppNav />
   <div class="flex-shrink-0">
     <main class="d-flex flex-nowrap af-settings-layout" :class="{ 'd-none': hideForm }">
-      <!-- the left column of the other pages (their menu), empty for now -->
-      <aside class="af-form-sidebar bg-body-tertiary" aria-hidden="true"></aside>
+      <!-- the forms menu of the Forms page : the category browsed before opening the form
+           highlighted ; a category goes back to the Forms page on it -->
+      <AppFormsMenu class="d-none d-md-block" :currentCategory="menuCategory" @select="openCategory" />
       <div v-if="authenticated && currentForm" class="section container-fluid w-100 mt-3">
         <!-- BREADCRUMBS (only when editing a subform) -->
         <nav v-if="activeEntry" aria-label="breadcrumb">
@@ -2235,25 +2276,9 @@ onBeforeUnmount(() => {
   </BsOffCanvas>
 </template>
 <style scoped lang="scss">
-/* the left column of the other pages (their menu) : the same width and panel color, pinned
-   below the header and one screen high ; empty for now */
-.af-form-sidebar {
-  width: 300px;
-  flex-shrink: 0;
-  position: sticky;
-  top: 0;
-  align-self: flex-start;
-  height: calc(100vh - var(--af-header-offset));
-}
 /* the form's buttons on its title line : the gap of the other pages' buttons */
 .af-form-buttons {
   gap: 0.5rem;
-}
-/* a phone : no empty column */
-@media (max-width: 767.98px) {
-  .af-form-sidebar {
-    display: none;
-  }
 }
 *:has(.loader) {
   display: flex-columns;

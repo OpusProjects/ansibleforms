@@ -2,7 +2,6 @@
 import Profile from '@/lib/Profile';
 import Form from '@/lib/Form';
 import Helpers from '@/lib/Helpers';
-import TokenStorage from '@/lib/TokenStorage';
 import { useRoute, useRouter } from 'vue-router';
 
 const { t } = useI18n();
@@ -41,14 +40,6 @@ const currentCategory = computed(() => {
   return decodeURIComponent(route.query?.category || '');
 });
 
-const roles = computed(() => {
-  return TokenStorage.getPayload().user.roles;
-});
-
-const isAll = computed(() => {
-  return currentCategory.value == '';
-});
-
 const filteredFormsBySearch = computed(() => {
   var f = forms.value || [];
   if (search.value) {
@@ -63,6 +54,20 @@ function setView(m) {
   viewMode.value = m;
   Helpers.setCookie('forms_view_mode', m, 365);
 }
+
+// the category browsed, remembered for the session : a form opened from here shows it
+// highlighted in its own forms menu
+watch(
+  currentCategory,
+  (category) => {
+    try {
+      sessionStorage.setItem('af_forms_category', category);
+    } catch (e) {
+      // no storage (a private window) : the form highlights its own category
+    }
+  },
+  { immediate: true },
+);
 
 function select(path) {
   if (path) {
@@ -178,42 +183,8 @@ onMounted(async () => {
     <main class="d-flex flex-nowrap af-settings-layout">
       <div v-if="authenticated && forms" class="w-100 d-flex flex-column">
         <div class="row g-0 flex-grow-1 flex-md-nowrap af-forms-row">
-          <!-- the top padding follows the selection : with "All Forms" highlighted its bar is what
-               the eye measures to, so it starts 20px down (16px + the rows' 4px margin) ; otherwise
-               the eye measures to the text, inside the row's padding, so the row starts at 12px -->
-          <div
-            class="col-md-auto af-forms-sidebar bg-body-tertiary px-3 border-top-0"
-            :style="{ paddingTop: isAll ? '16px' : '8px' }"
-          >
-            <ul class="list-unstyled mb-3">
-              <li role="button">
-                <div
-                  class="d-flex justify-content-between align-items-center menu-item p-2 my-1"
-                  :class="{ 'bg-primary-forced': isAll }"
-                  @click="select('')"
-                >
-                  <span :class="{ 'text-light': isAll }">
-                    <span class="me-2">
-                      <FaIcon icon="check-double" :fixedwidth="true"></FaIcon>
-                    </span>
-                    {{ t('forms.allForms') }}</span
-                  >
-                  <span v-if="isAll" class="badge px-3 rounded-pill active">{{ forms.length }}</span>
-                  <span v-else class="badge px-3 rounded-pill">{{ forms.length }}</span>
-                </div>
-              </li>
-              <AppMenuItem
-                @click="select"
-                v-for="item in formConfig?.categories"
-                :key="item.name"
-                :currentPath="currentCategory"
-                parent=""
-                :menu="item"
-                :forms="forms"
-                :roles="roles"
-              />
-            </ul>
-          </div>
+          <!-- the categories : the shared forms menu (a form's page shows it too) -->
+          <AppFormsMenu :formConfig="formConfig" :currentCategory="currentCategory" @select="select" />
           <div class="col h-100 bg-body">
             <!-- the same page layout as the other pages : the open category as the title, with the
                  search and the view switch on the right, and the divider under it -->
