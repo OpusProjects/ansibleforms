@@ -817,6 +817,12 @@ export default {
       stepType: 'Type',
       type_vaultHint: 'Geheimen, met een token gelezen uit de KV-engine',
       type_cyberark_ccpHint: 'Central Credential Provider, met een applicatie-ID',
+      notFound: "Er is geen secret store met id '{id}'.",
+      fieldsRequired: 'Naam en URI zijn verplicht, en de AppID voor een CyberArk.',
+      changeClientKey: 'Clientsleutel wijzigen',
+      changeLogin: 'Aanmelding wijzigen',
+      tokenOnPage: 'Het token wijzigt u met Token wijzigen, rechtsboven.',
+      clientKeyOnPage: 'De clientsleutel wijzigt u met Clientsleutel wijzigen, rechtsboven.',
     },
     storedJobs: {
       label: 'Opgeslagen invoer',

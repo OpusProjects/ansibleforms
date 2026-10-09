@@ -1937,11 +1937,30 @@ export default function getSettings(t) {
         ignore_certs: !!skip_verify,
         ca_bundle: !skip_verify && custom_ca ? item.ca_bundle || '' : '',
       }),
+      // a store has its own page (pages/admin/secret-store.vue) : its row and Edit open it, New the
+      // wizard
+      openPage: (item) => `/admin/secretStores/${item.id}`,
+      // in the row menu, as the runners' : editing, the test, its login (on its page), then
+      // Delete last, each apart
       actions: [
         { name: 'edit', title: t('settings.secretStores.editStore'), icon: 'pencil', color: 'edit' },
+        {
+          name: 'test',
+          title: t('settings.common.testConnection'),
+          icon: 'plug',
+          color: 'test',
+          dividerBefore: true,
+        },
+        {
+          // a Vault's token, a CyberArk's AppID and certificate : its page's Login tab
+          name: 'change_credentials',
+          title: t('settings.secretStores.changeLogin'),
+          icon: 'key',
+          color: 'change',
+          dividerBefore: true,
+          to: (r) => ({ path: `/admin/secretStores/${r.id}`, query: { tab: 'auth' } }),
+        },
         { name: 'delete', title: t('settings.secretStores.deleteStore'), icon: 'trash', color: 'delete' },
-        { name: 'change_password', title: t('settings.common.changePassword'), icon: 'lock', color: 'change' },
-        { name: 'test', title: t('settings.common.testConnection'), icon: 'plug', color: 'test' },
       ],
       fields: [
         {

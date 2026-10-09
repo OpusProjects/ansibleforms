@@ -816,6 +816,12 @@ export default {
       stepType: 'Tipo',
       type_vaultHint: 'Secretos leídos de su motor KV con un token',
       type_cyberark_ccpHint: 'Central Credential Provider, con un ID de aplicación',
+      notFound: "No hay ningún almacén de secretos con el id '{id}'.",
+      fieldsRequired: 'El nombre y la URI son obligatorios, y el AppID para un CyberArk.',
+      changeClientKey: 'Cambiar clave de cliente',
+      changeLogin: 'Cambiar acceso',
+      tokenOnPage: 'El token se cambia con Cambiar token, arriba a la derecha.',
+      clientKeyOnPage: 'La clave de cliente se cambia con Cambiar clave de cliente, arriba a la derecha.',
     },
     storedJobs: {
       label: 'Trabajo Almacenado',

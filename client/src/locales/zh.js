@@ -735,6 +735,12 @@ export default {
       stepType: '类型',
       type_vaultHint: '使用令牌从其 KV 引擎读取的密钥',
       type_cyberark_ccpHint: 'Central Credential Provider，使用应用 ID',
+      notFound: "没有 ID 为 '{id}' 的密钥库。",
+      fieldsRequired: '名称和 URI 为必填项,CyberArk 还需要 AppID。',
+      changeClientKey: '更改客户端密钥',
+      changeLogin: '更改登录',
+      tokenOnPage: '令牌通过右上角的“更改令牌”修改。',
+      clientKeyOnPage: '客户端密钥通过右上角的“更改客户端密钥”修改。',
     },
     storedJobs: {
       label: '保存的作业',

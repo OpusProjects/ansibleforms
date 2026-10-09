@@ -749,6 +749,12 @@ export default {
       stepType: '種類',
       type_vaultHint: 'トークンで KV エンジンから読み込むシークレット',
       type_cyberark_ccpHint: 'Central Credential Provider、アプリケーション ID を使用',
+      notFound: "ID '{id}' のシークレットストアはありません。",
+      fieldsRequired: '名前と URI は必須です。CyberArk では AppID も必須です。',
+      changeClientKey: 'クライアントキーを変更',
+      changeLogin: 'ログインを変更',
+      tokenOnPage: 'トークンは右上の「トークンを変更」で変更します。',
+      clientKeyOnPage: 'クライアントキーは右上の「クライアントキーを変更」で変更します。',
     },
     storedJobs: {
       label: '保存済みジョブ',

@@ -755,6 +755,12 @@ export default {
       stepType: 'Tipus',
       type_vaultHint: 'Secrets llegits del seu motor KV amb un token',
       type_cyberark_ccpHint: "Central Credential Provider, amb un ID d'aplicació",
+      notFound: "No hi ha cap magatzem de secrets amb l'id '{id}'.",
+      fieldsRequired: "El nom i la URI són obligatoris, i l'AppID per a un CyberArk.",
+      changeClientKey: 'Canvia la clau de client',
+      changeLogin: "Canvia l'accés",
+      tokenOnPage: 'El token es canvia amb Canvia el token, a dalt a la dreta.',
+      clientKeyOnPage: 'La clau de client es canvia amb Canvia la clau de client, a dalt a la dreta.',
     },
     storedJobs: {
       label: 'Tasca desada',
