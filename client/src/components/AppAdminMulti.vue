@@ -644,6 +644,8 @@ const dataTableColumns = computed(() => {
         // picker so users can show them when wanted.
         defaultHidden: !!f.hidden,
       };
+      // a field may set its column's width (a yes / no column as wide as its header)
+      if (f.width) col.width = f.width;
       // how the column filters and sorts : a field can say so itself, and a
       // checkbox or number field gets the matching filter by default
       const filterType =
