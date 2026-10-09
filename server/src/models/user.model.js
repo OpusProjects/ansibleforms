@@ -35,6 +35,9 @@ function applyOptionDefaults(options, isAdmin) {
   if (options.allowPlannedJobs === undefined) options.allowPlannedJobs = true;
   // the chat assistant (ENABLE_CHAT) : on for everyone unless a role says otherwise
   if (options.allowChat === undefined) options.allowChat = true;
+  // the MCP server (ENABLE_MCP) : as the chat assistant unless a role says otherwise, so a
+  // role that turned allowChat off before allowMcp existed keeps the MCP server off too
+  if (options.allowMcp === undefined) options.allowMcp = options.allowChat;
   return options;
 }
 

@@ -72,8 +72,8 @@ Middleware.checkScheduleOrPlannedJobsMiddleware = (req, res, next) => {
 
 Middleware.checkStoredJobsMiddleware = permissionGuard(u => u.options.allowStoredJobs, 'errors.noStoredJobsAccess')
 Middleware.checkChatMiddleware = permissionGuard(u => u.options.allowChat !== false, 'errors.noChatAccess')
-// the MCP server : the same role option as the chat assistant (allowChat, "Allow AI assistants")
-Middleware.checkMcpMiddleware = permissionGuard(u => u.options.allowChat !== false, 'errors.noMcpAccess')
+// the MCP server : its own role option (allowMcp, the allowChat of the role when it names none)
+Middleware.checkMcpMiddleware = permissionGuard(u => u.options.allowMcp !== false, 'errors.noMcpAccess')
 
 // The schedules page is gated on allowScheduledJobs rather than showSettings, but
 // its form dropdown reads config/formnames - a list that is deliberately NOT role

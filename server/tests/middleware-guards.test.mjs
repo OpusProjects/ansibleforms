@@ -190,3 +190,23 @@ describe("approve and reject answer the right status", () => {
     assert.match(fn, /res\.status\(409\)/);
   });
 });
+
+// The chat assistant and the MCP server each have their own role option, both on unless a
+// role turns them off (`!== false`) : turning the chat off no longer closes the MCP server.
+describe("the chat and MCP guards follow their own option", () => {
+  for (const [guard, opt, other] of [
+    ["checkChatMiddleware", "allowChat", "allowMcp"],
+    ["checkMcpMiddleware", "allowMcp", "allowChat"],
+  ]) {
+    test(`${guard} lets through ${opt} true or unset, and refuses ${opt} false with 403`, () => {
+      assert.equal(run(Middleware[guard], withOption(opt, true)).nexted, true);
+      assert.equal(run(Middleware[guard], { roles: [], options: {} }).nexted, true);
+      const { res, nexted } = run(Middleware[guard], withOption(opt, false));
+      assert.equal(nexted, false);
+      assert.equal(res.statusCode, 403);
+    });
+    test(`${guard} ignores ${other}`, () => {
+      assert.equal(run(Middleware[guard], { roles: [], options: { [opt]: true, [other]: false } }).nexted, true);
+    });
+  }
+});

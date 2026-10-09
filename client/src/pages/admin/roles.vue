@@ -54,8 +54,18 @@ function stampRoleFlags() {
   for (const role of roles.value) {
     role._required = RESERVED_ROLES.includes(role.name);
     role._public = role.name === 'public';
+    // the name the list is sorted on : the one loaded, so a role does not move while it is renamed
+    role._sortName = role.name || '';
   }
 }
+
+// the roles in alphabetical order, each with its position in the config (which keeps its own
+// order : the list is sorted, the file is not)
+const sortedRoles = computed(() =>
+  roles.value
+    .map((role, rIdx) => ({ role, rIdx }))
+    .sort((a, b) => (a.role._sortName ?? '').localeCompare(b.role._sortName ?? '', undefined, { sensitivity: 'base' })),
+);
 
 const sortedLocalGroups = computed(() => [...localGroups.value].sort());
 const sortedLocalUsers = computed(() => [...localUsers.value].sort());
@@ -219,7 +229,7 @@ onMounted(async () => {
               <FaIcon icon="user-shield" class="empty-state-icon" />
               <span>{{ t('settings.settingsPage.noRoles') }}</span>
             </div>
-            <div v-for="(role, rIdx) in roles" :key="role._uid" class="border rounded mb-2">
+            <div v-for="{ role, rIdx } in sortedRoles" :key="role._uid" class="border rounded mb-2">
               <div
                 class="d-flex align-items-center justify-content-between px-3 py-2 role-header"
                 @click="toggleRole(role._uid)"
