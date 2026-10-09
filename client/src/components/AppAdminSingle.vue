@@ -302,7 +302,10 @@ defineExpose({
      card sat at 16px. One padding, zero trailing margin - measured equal on every page. */
   padding-bottom: 1rem;
 }
-:deep(.card-body > .row:last-child > .col > .mb-3) {
+/* the last row's fields end the card : no margin of their own under them, a switch's column
+   (col-auto) as well as a field's */
+:deep(.card-body > .row:last-child > .col > .mb-3),
+:deep(.card-body > .row:last-child > .col-auto > .mb-3) {
   margin-bottom: 0 !important;
 }
 :deep(.card-body .mb-3:has(.form-check) > .form-label) {

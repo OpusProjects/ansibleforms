@@ -38,9 +38,6 @@ import YAML from 'yaml';
 // INIT
 //----------------------------------------------------------------
 
-// for vuelidate, no ref needed, a ref will be created by useVuelidate
-var v$ = null;
-
 // use
 const route = useRoute();
 const { t } = useI18n();
@@ -257,6 +254,11 @@ const rules = computed(() => {
     }),
   };
 });
+
+// the validation of the form's fields : created in setup, not in onMounted - useVuelidate
+// provides its state to child components, and Vue allows provide() only while a component is
+// set up (it warned "provide() can only be used inside setup()" on every form)
+const v$ = useVuelidate(rules, { form });
 
 // form is ready when all validations are loaded, the form is loaded and all pretasks are finished
 const formIsReady = computed(() => validationsLoaded.value && pretasksFinished.value);
@@ -2194,8 +2196,6 @@ async function startDynamicFieldsLoop() {
 //----------------------------------------------------------------
 
 onMounted(async () => {
-  // const rules = getRules()
-  v$ = useVuelidate(rules, { form }); // use vuelidate, form is a ref that holds the form data
   validationsLoaded.value = true;
   pretasksFinished.value = true;
   initForm();
@@ -2269,7 +2269,8 @@ defineExpose({
       </template>
     </BsOffCanvas>
 
-    <div class="d-flex justify-content-between">
+    <!-- the toolbar row : as far under the title line as above the form -->
+    <div class="d-flex justify-content-between af-form-toolbar">
       <div>
         <slot name="toolbarbuttons"></slot>
       </div>
@@ -2821,5 +2822,9 @@ defineExpose({
 }
 pre {
   margin: 0;
+}
+/* the toolbar row (the status icons) : the same space above it as under it, before the form */
+.af-form-toolbar {
+  margin-top: 0.625rem;
 }
 </style>

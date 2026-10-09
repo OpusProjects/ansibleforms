@@ -102,23 +102,44 @@ const CLIENT_SETTABLE_RESERVED = new Set(["__verbose__"]);
  * while reporting success.
  *
  * The form definition is the thing that tells the two apart, so it is the gate: a reserved
- * key is accepted only when the form declares a field of exactly that name. A client that
+ * key is accepted only when the form declares a field that writes it - by that name, by its
+ * `model`, or inside a wizard step's subform. A client that
  * invents `__playbook__` for a form which never declared it is still refused, which is the
  * hole this was written to close.
  */
 function declaredReservedFields(formObj) {
   const names = new Set();
   if (!formObj || typeof formObj !== "object") return names;
-  const addFields = (fields) => {
+  const reserved = (key) => typeof key === "string" && /^__.*__$/.test(key);
+  // The top-level extravar a field writes, as the client builds it : its `model` (one or
+  // several) or else its name, under the wizard step's defaultModel unless the model starts
+  // with "/" (written at the root). "a.b" and "a[0]" land under "a".
+  const topKeys = (field, prefix = "") => {
+    const models = field.model !== undefined && field.model !== null ? [].concat(field.model) : [field.name];
+    return models
+      .filter((m) => typeof m === "string" && m.trim())
+      .map((m) => (m.startsWith("/") ? m.slice(1) : prefix ? `${prefix}.${m}` : m))
+      .map((m) => m.split(/\s*\.\s*/)[0].replace(/\[[0-9]+\]$/, "").trim());
+  };
+  const addFields = (fields, prefix = "") => {
     for (const field of fields || []) {
-      if (field && typeof field.name === "string" && /^__.*__$/.test(field.name)) {
-        names.add(field.name);
-      }
+      if (!field || typeof field !== "object") continue;
+      // the field's own name, as before : a field called __playbook__ is a declaration
+      if (!prefix && reserved(field.name)) names.add(field.name);
+      for (const key of topKeys(field, prefix)) if (reserved(key)) names.add(key);
     }
   };
   addFields(formObj.fields);
   // multistep: each step carries its own fields, and a step is launched as a form of its own
   for (const step of formObj.steps || []) addFields(step?.fields);
+  // wizard: each step is a subform whose fields are merged into the extravars, under the
+  // step's defaultModel when it has one. Form.load inlines those subforms as formObj.subforms.
+  for (const step of Array.isArray(formObj.wizard) ? formObj.wizard : []) {
+    const sub = (formObj.subforms || []).find((s) => s?.name === step?.subform);
+    if (!sub) continue;
+    const prefix = typeof step.defaultModel === "string" ? step.defaultModel.trim().replace(/^\.+|\.+$/g, "") : "";
+    addFields(sub.fields, prefix);
+  }
   return names;
 }
 function stripReservedExtravars(extravars, formObj = null) {

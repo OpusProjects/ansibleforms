@@ -4,10 +4,10 @@
 # without the pin that would silently change what every application build starts from - with
 # no commit here to show for it. Dependabot proposes a new pin as a pull request.
 #
-#   docker pull node:24-bookworm-slim
-#   docker inspect --format='{{index .RepoDigests 0}}' node:24-bookworm-slim
+#   docker pull node:26-trixie-slim
+#   docker inspect --format='{{index .RepoDigests 0}}' node:26-trixie-slim
 #
-FROM node:24-bookworm-slim@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20 AS nodebase
+FROM node:26-trixie-slim@sha256:193fe51b64e77981119c98c2002c9e32a70e2f006fb4d25068ce0558998917f0 AS nodebase
 
 # ytt renders forms when USE_YTT=1 ; a static binary, checked against the release checksums
 ARG YTT_VERSION=0.55.3
@@ -33,7 +33,7 @@ RUN apt-get update \
 # intermediate build to compile the client application with vite
 # can run in parallel with base stage
 
-FROM node:24-bookworm@sha256:22f6fe5f59fb7fed238b19623506d573dffaa932ce33b84ce541a9a2e0eade28 AS tmp_builder
+FROM node:26-trixie@sha256:32fa97f3363975684b08bf4e8a68a47c7905175cc20275b50b974bbd02aba731 AS tmp_builder
 
 # Build arguments for git SHA, build time and version. VERSION is empty for a local build,
 # which leaves server/package.json as the version shown ; CI passes the release or
