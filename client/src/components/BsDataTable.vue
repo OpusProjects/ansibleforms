@@ -15,8 +15,9 @@
  *  name           String  Cookie key for pagination and column persistence ; also
  *                         enables column presets (kept in this browser's localStorage)
  *  exportName     String  Base filename for the CSV export (omit to hide the button)
- *  (rowClickSelects false : a click opens the row, its dialog or its page ; its first column
- *   is shown in the link blue, so the row says it opens)
+ *  (rowClickSelects false : a click opens the row, its dialog or its page ; its name column
+ *   (linkColumn, else the first shown) is in the link blue, so the row says it opens)
+ *  linkColumn     String  that column's key ; hidden, no column is blue
  *  rowSelectable  Function (row) → whether a row can be ticked (default : all) ; the others
  *                         get a greyed out checkbox, Select all and a range leave them out
  *  initialFilter  String  Initial text of the global search
@@ -55,6 +56,8 @@ const props = defineProps({
   idKey: { type: String, default: 'id' },
   selectable: { type: Boolean, default: true },
   rowSelectable: { type: Function, default: null },
+  // the column shown in the link blue when a click opens the row (its name) ; hidden, none is
+  linkColumn: { type: String, default: null },
   activeId: { type: [String, Number], default: null },
   exportName: { type: String, default: null },
   initialFilter: { type: String, default: '' },
@@ -71,6 +74,9 @@ const emit = defineEmits(['update:selectedIds', 'row-click']);
 // rowSelectable(row) says which rows can be ticked (the roles the config must keep cannot) :
 // their checkbox is greyed out, and every selection sent leaves them out, however it was made
 // (a click, a range, Select all)
+// the column in the link blue : the one named (linkColumn), else the first shown
+const isLinkColumn = (col, index) => (props.linkColumn ? col.key === props.linkColumn : index === 0);
+
 const canSelect = (item) => !props.rowSelectable || props.rowSelectable(item);
 
 /**
@@ -651,7 +657,7 @@ function exportCsv() {
             <td
               v-for="(col, cIdx) in visibleColumns"
               :key="col.key"
-              :class="{ 'text-end': col.align === 'end', 'af-row-open': !rowClickSelects && cIdx === 0 }"
+              :class="{ 'text-end': col.align === 'end', 'af-row-open': !rowClickSelects && isLinkColumn(col, cIdx) }"
               :title="col.type !== 'checkbox' ? cellPlain(item, col) : null"
             >
               <template v-if="col.type === 'checkbox'">

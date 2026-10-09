@@ -772,20 +772,21 @@ watch(action, () => {
 });
 
 // ─── Change password : the shared dialog ──────────────────────────────────────
-// a record with a password (a user) changes it in AppChangePasswordDialog, typed twice ; a token
-// or a client secret (pasted, not typed) keeps the record dialog
-const usesPasswordDialog = computed(
-  () => action.value === 'change_password' && fields.value.some((f) => f.key === 'password'),
-);
+// a record's password (a user's, a credential's) changes in AppChangePasswordDialog, typed twice ;
+// an SSO provider's client secret too, asked once (pasted from the provider's console) and named
+// by its row menu's title (Change secret). A token keeps the record dialog.
+const secretField = computed(() => fields.value.find((f) => ['password', 'client_secret'].includes(f.key)) || null);
+const usesPasswordDialog = computed(() => action.value === 'change_password' && !!secretField.value);
+const changePasswordTitle = computed(() => actions.value.find((a) => a.name === 'change_password')?.title || '');
 
 /**
- * Saves the password the shared dialog hands over.
+ * Saves the password or the secret the shared dialog hands over.
  *
  * Args:
- *   password (string): the new password, typed twice.
+ *   secret (string): the new password (typed twice) or client secret.
  */
-function savePasswordFromDialog(password) {
-  item.value.password = password;
+function savePasswordFromDialog(secret) {
+  item.value[secretField.value.key] = secret;
   updateItem(true);
 }
 const isLastStep = computed(() => stepIndex.value === steps.value.length - 1);
@@ -913,6 +914,11 @@ const rowClickSelects = computed(() => props.settings.selectable !== false);
 const selectedIds = ref(new Set());
 const activeRowId = ref(null);
 
+// the column in the link blue : the record's name (settings.linkColumn, else its name or
+// username field) - not whichever column happens to be shown first
+const linkColumn = computed(
+  () => props.settings.linkColumn || ['name', 'username'].find((k) => fields.value.some((f) => f.key === k)) || null,
+);
 const hasEditAction = computed(() => actions.value.some((a) => a.name === 'edit'));
 const dataTableShowRowMenu = computed(() => actions.value.length > 0);
 
@@ -1406,6 +1412,7 @@ defineExpose({
         :selectedIds="selectedIds"
         :selectable="dataTableSelectable"
         :rowSelectable="deleteAction?.enabledWhen ? (row) => isActionEnabled(deleteAction, row) : null"
+        :linkColumn="linkColumn"
         :activeId="!rowClickSelects ? activeRowId : null"
         :rowClickSelects="rowClickSelects"
         :name="Helpers.cleanupString(objectLabelPlural)"
@@ -1531,10 +1538,13 @@ defineExpose({
       >
     </template>
   </BsModal>
-  <!-- a user's password : the shared Change password dialog, typed twice -->
+  <!-- a password (typed twice) or a client secret (once) : the shared Change password dialog -->
   <AppChangePasswordDialog
     v-if="usesPasswordDialog"
     :icon="objectIcon"
+    :title="changePasswordTitle"
+    :label="secretField.key === 'password' ? '' : secretField.label"
+    :repeat="secretField.key === 'password'"
     @save="savePasswordFromDialog"
     @close="unselectItem"
   />

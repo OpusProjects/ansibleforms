@@ -672,6 +672,10 @@ export default {
       tabProviders: 'Anbieter',
       active: 'Aktiv',
       useForSignIn: 'Für die Anmeldung verwenden',
+      activeHelp:
+        'Benutzer melden sich damit an, wenn sie {type} wählen; das Einschalten schaltet die anderen {type}-Anbieter aus.',
+      providerNotFound: "Es gibt keinen SSO-Anbieter mit der ID '{id}'.",
+      changeSecret: 'Secret ändern',
       stepProvider: 'Anbieter',
       stepSignIn: 'Anmeldung',
       stepGroups: 'Gruppen',

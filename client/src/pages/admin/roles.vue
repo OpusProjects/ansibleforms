@@ -287,6 +287,7 @@ onMounted(async () => {
               :selectedIds="selectedIds"
               :selectable="!readOnly"
               :rowSelectable="(row) => !row.required"
+              linkColumn="name"
               :rowClickSelects="false"
               :name="t('settings.settingsPage.roles')"
               :exportName="t('settings.settingsPage.roles')"

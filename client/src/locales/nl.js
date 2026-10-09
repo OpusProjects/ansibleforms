@@ -666,6 +666,10 @@ export default {
       tabProviders: 'Providers',
       active: 'Actief',
       useForSignIn: 'Gebruiken om aan te melden',
+      activeHelp:
+        'Gebruikers melden zich ermee aan als ze {type} kiezen; inschakelen schakelt de andere {type}-providers uit.',
+      providerNotFound: "Er is geen SSO-provider met id '{id}'.",
+      changeSecret: 'Secret wijzigen',
       stepProvider: 'Provider',
       stepSignIn: 'Aanmelden',
       stepGroups: 'Groepen',

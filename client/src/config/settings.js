@@ -527,6 +527,8 @@ export default function getSettings(t) {
       description: t('settings.oauth2.description'),
       icon: 'right-to-bracket',
       selectable: false,
+      // a provider has its own page (pages/admin/sso-provider.vue) : its row and Edit open it, Add the wizard
+      openPage: (item) => `/admin/sso/${item.id}`,
       // the dialog in steps : the provider, how the app signs in with it, its groups. The help a
       // provider needs (the permissions of an Entra ID app, what Open ID was tested with) is in
       // the step it is for
@@ -569,13 +571,23 @@ export default function getSettings(t) {
         {
           name: 'change_password',
           dividerBefore: true,
-          title: t('settings.common.changePassword'),
+          // a provider has a client secret, not a password
+          title: t('settings.oauth2.changeSecret'),
           icon: 'lock',
           color: 'change',
         },
         { name: 'delete', title: t('settings.oauth2.deleteProvider'), icon: 'trash', color: 'delete' },
       ],
       fields: [
+        // the provider its type signs in with (one per type) : a yes / no column, not in the dialog ;
+        // a new one is it when its type has none, another is chosen with Use for sign-in
+        {
+          key: 'enable',
+          label: t('settings.oauth2.active'),
+          type: 'checkbox',
+          noInput: true,
+          width: '7rem',
+        },
         {
           key: 'provider',
           label: t('settings.oauth2.provider'),
@@ -703,15 +715,6 @@ export default function getSettings(t) {
           dependency: 'provider',
           dependencyValues: [''],
           hidden: true,
-        },
-        // the provider its type signs in with (one per type) : a yes / no column, not in the dialog ;
-        // a new one is it when its type has none, another is chosen with Use for sign-in
-        {
-          key: 'enable',
-          label: t('settings.oauth2.active'),
-          type: 'checkbox',
-          noInput: true,
-          width: '7rem',
         },
       ],
     },

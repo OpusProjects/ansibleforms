@@ -668,6 +668,10 @@ export default {
       tabProviders: 'Proveïdors',
       active: 'Actiu',
       useForSignIn: 'Fes-lo servir per iniciar la sessió',
+      activeHelp:
+        'Els usuaris inicien la sessió amb ell quan trien {type}; activar-lo desactiva els altres proveïdors {type}.',
+      providerNotFound: "No hi ha cap proveïdor SSO amb l'id '{id}'.",
+      changeSecret: 'Canvia el secret',
       stepProvider: 'Proveïdor',
       stepSignIn: 'Inici de sessió',
       stepGroups: 'Grups',
