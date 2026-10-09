@@ -6,12 +6,40 @@ import yaml from 'yaml';
 import CrudModel from './crud.model.js';
 import mysql from './db.model.js';
 import cronService from '../services/cron.service.js';
+import { Cron } from 'croner';
 import { nodeId, NODE_DEAD_SECONDS, uptimeSeconds } from '../lib/role.js';
 
 // a schedule launch older than this is released whatever its node says
 const LAUNCH_MAX_MINUTES = 10;
 import Form from './form.model.js';
 import Errors from '../lib/errors.js';
+
+/**
+ * Adds when a schedule runs next (next_run, an ISO string or null) : its cron's next occurrence,
+ * in the scheduler's timezone, or its one time run while that is still ahead. Computed, never
+ * stored - the schedules table shows it.
+ *
+ * Args:
+ *   row (object): a schedule as read from the table.
+ *
+ * Returns:
+ *   object: the schedule with next_run.
+ */
+function withNextRun(row) {
+  let next = null;
+  try {
+    if (row.one_time_run) {
+      if (row.run_at && new Date(row.run_at) > new Date()) next = new Date(row.run_at);
+    } else if (row.cron) {
+      const cron = new Cron(row.cron, { paused: true, timezone: cronService.timezone });
+      next = cron.nextRun();
+      cron.stop();
+    }
+  } catch {
+    next = null;
+  }
+  return { ...row, next_run: next ? next.toISOString() : null };
+}
 
 class Schedule extends CrudModel {
   static modelName = 'schedule';
@@ -129,7 +157,8 @@ class Schedule extends CrudModel {
   }
   static async findAll() {
     logger.info("Finding all schedules");
-    return super.findAll(this.modelName);
+    const rows = await super.findAll(this.modelName);
+    return Array.isArray(rows) ? rows.map(withNextRun) : rows;
   }
   static async findById(id) {
     logger.info(`Finding schedule ${id}`);

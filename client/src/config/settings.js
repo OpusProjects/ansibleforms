@@ -607,6 +607,13 @@ export default function getSettings(t) {
       // reloadSeconds: 7,
       icon: 'clock',
       selectable: false,
+      // the dialog in steps : what runs (its name, the form), when (once at a time, or on a cron
+      // schedule), the extra vars it sends to the form
+      steps: [
+        { key: 'schedule', label: t('settings.schedules.stepSchedule') },
+        { key: 'when', label: t('settings.schedules.stepWhen') },
+        { key: 'vars', label: t('settings.schedules.stepExtraVars') },
+      ],
       actions: [
         { name: 'edit', icon: 'pencil', title: t('settings.schedules.editSchedule'), color: 'edit' },
         { name: 'delete', icon: 'trash', title: t('settings.schedules.deleteSchedule'), color: 'delete' },
@@ -627,6 +634,7 @@ export default function getSettings(t) {
         },
         {
           key: 'one_time_run',
+          step: 'when',
           label: t('settings.schedules.oneTimeRun'),
           type: 'checkbox',
           placeholder: t('settings.schedules.oneTimeRunPlaceholder'),
@@ -635,22 +643,30 @@ export default function getSettings(t) {
         },
         {
           key: 'cron',
+          step: 'when',
           icon: 'stopwatch',
           label: t('settings.fields.cronSchedule'),
           type: 'cron',
-          required: false,
+          // a recurring schedule needs its cron ; hidden (one time run), it is not checked
+          required: true,
           validator: cronValidator(t),
           negateDependency: true,
           dependency: 'one_time_run',
         },
         {
           key: 'run_at',
+          step: 'when',
           icon: 'calendar',
           label: t('settings.schedules.runAt'),
           type: 'datetime',
           convertToUtc: true,
           help: t('settings.schedules.runAtHelp'),
-          required: false,
+          // in the table, Next run says it (and a cron schedule's next run too) : this column is
+          // there to pick in Columns
+          hidden: true,
+          render: (v) => Helpers.formatServerDate(v),
+          // a one time run needs its time ; hidden (a cron schedule), it is not checked
+          required: true,
           dependency: 'one_time_run',
         },
         {
@@ -666,11 +682,27 @@ export default function getSettings(t) {
           required: true,
           hidden: true,
         },
+        // when it runs next : its cron's next occurrence, or its one time run while ahead (the
+        // server computes it, schedule.model.js)
+        {
+          key: 'next_run',
+          label: t('settings.schedules.nextRun'),
+          type: 'datetime',
+          noInput: true,
+          render: (v) => Helpers.formatServerDate(v),
+        },
         { key: 'status', label: t('settings.fields.status'), noInput: true },
         { key: 'state', label: t('settings.fields.state'), noInput: true },
-        { key: 'last_run', label: t('settings.fields.lastRun'), type: 'datetime', noInput: true },
+        {
+          key: 'last_run',
+          label: t('settings.fields.lastRun'),
+          type: 'datetime',
+          noInput: true,
+          render: (v) => Helpers.formatServerDate(v),
+        },
         {
           key: 'extra_vars',
+          step: 'vars',
           type: 'editor',
           label: t('settings.fields.extraVars'),
           hidden: true,

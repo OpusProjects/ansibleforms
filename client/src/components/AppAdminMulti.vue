@@ -1479,6 +1479,7 @@ defineExpose({
               :hasError="$v.item[field.key].$invalid && $v.item[field.key].$dirty"
               :convertToUtc="field.convertToUtc !== undefined ? field.convertToUtc : true"
               dateType="datetime"
+              teleport
             />
             <small v-if="field.help" class="form-text text-muted d-block mt-1">{{ field.help }}</small>
             <div v-if="$v.item[field.key].$invalid && $v.item[field.key].$dirty" class="invalid-feedback d-block">

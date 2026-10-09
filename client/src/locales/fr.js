@@ -670,6 +670,10 @@ export default {
       description:
         'Automatiser les soumissions de formulaires selon un calendrier cron récurrent ou une exécution unique.',
       editSchedule: 'Modifier la planification',
+      stepSchedule: 'Planification',
+      stepWhen: 'Quand',
+      stepExtraVars: 'Variables supplémentaires',
+      nextRun: 'Prochaine exécution',
       deleteSchedule: 'Supprimer la planification',
       runSchedule: 'Executer la planification',
       placeholderName: 'Nom de la planification',

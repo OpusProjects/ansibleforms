@@ -670,6 +670,10 @@ export default {
       description:
         'Formularübermittlungen mit einem wiederkehrenden Cron-Zeitplan oder einmaliger Ausführung automatisieren.',
       editSchedule: 'Zeitplan bearbeiten',
+      stepSchedule: 'Zeitplan',
+      stepWhen: 'Wann',
+      stepExtraVars: 'Extra-Variablen',
+      nextRun: 'Nächster Lauf',
       deleteSchedule: 'Zeitplan loeschen',
       runSchedule: 'Zeitplan ausfuehren',
       placeholderName: 'Name des Zeitplans',
