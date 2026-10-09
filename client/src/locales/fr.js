@@ -521,6 +521,10 @@ export default {
       isCreated: 'est cree',
       isUpdated: 'est mis a jour',
       isDeleted: 'est supprime',
+      bulkDeleteConfirm: 'Supprimer {count} élément(s) ?',
+      bulkDeleteConfirmSkip:
+        'Supprimer {count} élément(s) ? {skipped} élément(s) sélectionné(s) ne peuvent pas être supprimés et sont laissés tels quels.',
+      bulkDeleteNone: 'Aucun des éléments sélectionnés ne peut être supprimé.',
       newItem: 'Nouveau {item}',
       edit: 'Modifier',
       save: 'Enregistrer',

@@ -18,6 +18,8 @@
  *  initialFilter  String  Initial text of the global search
  *  selectedIds    Set     Parent-owned Set of selected item ids (v-model:selectedIds)
  *  idKey          String  Field used as row id (default 'id')
+ *  rowClickSelects Boolean A plain click on a row selects it (default) ; false leaves the
+ *                         selection to the checkboxes and only emits row-click
  *  toolbarTo      String  A selector the toolbar (search, columns, export) moves to, such as
  *                         the page's title line, as the Forms page has its search there
  *  framed         Boolean The table in a bordered box : a grey header bar with small
@@ -51,6 +53,9 @@ const props = defineProps({
   activeId: { type: [String, Number], default: null },
   exportName: { type: String, default: null },
   initialFilter: { type: String, default: '' },
+  // with selectable : a plain click on a row selects it ; false keeps the selection to the
+  // checkboxes and a click on a row only says so (row-click), as on a list that opens a row
+  rowClickSelects: { type: Boolean, default: true },
   framed: { type: Boolean, default: false },
   toolbarTo: { type: String, default: null },
 });
@@ -308,7 +313,7 @@ function onRowClick(event, item) {
   // firing — which lets two dropdowns stay open at once.
   if (event.target.closest && event.target.closest('.bs-dt-row-actions')) return;
 
-  if (!props.selectable) {
+  if (!props.selectable || !props.rowClickSelects) {
     emit('row-click', item);
     return;
   }
@@ -368,7 +373,7 @@ let dragAddMode = true;
 let dragJustDone = false; // suppress the click event that follows drag-mouseup
 
 function onRowMousedown(event, item) {
-  if (event.button !== 0) return;
+  if (event.button !== 0 || !props.rowClickSelects) return;
   const index = filteredIndexOf(item);
   if (index === -1) return;
   dragStart = index;

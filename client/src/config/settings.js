@@ -516,7 +516,7 @@ export default function getSettings(t) {
       description: t('settings.knownhosts.description'),
       removeDoubles: true, // remove double entries
       flat: true, // flat data structure,
-      icon: 'fab,git',
+      icon: 'server',
       actions: [
         { name: 'preview', title: t('settings.knownhosts.showEntry'), icon: 'info-circle', color: 'change' },
         { name: 'delete', title: t('settings.knownhosts.deleteEntry'), icon: 'trash', color: 'delete' },

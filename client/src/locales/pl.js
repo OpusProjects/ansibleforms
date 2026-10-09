@@ -515,6 +515,10 @@ export default {
       isCreated: '– utworzono',
       isUpdated: '– zaktualizowano',
       isDeleted: '– usunięto',
+      bulkDeleteConfirm: 'Usunąć {count} element(y)?',
+      bulkDeleteConfirmSkip:
+        'Usunąć {count} element(y)? {skipped} zaznaczonych elementów nie można usunąć i pozostaną bez zmian.',
+      bulkDeleteNone: 'Żadnego z zaznaczonych elementów nie można usunąć.',
       newItem: 'Nowy element: {item}',
       edit: 'Edytuj',
       save: 'Zapisz',
