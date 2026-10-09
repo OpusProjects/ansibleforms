@@ -377,7 +377,7 @@
       an RTE that registers itself (`RTE_REGISTER`) puts it there, and keeps it in step when it
       changes.
   - name: RTE_REGISTER
-    version: 7.1.0
+    version: 7.0.0
     type: number
     allowed: 0 or 1
     short: An RTE adds itself as a runner
@@ -397,7 +397,7 @@
 
       0 : the RTE does not register itself ; add it under Connections > Runners or in the seed.
   - name: RTE_URL
-    version: 7.1.0
+    version: 7.0.0
     type: string
     allowed: an http:// or https:// address, without a slash on the end
     short: The address the app reaches an RTE on
