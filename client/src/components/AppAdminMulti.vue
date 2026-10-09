@@ -60,6 +60,8 @@
 /*  dialogOnly (prop): no list, only the record dialogs : another */
 /*      dialog opens newItem() (exposed) to create a record, and  */
 /*      gets `created` with its name                              */
+/*  field.createDefaults: what a New record is preset with, or    */
+/*      (item) => that, from the record being edited              */
 /*  field.columnLabel: the column's title, when shorter than the  */
 /*      field's label in the dialog                               */
 /*  action.to: (item) => route - the action goes to a page        */
@@ -730,7 +732,12 @@ function textOf(value) {
 // A select field with `createWith` (a key of config/settings.js) gets a New button under it :
 // the dialog of that list opens over this one, and what it creates is selected here.
 const allSettings = computed(() => getSettings(t));
-const createFields = computed(() => fields.value.filter((f) => f.createWith && allSettings.value[f.createWith]));
+// A dialog opened from another one (dialogOnly) creates nothing itself : two lists that can
+// create each other's records (a credential its secret store, a secret store its credential)
+// would otherwise mount each other's dialogs without end, and the page would never render.
+const createFields = computed(() =>
+  props.dialogOnly ? [] : fields.value.filter((f) => f.createWith && allSettings.value[f.createWith]),
+);
 const creators = {};
 
 /**
@@ -744,7 +751,7 @@ const creators = {};
  *   boolean: true when only its New button is worth showing.
  */
 function noChoices(field) {
-  if (!field.createWith || !allSettings.value[field.createWith] || !field.parent) return false;
+  if (props.dialogOnly || !field.createWith || !allSettings.value[field.createWith] || !field.parent) return false;
   return !getParentValues(field.parent).some((v) => v?.[field.valueKey]);
 }
 
@@ -1733,7 +1740,7 @@ defineExpose({
         <div v-else-if="showField(field) && noChoices(field) && action !== 'select'" class="row mb-3">
           <label class="col-sm-2 col-form-label fw-bold">{{ field.label }}</label>
           <div class="col-sm-10 d-flex align-items-center">
-            <BsButton icon="plus" @click="creators[field.key]?.newItem(field.createDefaults)">{{
+            <BsButton icon="plus" @click="creators[field.key]?.newItem(textOf(field.createDefaults))">{{
               field.createLabel
             }}</BsButton>
           </div>
@@ -1766,6 +1773,7 @@ defineExpose({
         <div
           v-if="
             showField(field) &&
+            !dialogOnly &&
             field.createWith &&
             allSettings[field.createWith] &&
             action !== 'select' &&
@@ -1774,7 +1782,7 @@ defineExpose({
           class="row mb-3 mt-n2"
         >
           <div class="offset-sm-2 col-sm-10">
-            <BsButton icon="plus" @click="creators[field.key]?.newItem(field.createDefaults)">{{
+            <BsButton icon="plus" @click="creators[field.key]?.newItem(textOf(field.createDefaults))">{{
               field.createLabel
             }}</BsButton>
           </div>

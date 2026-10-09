@@ -56,7 +56,9 @@ const credentialItem = {
     secure: bool,
     is_database: bool,
     // what it is for (is_database follows it) ; without it, is_database decides
-    credential_type: { type: "string", enum: ["ssh", "git", "api", "database"] },
+    credential_type: { type: "string", enum: ["ssh", "git", "api", "database", "cyberark"] },
+    client_cert: str,
+    client_key: str,
     // a credential can take its user and password from a secret store instead of
     // carrying them here at all : the store's name and the place in it
     secret_store: str,
@@ -78,6 +80,7 @@ const secretStoreItem = {
     description: str,
     url: str,
     token: str,
+    credential: str,
     namespace: str,
     kv_version: strOrInt,
     default_mount: str,

@@ -97,7 +97,7 @@ export function registrationPill(t, state) {
 }
 
 // what a credential is for (its type), in the order the dialog offers them
-export const CREDENTIAL_TYPES = ['ssh', 'git', 'api', 'database'];
+export const CREDENTIAL_TYPES = ['ssh', 'git', 'api', 'database', 'cyberark'];
 
 // The flavours of an awx runner (server/src/models/runner.model.js has the same list) : which
 // product it is (its uri carries its API path)
@@ -1013,7 +1013,12 @@ export default function getSettings(t) {
         { key: 'credential', label: t('settings.credentials.stepCredential') },
         { key: 'type', label: t('settings.credentials.stepType') },
         { key: 'login', label: t('settings.credentials.stepLogin') },
-        { key: 'store', label: t('settings.credentials.stepStore') },
+        {
+          // a cyberark credential is how a CyberArk store logs in : never read from a store
+          key: 'store',
+          label: t('settings.credentials.stepStore'),
+          when: (item) => item.credential_type !== 'cyberark',
+        },
         {
           key: 'connection',
           label: t('settings.credentials.stepConnection'),
@@ -1023,7 +1028,7 @@ export default function getSettings(t) {
       // where the user and password are kept is not stored : a secret store (then the user and
       // password typed are not kept) or MySQL, the app's database (then no secret store)
       beforeSave: ({ secret_source, ...item }) => {
-        if (secret_source === 'store') {
+        if (secret_source === 'store' && item.credential_type !== 'cyberark') {
           delete item.user;
           delete item.password;
           return item;
@@ -1125,6 +1130,9 @@ export default function getSettings(t) {
           key: 'user',
           step: 'login',
           label: t('settings.fields.user'),
+          // a cyberark credential's user is its AppID
+          dialogLabel: (r) => (r.credential_type === 'cyberark' ? t('settings.secretStores.appId') : null),
+          help: (r) => (r.credential_type === 'cyberark' ? t('settings.secretStores.appIdHelp') : null),
           sortable: true,
           required: false,
           filterable: true,
@@ -1142,6 +1150,38 @@ export default function getSettings(t) {
           filterable: false,
           icon: 'lock',
           hidden: true,
+          // a cyberark credential has a client key instead
+          dependency: 'credential_type',
+          dependencyValues: ['ssh', 'git', 'api', 'database'],
+        },
+        {
+          // a cyberark credential : the client certificate and key its AppID may be restricted to
+          key: 'client_cert',
+          step: 'login',
+          icon: 'certificate',
+          type: 'textarea',
+          label: t('settings.secretStores.clientCert'),
+          help: t('settings.secretStores.clientCertHelp'),
+          placeholder: '-----BEGIN CERTIFICATE-----',
+          hidden: true,
+          noTable: true,
+          dependency: 'credential_type',
+          dependencyValues: ['cyberark'],
+        },
+        {
+          key: 'client_key',
+          step: 'login',
+          icon: 'key',
+          type: 'textarea',
+          label: t('settings.secretStores.clientKey'),
+          help: (r) => (r.id ? t('settings.credentials.clientKeyKeep') : t('settings.secretStores.clientKeyHelp')),
+          placeholder: '-----BEGIN PRIVATE KEY-----',
+          hidden: true,
+          noTable: true,
+          // shown empty : the stored key is never sent back ; left empty, it stays
+          initial: () => '',
+          dependency: 'credential_type',
+          dependencyValues: ['cyberark'],
         },
         {
           key: 'secret_store',
@@ -1940,7 +1980,7 @@ export default function getSettings(t) {
       // a store has its own page (pages/admin/secret-store.vue) : its row and Edit open it, New the
       // wizard
       openPage: (item) => `/admin/secretStores/${item.id}`,
-      // in the row menu, as the runners' : editing, the test, its login (on its page), then
+      // in the row menu, as the runners' : editing, the test, its credentials (on its page), then
       // Delete last, each apart
       actions: [
         { name: 'edit', title: t('settings.secretStores.editStore'), icon: 'pencil', color: 'edit' },
@@ -1952,9 +1992,9 @@ export default function getSettings(t) {
           dividerBefore: true,
         },
         {
-          // a Vault's token, a CyberArk's AppID and certificate : its page's Login tab
+          // the credential it logs in with : its page's Credentials tab
           name: 'change_credentials',
-          title: t('settings.secretStores.changeLogin'),
+          title: t('settings.repositories.changeCredentials'),
           icon: 'key',
           color: 'change',
           dividerBefore: true,
@@ -2036,19 +2076,40 @@ export default function getSettings(t) {
           dependency: 'type',
         },
         {
-          key: 'token',
+          // how it logs in : a credential of Connections > Credentials, or a New one - a Vault's
+          // password is its token, a CyberArk's is a cyberark credential (its AppID, client
+          // certificate and key)
+          key: 'credential',
           step: 'auth',
-          // shown when editing too, as ******** : left empty, the stored one stays
-          onEdit: true,
-          keepHelp: t('settings.common.tokenKeep'),
+          icon: 'key',
+          label: t('settings.secretStores.credential'),
+          help: (r) =>
+            t(
+              r.type === 'cyberark_ccp'
+                ? 'settings.secretStores.helpCredentialCyberark'
+                : 'settings.secretStores.helpCredential',
+            ),
+          type: 'select',
+          parent: 'credentials',
+          values: 'credential',
+          valueKey: 'name',
+          labelKey: 'name',
+          clearable: true,
+          createWith: 'credentials',
+          createLabel: t('settings.repositories.newCredential'),
+          // a credential for an api (its password the token), or a cyberark one
+          createDefaults: (r) => ({ credential_type: r.type === 'cyberark_ccp' ? 'cyberark' : 'api' }),
+          dependency: 'type',
+        },
+        {
+          // in a credential now ; kept on the record for the stores that still have their own,
+          // on no step of the dialog
+          key: 'token',
+          step: 'own',
           icon: 'lock',
-          line: 1,
           label: t('settings.fields.token'),
           type: 'password',
-          required: true,
           hidden: true,
-          dependency: 'type',
-          dependencyValues: ['vault'],
         },
         {
           key: 'namespace',
@@ -2092,20 +2153,23 @@ export default function getSettings(t) {
           dependencyValues: ['vault'],
         },
         {
+          // in a credential now ; kept on the record for the stores that still have their own,
+          // on no step of the dialog
           key: 'app_id',
-          step: 'auth',
+          step: 'own',
           icon: 'id-badge',
           line: 2,
           label: t('settings.secretStores.appId'),
           help: t('settings.secretStores.appIdHelp'),
-          required: true,
           hidden: true,
           dependency: 'type',
           dependencyValues: ['cyberark_ccp'],
         },
         {
+          // in a credential now ; kept on the record for the stores that still have their own,
+          // on no step of the dialog
           key: 'client_cert',
-          step: 'auth',
+          step: 'own',
           icon: 'certificate',
           type: 'textarea',
           line: 2,
@@ -2118,8 +2182,10 @@ export default function getSettings(t) {
           dependencyValues: ['cyberark_ccp'],
         },
         {
+          // in a credential now ; kept on the record for the stores that still have their own,
+          // on no step of the dialog
           key: 'client_key',
-          step: 'auth',
+          step: 'own',
           icon: 'key',
           type: 'textarea',
           line: 2,

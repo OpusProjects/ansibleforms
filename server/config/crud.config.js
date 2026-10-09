@@ -38,6 +38,9 @@ const crudConfigs = {
       { name: 'is_database', isBoolean: true, setDefault: true },
       // what it is for : ssh, git, api or database (is_database follows it)
       { name: 'credential_type' },
+      // a cyberark credential's client certificate and key (PEM) : how its AppID is restricted
+      { name: 'client_cert' },
+      { name: 'client_key', isEncrypted: true },
       { name: 'description' },
       { name: 'db_type' },
       { name: 'vault_path' },
@@ -84,6 +87,9 @@ const crudConfigs = {
       { name: 'description' },
       { name: 'url', required: true },
       { name: 'token', isEncrypted: true },
+      // a credential of Connections > Credentials whose password is a Vault's token, instead
+      // of its own token
+      { name: 'credential' },
       { name: 'namespace' },
       { name: 'kv_version' },
       { name: 'default_mount' },

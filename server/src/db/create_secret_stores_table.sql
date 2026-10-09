@@ -6,6 +6,9 @@ CREATE TABLE `secret_stores` (
   `description` text DEFAULT NULL,
   `url` varchar(500) NOT NULL,
   `token` text DEFAULT NULL,
+  -- a credential whose password is the token (a Vault), or that holds the AppID and client
+  -- certificate and key (a CyberArk), instead of the store's own
+  `credential` varchar(250) DEFAULT NULL,
   `namespace` varchar(250) DEFAULT NULL,
   `kv_version` tinyint(4) DEFAULT 2,
   `default_mount` varchar(250) DEFAULT NULL,

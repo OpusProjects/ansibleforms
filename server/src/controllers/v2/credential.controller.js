@@ -17,12 +17,14 @@ const credentialController = {
         if (credential && credential.password) {
           credential.password = '**********';
         }
+        if (credential && credential.client_key) credential.client_key = '**********';
         res.json(RestResult.single(credential));
       } else {
         const credentials = await CredentialModel.findAll();
         // Mask passwords before returning to API
         credentials.forEach(c => {
           if (c.password) c.password = '**********';
+          if (c.client_key) c.client_key = '**********';
         });
         res.json(RestResult.list(credentials));
       }
@@ -45,6 +47,7 @@ const credentialController = {
       const credential = await CredentialModel.findById(req.params.id);
       // Mask password before returning to API
       credential.password = '**********';
+      if (credential.client_key) credential.client_key = '**********';
       res.json(RestResult.single(credential));
     } catch (err) {
       Errors.ReturnError(res, err);

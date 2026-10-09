@@ -60,6 +60,9 @@ CREATE TABLE `credentials` (
   `db_name` varchar(255) DEFAULT NULL,  
   `is_database` tinyint(4) DEFAULT 1,
   `credential_type` varchar(20) DEFAULT NULL,
+  -- a cyberark credential's client certificate and key (PEM)
+  `client_cert` text DEFAULT NULL,
+  `client_key` text DEFAULT NULL,
   `vault_path` varchar(500) DEFAULT NULL,
   `managed` tinyint(4) DEFAULT 0,
   -- the secret store a credential reads its user and password from, and where in it
@@ -78,6 +81,9 @@ CREATE TABLE `secret_stores` (
   `description` text DEFAULT NULL,
   `url` varchar(500) NOT NULL,
   `token` text DEFAULT NULL,
+  -- a credential whose password is the token (a Vault), or that holds the AppID and client
+  -- certificate and key (a CyberArk), instead of the store's own
+  `credential` varchar(250) DEFAULT NULL,
   `namespace` varchar(250) DEFAULT NULL,
   `kv_version` tinyint(4) DEFAULT 2,
   `default_mount` varchar(250) DEFAULT NULL,

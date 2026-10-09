@@ -546,6 +546,7 @@ const SCHEMA_MANIFEST = {
                                'jobs.tracker', 'repositories.claim_node', 'repositories.claim_since',
                                'schedule.claim_node', 'schedule.claim_since', 'runners.flavour',
                                'credentials.credential_type', 'repositories.credential', 'groups.description',
+                               'secret_stores.credential', 'credentials.client_cert', 'credentials.client_key',
                                'users.description'] },
   },
 };
@@ -868,6 +869,13 @@ async function patchVersion7(messages, success, failed) {
   // a repository can use a credential of Connections > Credentials instead of its own
   // user and password
   await checkPromise(addColumn("repositories", "credential", "varchar(250)", true, "NULL"), messages, success, failed);
+  // a secret store (a Vault) can read its token from a credential of Connections > Credentials
+  // instead of keeping its own
+  await checkPromise(addColumn("secret_stores", "credential", "varchar(250)", true, "NULL"), messages, success, failed);
+  // a cyberark credential's client certificate and key, how a CyberArk store's AppID may be
+  // restricted
+  await checkPromise(addColumn("credentials", "client_cert", "text", true, "NULL"), messages, success, failed);
+  await checkPromise(addColumn("credentials", "client_key", "text", true, "NULL"), messages, success, failed);
   // a description on the local groups and users : what a group is for, who owns an account
   await checkPromise(addColumn("groups", "description", "varchar(250)", true, "NULL"), messages, success, failed);
   await checkPromise(addColumn("users", "description", "varchar(250)", true, "NULL"), messages, success, failed);
@@ -893,7 +901,7 @@ async function patchVersion7(messages, success, failed) {
 // Idempotent by its WHERE clause : only a credential without a valid type gets one
 function fillCredentialTypes() {
   return mysql
-    .do("UPDATE AnsibleForms.`credentials` SET credential_type=IF(is_database,'database','ssh') WHERE credential_type IS NULL OR credential_type NOT IN ('ssh','git','api','database')")
+    .do("UPDATE AnsibleForms.`credentials` SET credential_type=IF(is_database,'database','ssh') WHERE credential_type IS NULL OR credential_type NOT IN ('ssh','git','api','database','cyberark')")
     .then((res) => `Set the type of ${res?.affectedRows ?? 0} credential(s)`);
 }
 

@@ -24,8 +24,10 @@ class CredentialModel extends CrudModel {
     return data;
   }
 
-  // the types a credential can be : what it is for
-  static TYPES = ['ssh', 'git', 'api', 'database'];
+  // the types a credential can be : what it is for. A cyberark one is how a CyberArk secret
+  // store logs in : its AppID (user), and a client certificate and key when the AppID is
+  // restricted to one
+  static TYPES = ['ssh', 'git', 'api', 'database', 'cyberark'];
 
   /**
    * Keeps a credential's type and its is_database flag in step : the type sets the flag, and
@@ -64,6 +66,9 @@ class CredentialModel extends CrudModel {
   }
 
   static async update(data, id, opts = {}) {
+    // the api shows the client key masked ; the mask sent back means "unchanged", and an
+    // empty one too (the dialog leaves a secret empty to keep it)
+    if (data.client_key === '**********' || data.client_key === '') delete data.client_key;
     return super.update(this.modelName, this.mirrorType(this.mirrorVaultPath(data)), id, opts);
   }
 
