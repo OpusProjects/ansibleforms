@@ -951,6 +951,7 @@ export default {
       roleDescriptionAdmin: '完全访问：所有表单、设计器和设置。',
       roleDescriptionPublic: '每个用户，自动适用：所有人都能做的事。',
       roleMemberFrom: '来自组',
+      roleUsersAll: '全部',
       removeFromRole: '从角色中移除',
       duplicateRoleMember: "'{name}' 已在角色 '{role}' 中。",
       roleMemberTaken: "'{name}' 已在此角色中。",

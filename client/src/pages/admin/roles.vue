@@ -28,7 +28,8 @@ const {
   roleOptionLabel,
   authProviders,
 } = useFormsConfig();
-const { sortedLocalGroups, sortedLocalUsers, loadLocalNames, stampRoleFlags, saveRoles } = useRoleSupport(roles, save);
+const { sortedLocalGroups, sortedLocalUsers, loadLocalNames, usersThroughGroups, stampRoleFlags, saveRoles } =
+  useRoleSupport(roles, save);
 
 // a role removed here is only gone once saved : leaving with it unsaved asks first
 useUnsavedGuard(isRolesDirty, () => t('settings.common.unsavedChanges'));
@@ -114,6 +115,23 @@ const escapeHtml = (v) =>
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+/**
+ * How many users a role reaches : those named in it, and the local users of its local groups,
+ * each once (the Users tab of its page). Members of LDAP or SSO groups are only known when they
+ * sign in, so they are not counted.
+ *
+ * Args:
+ *   role (object): the role.
+ *
+ * Returns:
+ *   number: the users.
+ */
+function roleUserCount(role) {
+  const names = new Set(role.users.map((u) => `${u.provider}/${u.name}`));
+  for (const m of usersThroughGroups(role)) names.add(`local/${m.username}`);
+  return names.size;
+}
+
 const tableItems = computed(() =>
   sortedRoles.value.map(({ role }) => ({
     id: role._uid,
@@ -121,6 +139,8 @@ const tableItems = computed(() =>
     // admin and public : their fixed description
     description: role._required ? requiredRoleDescription(t, role.name) : role.description || '',
     required: role._required,
+    // the public role is everyone's : no count
+    users: role._public ? null : roleUserCount(role),
   })),
 );
 const columns = computed(() => [
@@ -145,6 +165,18 @@ const columns = computed(() => [
     sortable: true,
     filterable: true,
     render: (v) => (v ? escapeHtml(v) : '–'),
+  },
+  // how many users it reaches (local ones : see roleUserCount) ; public, everyone's, says All
+  {
+    key: 'users',
+    label: t('settings.settingsPage.users'),
+    width: '7rem',
+    align: 'end',
+    sortable: true,
+    filterable: false,
+    sortValue: (row) => (row.users === null ? Number.MAX_SAFE_INTEGER : row.users),
+    // none : an en dash, as the other empty cells
+    render: (v) => (v === null ? escapeHtml(t('settings.settingsPage.roleUsersAll')) : v ? String(v) : '–'),
   },
 ]);
 

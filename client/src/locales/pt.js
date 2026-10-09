@@ -983,6 +983,7 @@ export default {
       roleDescriptionAdmin: 'Acesso total: todos os formulários, o designer e as definições.',
       roleDescriptionPublic: 'Cada utilizador, automaticamente: o que todos podem fazer.',
       roleMemberFrom: 'Do grupo',
+      roleUsersAll: 'Todos',
       removeFromRole: 'Remover da função',
       duplicateRoleMember: "'{name}' já está na função '{role}'.",
       roleMemberTaken: "'{name}' já está nesta função.",

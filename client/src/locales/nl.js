@@ -979,6 +979,7 @@ export default {
       roleDescriptionAdmin: 'Volledige toegang: alle formulieren, de designer en de instellingen.',
       roleDescriptionPublic: 'Elke gebruiker, automatisch: wat iedereen mag.',
       roleMemberFrom: 'Uit groep',
+      roleUsersAll: 'Iedereen',
       removeFromRole: 'Uit rol verwijderen',
       duplicateRoleMember: "'{name}' zit al in de rol '{role}'.",
       roleMemberTaken: "'{name}' zit al in deze rol.",
