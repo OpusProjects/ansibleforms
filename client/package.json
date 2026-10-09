@@ -31,6 +31,7 @@
     "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.13.1",
     "core-js": "^3.50.0",
+    "cronstrue": "^2.59.0",
     "dayjs": "^1.11.23",
     "dompurify": "^3.4.16",
     "highlight.js": "^11.12.0",

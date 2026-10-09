@@ -60,12 +60,15 @@
 /*  dialogOnly (prop): no list, only the record dialogs : another */
 /*      dialog opens newItem() (exposed) to create a record, and  */
 /*      gets `created` with its name                              */
+/*  a cell's [data-af-popover] : its text in a popover on hover   */
+/*      (a cron's meaning in words, config/settings.js cronCell)  */
 /*                                                                */
 /******************************************************************/
 
 import { ref, onMounted, onBeforeUnmount, computed, nextTick } from 'vue';
 import { watch } from 'vue';
 import { toast } from 'vue-sonner';
+import { Popover } from 'bootstrap';
 import axios from 'axios';
 import Helpers from '@/lib/Helpers';
 import TokenStorage from '@/lib/TokenStorage';
@@ -1244,7 +1247,38 @@ onMounted(async () => {
   }
 });
 
+// ─── cell popovers ─────────────────────────────────────────────────────────────
+// A cell's render() is html, so it cannot hold a component : a cell that has more to say marks
+// an element with data-af-popover, and hovering it opens that text in the app's popover (the
+// look of the page title's info popover). Created on the first hover, so a table of a
+// thousand rows makes none until one is needed.
+const cellPopovers = new Set();
+
+/**
+ * Opens the popover of the element hovered, when it has one (data-af-popover).
+ *
+ * Args:
+ *   event (MouseEvent): a mouseover in the table.
+ */
+function onCellHover(event) {
+  const el = event.target?.closest?.('[data-af-popover]');
+  if (!el || Popover.getInstance(el)) return;
+  const popover = new Popover(el, {
+    content: el.getAttribute('data-af-popover'),
+    trigger: 'hover focus',
+    placement: 'top',
+    // the text as text, never as html
+    html: false,
+    customClass: 'af-info-popover',
+  });
+  cellPopovers.add(popover);
+  popover.show();
+}
+
 onBeforeUnmount(() => {
+  // the table's rows go with the page : their popovers too
+  for (const popover of cellPopovers) popover.dispose();
+  cellPopovers.clear();
   if (interval.value) {
     clearInterval(interval.value);
     interval.value = null;
@@ -1285,6 +1319,7 @@ defineExpose({
       <BsDataTable
         v-if="!loading && itemList != undefined"
         framed
+        @mouseover="onCellHover"
         :toolbarTo="'#' + toolsId"
         :items="itemList"
         :columns="columnsWithManaged"
@@ -1673,6 +1708,10 @@ defineExpose({
 }
 .af-nested-dialogs :deep(.modal-backdrop) {
   z-index: 1060;
+}
+/* a cell with a popover (data-af-popover) : the pointer says there is more to read */
+:deep(.af-has-popover) {
+  cursor: help;
 }
 /* the help of a wizard step : compact, its list close to its title */
 .af-wizard-note {

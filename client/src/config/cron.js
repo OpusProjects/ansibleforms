@@ -24,6 +24,19 @@
 // applies the real thing (lib/cronValidate.js constructs an actual Cron), so this is the
 // early, explanatory answer rather than the authority.
 
+import cronstrue from 'cronstrue';
+// the languages of the app ; each registers itself with cronstrue (English is built in)
+import 'cronstrue/locales/de';
+import 'cronstrue/locales/fr';
+import 'cronstrue/locales/it';
+import 'cronstrue/locales/es';
+import 'cronstrue/locales/nl';
+import 'cronstrue/locales/ca';
+import 'cronstrue/locales/pt_PT';
+import 'cronstrue/locales/ja';
+import 'cronstrue/locales/zh_CN';
+import 'cronstrue/locales/pl';
+
 // croner replaces month and weekday names with numbers before parsing, but only when the
 // field is at least 3 characters long, so '0 0 * * MON' and '0 0 * JAN *' are valid.
 export const MONTH_ALPHA = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
@@ -169,4 +182,33 @@ export function cronErrorMessage(t, err) {
 /** The message for an expression, or '' when it is acceptable. */
 export function cronValidationMessage(t, expression) {
   return cronErrorMessage(t, cronError(expression));
+}
+
+// the app's language codes that cronstrue spells differently
+const CRONSTRUE_LOCALES = { pt: 'pt_PT', zh: 'zh_CN' };
+
+/**
+ * A cron expression in words, in the app's language : '0 6 * * 0' is 'At 06:00 AM, only on
+ * Sunday'. Shown when hovering a cron in a table.
+ *
+ * Args:
+ *   expression (string): the cron expression.
+ *   locale (string): the app's language code (en, de, pt, zh ...).
+ *
+ * Returns:
+ *   string: the description, or '' for an empty or invalid expression.
+ */
+export function describeCron(expression, locale = 'en') {
+  const expr = String(expression ?? '').trim();
+  if (!expr || cronError(expr)) return '';
+  try {
+    return cronstrue.toString(expr, {
+      locale: CRONSTRUE_LOCALES[locale] || locale,
+      // a 24 hour clock, as every other time in the app ; English keeps its AM / PM
+      use24HourTimeFormat: locale !== 'en',
+      throwExceptionOnParseError: true,
+    });
+  } catch {
+    return '';
+  }
 }
