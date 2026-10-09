@@ -1,18 +1,17 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import Profile from '@/lib/Profile';
-import axios from 'axios';
-import TokenStorage from '@/lib/TokenStorage';
-import { toast } from 'vue-sonner';
 import { useI18n } from 'vue-i18n';
 import { useFormsConfig } from '@/composables/useFormsConfig';
 import { useUnsavedGuard } from '@/composables/useUnsavedGuard';
+import { useRoleSupport } from '@/composables/useRoleSupport';
+import { toast } from 'vue-sonner';
+import BsDataTable from '@/components/BsDataTable.vue';
 
 const { t } = useI18n();
+const router = useRouter();
 const authenticated = ref(false);
-const expandedRoles = ref({});
-const localGroups = ref([]);
-const localUsers = ref([]);
 
 const {
   roles,
@@ -28,35 +27,33 @@ const {
   roleOptionLabel,
   authProviders,
 } = useFormsConfig();
+const { sortedLocalGroups, sortedLocalUsers, loadLocalNames, stampRoleFlags, saveRoles } = useRoleSupport(roles, save);
 
-// This page had no unsaved-changes guard at all : navigating away or reloading threw
-// the whole edit away silently. See useUnsavedGuard.
+// a role removed here is only gone once saved : leaving with it unsaved asks first
 useUnsavedGuard(isRolesDirty, () => t('settings.common.unsavedChanges'));
 
 // Read-only when the config can't be loaded, can't be parsed or is a ytt template.
 const readOnly = computed(() => parseError.value || isTemplated.value || !!loadError.value);
 
-const RESERVED_ROLES = ['admin', 'public'];
-
-// _required/_public are read off flags stamped ONCE per load, never evaluated
-// against the name currently being typed : a live check disables the name input
-// the instant a custom name passes through 'admin'/'public', which traps the
-// value there (the delete button hides at the same moment). The designer's role
-// modal stamps the same two flags at open for exactly this reason.
-function isRequiredRole(role) {
-  return role._required === true;
+/**
+ * Opens a role's page (/admin/roles/<name>) : its General, Users and Groups tabs.
+ *
+ * Args:
+ *   role (object): the role clicked.
+ */
+function openRole(role) {
+  router.push(`/admin/roles/${encodeURIComponent(role._sortName || role.name)}`);
 }
 
-// Stamp the flags from the names as loaded. Must run after every load/reload.
-// These are internal fields ; serializeRole rebuilds the role from known keys,
-// so they never reach the yaml (the schema sets additionalProperties:false).
-function stampRoleFlags() {
-  for (const role of roles.value) {
-    role._required = RESERVED_ROLES.includes(role.name);
-    role._public = role.name === 'public';
-    // the name the list is sorted on : the one loaded, so a role does not move while it is renamed
-    role._sortName = role.name || '';
-  }
+/**
+ * Opens the role of a row (the table gives the row, not the role).
+ *
+ * Args:
+ *   item (object): the row.
+ */
+function openRow(item) {
+  const role = roles.value.find((r) => r._uid === item.id);
+  if (role) openRole(role);
 }
 
 // the roles in alphabetical order, each with its position in the config (which keeps its own
@@ -66,9 +63,6 @@ const sortedRoles = computed(() =>
     .map((role, rIdx) => ({ role, rIdx }))
     .sort((a, b) => (a.role._sortName ?? '').localeCompare(b.role._sortName ?? '', undefined, { sensitivity: 'base' })),
 );
-
-const sortedLocalGroups = computed(() => [...localGroups.value].sort());
-const sortedLocalUsers = computed(() => [...localUsers.value].sort());
 
 // ─── the New role dialog ──────────────────────────────────────────────────────
 // A new role is filled in a dialog, not as an empty row at the end of the list : it joins the
@@ -108,87 +102,86 @@ async function createRole() {
   }
 }
 
-function removeRole(index) {
-  roles.value.splice(index, 1);
-}
+// ─── the table ────────────────────────────────────────────────────────────────
+// the app's data table, as the other lists : a checkbox per role, Select all and Delete for the
+// selection, the search and the columns on the title line, a row's menu ; a row opens its role
+const toolsId = `af-tools-${Math.random().toString(36).slice(2, 10)}`;
+const selectedIds = ref(new Set());
+const escapeHtml = (v) =>
+  String(v ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+const tableItems = computed(() =>
+  sortedRoles.value.map(({ role }) => ({ id: role._uid, name: role.name, required: role._required })),
+);
+const columns = computed(() => [
+  {
+    key: 'name',
+    label: t('settings.settingsPage.name'),
+    sortable: true,
+    filterable: true,
+    // admin and public : the config must keep them, said beside their name
+    render: (v, row) =>
+      escapeHtml(v) +
+      (row.required
+        ? ` <span class="badge af-required-badge ms-2">${escapeHtml(t('settings.settingsPage.requiredItem'))}</span>`
+        : ''),
+  },
+]);
 
-function toggleRole(uid) {
-  expandedRoles.value[uid] = !expandedRoles.value[uid];
-}
-
-async function loadLocalGroups() {
-  try {
-    const result = await axios.get('/api/v2/group/', TokenStorage.getAuthentication());
-    localGroups.value = (result.data.records || result.data).map((g) => g.name);
-  } catch {
-    localGroups.value = [];
+/**
+ * Removes roles and saves at once ; refused (the config locked), they come back.
+ *
+ * Args:
+ *   uids (number[]): the roles' _uid.
+ */
+async function deleteRoles(uids) {
+  const removed = roles.value.filter((r) => uids.includes(r._uid));
+  roles.value = roles.value.filter((r) => !uids.includes(r._uid));
+  if (await saveRoles()) {
+    selectedIds.value = new Set();
+  } else {
+    roles.value = [...roles.value, ...removed];
   }
 }
 
-async function loadLocalUsers() {
-  try {
-    const result = await axios.get('/api/v2/user/', TokenStorage.getAuthentication());
-    localUsers.value = (result.data.records || result.data).map((u) => u.username);
-  } catch {
-    localUsers.value = [];
+/**
+ * Deletes the roles selected, after asking ; admin and public are left alone.
+ */
+async function bulkDelete() {
+  const present = new Map(tableItems.value.map((r) => [r.id, r]));
+  const chosen = [...selectedIds.value].filter((id) => present.has(id));
+  const ids = chosen.filter((id) => !present.get(id).required);
+  const skipped = chosen.length - ids.length;
+  if (!ids.length) {
+    if (skipped) toast.warning(t('settings.common.bulkDeleteNone'));
+    return;
   }
+  const question = skipped
+    ? t('settings.common.bulkDeleteConfirmSkip', { count: ids.length, skipped })
+    : t('settings.common.bulkDeleteConfirm', { count: ids.length });
+  if (!confirm(question)) return;
+  await deleteRoles(ids);
 }
 
-// The schema only requires `name` to be a string, so an empty, duplicated or
-// reserved name is accepted server-side. Reject them here instead. Taking over a
-// reserved name matters most : the server derives isAdmin from the role NAME, so
-// a role renamed to 'admin' would grant admin to everyone it matches.
-function validateRoles() {
-  const seen = new Set();
-  for (const role of roles.value) {
-    const name = (role.name || '').trim();
-    if (!name) return t('settings.settingsPage.roleNameRequired');
-    if (seen.has(name)) return t('settings.settingsPage.duplicateRoleName', { name });
-    seen.add(name);
-    // Only 'admin' is protected, not every reserved name. The schema REQUIRES a
-    // 'public' role, so blocking it too meant a config that had lost its public
-    // role could never be repaired from this page. Duplicates are already caught
-    // above, so allowing it cannot produce a second one. 'admin' stays blocked
-    // because the server treats the role NAME as a privilege bypass
-    // (roles.includes("admin") in middleware.js and job.model.js), independently
-    // of the option flags.
-    if (!role._required && name === 'admin') {
-      return t('settings.settingsPage.reservedRoleName', { name });
-    }
-  }
-  return null;
-}
-
-async function saveRoles() {
-  const problem = validateRoles();
-  if (problem) {
-    toast.warning(problem);
-    return false;
-  }
-  // Roles reload as fresh objects (new _uid) on save, so remember which roles
-  // were expanded by their stable identity (name) and restore afterwards. The
-  // name is trimmed on serialize, so it is the trimmed one that comes back.
-  const expandedNames = new Set(
-    roles.value.filter((r) => expandedRoles.value[r._uid]).map((r) => (r.name || '').trim()),
-  );
-  const saved = await save(t('settings.settingsPage.roles'));
-  // ONLY on success. These flags are stamped once per load precisely so a name passing
-  // through a reserved value cannot trap the input - re-stamping after a failed save
-  // (423 while the designer holds the lock, or a 409) disabled the name field and hid the
-  // delete button on the role the user had just renamed, with no way back except a reload
-  // that discarded the whole edit.
-  if (!saved) return false;
-  stampRoleFlags();
-  expandedRoles.value = Object.fromEntries(
-    roles.value.filter((r) => expandedNames.has(r.name)).map((r) => [r._uid, true]),
-  );
-  return true;
+/**
+ * Deletes one role from its row's menu, after asking.
+ *
+ * Args:
+ *   item (object): the row.
+ */
+async function deleteOne(item) {
+  if (item.required) return;
+  if (!confirm(`${t('settings.common.deleteConfirm')} ${item.name}?`)) return;
+  await deleteRoles([item.id]);
 }
 
 onMounted(async () => {
   authenticated.value = !!(await Profile.load());
   if (!authenticated.value) return;
-  await Promise.all([load(), loadLocalGroups(), loadLocalUsers()]);
+  await Promise.all([load(), loadLocalNames()]);
   stampRoleFlags();
 });
 </script>
@@ -220,6 +213,10 @@ onMounted(async () => {
         :title="t('settings.settingsPage.roles')"
         :description="t('settings.settingsPage.rolesDescription')"
       >
+        <!-- the table's search and columns, on the title line as the other lists have them -->
+        <template #headerActions>
+          <div :id="toolsId" class="af-title-flow"></div>
+        </template>
         <template #default>
           <div>
             <div v-if="loadError" class="alert alert-danger" role="alert">
@@ -229,103 +226,68 @@ onMounted(async () => {
               <FaIcon icon="user-shield" class="empty-state-icon" />
               <span>{{ t('settings.settingsPage.noRoles') }}</span>
             </div>
-            <!-- the roles as a table running to the card's edges, with the grey header bar of
-                 the other tables : a role opens under its row -->
-            <div v-else class="af-table-frame">
-              <table class="table af-table roles-table">
-                <thead>
-                  <tr>
-                    <th>{{ t('settings.settingsPage.name') }}</th>
-                    <th class="col-action"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <template v-for="({ role, rIdx }, i) in sortedRoles" :key="role._uid">
-                    <tr
-                      class="role-header"
-                      :class="{ 'role-last-closed': i === sortedRoles.length - 1 && !expandedRoles[role._uid] }"
-                      @click="toggleRole(role._uid)"
-                    >
-                      <td>
-                        <div class="d-flex align-items-center gap-2">
-                          <FaIcon
-                            :icon="expandedRoles[role._uid] ? 'chevron-down' : 'chevron-right'"
-                            class="text-muted"
-                          />
-                          <strong>{{ role.name || '(unnamed)' }}</strong>
-                          <span v-if="isRequiredRole(role)" class="badge bg-secondary-subtle text-muted">{{
-                            t('settings.settingsPage.requiredItem')
-                          }}</span>
-                        </div>
-                      </td>
-                      <td class="text-end">
-                        <button
-                          v-if="!isRequiredRole(role) && !readOnly"
-                          class="btn btn-sm btn-outline-danger"
-                          @click.stop="removeRole(rIdx)"
-                        >
-                          <FaIcon icon="trash" />
-                        </button>
-                      </td>
-                    </tr>
-                    <tr v-show="expandedRoles[role._uid]" class="role-body">
-                      <td colspan="2">
-                        <AppRoleEditor
-                          v-model:role="roles[rIdx]"
-                          :readOnly="readOnly"
-                          :authProviders="authProviders"
-                          :localGroups="sortedLocalGroups"
-                          :localUsers="sortedLocalUsers"
-                          :optionKeys="roleOptionKeys"
-                          :optionLabel="roleOptionLabel"
-                          :nextUid="nextUid"
-                        />
-                      </td>
-                    </tr>
-                  </template>
-                </tbody>
-              </table>
-            </div>
+            <!-- the app's data table : checkboxes, Select all, Delete, search and columns on the
+                 title line ; a row opens its role's page -->
+            <BsDataTable
+              v-else
+              framed
+              :toolbarTo="'#' + toolsId"
+              :items="tableItems"
+              :columns="columns"
+              idKey="id"
+              :selectedIds="selectedIds"
+              :selectable="!readOnly"
+              :rowClickSelects="false"
+              :name="t('settings.settingsPage.roles')"
+              :exportName="t('settings.settingsPage.roles')"
+              @update:selectedIds="selectedIds = $event"
+              @row-click="openRow"
+            >
+              <template v-if="!readOnly" #bulk-actions="{ count }">
+                <BsButton v-if="count" icon="trash" @click="bulkDelete">
+                  {{ t('common.delete') }} ({{ count }})
+                </BsButton>
+              </template>
+              <template #row-actions="{ item }">
+                <div class="dropdown">
+                  <a
+                    role="button"
+                    class="bs-dt-row-menu px-2"
+                    data-bs-toggle="dropdown"
+                    data-bs-popper-config='{"strategy":"fixed"}'
+                    @click.stop
+                  >
+                    <font-awesome-icon icon="ellipsis-vertical" />
+                  </a>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <a class="dropdown-item" href="#" @click.prevent="openRow(item)">
+                        <font-awesome-icon icon="pencil" class="me-2" />{{ t('settings.settingsPage.editRole') }}
+                      </a>
+                    </li>
+                    <li><hr class="dropdown-divider" /></li>
+                    <li>
+                      <a
+                        class="dropdown-item"
+                        :class="item.required || readOnly ? 'disabled text-muted' : 'text-danger'"
+                        href="#"
+                        @click.prevent="deleteOne(item)"
+                      >
+                        <font-awesome-icon icon="trash" class="me-2" />{{ t('common.delete') }}
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </template>
+            </BsDataTable>
           </div>
         </template>
         <template #actions>
           <BsButton icon="plus" :disabled="readOnly" @click="addRole()">{{
             t('settings.settingsPage.addRole')
           }}</BsButton>
-          <BsButton
-            icon="save"
-            :colorClass="isRolesDirty ? 'primary' : 'secondary'"
-            :disabled="!isRolesDirty || readOnly"
-            @click="saveRoles()"
-            >{{ t('settings.common.save') }}</BsButton
-          >
         </template>
       </AppSettings>
     </main>
   </div>
 </template>
-<style scoped>
-.role-header {
-  cursor: pointer;
-  user-select: none;
-}
-/* a row with a delete button and one without (admin, public) : the same height, the
-   button's (a btn-sm, 31px) */
-.role-header > td {
-  height: calc(31px + 24px);
-}
-/* the last role, closed : the card's border closes it. The table drops the line under its last
-   row, but that is the hidden editor row here, so the role's own line would double the border */
-.roles-table tbody tr.role-last-closed > td {
-  border-bottom: 0;
-}
-/* an opened role : its editor under the row, on the page's background, no hover */
-.roles-table tbody tr.role-body:hover > td {
-  background: var(--bs-body-bg);
-}
-.roles-table tbody tr.role-body > td {
-  padding-top: 0.5rem;
-  padding-bottom: 1rem;
-  text-box: normal;
-}
-</style>

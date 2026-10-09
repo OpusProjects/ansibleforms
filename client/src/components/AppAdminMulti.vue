@@ -1806,17 +1806,4 @@ defineExpose({
   /* its hints in line with those above : the indent and the line taken off */
   min-width: calc(12rem - 1.6rem - 2px);
 }
-/* 3-dot row action trigger: muted by default, inherits color when the row is
-   selected/active (dark bg → light icon). */
-.bs-dt-row-menu {
-  color: var(--bs-secondary-color);
-  text-decoration: none;
-}
-.bs-dt-row-menu:hover {
-  color: var(--bs-body-color);
-}
-:deep(.bs-dt-selected) .bs-dt-row-menu,
-:deep(.bs-dt-selected) .bs-dt-row-menu:hover {
-  color: inherit;
-}
 </style>
