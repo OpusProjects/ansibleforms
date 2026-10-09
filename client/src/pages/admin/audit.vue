@@ -224,7 +224,7 @@ onMounted(async () => {
                   <thead>
                     <tr>
                       <th style="width: 14rem">{{ t('audit.time') }}</th>
-                      <th style="width: 10rem">{{ t('audit.actor') }}</th>
+                      <th style="width: 15rem">{{ t('audit.actor') }}</th>
                       <th>{{ t('audit.action') }}</th>
                       <th style="width: 18rem">{{ t('audit.target') }}</th>
                       <th style="width: 7rem">{{ t('audit.outcome') }}</th>

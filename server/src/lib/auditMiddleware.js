@@ -1,4 +1,6 @@
 import Audit from '../models/audit.model.js';
+import mysql from '../models/db.model.js';
+import crudConfigs from '../../config/crud.config.js';
 
 // Blanket auditing for state-changing HTTP requests.
 //
@@ -135,6 +137,41 @@ function resourceFrom(baseUrl, path) {
   return rest[0] || null;
 }
 
+// The NAME of the record an id points at, so an update or a delete of an SSO provider, a user,
+// a group... is recorded as 'Contoso Entra ID' rather than '5'. Read BEFORE the handler runs : a
+// delete has removed the row by the time the response settles. The api resource maps to its
+// crud.config entry (its table and its natural key field) ; a resource without one keeps the id.
+const RESOURCE_TABLES = {
+  user: 'users',
+  group: 'groups',
+  repository: 'repositories',
+  'stored-jobs': 'stored_jobs',
+};
+
+/**
+ * Starts reading the name of the record an update or a delete is about.
+ *
+ * Args:
+ *   method (string): the request's method.
+ *   originalUrl (string): the request's url.
+ *
+ * Returns:
+ *   Promise<string|null>|null: the name (null when there is none), or null when the request
+ *     names no record by its id.
+ */
+function nameLookup(method, originalUrl) {
+  if (!['PUT', 'PATCH', 'DELETE'].includes(method)) return null;
+  const segments = pathOnly(originalUrl).split('/').filter(Boolean);
+  if (segments[0] !== 'api' || !/^\d+$/.test(segments[3] || '')) return null;
+  const crud = crudConfigs[RESOURCE_TABLES[segments[2]] || segments[2]];
+  const field = crud?.fields?.find((f) => f.isNaturalKey)?.name || (crud?.fields?.some((f) => f.name === 'name') ? 'name' : null);
+  if (!crud?.table || !field) return null;
+  return mysql
+    .do(`SELECT \`${field}\` AS n FROM ${crud.table} WHERE id=?`, [segments[3]])
+    .then((rows) => (rows && rows[0] && rows[0].n != null ? String(rows[0].n) : null))
+    .catch(() => null);
+}
+
 function outcomeFor(status) {
   if (status === 401 || status === 403) return 'denied';
   return status >= 400 ? 'failure' : 'success';
@@ -161,6 +198,8 @@ const auditMiddleware = function (req, res, next) {
   // performed its mutation by then - so listening only on 'finish' let any caller
   // suppress the record of its own state change by aborting. `done` keeps it to one row.
   var done = false;
+  // the record's name, read now : a delete removes it before the response settles
+  const named = nameLookup(req.method, req.originalUrl);
   const record = (aborted) => {
     if (done) return;
     done = true;
@@ -170,7 +209,7 @@ const auditMiddleware = function (req, res, next) {
     // anti-forensics flood, and unbounded junk in Audit.facets. A 404 changed nothing,
     // so there is nothing to audit.
     if (!aborted && status === 404) return;
-    Audit.log({
+    Promise.resolve(named).then((name) => Audit.log({
       user: req.user?.user,
       ip: req.ip,
       // req.route is NOT set while this middleware runs (it is mounted before routing),
@@ -180,7 +219,8 @@ const auditMiddleware = function (req, res, next) {
       // positional :param first (the object is named in the URL), then the body's
       // identifying field for a collection-level create, then the resource itself - so a
       // row is never written without saying what it was about
-      target: targetFrom(req.path, req.route?.path, req.baseUrl)
+      target: name
+        || targetFrom(req.path, req.route?.path, req.baseUrl)
         || targetFromBody(req.body)
         || resourceFrom(req.baseUrl, req.path),
       // an aborted request is recorded as a failure : the mutation may well have run,
@@ -192,7 +232,7 @@ const auditMiddleware = function (req, res, next) {
       detail: aborted
         ? { method: req.method, url: pathOnly(req.originalUrl), aborted: true }
         : { method: req.method, url: pathOnly(req.originalUrl), status },
-    });
+    }));
   };
   res.on('finish', () => record(false));
   res.on('close', () => record(!res.writableFinished));
