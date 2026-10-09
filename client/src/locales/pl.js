@@ -858,17 +858,17 @@ export default {
     runners: {
       label: 'Runner',
       description:
-        'Gdzie uruchamiane są zadania : kontenery środowiska uruchomieniowego (RTE) dla playbooków (obraz AnsibleForms z AF_ROLE=rte) oraz AWX / Ansible Automation Platform / Ascender dla szablonów.',
+        'Gdzie uruchamiane są zadania: kontenery środowiska uruchomieniowego (RTE) dla playbooków (obraz AnsibleForms z AF_ROLE=rte) oraz AWX / Ansible Automation Platform / Ascender dla szablonów.',
       editRunner: 'Edytuj runner',
       deleteRunner: 'Usuń runner',
-      nameHelp: 'Formularz odwołuje się do runnera tą nazwą : runner: <name>.',
+      nameHelp: 'Formularz odwołuje się do runnera tą nazwą: runner: <name>.',
       type: 'Typ',
       isDefault: 'Domyślne',
       isDefaultHelp:
-        'Domyślny dla swojego typu : formularze playbooków bez wskazanego runnera działają na domyślnym RTE, formularze szablonów na domyślnym AWX. Bez domyślnego takie zadanie kończy się błędem. Pierwszy runner danego typu staje się domyślnym.',
+        'Domyślny dla swojego typu: formularze playbooków bez wskazanego runnera działają na domyślnym RTE, formularze szablonów na domyślnym AWX. Bez domyślnego takie zadanie kończy się błędem. Pierwszy runner danego typu staje się domyślnym.',
       uriHelp:
-        'RTE : adres, na którym nasłuchuje, np. https://rte-vmware:8000. AWX : jego adres, np. https://aap.example.com.',
-      tokenHelp: 'RTE : jego RTE_TOKEN. AWX : token API lub zaznacz Używaj poświadczeń.',
+        'RTE: adres, na którym nasłuchuje, np. https://rte-vmware:8000. AWX: jego adres, np. https://aap.example.com.',
+      tokenHelp: 'RTE: jego RTE_TOKEN. AWX: token API lub zaznacz Używaj poświadczeń.',
       useCredentials: 'Używaj poświadczeń',
       state: 'Rejestracja',
       stateAutomatic: 'automatyczna',
@@ -1302,7 +1302,7 @@ export default {
     formDescription: 'Opis',
     formPlaybook: 'Playbook',
     formRunner: 'Runner',
-    formRunnerHelp: 'Nazwa runnera (Połączenia > Runnery). Puste : domyślny runner danego typu.',
+    formRunnerHelp: 'Nazwa runnera (Połączenia > Runnery). Puste: domyślny runner danego typu.',
     formTemplate: 'Szablon',
     formInventory: 'Inwentarz',
     formTags: 'Tagi',
