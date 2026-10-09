@@ -12,10 +12,11 @@ import utc from 'dayjs/plugin/utc';
 import YAML from 'yaml';
 import Time from '@/lib/Time';
 import BsColumnPicker from '@/components/BsColumnPicker.vue';
+import { PILL, headerWidth } from '@/lib/tableCells';
 
 // INIT
 
-const { t } = useI18n();
+const { t, te } = useI18n();
 
 const router = useRouter();
 const route = useRoute();
@@ -79,20 +80,74 @@ function backToJobs() {
 // to the top when a job opens or closes : the page scrolls in #app, below the header
 watch(isJobPage, () => document.getElementById('app')?.scrollTo({ top: 0 }));
 
-// ─── DataTable-style state (sort / per-column filter / column visibility) ──
+/**
+ * How long a job ran, from its start to its end : 6s, 2m 05s, 1h 02m 05s ; none while it has
+ * no end (running, waiting).
+ *
+ * Args:
+ *   j (object): the job.
+ *
+ * Returns:
+ *   number|null: the seconds, or null.
+ */
+function durationSeconds(j) {
+  if (!j.start || !j.end) return null;
+  const s = Math.round((new Date(j.end) - new Date(j.start)) / 1000);
+  return Number.isFinite(s) && s >= 0 ? s : null;
+}
+function formatDuration(seconds) {
+  if (seconds == null) return '–';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const sec = seconds % 60;
+  const two = (n) => String(n).padStart(2, '0');
+  if (h) return `${h}h ${two(m)}m ${two(sec)}s`;
+  if (m) return `${m}m ${two(sec)}s`;
+  return `${sec}s`;
+}
+
+// ─── DataTable-style state (sort / column visibility) ─────────────────────
+// the table fits its frame (a fixed layout) : the short columns a width of their own, the form
+// and the user share the rest, a long value cut with an ellipsis (its full text in the tooltip)
 const columnDefs = computed(() => [
-  { key: 'id', label: t('jobs.id'), filterable: true, sortable: true, type: 'number' },
+  { key: 'id', label: t('jobs.id'), filterable: true, sortable: true, type: 'number', width: '4.5rem' },
   { key: 'form', label: t('jobs.form'), filterable: true, sortable: true },
   {
     key: 'job_type',
     label: t('jobs.jobType'),
     filterable: true,
     sortable: true,
+    // as wide as its header, in the language shown
+    width: headerWidth(t('jobs.jobType')),
     render: (j) => j.job_type || 'ansible',
   },
-  { key: 'status', label: t('jobs.status'), filterable: true, sortable: true },
-  { key: 'start', label: t('jobs.startTime'), filterable: true, sortable: true, render: (j) => formatTime(j.start) },
-  { key: 'end', label: t('jobs.endTime'), filterable: true, sortable: true, render: (j) => formatTime(j.end) },
+  { key: 'status', label: t('jobs.status'), filterable: true, sortable: true, width: '7.5rem' },
+  {
+    key: 'start',
+    label: t('jobs.startTime'),
+    filterable: true,
+    sortable: true,
+    width: '13.25rem',
+    render: (j) => formatTime(j.start),
+  },
+  {
+    key: 'end',
+    label: t('jobs.endTime'),
+    filterable: true,
+    sortable: true,
+    width: '13.25rem',
+    render: (j) => formatTime(j.end),
+  },
+  {
+    // how long it ran : sorted by its seconds, not its text
+    key: 'duration',
+    label: t('jobs.duration'),
+    sortable: true,
+    width: '5.5rem',
+    render: (j) => formatDuration(durationSeconds(j)),
+    type: 'number',
+    sortValue: (j) => durationSeconds(j) ?? -1,
+  },
   {
     key: 'user',
     label: t('jobs.user'),
@@ -278,8 +333,8 @@ const parentJobs = computed(() => {
     if (col) {
       const dir = sortDir.value;
       list = [...list].sort((a, b) => {
-        let av = col.render ? col.render(a) : a[col.key];
-        let bv = col.render ? col.render(b) : b[col.key];
+        let av = col.sortValue ? col.sortValue(a) : col.render ? col.render(a) : a[col.key];
+        let bv = col.sortValue ? col.sortValue(b) : col.render ? col.render(b) : b[col.key];
         if (col.type === 'number') {
           av = Number(av);
           bv = Number(bv);
@@ -635,6 +690,75 @@ async function jobAction(id, action, method = 'post', uri_suffix = '') {
     await loadJobs();
   }
 }
+// ─── selection : the jobs ticked on the left, deleted together ───────────────
+const selected = ref(new Set());
+const showBulkDelete = ref(false);
+
+/**
+ * Whether a job can be deleted : as its row's delete icon - not one waiting for approval, and
+ * a running one by an admin only.
+ *
+ * Args:
+ *   j (object): the job.
+ *
+ * Returns:
+ *   boolean: it can be deleted.
+ */
+function canDelete(j) {
+  return j.status != 'approve' && ((j.status != 'running' && !j.abort_requested) || store.isAdmin);
+}
+// the jobs of the page that can be ticked, and whether they all are
+const pageSelectable = computed(() => displayedJobs.value.filter(canDelete));
+const pageAllSelected = computed(
+  () => pageSelectable.value.length > 0 && pageSelectable.value.every((j) => selected.value.has(j.id)),
+);
+
+/**
+ * Ticks or unticks a job.
+ *
+ * Args:
+ *   id (number): the job.
+ */
+function toggleSelected(id) {
+  const next = new Set(selected.value);
+  if (next.has(id)) next.delete(id);
+  else next.add(id);
+  selected.value = next;
+}
+
+/**
+ * Ticks every job of the page that can be deleted, or unticks them all.
+ */
+function togglePage() {
+  const next = new Set(selected.value);
+  const all = pageAllSelected.value;
+  for (const j of pageSelectable.value) {
+    if (all) next.delete(j.id);
+    else next.add(j.id);
+  }
+  selected.value = next;
+}
+
+/**
+ * Deletes the ticked jobs, one after another, and says how many were.
+ */
+async function deleteSelected() {
+  showBulkDelete.value = false;
+  const ids = [...selected.value];
+  let done = 0;
+  for (const id of ids) {
+    try {
+      await axios.delete(`/api/v2/job/${id}`, TokenStorage.getAuthentication());
+      done++;
+    } catch (err) {
+      toast.error(Helpers.parseAxiosResponseError(err) || `Failed to delete job ${id}`);
+    }
+  }
+  if (done) toast.success(t('jobs.deletedSelected', { count: done }));
+  selected.value = new Set();
+  await loadJobs();
+}
+
 // delete a job
 async function deleteJob(id) {
   await jobAction(id, 'delete', 'delete');
@@ -704,9 +828,29 @@ function toggleCollapse(id) {
   }
 }
 // job background color
+// the row of the job shown below the list stands out ; a job's status is its pill, not the
+// row's colour
 function jobBackground(job) {
-  if (job.id == jobId.value) return 'table-selected';
-  return Helpers.getColorClassByStatus(job.status, 'table');
+  return job.id == jobId.value ? 'table-selected' : '';
+}
+
+// a job's status as a pill, as the audit log's outcomes and a repository's status : running
+// blue, success green, failed red, waiting or stopped amber, anything else grey
+const STATUS_PILL = {
+  running: PILL.blue,
+  success: PILL.green,
+  failed: PILL.red,
+  approve: PILL.amber,
+  warning: PILL.amber,
+  aborted: PILL.amber,
+  rejected: PILL.amber,
+  abandoned: PILL.amber,
+};
+function statusPillClass(status) {
+  return STATUS_PILL[status] || PILL.grey;
+}
+function statusLabel(status) {
+  return te(`jobs.menu.${status}`) ? t(`jobs.menu.${status}`) : status;
 }
 
 // EVENTS
@@ -780,6 +924,18 @@ onBeforeUnmount(() => {
           "
           >{{ t('common.delete') }}</BsButton
         ></template
+      >
+    </BsModal>
+    <!-- Modal - the ticked jobs deleted together -->
+    <BsModal v-if="showBulkDelete" @close="showBulkDelete = false">
+      <template #title> {{ t('jobs.deleteSelected', { count: selected.size }) }} </template>
+      <template #default
+        ><p class="mt-3 fs-6 user-select-none">
+          {{ t('jobs.deleteSelectedConfirm', { count: selected.size }) }}
+        </p></template
+      >
+      <template #footer
+        ><BsButton icon="trash" @click="deleteSelected()">{{ t('common.delete') }}</BsButton></template
       >
     </BsModal>
     <!-- Modal - abort verify -->
@@ -952,6 +1108,10 @@ onBeforeUnmount(() => {
           <div v-else class="d-flex justify-content-end align-items-center">
             <!-- the search, as every table's on the title line -->
             <BsSearch v-model="search" class="af-table-search me-2" :placeholder="t('common.filter')" />
+            <!-- the ticked jobs, deleted together -->
+            <BsButton v-if="selected.size" icon="trash" cssClass="me-2 text-nowrap" @click="showBulkDelete = true">{{
+              t('jobs.deleteSelected', { count: selected.size })
+            }}</BsButton>
             <BsButton icon="refresh" @click="loadJobs" cssClass="me-2 text-nowrap">{{ t('jobs.refresh') }}</BsButton>
             <div class="input-group me-2" style="width: 160px">
               <span class="input-group-text">
@@ -981,12 +1141,22 @@ onBeforeUnmount(() => {
           <table class="custom-table af-table table-sm">
             <thead>
               <tr class="text-start">
-                <th class="action"></th>
+                <!-- tick every job of the page that can be deleted -->
+                <th class="af-jobs-select">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    :checked="pageAllSelected"
+                    :disabled="!pageSelectable.length"
+                    :aria-label="t('dataTable.selectAll', { count: pageSelectable.length })"
+                    @change="togglePage()"
+                  />
+                </th>
                 <th
                   v-for="col in visibleColumns"
                   :key="col.key"
                   :class="{ 'is-clickable': col.sortable, [col.key]: true }"
-                  style="user-select: none; white-space: nowrap"
+                  :style="{ userSelect: 'none', whiteSpace: 'nowrap', width: col.width || null }"
                   @click="col.sortable ? toggleSort(col.key) : undefined"
                 >
                   {{ col.label }}
@@ -999,6 +1169,8 @@ onBeforeUnmount(() => {
                     </template>
                   </span>
                 </th>
+                <!-- the row's actions, at the right -->
+                <th class="action"></th>
               </tr>
             </thead>
             <tbody>
@@ -1006,64 +1178,15 @@ onBeforeUnmount(() => {
                 <!-- the whole row opens the job (a multistep job's id unfolds its steps instead) : the
                    actions cell too, where the icons keep their own action -->
                 <tr :class="jobBackground(j)">
-                  <td role="button" @click="getJob(j.id)">
-                    <!-- a job waiting for approval is decided, not relaunched or deleted : it only
-                       offers approve and reject -->
-                    <span
-                      role="button"
-                      v-if="j.status != 'running' && j.status != 'approve' && canRelaunchJobs"
-                      class="me-2 text-info"
-                      @click.stop="
-                        tempJobId = j.id;
-                        showRelaunch = true;
-                      "
-                      title="Relaunch job"
-                      ><font-awesome-icon icon="redo"
-                    /></span>
-                    <span
-                      role="button"
-                      v-if="j.status == 'running' && !j.abort_requested"
-                      class="me-2 text-warning"
-                      @click.stop="
-                        tempJobId = j.id;
-                        showAbort = true;
-                      "
-                      title="Abort job"
-                      ><font-awesome-icon icon="ban"
-                    /></span>
-                    <span
-                      role="button"
-                      v-if="j.status != 'approve' && ((j.status != 'running' && !j.abort_requested) || store.isAdmin)"
-                      class="me-2 text-danger"
-                      @click.stop="
-                        tempJobId = j.id;
-                        showDelete = true;
-                      "
-                      title="Delete job"
-                      ><font-awesome-icon icon="trash-alt"
-                    /></span>
-                    <span
-                      role="button"
-                      v-if="j.status == 'approve' && approvalAllowed(j)"
-                      class="me-2 text-success af-approve-icon"
-                      @click.stop="
-                        tempJobId = j.id;
-                        showApproval(j.id);
-                      "
-                      title="Approve job"
-                      ><font-awesome-icon icon="circle-check"
-                    /></span>
-                    <span
-                      role="button"
-                      v-if="j.status == 'approve' && approvalAllowed(j)"
-                      class="me-2 text-danger af-reject-icon"
-                      @click.stop="
-                        tempJobId = j.id;
-                        showApproval(j.id, true);
-                      "
-                      title="Reject job"
-                      ><font-awesome-icon icon="circle-xmark"
-                    /></span>
+                  <!-- ticked to be deleted with others ; a job that cannot be deleted cannot be ticked -->
+                  <td class="af-jobs-select">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      :checked="selected.has(j.id)"
+                      :disabled="!canDelete(j)"
+                      @change="toggleSelected(j.id)"
+                    />
                   </td>
                   <template v-for="col in visibleColumns" :key="col.key">
                     <td
@@ -1080,10 +1203,114 @@ onBeforeUnmount(() => {
                         <span class="mx-2 float-end" v-else><font-awesome-icon icon="angle-down" /></span>
                       </template>
                     </td>
-                    <td v-else role="button" class="text-start" @click="getJob(j.id)" :title="cellText(j, col)">
+                    <td v-else-if="col.key === 'status'" role="button" class="text-start" @click="getJob(j.id)">
+                      <span class="badge rounded-pill fw-semibold af-pill" :class="statusPillClass(j.status)"
+                        ><span class="af-pill-label">{{ statusLabel(j.status) }}</span></span
+                      >
+                    </td>
+                    <!-- the form in the link blue, as a list's name : the row opens the job -->
+                    <td
+                      v-else
+                      role="button"
+                      class="text-start"
+                      :class="{ 'af-row-open': col.key === 'form' }"
+                      @click="getJob(j.id)"
+                      :title="cellText(j, col)"
+                    >
                       {{ cellText(j, col) }}
                     </td>
                   </template>
+                  <!-- the row's menu, as every table's : what can be done with the job, Delete last -->
+                  <td class="bs-dt-row-actions">
+                    <div class="dropdown">
+                      <!-- fixed, so the menu opens over the table's frame instead of being cut by it -->
+                      <a
+                        role="button"
+                        class="bs-dt-row-menu px-2"
+                        data-bs-toggle="dropdown"
+                        data-bs-popper-config='{"strategy":"fixed"}'
+                        :aria-label="t('common.actions')"
+                      >
+                        <font-awesome-icon icon="ellipsis-vertical" />
+                      </a>
+                      <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                          <a class="dropdown-item" href="#" @click.prevent="getJob(j.id)"
+                            ><font-awesome-icon icon="file-lines" class="me-2" />{{ t('jobs.openJob') }}</a
+                          >
+                        </li>
+                        <!-- what can be done with it, apart from opening it -->
+                        <li
+                          v-if="
+                            (j.status != 'running' && j.status != 'approve' && canRelaunchJobs) ||
+                            (j.status == 'running' && !j.abort_requested) ||
+                            (j.status == 'approve' && approvalAllowed(j))
+                          "
+                        >
+                          <hr class="dropdown-divider" />
+                        </li>
+                        <li v-if="j.status != 'running' && j.status != 'approve' && canRelaunchJobs">
+                          <a
+                            class="dropdown-item"
+                            href="#"
+                            @click.prevent="
+                              tempJobId = j.id;
+                              showRelaunch = true;
+                            "
+                            ><font-awesome-icon icon="redo" class="me-2" />{{ t('jobs.relaunchJob') }}</a
+                          >
+                        </li>
+                        <li v-if="j.status == 'running' && !j.abort_requested">
+                          <a
+                            class="dropdown-item"
+                            href="#"
+                            @click.prevent="
+                              tempJobId = j.id;
+                              showAbort = true;
+                            "
+                            ><font-awesome-icon icon="ban" class="me-2" />{{ t('jobs.abortJob') }}</a
+                          >
+                        </li>
+                        <template v-if="j.status == 'approve' && approvalAllowed(j)">
+                          <li>
+                            <a
+                              class="dropdown-item"
+                              href="#"
+                              @click.prevent="
+                                tempJobId = j.id;
+                                showApproval(j.id);
+                              "
+                              ><font-awesome-icon icon="circle-check" class="me-2" />{{ t('jobs.approveJob') }}</a
+                            >
+                          </li>
+                          <li>
+                            <a
+                              class="dropdown-item"
+                              href="#"
+                              @click.prevent="
+                                tempJobId = j.id;
+                                showApproval(j.id, true);
+                              "
+                              ><font-awesome-icon icon="circle-xmark" class="me-2" />{{ t('jobs.rejectJob') }}</a
+                            >
+                          </li>
+                        </template>
+                        <li><hr class="dropdown-divider" /></li>
+                        <li>
+                          <a
+                            class="dropdown-item"
+                            :class="canDelete(j) ? 'text-danger' : 'disabled text-muted'"
+                            href="#"
+                            @click.prevent="
+                              tempJobId = j.id;
+                              showDelete = true;
+                            "
+                            ><font-awesome-icon icon="trash-alt" class="me-2" />{{ t('jobs.deleteJob') }}</a
+                          >
+                        </li>
+                      </ul>
+                    </div>
+                  </td>
                 </tr>
                 <template v-for="c in childJobs(j.id)" :key="c.id">
                   <tr :class="jobBackground(c)">
@@ -1093,16 +1320,22 @@ onBeforeUnmount(() => {
                       <td
                         v-else-if="col.key === 'form'"
                         role="button"
-                        class="text-start"
+                        class="text-start af-row-open"
                         @click="getJob(c.id)"
                         :title="c.target"
                       >
                         {{ c.target }}
                       </td>
+                      <td v-else-if="col.key === 'status'" role="button" class="text-start" @click="getJob(c.id)">
+                        <span class="badge rounded-pill fw-semibold af-pill" :class="statusPillClass(c.status)"
+                          ><span class="af-pill-label">{{ statusLabel(c.status) }}</span></span
+                        >
+                      </td>
                       <td v-else role="button" class="text-start" @click="getJob(c.id)" :title="cellText(c, col)">
                         {{ cellText(c, col) }}
                       </td>
                     </template>
+                    <td role="button" @click="getJob(c.id)"></td>
                   </tr>
                 </template>
               </template>
@@ -1111,7 +1344,7 @@ onBeforeUnmount(() => {
                 <!-- 24px above the text ; below it 9px plus the pagination's own 16px margin, so the
                    message sits centred between the column filters and the pagination -->
                 <td
-                  :colspan="visibleColumns.length + 1"
+                  :colspan="visibleColumns.length + 2"
                   class="text-center text-body-secondary pt-4"
                   style="padding-bottom: 9px"
                 >
@@ -1349,13 +1582,44 @@ onBeforeUnmount(() => {
    action icons side by side, a date not broken in two) */
 .custom-table {
   line-height: 1.2;
+  /* the table fits its frame : the short columns their own width (columnDefs), the form and
+     the user share the rest */
+  table-layout: fixed;
+  width: 100%;
+  /* the form and the user keep some room : on a screen too narrow for it the table scrolls
+     sideways in its frame, rather than cutting them to a letter */
+  min-width: 71rem;
+}
+/* (the frame hides its overflow for its rounded corners : this one scrolls it instead) */
+.af-table-frame:has(> .custom-table) {
+  overflow-x: auto;
 }
 .custom-table tbody td {
   white-space: nowrap;
 }
-.custom-table th.action {
-  width: 1%;
+/* nine columns : a little less room between them than the lists' (styles/tables.scss), the
+   first and last cells keeping theirs from the frame's edges */
+.custom-table.af-table th:not(:first-child):not(:last-child),
+.custom-table.af-table td:not(:first-child):not(:last-child) {
+  padding-left: 0.6rem;
+  padding-right: 0.6rem;
 }
+/* a value longer than its column : cut with an ellipsis, its full text in the tooltip */
+.custom-table tbody td:not(.bs-dt-row-actions),
+.custom-table thead th {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.custom-table th.action {
+  /* the row's three dots, as the other tables' */
+  width: 3.5rem;
+}
+/* the checkbox column : as wide as a checkbox and the first cell's padding */
+.custom-table .af-jobs-select {
+  width: calc(1.25rem + 1rem + 0.5rem);
+  padding-right: 0.5rem;
+}
+
 tr.table-selected {
   border: 2px solid;
   border-left: none;
