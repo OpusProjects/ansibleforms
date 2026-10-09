@@ -10,6 +10,7 @@
 /*  @model role: the role edited ({ _uid, _required, _public,     */
 /*      name, groups, users, options })                           */
 /*  @emits removed: a user or a group was removed (the page saves)*/
+/*  @model selected: the rows ticked in the page's tables (_uid)  */
 /*  @props:                                                       */
 /*      readOnly: Boolean - the config cannot be saved now        */
 /*      authProviders: Array - the providers a group or a user    */
@@ -47,6 +48,30 @@ const role = defineModel('role', { type: Object, required: true });
 // a user or a group removed from the role's page (its row menu) : the page saves at once, as
 // it does for one added
 const emit = defineEmits(['removed']);
+// the rows ticked in the role page's tables (their _uid) : its Remove from role acts on them
+const selected = defineModel('selected', { type: Array, default: () => [] });
+
+/**
+ * Ticks or unticks one row.
+ *
+ * Args:
+ *   uid (number): the row's _uid.
+ */
+function toggleSelected(uid) {
+  selected.value = selected.value.includes(uid) ? selected.value.filter((x) => x !== uid) : [...selected.value, uid];
+}
+
+/**
+ * Ticks every row of a list, or none when they all are.
+ *
+ * Args:
+ *   list (object[]): the role's users or groups.
+ */
+function toggleAll(list) {
+  const uids = list.map((e) => e._uid);
+  const all = uids.length > 0 && uids.every((u) => selected.value.includes(u));
+  selected.value = all ? [] : uids;
+}
 
 const { t } = useI18n();
 
@@ -60,7 +85,7 @@ const activeTab = computed({
   set: (key) => (ownTab.value = key),
 });
 const tabs = computed(() => [
-  { key: 'general', label: t('settings.settingsPage.roleTabGeneral') },
+  { key: 'general', label: t('settings.common.tabDetails') },
   {
     key: 'users',
     label: t('settings.settingsPage.users'),
@@ -189,6 +214,15 @@ function removeUser(index) {
         <table class="table af-table af-role-members">
           <thead>
             <tr>
+              <th class="text-center bs-dt-select">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  :disabled="readOnly || !role.users.length"
+                  :checked="role.users.length > 0 && role.users.every((u) => selected.includes(u._uid))"
+                  @change="toggleAll(role.users)"
+                />
+              </th>
               <th>{{ t('settings.settingsPage.name') }}</th>
               <th>{{ t('settings.settingsPage.provider') }}</th>
               <th>{{ t('settings.settingsPage.roleMemberFrom') }}</th>
@@ -196,7 +230,20 @@ function removeUser(index) {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(usr, uIdx) in role.users" :key="usr._uid">
+            <tr
+              v-for="(usr, uIdx) in role.users"
+              :key="usr._uid"
+              :class="{ 'bs-dt-selected': selected.includes(usr._uid) }"
+            >
+              <td class="text-center bs-dt-select">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  :disabled="readOnly"
+                  :checked="selected.includes(usr._uid)"
+                  @change="toggleSelected(usr._uid)"
+                />
+              </td>
               <td>{{ usr.name }}</td>
               <td>{{ usr.provider }}</td>
               <!-- named in the role itself : no group -->
@@ -223,6 +270,8 @@ function removeUser(index) {
               </td>
             </tr>
             <tr v-for="m in throughGroups" :key="'g/' + m.username + '/' + m.group">
+              <!-- through a group : changed on the group, not here -->
+              <td class="text-center bs-dt-select"><input type="checkbox" class="form-check-input" disabled /></td>
               <td>{{ m.username }}</td>
               <td>local</td>
               <td>{{ m.group }}</td>
@@ -279,13 +328,35 @@ function removeUser(index) {
         <table class="table af-table af-role-members">
           <thead>
             <tr>
+              <th class="text-center bs-dt-select">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  :disabled="readOnly || !role.groups.length"
+                  :checked="role.groups.length > 0 && role.groups.every((g) => selected.includes(g._uid))"
+                  @change="toggleAll(role.groups)"
+                />
+              </th>
               <th>{{ t('settings.settingsPage.name') }}</th>
               <th>{{ t('settings.settingsPage.provider') }}</th>
               <th class="af-role-remove-col"></th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(grp, gIdx) in role.groups" :key="grp._uid">
+            <tr
+              v-for="(grp, gIdx) in role.groups"
+              :key="grp._uid"
+              :class="{ 'bs-dt-selected': selected.includes(grp._uid) }"
+            >
+              <td class="text-center bs-dt-select">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  :disabled="readOnly"
+                  :checked="selected.includes(grp._uid)"
+                  @change="toggleSelected(grp._uid)"
+                />
+              </td>
               <td>{{ grp.name }}</td>
               <td>{{ grp.provider }}</td>
               <td class="bs-dt-row-actions">

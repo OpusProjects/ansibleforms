@@ -31,7 +31,7 @@ export function useRoleSupport(roles, save) {
   const { t } = useI18n();
   const localGroups = ref([]);
   const localUsers = ref([]);
-  // the local users with their group (a local user is in exactly one), for the users a role
+  // the local users with their groups (its first one and the others), for the users a role
   // gets through its groups
   const localMembers = ref([]);
   // the local groups' ids and names, to name a member's group
@@ -62,7 +62,7 @@ export function useRoleSupport(roles, save) {
         .then((result) => {
           const records = result.data.records || result.data;
           localUsers.value = records.map((u) => u.username);
-          localMembers.value = records.map((u) => ({ username: u.username, groupId: u.group_id }));
+          localMembers.value = records.map((u) => ({ username: u.username, groupIds: u.group_ids || [u.group_id] }));
         })
         .catch(() => (localUsers.value = [])),
     ]);
@@ -82,9 +82,16 @@ export function useRoleSupport(roles, save) {
     if (!role || role._public) return [];
     const names = new Set(role.groups.filter((g) => g.provider === 'local').map((g) => g.name));
     const nameOf = new Map(groupIds.value);
+    // a user in several of the role's groups : once, its groups together
     return localMembers.value
-      .map((m) => ({ username: m.username, group: nameOf.get(m.groupId) }))
-      .filter((m) => names.has(m.group))
+      .map((m) => ({
+        username: m.username,
+        group: m.groupIds
+          .map((id) => nameOf.get(id))
+          .filter((n) => names.has(n))
+          .join(', '),
+      }))
+      .filter((m) => m.group)
       .sort((a, b) => a.username.localeCompare(b.username));
   }
 

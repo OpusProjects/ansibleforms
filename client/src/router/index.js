@@ -44,6 +44,7 @@ const role = () => import('@/pages/admin/role.vue');
 const constants = () => import('@/pages/admin/constants.vue');
 const ssh = () => import('@/pages/admin/ssh.vue');
 const users = () => import('@/pages/admin/users.vue');
+const user = () => import('@/pages/admin/user.vue');
 const backups = () => import('@/pages/admin/backups.vue');
 
 import TokenStorage from '@/lib/TokenStorage.js';
@@ -151,6 +152,8 @@ const routes = [
   { path: '/admin/constants', name: '/admin/constants', component: constants, beforeEnter: checkSettings },
   { path: '/admin/ssh', name: '/admin/ssh', component: ssh, beforeEnter: checkSettings },
   { path: '/admin/users', name: '/admin/users', component: users, beforeEnter: checkSettings },
+  // a user's page : its Details and Groups tabs
+  { path: '/admin/users/:id', name: '/admin/users/:id', component: user, beforeEnter: checkSettings },
   { path: '/admin/backups', name: '/admin/backups', component: backups, beforeEnter: allowBackupOps },
   // GET /api/v2/health is mounted behind checkSettingsMiddleware, so the guard
   // matches the permission the endpoint actually requires. The endpoint keeps the

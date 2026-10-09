@@ -5,6 +5,8 @@
 /*                                        */
 /*  @props:                               */
 /*      size: String                      */
+/*      dialogClass: String - a class on  */
+/*         the dialog box itself          */
 /*        'sm' | 'md' | 'lg' | 'xl'        */
 /*        'md' is Bootstrap's default      */
 /*        width (no modal-* class).        */
@@ -31,6 +33,7 @@ const { uid } = getCurrentInstance();
 const emit = defineEmits(['close']);
 const props = defineProps({
   size: { type: String, default: 'xl' },
+  dialogClass: { type: String, default: '' },
 });
 
 // Bootstrap has modal-sm/-lg/-xl but no modal-md : the default width is the
@@ -58,7 +61,7 @@ function backdropClick(e) {
     aria-hidden="true"
     data-bs-backdrop="static"
   >
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" :class="sizeClass">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" :class="[sizeClass, dialogClass]">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title"><slot name="title"></slot></h5>

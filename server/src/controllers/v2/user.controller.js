@@ -86,6 +86,33 @@ const update = async function(req, res) {
     }
 };
 
+/**
+ * Adds a group to a user (POST /api/v2/user/:id/groups, { group_id }).
+ */
+const addGroup = async function(req, res) {
+  if (!req.body?.group_id) {
+    return res.status(400).json(RestResult.error(i18n.t(req, 'errors.requiredFields')));
+  }
+  try {
+    await User.addGroup(req.params.id, req.body.group_id);
+    res.json(RestResult.single(null));
+  } catch(err) {
+    res.status(err instanceof Errors.NotFoundError ? 404 : 400).json(RestResult.error(err.message || err.toString()));
+  }
+};
+
+/**
+ * Removes a group from a user (DELETE /api/v2/user/:id/groups/:groupId) ; a user keeps one.
+ */
+const removeGroup = async function(req, res) {
+  try {
+    await User.removeGroup(req.params.id, req.params.groupId);
+    res.json(RestResult.single(null));
+  } catch(err) {
+    res.status(err instanceof Errors.NotFoundError ? 404 : 400).json(RestResult.error(err.message || err.toString()));
+  }
+};
+
 const changePassword = async function(req, res) {
   if(req.user.user.type=="local" && req.user.user.id){
     // make sure then don't tamper with the group or username
@@ -158,5 +185,7 @@ export default {
   update,
   changePassword,
   find,
-  delete: deleteUser
+  delete: deleteUser,
+  addGroup,
+  removeGroup
 };

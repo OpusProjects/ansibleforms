@@ -41,6 +41,31 @@ function applyOptionDefaults(options, isAdmin) {
   return options;
 }
 
+/**
+ * Adds to users the ids of all their groups (group_ids) : their first one (group_id) and the
+ * others (the user_groups table).
+ *
+ * Args:
+ *   users (object[]): users as read from the users table.
+ *
+ * Returns:
+ *   Promise<object[]>: the same users, each with group_ids.
+ */
+async function withGroupIds(users) {
+  const list = (users || []).filter(Boolean);
+  if (!list.length) return users;
+  const links = await mysql.do("SELECT user_id, group_id FROM AnsibleForms.`user_groups`", []);
+  const extra = new Map();
+  for (const l of links || []) {
+    if (!extra.has(l.user_id)) extra.set(l.user_id, []);
+    extra.get(l.user_id).push(l.group_id);
+  }
+  for (const u of list) {
+    u.group_ids = [u.group_id, ...(extra.get(u.id) || []).filter((g) => g !== u.group_id)];
+  }
+  return users;
+}
+
 class User extends CrudModel {
   static modelName = 'users';
 
@@ -56,9 +81,26 @@ class User extends CrudModel {
   // Override update to conditionally hash password
   static async update(data, id) {
     logger.info(`Updating user ${data.username ? data.username : id}`);
-    // Remove empty fields
-    helpers.removeEmptyFields(data);
-    
+    // the admin user keeps its name : renamed, it would no longer be the account to sign in with
+    if (data.username !== undefined && data.username !== 'admin') {
+      const current = await super.findById(this.modelName, id);
+      if (current && current.username === 'admin') {
+        throw new Error("You cannot rename user 'admin'");
+      }
+    }
+    // An empty password means "keep the current one" ; an empty description or email is a value
+    // (one cleared on the user's page), stored empty. Any other empty field is left out.
+    for (const key of Object.keys(data)) {
+      const value = data[key];
+      if (key === 'description' || key === 'email') {
+        if (value === null || value === undefined) data[key] = '';
+        continue;
+      }
+      if (value === undefined || value === null || value === '') delete data[key];
+    }
+    // nothing left to change : nothing to write (an empty update is not a valid query)
+    if (Object.keys(data).length === 0) return { changed: false };
+
     // Hash password if provided
     if (data.password) {
       logger.info(`Updating user with password ${data.username ? data.username : id}`);
@@ -74,17 +116,67 @@ class User extends CrudModel {
     logger.info(`Deleting user ${id}`);
     // Get user to find username (will throw NotFoundError if not exists)
     const user = await super.findById(this.modelName, id);
+    // the admin user is the way back in : never deleted, however the request comes
+    if (user && user.username === 'admin') {
+      throw new Error("You cannot delete user 'admin'");
+    }
     // Delete all tokens for this user
     await Token.deleteAllForUser(user.username);
     return super.delete(this.modelName, id);
   }
 
   static async findAll() {
-    return super.findAll(this.modelName);
+    return withGroupIds(await super.findAll(this.modelName));
   }
 
   static async findById(id) {
-    return super.findById(this.modelName, id);
+    const [user] = await withGroupIds([await super.findById(this.modelName, id)]);
+    return user;
+  }
+
+  /**
+   * Adds a group to a user, besides the ones it has.
+   *
+   * Args:
+   *   id (number): the user.
+   *   groupId (number): the group.
+   *
+   * Raises:
+   *   Error: the user is in that group already.
+   */
+  static async addGroup(id, groupId) {
+    const [user] = await withGroupIds([await super.findById(this.modelName, id)]);
+    const gid = parseInt(groupId, 10);
+    if (user.group_ids.includes(gid)) throw new Error("The user is in that group already");
+    logger.info(`Adding user ${user.username} to group ${gid}`);
+    await mysql.do("INSERT INTO AnsibleForms.`user_groups` (user_id, group_id) VALUES (?, ?)", [user.id, gid]);
+  }
+
+  /**
+   * Removes a group from a user. Its first group (users.group_id) gives way to another of its
+   * groups, which takes its place ; a user keeps at least one group.
+   *
+   * Args:
+   *   id (number): the user.
+   *   groupId (number): the group.
+   *
+   * Raises:
+   *   Error: it is the user's only group, or the user is not in it.
+   */
+  static async removeGroup(id, groupId) {
+    const [user] = await withGroupIds([await super.findById(this.modelName, id)]);
+    const gid = parseInt(groupId, 10);
+    if (!user.group_ids.includes(gid)) throw new Error("The user is not in that group");
+    if (user.group_ids.length === 1) throw new Error("A user keeps at least one group");
+    logger.info(`Removing user ${user.username} from group ${gid}`);
+    if (user.group_id === gid) {
+      // the next group becomes its first, and leaves the other groups
+      const next = user.group_ids.find((g) => g !== gid);
+      await mysql.do("UPDATE AnsibleForms.`users` SET group_id=? WHERE id=?", [next, user.id]);
+      await mysql.do("DELETE FROM AnsibleForms.`user_groups` WHERE user_id=? AND group_id=?", [user.id, next]);
+    } else {
+      await mysql.do("DELETE FROM AnsibleForms.`user_groups` WHERE user_id=? AND group_id=?", [user.id, gid]);
+    }
   }
 
   static async findByUsername(username) {
@@ -96,7 +188,8 @@ class User extends CrudModel {
 
   static authenticate(username, password) {
     logger.info(`Checking password for user ${username}`);
-    var query = "SELECT users.*,GROUP_CONCAT(groups.name) `groups` FROM AnsibleForms.`users`,AnsibleForms.`groups` WHERE `users`.group_id=`groups`.id AND username=?;";
+    // every group of the user : its first (users.group_id) and the others (user_groups)
+    var query = "SELECT users.*,(SELECT GROUP_CONCAT(g.name) FROM AnsibleForms.`groups` g WHERE g.id=users.group_id OR g.id IN (SELECT ug.group_id FROM AnsibleForms.`user_groups` ug WHERE ug.user_id=users.id)) `groups` FROM AnsibleForms.`users` WHERE username=?;";
     return mysql.do(query, username).then((res) => {
       if (res.length > 0 && res[0].password) {
         return crypto.checkPassword(password, res[0].password, res[0]);

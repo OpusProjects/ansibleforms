@@ -18,7 +18,7 @@
 /*                                                    */
 /******************************************************/
 
-import { computed } from 'vue';
+import { computed, useAttrs } from 'vue';
 
 // INIT
 
@@ -63,13 +63,20 @@ const props = defineProps({
 
 // COMPUTED
 
+// a disabled button is grey, whatever its colour : a faded blue still read as clickable (Delete
+// next to a grey Save). `disabled` passes through as an attribute, so it is read from there.
+const attrs = useAttrs();
+const color = computed(() =>
+  attrs.disabled !== undefined && attrs.disabled !== false ? 'secondary' : props.colorClass,
+);
+
 const classes = computed(() => {
   if (props.cssClass && !props.toggle) {
-    return `btn-outline-${props.colorClass} ${props.cssClass}`;
+    return `btn-outline-${color.value} ${props.cssClass}`;
   } else if (props.cssClassToggle && props.toggle) {
-    return `btn-outline-${props.colorClass} ${props.cssClassToggle}`;
+    return `btn-outline-${color.value} ${props.cssClassToggle}`;
   } else {
-    return `btn-outline-${props.colorClass}`;
+    return `btn-outline-${color.value}`;
   }
 });
 </script>

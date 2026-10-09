@@ -8,7 +8,7 @@
 /*  follows its new name.                                         */
 /*                                                                */
 /******************************************************************/
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import Profile from '@/lib/Profile';
 import { useI18n } from 'vue-i18n';
@@ -61,9 +61,9 @@ const userCount = computed(() => {
 });
 
 // ─── tabs ─────────────────────────────────────────────────────────────────────
-// General (the name and the options), Users, Groups ; the tab kept in the url
+// Details (the name, its description and the options), Users, Groups ; the tab kept in the url
 const tabs = computed(() => [
-  { key: 'general', label: t('settings.settingsPage.roleTabGeneral'), icon: 'sliders' },
+  { key: 'general', label: t('settings.common.tabDetails'), icon: 'sliders' },
   { key: 'users', label: t('settings.settingsPage.users'), icon: 'user' },
   { key: 'groups', label: t('settings.settingsPage.groups'), icon: 'users' },
 ]);
@@ -148,6 +148,21 @@ async function confirmAdd() {
   }
 }
 
+// ─── Remove from role ─────────────────────────────────────────────────────────
+// the rows ticked in the Users or Groups table ; none kept from one tab to the other
+const selected = ref([]);
+watch(activeTab, () => (selected.value = []));
+
+/**
+ * Removes the users or groups ticked from the role, saved at once.
+ */
+async function removeSelected() {
+  const kind = activeTab.value;
+  role.value[kind] = role.value[kind].filter((e) => !selected.value.includes(e._uid));
+  selected.value = [];
+  await saveRoles();
+}
+
 // Delete asks first : it saves at once
 const confirmDelete = ref(false);
 
@@ -175,7 +190,7 @@ onMounted(async () => {
 });
 </script>
 <template>
-  <BsModal v-if="confirmDelete" @close="confirmDelete = false">
+  <BsModal v-if="confirmDelete" size="md" @close="confirmDelete = false">
     <template #title> {{ t('common.delete') }} {{ role?.name }} </template>
     <template #default>
       <p class="mb-0 fs-6 user-select-none">
@@ -269,6 +284,7 @@ onMounted(async () => {
             v-else-if="role"
             v-model:role="roles[roleIndex]"
             :tab="activeTab"
+            v-model:selected="selected"
             @removed="saveRoles()"
             :throughGroups="throughGroups"
             :readOnly="readOnly"
@@ -281,6 +297,10 @@ onMounted(async () => {
           />
         </template>
         <template v-if="role" #actions>
+          <!-- what is ticked in the table : removed from the role -->
+          <BsButton v-if="selected.length" icon="trash" :disabled="readOnly" @click="removeSelected()"
+            >{{ t('settings.settingsPage.removeFromRole') }} ({{ selected.length }})</BsButton
+          >
           <!-- the tab's own add, top right as on the other pages -->
           <BsButton
             v-if="activeTab === 'users' && !role._public"

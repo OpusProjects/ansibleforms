@@ -489,3 +489,20 @@
   color: var(--bs-secondary-color);
   font-weight: 600;
 }
+
+// The users list's change password dialog (AppAdminMulti, BsOffCanvas dialogClass) : its labels a
+// width of their own, each on one line ("Repeat password") with room before the field, and the
+// dialog that much wider, so the fields keep their width
+.af-password-dialog {
+  max-width: 37.5rem;
+  .modal-body .col-sm-2 {
+    flex: 0 0 auto;
+    width: 10.5rem;
+    padding-right: 1rem;
+    white-space: nowrap;
+  }
+  .modal-body .col-sm-10 {
+    flex: 1 1 0;
+    width: auto;
+  }
+}
