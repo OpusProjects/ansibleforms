@@ -144,9 +144,11 @@ class Runner extends CrudModel {
    * missing is left alone : its RTE may not have written its first heartbeat yet.
    */
   static async removeUnresponsive() {
+    // a plain DELETE with a subquery : a multi-table DELETE resolves its alias against the
+    // connection's default database, and ours has none ("No database selected")
     const res = await mysql.do(
-      'DELETE r FROM AnsibleForms.`runners` r JOIN AnsibleForms.`nodes` n ON n.id = r.node_id ' +
-        'WHERE r.node_id IS NOT NULL AND COALESCE(r.managed, 0) = 0 AND n.last_seen < (NOW() - INTERVAL ? SECOND)',
+      'DELETE FROM AnsibleForms.`runners` WHERE node_id IS NOT NULL AND COALESCE(managed, 0) = 0 ' +
+        'AND node_id IN (SELECT id FROM AnsibleForms.`nodes` WHERE last_seen < (NOW() - INTERVAL ? SECOND))',
       [UNRESPONSIVE_REMOVE_SECONDS],
     );
     const n = res?.affectedRows || 0;
