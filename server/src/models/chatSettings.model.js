@@ -44,6 +44,9 @@ const ChatSettings = function (s) {
   this.provider = CHAT_PROVIDERS.includes(s.provider) ? s.provider : '';
   // undefined = keep, "" = clear, anything else = encrypt
   if (s.api_key !== undefined) this.api_key = s.api_key === '' ? '' : crypto.encrypt(String(s.api_key));
+  // an api credential of Connections > Credentials whose password is the key ; undefined =
+  // keep (the config seed sets the key itself), "" = none
+  if (s.credential !== undefined) this.credential = s.credential ? String(s.credential) : null;
   this.base_url = s.base_url || '';
   this.model = s.model || '';
   this.max_turns = clampInt(s.max_turns, 1, 200, 20);
@@ -85,6 +88,50 @@ ChatSettings.find = async function () {
 };
 
 /**
+ * Checks the credential the chat is given : it exists and is an api one.
+ *
+ * Args:
+ *   name (string): the credential's name ; empty is none.
+ *
+ * Raises:
+ *   Error: the credential does not exist, or is not an api one.
+ */
+ChatSettings.assertCredentialUsable = async function (name) {
+  if (!name) return;
+  const { default: CrudModel } = await import('./crud.model.js');
+  const cred = await CrudModel.findByName('credential', name);
+  if (!cred) throw new Error(`No credential named '${name}'`);
+  if (cred.credential_type !== 'api') throw new Error(`The chat needs an api credential : '${name}' is not one`);
+};
+
+/**
+ * The row with the key it sends : its credential's password when it names one (read from a
+ * secret store when the credential names one), else its own key. For the server only.
+ *
+ * Args:
+ *   row (object): the row, from find().
+ *
+ * Returns:
+ *   Promise<object>: a copy with api_key set from its credential, or the row.
+ */
+ChatSettings.withCredential = async function (row) {
+  if (!row?.credential) return row;
+  const { default: Credential } = await import('./credential.model.v2.js');
+  const exact = '^' + String(row.credential).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$';
+  const cred = await Credential.resolveCredential(exact);
+  if (!cred) {
+    logger.error(`The chat uses the credential '${row.credential}', which is not found`);
+    return { ...row, api_key: '' };
+  }
+  return { ...row, api_key: cred.password || '' };
+};
+
+/** the row with the key it sends, for the chat itself */
+ChatSettings.findResolved = async function () {
+  return ChatSettings.withCredential(await ChatSettings.find());
+};
+
+/**
  * whether a provider is configured well enough to chat : a provider and a model, a base url
  * where the provider has none of its own, and a key - unless the auth type sends none, or
  * the base url is set (a local model server or an internal proxy often takes no key)
@@ -103,7 +150,7 @@ ChatSettings.configuredCached = async function () {
   if (Date.now() - configuredCache.fetchedAt < 30 * 1000) return configuredCache.value;
   let value = false;
   try {
-    value = ChatSettings.isConfigured(await ChatSettings.find());
+    value = ChatSettings.isConfigured(await ChatSettings.findResolved());
   } catch (e) {
     logger.debug(`Could not read the chat settings : ${e.message}`);
   }

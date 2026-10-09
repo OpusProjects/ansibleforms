@@ -22,6 +22,10 @@
 /*      saved: Function (after a successful update)               */
 /*      saveExtra: Save was pressed with extraDirty               */
 /*                                                                */
+/*  field.valuesFrom: { url, filter?(record) } - a dropdown whose  */
+/*      choices are records of the api (a credential), by name,    */
+/*      an empty choice first                                     */
+/*                                                                */
 /******************************************************************/
 
 import { ref, onMounted, computed, watch } from 'vue';
@@ -274,8 +278,26 @@ for (const field of fields.value) {
   }
 }
 
+// the choices of the dropdowns that load them (field.valuesFrom), by field key
+const loadedValues = ref({});
+
+/**
+ * Loads the choices of the dropdowns that name an api list (field.valuesFrom) : the records'
+ * names, an empty choice first (none).
+ */
+async function loadValues() {
+  for (const field of props.settings.fields.filter((f) => f.valuesFrom)) {
+    const res = await axios.get(field.valuesFrom.url, TokenStorage.getAuthentication()).catch(() => null);
+    const records = (res?.data?.records || []).filter((r) => !field.valuesFrom.filter || field.valuesFrom.filter(r));
+    loadedValues.value[field.key] = [
+      { value: '', label: '' },
+      ...records.map((r) => ({ value: r.name, label: r.name })),
+    ];
+  }
+}
+
 onMounted(async () => {
-  await loadItem();
+  await Promise.all([loadItem(), loadValues()]);
 });
 
 defineExpose({
@@ -361,7 +383,7 @@ defineExpose({
                 :icon="field.icon"
                 :help="field.help"
                 :type="field.type"
-                :values="field.values"
+                :values="loadedValues[field.key] || field.values"
                 :liveSync="field.type === 'editor'"
                 v-model="$v.item[field.key].$model"
                 :disabled="disabledFields[field.key]"
@@ -411,7 +433,7 @@ defineExpose({
               :icon="field.icon"
               :help="field.help"
               :type="field.type"
-              :values="field.values"
+              :values="loadedValues[field.key] || field.values"
               :liveSync="field.type === 'editor'"
               v-model="$v.item[field.key].$model"
               :disabled="disabledFields[field.key]"

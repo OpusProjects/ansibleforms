@@ -1581,13 +1581,16 @@ export default function getSettings(t) {
           dependency: 'provider',
         },
         {
-          key: 'api_key',
+          // the key : the password of an api credential of Connections > Credentials (a key
+          // saved before credentials keeps working while none is chosen)
+          key: 'credential',
           tab: 'provider',
           icon: 'key',
           line: 1,
-          type: 'password',
-          label: t('settings.chat.apiKey'),
-          help: t('settings.chat.apiKeyHelp'),
+          type: 'select',
+          label: t('settings.chat.credential'),
+          help: t('settings.chat.credentialHelp'),
+          valuesFrom: { url: '/api/v2/credential/', filter: (c) => c.credential_type === 'api' },
           dependency: 'provider',
         },
         {

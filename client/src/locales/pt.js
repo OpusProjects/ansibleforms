@@ -871,6 +871,8 @@ export default {
       model: 'Modelo',
       modelHelp: 'Tal como o fornecedor o designa',
       apiKey: 'Chave de API',
+      credential: 'Credencial',
+      credentialHelp: 'Uma credencial api: a sua palavra-passe é a chave',
       apiKeyHelp: 'Guardada encriptada',
       baseUrl: 'URL base',
       baseUrlHelp: 'Vazio = o predefinido do fornecedor',

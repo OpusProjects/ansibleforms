@@ -862,6 +862,8 @@ export default {
       model: 'モデル',
       modelHelp: 'プロバイダーでの名前',
       apiKey: 'API キー',
+      credential: '資格情報',
+      credentialHelp: 'api 資格情報：そのパスワードがキーです',
       apiKeyHelp: '暗号化して保存されます',
       baseUrl: 'ベース URL',
       baseUrlHelp: '空欄 = プロバイダーの既定値',

@@ -547,6 +547,7 @@ const SCHEMA_MANIFEST = {
                                'schedule.claim_node', 'schedule.claim_since', 'runners.flavour',
                                'credentials.credential_type', 'repositories.credential', 'groups.description',
                                'secret_stores.credential', 'credentials.client_cert', 'credentials.client_key',
+                               'chat_settings.credential',
                                'users.description'] },
   },
 };
@@ -881,6 +882,8 @@ async function patchVersion7(messages, success, failed) {
   const mailBuffer = fs.readFileSync(`${__dirname}/../db/create_mail_servers_table.sql`);
   await checkPromise(addTable("mail_servers", mailBuffer.toString()), messages, success, failed);
   await checkPromise(copyMailSettingsToServers(), messages, success, failed);
+  // the chat's key can be an api credential's password instead of its own
+  await checkPromise(addColumn("chat_settings", "credential", "varchar(250)", true, "NULL"), messages, success, failed);
   // a description on the local groups and users : what a group is for, who owns an account
   await checkPromise(addColumn("groups", "description", "varchar(250)", true, "NULL"), messages, success, failed);
   await checkPromise(addColumn("users", "description", "varchar(250)", true, "NULL"), messages, success, failed);

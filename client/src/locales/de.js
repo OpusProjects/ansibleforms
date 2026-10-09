@@ -946,6 +946,8 @@ export default {
       model: 'Modell',
       modelHelp: 'Wie der Anbieter es nennt',
       apiKey: 'API-Schlüssel',
+      credential: 'Anmeldeinformation',
+      credentialHelp: 'Eine API-Anmeldeinformation: ihr Passwort ist der Schlüssel',
       apiKeyHelp: 'Verschlüsselt gespeichert',
       baseUrl: 'Basis-URL',
       baseUrlHelp: 'Leer = Standard des Anbieters',

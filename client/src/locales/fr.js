@@ -943,6 +943,8 @@ export default {
       model: 'Modèle',
       modelHelp: 'Tel que le fournisseur le nomme',
       apiKey: 'Clé API',
+      credential: 'Identifiant',
+      credentialHelp: 'Un identifiant api : son mot de passe est la clé',
       apiKeyHelp: 'Stockée chiffrée',
       baseUrl: 'URL de base',
       baseUrlHelp: 'Vide = valeur par défaut du fournisseur',

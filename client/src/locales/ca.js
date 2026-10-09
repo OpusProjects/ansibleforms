@@ -873,6 +873,8 @@ export default {
       model: 'Model',
       modelHelp: "Tal com l'anomena el proveïdor",
       apiKey: "Clau de l'API",
+      credential: 'Credencial',
+      credentialHelp: 'Una credencial api: la seva contrasenya és la clau',
       apiKeyHelp: 'Es desa xifrada',
       baseUrl: 'URL base',
       baseUrlHelp: 'Buit = el predeterminat del proveïdor',

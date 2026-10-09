@@ -31,6 +31,11 @@ const update = async function (req, res) {
     }
     const body = { ...req.body };
     if (body.api_key === MASK) body.api_key = existing.api_key;
+    try {
+      await ChatSettings.assertCredentialUsable(body.credential);
+    } catch (err) {
+      return res.status(400).json(RestResultv2.error(i18n.t(req, 'resources.failedUpdateChatSettings'), err.message));
+    }
     let record;
     try {
       record = new ChatSettings(body);
@@ -49,8 +54,10 @@ const update = async function (req, res) {
 const check = async function (req, res) {
   try {
     const existing = await ChatSettings.find();
-    const body = { ...existing, ...(req.body || {}) };
+    let body = { ...existing, ...(req.body || {}) };
     if (!body.api_key || body.api_key === MASK) body.api_key = existing.api_key;
+    // the key of the credential it names (the one on the page, saved or not)
+    body = await ChatSettings.withCredential(body);
     const result = await checkProvider(body);
     res.status(200).json(RestResultv2.single(result));
   } catch (err) {

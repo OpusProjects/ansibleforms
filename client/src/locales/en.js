@@ -926,6 +926,8 @@ export default {
       model: 'Model',
       modelHelp: 'As the provider names it',
       apiKey: 'API key',
+      credential: 'Credential',
+      credentialHelp: 'An api credential: its password is the key',
       apiKeyHelp: 'Stored encrypted',
       baseUrl: 'Base URL',
       baseUrlHelp: "Empty = the provider's default",
