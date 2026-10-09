@@ -712,8 +712,7 @@ export default {
         'Zewnętrzne menedżery sekretów, takie jak HashiCorp Vault, z których poświadczenia odczytują użytkownika i hasło.',
       editStore: 'Edytuj magazyn sekretów',
       deleteStore: 'Usuń magazyn sekretów',
-      nameHelp:
-        "Poświadczenia odwołują się do magazynu za pomocą tej nazwy. Nazwij magazyn HashiCorp Vault 'vault', aby poświadczenia ze ścieżką vault nadal działały.",
+      nameHelp: "Poświadczenia używają tej nazwy; nazwij HashiCorp Vault 'vault', by ścieżki Vault działały.",
       type: 'Typ',
       namespace: 'Przestrzeń nazw',
       namespaceHelp: 'Przestrzeń nazw Vault Enterprise. W przeciwnym razie pozostaw puste.',

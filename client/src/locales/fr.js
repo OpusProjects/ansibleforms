@@ -774,8 +774,7 @@ export default {
         'Gestionnaires de secrets externes, comme HashiCorp Vault, dont les identifiants lisent leur utilisateur et mot de passe.',
       editStore: 'Modifier le coffre de secrets',
       deleteStore: 'Supprimer le coffre de secrets',
-      nameHelp:
-        "Les identifiants désignent le coffre par ce nom. Nommez un HashiCorp Vault 'vault' pour que les identifiants avec un chemin Vault continuent de fonctionner.",
+      nameHelp: "Les identifiants utilisent ce nom ; nommez un HashiCorp Vault 'vault' pour garder les chemins Vault.",
       type: 'Type',
       namespace: 'Namespace',
       namespaceHelp: 'Namespace Vault Enterprise. Sinon, laissez vide.',

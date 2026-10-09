@@ -767,8 +767,7 @@ export default {
         'Externe secret managers, zoals HashiCorp Vault, waaruit inloggegevens hun gebruiker en wachtwoord lezen.',
       editStore: 'Secret Store bewerken',
       deleteStore: 'Secret Store verwijderen',
-      nameHelp:
-        "Inloggegevens verwijzen met deze naam naar de store. Noem een HashiCorp Vault 'vault' zodat inloggegevens met een vault pad blijven werken.",
+      nameHelp: "Referenties gebruiken deze naam; noem een HashiCorp Vault 'vault' zodat Vault-paden werken.",
       type: 'Type',
       namespace: 'Namespace',
       namespaceHelp: 'Vault Enterprise namespace. Anders leeg laten.',

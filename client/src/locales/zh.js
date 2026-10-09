@@ -695,7 +695,7 @@ export default {
       description: '外部密钥管理器（例如 HashiCorp Vault），凭据从中读取用户和密码。',
       editStore: '编辑密钥库',
       deleteStore: '删除密钥库',
-      nameHelp: "凭据通过此名称引用密钥库。将 HashiCorp Vault 命名为 'vault' 可使带有 vault 路径的凭据继续有效。",
+      nameHelp: "凭据使用此名称；将 HashiCorp Vault 命名为 'vault' 以保持 Vault 路径可用。",
       type: '类型',
       namespace: '命名空间',
       namespaceHelp: 'Vault Enterprise 命名空间。否则请留空。',

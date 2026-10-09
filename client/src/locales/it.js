@@ -766,8 +766,7 @@ export default {
       description: 'Gestori di segreti esterni, come HashiCorp Vault, da cui le credenziali leggono utente e password.',
       editStore: 'Modifica archivio di segreti',
       deleteStore: 'Elimina archivio di segreti',
-      nameHelp:
-        "Le credenziali si riferiscono all'archivio con questo nome. Chiama 'vault' un HashiCorp Vault perché le credenziali con un percorso Vault continuino a funzionare.",
+      nameHelp: "Le credenziali usano questo nome; chiama 'vault' un HashiCorp Vault per i percorsi Vault.",
       type: 'Tipo',
       namespace: 'Namespace',
       namespaceHelp: 'Namespace di Vault Enterprise. Altrimenti lascia vuoto.',
