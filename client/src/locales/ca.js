@@ -1037,6 +1037,7 @@ export default {
       addRole: 'Afegeix un rol',
       newRole: 'Rol nou',
       addConstant: 'Afegeix una constant',
+      newConstant: 'Constant nova',
       addSubkey: 'Afegeix una subclau',
       subkeyCount: '{n} subclau | {n} subclaus',
       addGroup: 'Afegeix un grup',

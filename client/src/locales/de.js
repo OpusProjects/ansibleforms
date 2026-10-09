@@ -1043,6 +1043,7 @@ export default {
       addRole: 'Rolle hinzufuegen',
       newRole: 'Neue Rolle',
       addConstant: 'Konstante hinzufuegen',
+      newConstant: 'Neue Konstante',
       addSubkey: 'Unterschluessel hinzufuegen',
       subkeyCount: '{n} Unterschluessel | {n} Unterschluessel',
       addGroup: 'Gruppe hinzufuegen',

@@ -1036,6 +1036,7 @@ export default {
       addRole: 'Adicionar Função',
       newRole: 'Nova função',
       addConstant: 'Adicionar Constante',
+      newConstant: 'Nova constante',
       addSubkey: 'Adicionar Subchave',
       subkeyCount: '{n} subchave | {n} subchaves',
       addGroup: 'Adicionar Grupo',

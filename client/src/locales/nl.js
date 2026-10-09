@@ -1031,6 +1031,7 @@ export default {
       addRole: 'Rol toevoegen',
       newRole: 'Nieuwe rol',
       addConstant: 'Constante toevoegen',
+      newConstant: 'Nieuwe constante',
       addSubkey: 'Subsleutel toevoegen',
       subkeyCount: '{n} subsleutel | {n} subsleutels',
       addGroup: 'Groep toevoegen',
