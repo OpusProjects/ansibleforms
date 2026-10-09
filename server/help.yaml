@@ -566,6 +566,18 @@
 
       An unknown value falls back to `strict`.
     version: 6.3.0
+  - name: ENABLE_SSO
+    version: 7.0.0
+    type: boolean
+    allowed: 0, 1
+    short: Enable single sign-on
+    hint: Users can sign in with the SSO providers (Entra ID, OIDC)
+    default: 1
+    description: |
+      Lets users sign in with the active SSO provider of each type (Entra ID, OpenID Connect)
+      configured under Settings > SSO. Off, the login page offers no provider and their
+      sign-in is refused, while the providers stay configured. Takes effect at once, without a
+      restart.
   - name: ENABLE_MCP
     version: 6.4.0
     type: boolean

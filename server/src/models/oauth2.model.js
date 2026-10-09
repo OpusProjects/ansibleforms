@@ -34,6 +34,12 @@ class OAuth2 extends CrudModel {
     // required-field check and checkExist, which otherwise happen inside super.*
     static async create(data, opts = {}) {
         CrudModel.assertRequired(this.modelName, data);
+        // no Enable in the dialog any more : a new provider is the one its type signs in with when
+        // its type has none yet ; another is chosen with Use for sign-in (enable : 1)
+        if (data.enable === undefined && !opts.fromSeed) {
+            const active = await mysql.do('SELECT id FROM AnsibleForms.`oauth2_providers` WHERE enable = 1 AND provider = ?', [data.provider]);
+            data.enable = active.length ? 0 : 1;
+        }
         data =await this.preProcess(data, 'create', opts);
         return super.create(this.modelName, data, opts);
     }

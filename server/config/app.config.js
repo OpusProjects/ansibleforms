@@ -49,6 +49,8 @@ var app_config = {
   // Serve the MCP server for AI agents on /api/v2/mcp. Off by default : it is a new way
   // in, and an operator should opt in to it.
   enableMcp: (process.env.ENABLE_MCP ?? 0) == 1,
+  // SSO as a whole (the providers of Settings > SSO) : on unless switched off
+  enableSso: (process.env.ENABLE_SSO ?? 1) == 1,
   // MCP : read only (no launch_job, no relaunch_job), and which forms it offers - all the
   // user's forms, or only those offered in the chat assistant (enableForChat)
   mcpReadOnly: (process.env.MCP_READ_ONLY ?? 0) == 1,

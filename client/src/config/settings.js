@@ -556,11 +556,26 @@ export default function getSettings(t) {
       ],
       actions: [
         { name: 'edit', title: t('settings.oauth2.editProvider'), icon: 'pencil', color: 'edit' },
+        // the one its type signs in with : the others of its type stop being it (oauth2.model)
+        {
+          name: 'use',
+          title: t('settings.oauth2.useForSignIn'),
+          icon: 'right-to-bracket',
+          color: 'edit',
+          dividerBefore: true,
+          enabledWhen: (p) => !p.enable,
+          update: (p) => ({ enable: 1, provider: p.provider }),
+        },
+        {
+          name: 'change_password',
+          dividerBefore: true,
+          title: t('settings.common.changePassword'),
+          icon: 'lock',
+          color: 'change',
+        },
         { name: 'delete', title: t('settings.oauth2.deleteProvider'), icon: 'trash', color: 'delete' },
-        { name: 'change_password', title: t('settings.common.changePassword'), icon: 'lock', color: 'change' },
       ],
       fields: [
-        { key: 'enable', label: t('settings.fields.enable'), type: 'checkbox' },
         {
           key: 'provider',
           label: t('settings.oauth2.provider'),
@@ -688,6 +703,15 @@ export default function getSettings(t) {
           dependency: 'provider',
           dependencyValues: [''],
           hidden: true,
+        },
+        // the provider its type signs in with (one per type) : a yes / no column, not in the dialog ;
+        // a new one is it when its type has none, another is chosen with Use for sign-in
+        {
+          key: 'enable',
+          label: t('settings.oauth2.active'),
+          type: 'checkbox',
+          noInput: true,
+          width: '7rem',
         },
       ],
     },

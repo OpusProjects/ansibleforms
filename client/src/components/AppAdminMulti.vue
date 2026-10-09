@@ -61,6 +61,8 @@
 /*      dialog opens newItem() (exposed) to create a record, and  */
 /*      gets `created` with its name                              */
 /*  action.to: (item) => route - the action goes to a page        */
+/*  action.update: (item) => object - the action saves those      */
+/*      fields of the record (Use for sign-in), then reloads      */
 /*  action.dividerBefore: a line above it in the row menu, apart  */
 /*      from the actions before it (Delete always has one)        */
 /*  action.enabledWhen: (item) => boolean - the action is off for */
@@ -1073,6 +1075,9 @@ function dispatchAction(action, item) {
   if (busyLabel(item)) return;
   // an action that goes to a page (action.to : the user's Groups tab, its Add group open)
   if (typeof action.to === 'function') return router.push(action.to(item));
+  // an action that saves a few fields of the record (action.update : an SSO provider's Use for
+  // sign-in), then shows the list again
+  if (typeof action.update === 'function') return quickUpdate(item, action.update(item));
   switch (action.name) {
     case 'edit':
       // a record with its own page is edited there
@@ -1212,6 +1217,23 @@ async function saveDefaults() {
   }
   cancelDefaults();
   if (changed.length) await loadItems();
+}
+
+/**
+ * Saves a few fields of a record, then reloads the list.
+ *
+ * Args:
+ *   item (object): the record.
+ *   data (object): the fields to save.
+ */
+async function quickUpdate(item, data) {
+  try {
+    await axios.put(`/api/v${props.apiVersion}/${objectType}/${item[idKey]}`, data, TokenStorage.getAuthentication());
+    toast.success(objectTitle(item.name || '', t('settings.common.isUpdated')));
+    await loadItems();
+  } catch (err) {
+    toast.error(Helpers.parseAxiosResponseError(err, 'Failed to update item'));
+  }
 }
 
 /**
@@ -1441,6 +1463,8 @@ defineExpose({
     <template #footer>
       <slot></slot>
     </template>
+    <!-- the page's own tabs (the SSO page : General, Providers), above the card -->
+    <template v-if="$slots.tabs" #tabs><slot name="tabs"></slot></template>
     <!-- action buttons go BELOW the card, never in the header : see AppSettings -->
     <template v-if="!noCreate || defaultPicker" #actions>
       <!-- the defaults : a dialog to choose them -->
