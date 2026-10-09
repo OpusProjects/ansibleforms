@@ -526,7 +526,7 @@ function exportCsv() {
           <!-- Column headers -->
           <tr>
             <!-- Select-all checkbox -->
-            <th v-if="selectable" style="width: 2rem" class="text-center">
+            <th v-if="selectable" class="text-center bs-dt-select">
               <input
                 type="checkbox"
                 class="form-check-input"
@@ -557,7 +557,7 @@ function exportCsv() {
           </tr>
           <!-- Per-column filter row -->
           <tr v-if="filterableColumns.length" class="bs-dt-filter-row">
-            <th v-if="selectable"></th>
+            <th v-if="selectable" class="bs-dt-select"></th>
             <th v-for="col in visibleColumns" :key="'f-' + col.key" :class="{ 'text-end': col.align === 'end' }">
               <select
                 v-if="col.filterable && col.filterType === 'boolean'"
@@ -601,7 +601,7 @@ function exportCsv() {
             @mousedown="onRowMousedown($event, item)"
             @mouseenter="onRowMouseenter(item)"
           >
-            <td v-if="selectable" class="text-center" @click.stop>
+            <td v-if="selectable" class="text-center bs-dt-select" @click.stop>
               <input
                 type="checkbox"
                 class="form-check-input"
@@ -659,6 +659,11 @@ function exportCsv() {
 </template>
 
 <style scoped>
+/* the selection column : as wide as a checkbox and the cell's padding (framed tables give
+   their first cell more, styles/tables.scss) */
+.bs-dt-select {
+  width: 2rem;
+}
 .bs-dt-toolbar {
   padding: 0.75rem 1.25rem;
   border-bottom: 1px solid var(--bs-border-color);
