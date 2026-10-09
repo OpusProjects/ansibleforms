@@ -365,6 +365,7 @@ export default {
       'Ta strona nadal działa na starszej kompilacji niż serwer. Przeładuj stronę, aby uzyskać nową wersję.',
   },
   common: {
+    filter: 'Filtr',
     // the info icon after a page title, that shows the page's description
     aboutThisPage: 'O tej stronie',
     clear: 'Wyczyść',
@@ -388,6 +389,7 @@ export default {
     apply: 'Zastosuj',
   },
   dataTable: {
+    rangeOf: '{from}–{to} z {total}',
     selected: 'zaznaczono',
     clearSelection: 'Wyczyść zaznaczenie',
     selectAll: 'Zaznacz wszystkie ({count})',

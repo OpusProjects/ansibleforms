@@ -24,6 +24,8 @@ import i18n from '@/plugins/i18n';
 
 // Import our custom CSS
 import '@/styles/settings.scss';
+// the tables : one look for BsDataTable, the jobs table and the others (styles/tables.scss)
+import '@/styles/tables.scss';
 // Import all of Bootstrap's JS
 import 'bootstrap';
 

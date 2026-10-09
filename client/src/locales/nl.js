@@ -365,6 +365,7 @@ export default {
       'Deze pagina draait nog een oudere build dan de server. Herlaad de pagina om de nieuwe versie te krijgen.',
   },
   common: {
+    filter: 'Filter',
     // the info icon after a page title, that shows the page's description
     aboutThisPage: 'Over deze pagina',
     clear: 'Wissen',
@@ -388,6 +389,7 @@ export default {
     apply: 'Toepassen',
   },
   dataTable: {
+    rangeOf: '{from}–{to} van {total}',
     selected: 'geselecteerd',
     clearSelection: 'Selectie wissen',
     selectAll: 'Alle {count} selecteren',

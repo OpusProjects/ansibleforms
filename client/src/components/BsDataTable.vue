@@ -7,7 +7,9 @@
  *  items          Array   Full dataset
  *  columns        Array   [{ key, label, filterable?, sortable?, render?(val,row)→string,
  *                           sortValue?(row)→number|string,
- *                           filterType?: 'number' | 'boolean' | 'gt0' }]
+ *                           filterType?: 'number' | 'boolean' | 'gt0',
+ *                           align?: 'end' (numbers : header, filter and cells to the right),
+ *                           width?: a CSS width for the column (the rest share what is left) }]
  *  pageSize       Number  Initial page size (default 25) — a page size the user
  *                         picked before (cookie, needs `name`) wins over it
  *  name           String  Cookie key for pagination and column persistence ; also
@@ -16,17 +18,24 @@
  *  initialFilter  String  Initial text of the global search
  *  selectedIds    Set     Parent-owned Set of selected item ids (v-model:selectedIds)
  *  idKey          String  Field used as row id (default 'id')
+ *  toolbarTo      String  A selector the toolbar (search, columns, export) moves to, such as
+ *                         the page's title line, as the Forms page has its search there
+ *  framed         Boolean The table in a bordered box : a grey header bar with small
+ *                         uppercase labels, figures in tabular digits (the inventory pages)
  *
  * Emits
  * ─────
  *  update:selectedIds   Set   When selection changes
  *  row-click            item  When a row is single-clicked (after selection logic)
+
  */
 
 import { ref, computed, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Helpers from '@/lib/Helpers';
 import BsPagination from './BsPagination.vue';
+import BsSearch from './BsSearch.vue';
+import BsColumnPicker from './BsColumnPicker.vue';
 import { parseNumberFilter, csvCell, htmlToText } from '@/lib/dataTable';
 
 const { t } = useI18n();
@@ -42,6 +51,8 @@ const props = defineProps({
   activeId: { type: [String, Number], default: null },
   exportName: { type: String, default: null },
   initialFilter: { type: String, default: '' },
+  framed: { type: Boolean, default: false },
+  toolbarTo: { type: String, default: null },
 });
 
 const emit = defineEmits(['update:selectedIds', 'row-click']);
@@ -84,63 +95,15 @@ function persistHiddenColumns(hiddenSet) {
   Helpers.setCookie(`dt_cols_${props.name}`, JSON.stringify(payload), 365);
 }
 
-// ─── Column presets ───────────────────────────────────────────────────────────
-// A named set of hidden columns, kept in this browser (localStorage, per table `name`).
-// Storage can be unavailable (private window, blocked site data) : the presets then simply
-// do not persist, and the table works as before.
-const presets = ref([]);
-const presetNameInput = ref('');
-const showPresetInput = ref(false);
-
-function loadPresets() {
-  if (!props.name) return;
-  try {
-    const raw = localStorage.getItem(`dt_presets_${props.name}`);
-    const parsed = raw ? JSON.parse(raw) : [];
-    presets.value = Array.isArray(parsed)
-      ? parsed.filter((p) => p && typeof p.name === 'string' && Array.isArray(p.hidden))
-      : [];
-  } catch (e) {
-    presets.value = [];
-  }
-}
-
-function savePresetsToStorage() {
-  if (!props.name) return;
-  try {
-    localStorage.setItem(`dt_presets_${props.name}`, JSON.stringify(presets.value));
-  } catch (e) {
-    /* not persisted */
-  }
-}
-
-function applyPreset(preset) {
-  const s = new Set(preset.hidden);
+// ─── Column presets (BsColumnPicker keeps them ; a chosen one lands here) ─────────
+function applyPreset(s) {
   hiddenColumns.value = s;
   dropFiltersOfHidden(s);
   if (props.name) persistHiddenColumns(s);
 }
 
-function savePreset() {
-  const name = presetNameInput.value.trim();
-  if (!name) return;
-  const hidden = [...hiddenColumns.value];
-  const idx = presets.value.findIndex((p) => p.name === name);
-  if (idx >= 0) presets.value[idx] = { name, hidden };
-  else presets.value.push({ name, hidden });
-  savePresetsToStorage();
-  presetNameInput.value = '';
-  showPresetInput.value = false;
-}
-
-function deletePreset(name) {
-  presets.value = presets.value.filter((p) => p.name !== name);
-  savePresetsToStorage();
-}
-
 // Restore column visibility from cookie
 onMounted(() => {
-  loadPresets();
   if (props.name) {
     const saved = Helpers.getCookie(`dt_cols_${props.name}`);
     if (saved) {
@@ -243,9 +206,22 @@ const filteredItems = computed(() => {
 
 // ─── Pagination ───────────────────────────────────────────────────────────────
 const pageItems = ref([]);
+// the toolbar buttons : the page's own buttons (BsButton : outline primary, normal size) in
+// the framed bar, small and grey otherwise
+const toolButton = computed(() => (props.framed ? 'btn-outline-primary' : 'btn-sm btn-outline-secondary'));
+// the rows of the page among the filtered ones, for the framed footer : 1-25 of 140
+const pageRange = computed(() => {
+  const total = filteredItems.value.length;
+  if (!total || !pageItems.value.length) return t('dataTable.rangeOf', { from: 0, to: 0, total });
+  const from = (pagerState.value.page - 1) * pagerState.value.pageSize + 1;
+  return t('dataTable.rangeOf', { from, to: from + pageItems.value.length - 1, total });
+});
 
-function onPageChange(slice) {
+// where the pager is (page, page size), for the framed footer's range
+const pagerState = ref({ page: 1, pageSize: props.pageSize });
+function onPageChange(slice, state) {
   pageItems.value = slice;
+  if (state) pagerState.value = state;
 }
 
 // When a FILTER changes, reset to first page by re-keying the paginator.
@@ -455,10 +431,14 @@ function clearSelection() {
 // ─── CSV export ───────────────────────────────────────────────────────────────
 // The filtered rows, every column, as the plain text the table shows. CSV rather than
 // .xlsx : no library, and Excel opens it. The BOM makes Excel read it as UTF-8.
+// a spacer column (`spacer: true`) only takes up the width left : no data, not exported and
+// not in the Columns menu
+const dataColumns = computed(() => props.columns.filter((c) => !c.spacer));
+
 function exportCsv() {
-  const lines = [props.columns.map((c) => csvCell(c.label)).join(',')];
+  const lines = [dataColumns.value.map((c) => csvCell(c.label)).join(',')];
   for (const item of filteredItems.value) {
-    lines.push(props.columns.map((col) => csvCell(cellPlain(item, col))).join(','));
+    lines.push(dataColumns.value.map((col) => csvCell(cellPlain(item, col))).join(','));
   }
   const blob = new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
@@ -472,122 +452,76 @@ function exportCsv() {
 </script>
 
 <template>
-  <div class="bs-data-table">
-    <!-- Toolbar -->
-    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-      <!-- Global search -->
-      <input
-        v-model="globalFilter"
-        type="search"
-        class="form-control form-control-sm"
-        style="max-width: 220px"
-        :placeholder="t('common.search')"
-      />
-
-      <!-- Selection info + bulk helpers -->
-      <span v-if="selectable && selectedIds.size" class="text-muted small">
-        {{ selectedIds.size }} {{ t('dataTable.selected') }}
-      </span>
-      <button v-if="selectable && selectedIds.size" class="btn btn-sm btn-outline-secondary" @click="clearSelection">
-        <font-awesome-icon icon="xmark" class="me-1" />{{ t('dataTable.clearSelection') }}
-      </button>
-      <button
-        v-if="selectable && selectedIds.size < filteredItems.length"
-        class="btn btn-sm btn-outline-secondary"
-        @click="selectAll"
+  <div class="bs-data-table" :class="{ 'af-table-frame': framed }">
+    <!-- Toolbar : on the page's title line with toolbarTo, else the frame's top bar when framed -->
+    <Teleport defer :to="toolbarTo || 'body'" :disabled="!toolbarTo">
+      <!-- on the title line (toolbarTo) : right aligned, the search narrowing first, and the
+           buttons wrapping onto another row only when even that does not make room -->
+      <div
+        class="d-flex align-items-center gap-2"
+        :class="toolbarTo ? 'bs-dt-toolbar-moved flex-wrap' : framed ? 'bs-dt-toolbar flex-wrap' : 'mb-2 flex-wrap'"
       >
-        {{ t('dataTable.selectAll', { count: filteredItems.length }) }}
-      </button>
+        <!-- Global search -->
+        <!-- framed : the search of the Forms page (grey icon box, clear button) -->
+        <BsSearch v-if="framed" v-model="globalFilter" class="af-table-search" :placeholder="t('common.filter')" />
+        <input
+          v-else
+          v-model="globalFilter"
+          type="search"
+          class="form-control form-control-sm"
+          style="max-width: 220px"
+          :placeholder="t('common.search')"
+        />
 
-      <!-- Bulk actions slot -->
-      <slot v-if="selectable" name="bulk-actions" :selectedIds="selectedIds" :count="selectedIds.size" />
-
-      <div class="ms-auto d-flex gap-2">
-        <!-- Column picker -->
-        <div class="dropdown">
-          <button
-            class="btn btn-sm btn-outline-secondary dropdown-toggle"
-            type="button"
-            data-bs-toggle="dropdown"
-            data-bs-auto-close="outside"
-          >
-            <font-awesome-icon icon="table-columns" class="me-1" />{{ t('dataTable.columns') }}
-          </button>
-          <ul class="dropdown-menu dropdown-menu-end" style="min-width: 220px">
-            <li v-for="col in columns" :key="'cp-' + col.key" class="dropdown-item">
-              <label class="form-check mb-0 d-flex align-items-center gap-2" style="cursor: pointer">
-                <input
-                  type="checkbox"
-                  class="form-check-input"
-                  :checked="!hiddenColumns.has(col.key)"
-                  @change="toggleColumn(col.key)"
-                />
-                {{ col.label }}
-              </label>
-            </li>
-            <!-- Presets -->
-            <template v-if="name">
-              <li><hr class="dropdown-divider my-1" /></li>
-              <li class="px-3 py-1 bs-dt-presets-header">{{ t('dataTable.presets') }}</li>
-              <li
-                v-for="preset in presets"
-                :key="'preset-' + preset.name"
-                class="px-2 py-1 d-flex align-items-center gap-1"
-              >
-                <button
-                  class="btn btn-sm btn-link text-start p-0 flex-grow-1 text-truncate text-body text-decoration-none"
-                  :title="preset.name"
-                  @click.stop="applyPreset(preset)"
-                >
-                  <font-awesome-icon icon="table-columns" class="me-1 text-muted" />{{ preset.name }}
-                </button>
-                <button
-                  class="btn btn-link p-0 text-danger"
-                  :title="t('dataTable.presetDelete')"
-                  @click.stop="deletePreset(preset.name)"
-                >
-                  <font-awesome-icon icon="times" />
-                </button>
-              </li>
-              <li v-if="!presets.length" class="px-3 py-1 text-muted small">{{ t('dataTable.presetsEmpty') }}</li>
-              <li class="px-2 py-1">
-                <div v-if="showPresetInput" class="d-flex gap-1" @click.stop>
-                  <input
-                    v-model="presetNameInput"
-                    class="form-control form-control-sm"
-                    :placeholder="t('dataTable.presetNamePlaceholder')"
-                    @keyup.enter="savePreset"
-                    @keyup.escape="showPresetInput = false"
-                  />
-                  <button
-                    class="btn btn-sm btn-primary px-2"
-                    :title="t('dataTable.presetSave')"
-                    @click.stop="savePreset"
-                  >
-                    <font-awesome-icon icon="check" />
-                  </button>
-                  <button class="btn btn-sm btn-outline-secondary px-2" @click.stop="showPresetInput = false">
-                    <font-awesome-icon icon="times" />
-                  </button>
-                </div>
-                <button v-else class="btn btn-sm btn-outline-secondary w-100" @click.stop="showPresetInput = true">
-                  <font-awesome-icon icon="floppy-disk" class="me-1" />{{ t('dataTable.presetSaveAs') }}
-                </button>
-              </li>
-            </template>
-          </ul>
-        </div>
-
-        <!-- CSV export -->
-        <button v-if="exportName" class="btn btn-sm btn-outline-secondary" @click="exportCsv">
-          <font-awesome-icon icon="file-csv" class="me-1" />{{ t('dataTable.export') }}
+        <!-- Selection info + bulk helpers -->
+        <span v-if="selectable && selectedIds.size" class="text-muted small">
+          {{ selectedIds.size }} {{ t('dataTable.selected') }}
+        </span>
+        <!-- the selection's buttons in the style of the toolbar's others (Columns, Export CSV) -->
+        <button v-if="selectable && selectedIds.size" class="btn" :class="toolButton" @click="clearSelection">
+          <font-awesome-icon icon="xmark" class="me-1" />{{ t('dataTable.clearSelection') }}
         </button>
+        <button
+          v-if="selectable && selectedIds.size < filteredItems.length"
+          class="btn"
+          :class="toolButton"
+          @click="selectAll"
+        >
+          <font-awesome-icon icon="check-double" class="me-1" />{{
+            t('dataTable.selectAll', { count: filteredItems.length })
+          }}
+        </button>
+
+        <!-- Bulk actions slot -->
+        <slot v-if="selectable" name="bulk-actions" :selectedIds="selectedIds" :count="selectedIds.size" />
+
+        <div class="ms-auto d-flex align-items-center gap-2">
+          <!-- Column picker, with presets -->
+          <BsColumnPicker
+            :columns="dataColumns"
+            :hidden="hiddenColumns"
+            :name="name"
+            :buttonClass="toolButton"
+            @toggle="toggleColumn"
+            @apply="applyPreset"
+          />
+
+          <!-- CSV export -->
+          <button v-if="exportName" class="btn" :class="toolButton" @click="exportCsv">
+            <font-awesome-icon icon="file-csv" class="me-1" />{{ t('dataTable.export') }}
+          </button>
+        </div>
       </div>
-    </div>
+    </Teleport>
 
     <!-- Table -->
     <div class="table-responsive" style="overflow: visible">
-      <table class="table table-sm table-hover mb-0 bs-dt-table" @mouseleave="onTableMouseup" @mouseup="onTableMouseup">
+      <table
+        :class="{ 'af-table': framed }"
+        class="table table-sm table-hover mb-0 bs-dt-table"
+        @mouseleave="onTableMouseup"
+        @mouseup="onTableMouseup"
+      >
         <thead>
           <!-- Column headers -->
           <tr>
@@ -604,9 +538,9 @@ function exportCsv() {
             <th
               v-for="col in visibleColumns"
               :key="col.key"
-              :class="{ 'bs-dt-sortable': col.sortable }"
+              :class="{ 'bs-dt-sortable': col.sortable, 'text-end': col.align === 'end' }"
               @click="col.sortable ? toggleSort(col.key) : undefined"
-              style="user-select: none; white-space: nowrap"
+              :style="{ userSelect: 'none', whiteSpace: 'nowrap', width: col.width || null }"
             >
               {{ col.label }}
               <span v-if="col.sortable" class="text-muted ms-1" style="font-size: 0.7em">
@@ -619,12 +553,12 @@ function exportCsv() {
               </span>
             </th>
             <!-- Row actions header -->
-            <th v-if="$slots['row-actions']" style="width: 2.5rem"></th>
+            <th v-if="$slots['row-actions']" style="width: 3.5rem"></th>
           </tr>
           <!-- Per-column filter row -->
           <tr v-if="filterableColumns.length" class="bs-dt-filter-row">
             <th v-if="selectable"></th>
-            <th v-for="col in visibleColumns" :key="'f-' + col.key">
+            <th v-for="col in visibleColumns" :key="'f-' + col.key" :class="{ 'text-end': col.align === 'end' }">
               <select
                 v-if="col.filterable && col.filterType === 'boolean'"
                 v-model="columnFilters[col.key]"
@@ -685,6 +619,7 @@ function exportCsv() {
             <td
               v-for="col in visibleColumns"
               :key="col.key"
+              :class="{ 'text-end': col.align === 'end' }"
               :title="col.type !== 'checkbox' ? cellPlain(item, col) : null"
             >
               <template v-if="col.type === 'checkbox'">
@@ -708,8 +643,9 @@ function exportCsv() {
       </table>
     </div>
 
-    <!-- Pagination -->
-    <div class="mt-2">
+    <!-- Pagination : a footer bar of the frame when framed, with the rows shown -->
+    <div :class="framed ? 'af-table-footer' : 'mt-2'">
+      <span v-if="framed" class="af-table-count me-auto">{{ pageRange }}</span>
       <BsPagination
         :key="filterVersion"
         :dataList="filteredItems"
@@ -723,11 +659,39 @@ function exportCsv() {
 </template>
 
 <style scoped>
-.bs-dt-presets-header {
-  font-size: 0.78em;
-  color: var(--bs-secondary-color);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+.bs-dt-toolbar {
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+/* framed (styles/tables.scss) : the fixed layout's cells keep the shared padding */
+.af-table td,
+.af-table th {
+  padding-left: 0.9rem;
+  padding-right: 0.9rem;
+}
+.af-table th:first-child,
+.af-table td:first-child {
+  padding-left: 1.25rem;
+}
+/* (.bs-dt-table too : above the plain table's filter row rule below) */
+.af-table.bs-dt-table thead tr.bs-dt-filter-row th {
+  padding: 0.35rem 0.9rem;
+  background: var(--bs-body-bg);
+}
+.af-table.bs-dt-table thead tr.bs-dt-filter-row th:first-child {
+  padding-left: 1.25rem;
+}
+/* a right-aligned number sits against the next column's left-aligned text : keep them apart,
+   on both sides of the gap ; the last column keeps the same room on its right */
+th.text-end:has(+ th:not(.text-end)),
+td.text-end:has(+ td:not(.text-end)),
+th.text-end:last-child,
+td.text-end:last-child {
+  padding-right: 1.5rem;
+}
+.text-end + th:not(.text-end),
+.text-end + td:not(.text-end) {
+  padding-left: 1.5rem;
 }
 .bs-dt-sortable {
   cursor: pointer;
