@@ -534,6 +534,7 @@ export default {
       save: 'Opslaan',
       unsavedChanges: 'Er zijn niet-opgeslagen wijzigingen. Deze pagina verlaten en ze verliezen?',
       seedManaged: 'Configuratie-seed',
+      seedManagedField: 'Ingesteld in het config-seedbestand: wijzig het daar en herstart.',
       seedManagedNotice:
         'Deze configuratie komt uit het configuratie-seedbestand en is hier alleen-lezen. Wijzig het in het seedbestand en herstart daarna.',
       loading: 'Laden...',

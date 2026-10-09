@@ -533,6 +533,7 @@ export default {
       save: 'Guardar',
       unsavedChanges: 'Tiene cambios sin guardar. ¿Salir de esta página y perderlos?',
       seedManaged: 'Seed de configuración',
+      seedManagedField: 'Definido en el archivo config seed: cámbialo allí y reinicia.',
       seedManagedNotice:
         'Esta configuración proviene del archivo seed de configuración y es de solo lectura aquí. Modifícala en el archivo seed y reinicia.',
       loading: 'Cargando...',

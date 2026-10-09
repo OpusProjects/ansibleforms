@@ -525,6 +525,7 @@ export default {
       save: '保存',
       unsavedChanges: '您有未保存的更改。确定离开此页面并放弃这些更改？',
       seedManaged: '配置种子',
+      seedManagedField: '在配置种子文件中设置：请在那里修改,然后重启。',
       seedManagedNotice: '此配置来自配置种子文件，在此处为只读。请在种子文件中修改，然后重启。',
       loading: '加载中...',
       failedToLoad: '加载数据失败',

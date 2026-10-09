@@ -532,6 +532,7 @@ export default {
       save: '保存',
       unsavedChanges: '保存されていない変更があります。このページを離れて変更を破棄しますか?',
       seedManaged: 'Config seed',
+      seedManagedField: '構成シードファイルで設定：そこで変更して再起動してください。',
       seedManagedNotice:
         'この設定は config seed ファイルから読み込まれたもので、ここでは読み取り専用です。seed ファイルで変更してから再起動してください。',
       loading: '読み込み中...',

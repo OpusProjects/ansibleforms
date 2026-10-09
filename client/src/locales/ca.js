@@ -535,6 +535,7 @@ export default {
       save: 'Desa',
       unsavedChanges: "Tens canvis sense desar. Vols sortir d'aquesta pàgina i perdre'ls?",
       seedManaged: 'Config seed',
+      seedManagedField: 'Definit al fitxer config seed: canvieu-lo allà i reinicieu.',
       seedManagedNotice:
         'Aquesta configuració prové del fitxer de config seed i aquí és de només lectura. Canvia-la al fitxer de seed i, després, reinicia.',
       loading: "S'està carregant...",

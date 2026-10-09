@@ -1531,7 +1531,7 @@ defineExpose({
             </select>
           </div>
           <div class="form-text">
-            {{ groupLocked(group.key) ? t('settings.common.seedManagedNotice') : group.help }}
+            {{ groupLocked(group.key) ? t('settings.common.seedManagedField') : group.help }}
           </div>
         </div>
       </div>

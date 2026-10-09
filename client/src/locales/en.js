@@ -531,6 +531,7 @@ export default {
       save: 'Save',
       unsavedChanges: 'You have unsaved changes. Leave this page and lose them?',
       seedManaged: 'Config seed',
+      seedManagedField: 'Set in the config seed file: change it there, then restart.',
       seedManagedNotice:
         'This configuration comes from the config seed file and is read only here. Change it in the seed file, then restart.',
       loading: 'Loading...',
