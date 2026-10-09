@@ -15,6 +15,8 @@
  *  name           String  Cookie key for pagination and column persistence ; also
  *                         enables column presets (kept in this browser's localStorage)
  *  exportName     String  Base filename for the CSV export (omit to hide the button)
+ *  (rowClickSelects false : a click opens the row, its dialog or its page ; its first column
+ *   is shown in the link blue, so the row says it opens)
  *  rowSelectable  Function (row) → whether a row can be ticked (default : all) ; the others
  *                         get a greyed out checkbox, Select all and a range leave them out
  *  initialFilter  String  Initial text of the global search
@@ -647,9 +649,9 @@ function exportCsv() {
               />
             </td>
             <td
-              v-for="col in visibleColumns"
+              v-for="(col, cIdx) in visibleColumns"
               :key="col.key"
-              :class="{ 'text-end': col.align === 'end' }"
+              :class="{ 'text-end': col.align === 'end', 'af-row-open': !rowClickSelects && cIdx === 0 }"
               :title="col.type !== 'checkbox' ? cellPlain(item, col) : null"
             >
               <template v-if="col.type === 'checkbox'">
