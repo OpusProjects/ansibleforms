@@ -45,6 +45,7 @@
         "type": "object",
         "properties": {
           "name": { "const": "public"},
+          "description": { "type": "string" },
           "groups": { "const": []},
           "options": {
             "type": "object",
@@ -89,6 +90,9 @@
         "properties": {
           "name": {
             "$id": "/role",
+            "type": "string"
+          },
+          "description": {
             "type": "string"
           },
           "options": {

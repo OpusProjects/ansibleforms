@@ -849,6 +849,34 @@ function assertNoDuplicateRoles(obj){
   }
 }
 
+/**
+ * Refuse a config that has lost the admin or the public role.
+ *
+ * The server derives admin rights from the role NAMED admin, and the schema requires a public
+ * role : a save without one of them locks every administrator out, or breaks every config load.
+ * The roles page greys them out, but the config can be written from the designer, the API or a
+ * hand-edited YAML posted to the settings - so the save refuses it, whoever sends it.
+ *
+ * Checked on the saves only (Form.validate, the settings' forms_yaml), never on the load : an
+ * install whose config already lacks one keeps starting, and can be repaired from the pages.
+ *
+ * Args:
+ *   obj (object): the config about to be saved ({ roles: [...] }).
+ *
+ * Raises:
+ *   Error: a required role is missing.
+ */
+Form.assertRequiredRoles = function(obj){
+  if(!Array.isArray(obj?.roles)) return
+  const names = new Set(obj.roles.map(r => (typeof r?.name === 'string' ? r.name.trim() : '')))
+  const missing = ['admin', 'public'].filter(n => !names.has(n))
+  if(missing.length > 0){
+    const message = `The role(s) ${missing.join(", ")} cannot be deleted : the app needs them.`
+    logger.error(message)
+    throw new Error(message)
+  }
+}
+
 Form.validateConfig = function(obj){
   if(obj){
     logger.debug("validating base against schema")
@@ -962,8 +990,9 @@ Form.validateForm = function(obj){
 Form.validate = function(forms){
   if(forms){
     logger.debug("validating the config and forms against the schema")
-    // the designer saves through here ; see assertNoDuplicateRoles
+    // the designer saves through here ; see assertNoDuplicateRoles and assertRequiredRoles
     assertNoDuplicateRoles(forms)
+    Form.assertRequiredRoles(forms)
     const validate = ajv.compile(formsSchema)
     const valid = validate(forms)
     if (!valid){

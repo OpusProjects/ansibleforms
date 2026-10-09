@@ -207,3 +207,37 @@ describe("both validators reject duplicate role names", () => {
     assert.doesNotThrow(() => assertRolesOk(Form, base()));
   });
 });
+
+// The admin and public roles cannot be deleted : the server derives admin rights from the role
+// NAMED admin, and the schema requires public. The roles page greys them out, but the config
+// can be written from the designer, the API or a posted YAML, so the SAVES refuse it. The LOAD
+// does not, so an install whose config already lacks one keeps starting and can be repaired.
+describe("the admin and public roles are kept by every save", () => {
+  const config = (names) => ({
+    categories: [{ name: "Default", icon: "bars" }],
+    constants: {},
+    roles: names.map((name) => ({ name, groups: name === "public" ? [] : ["local/admins"] })),
+  });
+
+  test("assertRequiredRoles refuses a config without admin, or without public", async () => {
+    const Form = (await import("../src/models/form.model.js")).default;
+    assert.throws(() => Form.assertRequiredRoles(config(["public", "ops"])), /admin cannot be deleted/);
+    assert.throws(() => Form.assertRequiredRoles(config(["admin", "ops"])), /public cannot be deleted/);
+    assert.doesNotThrow(() => Form.assertRequiredRoles(config(["admin", "public", "ops"])));
+  });
+
+  test("a save that sends no roles at all is not refused for them", async () => {
+    const Form = (await import("../src/models/form.model.js")).default;
+    assert.doesNotThrow(() => Form.assertRequiredRoles({ categories: [] }));
+  });
+
+  test("the designer's save (Form.validate) refuses it", async () => {
+    const Form = (await import("../src/models/form.model.js")).default;
+    assert.throws(() => Form.validate({ ...config(["public"]), forms: [] }), /admin cannot be deleted/);
+  });
+
+  test("the load (Form.validateConfig) still accepts a config without admin", async () => {
+    const Form = (await import("../src/models/form.model.js")).default;
+    assert.doesNotThrow(() => Form.validateConfig(config(["public", "ops"])));
+  });
+});

@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n';
 import { useFormsConfig } from '@/composables/useFormsConfig';
 import { useUnsavedGuard } from '@/composables/useUnsavedGuard';
 import { useRoleSupport } from '@/composables/useRoleSupport';
+import { requiredRoleDescription } from '@/config/roles';
 import { toast } from 'vue-sonner';
 import BsDataTable from '@/components/BsDataTable.vue';
 
@@ -114,7 +115,13 @@ const escapeHtml = (v) =>
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 const tableItems = computed(() =>
-  sortedRoles.value.map(({ role }) => ({ id: role._uid, name: role.name, required: role._required })),
+  sortedRoles.value.map(({ role }) => ({
+    id: role._uid,
+    name: role.name,
+    // admin and public : their fixed description
+    description: role._required ? requiredRoleDescription(t, role.name) : role.description || '',
+    required: role._required,
+  })),
 );
 const columns = computed(() => [
   {
@@ -128,6 +135,14 @@ const columns = computed(() => [
       (row.required
         ? ` <span class="badge af-required-badge ms-2">${escapeHtml(t('settings.settingsPage.requiredItem'))}</span>`
         : ''),
+  },
+  // what the role is for ; an en dash when it says nothing
+  {
+    key: 'description',
+    label: t('settings.fields.description'),
+    sortable: true,
+    filterable: true,
+    render: (v) => (v ? escapeHtml(v) : '–'),
   },
 ]);
 
@@ -237,6 +252,7 @@ onMounted(async () => {
               idKey="id"
               :selectedIds="selectedIds"
               :selectable="!readOnly"
+              :rowSelectable="(row) => !row.required"
               :rowClickSelects="false"
               :name="t('settings.settingsPage.roles')"
               :exportName="t('settings.settingsPage.roles')"

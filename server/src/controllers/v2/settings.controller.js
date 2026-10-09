@@ -187,6 +187,9 @@ const saveConfig = async function(req, res) {
         roles: parsed?.roles || [],
         constants: parsed?.constants || {}
       });
+      // a save must keep the admin and public roles (the load does not check it, so an
+      // install that lost one still starts)
+      Form.assertRequiredRoles({ roles: parsed?.roles });
     } catch(err) {
       return res.status(400).json(RestResult.error(i18n.t(req, 'resources.failedUpdateSettings'), Helpers.getError(err)));
     }

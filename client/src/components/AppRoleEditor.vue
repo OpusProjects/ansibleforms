@@ -29,6 +29,7 @@
 
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { requiredRoleDescription } from '@/config/roles';
 
 const props = defineProps({
   readOnly: { type: Boolean, default: false },
@@ -137,10 +138,29 @@ function removeUser(index) {
   <!-- General : the name and the options -->
   <template v-if="activeTab === 'general'">
     <BsInput
+      class="af-role-name"
       :isFloating="false"
       v-model="role.name"
       :label="t('settings.settingsPage.name')"
       :disabled="role._required || readOnly"
+    />
+    <!-- admin and public : a fixed description, greyed out as their name -->
+    <BsInput
+      v-if="role._required"
+      class="af-role-description"
+      :isFloating="false"
+      :modelValue="requiredRoleDescription(t, role.name)"
+      :label="t('settings.fields.description')"
+      :disabled="true"
+    />
+    <BsInput
+      v-else
+      class="af-role-description"
+      :isFloating="false"
+      v-model="role.description"
+      :label="t('settings.fields.description')"
+      :placeholder="t('settings.settingsPage.roleDescriptionPlaceholder')"
+      :disabled="readOnly"
     />
     <label class="form-label fw-bold">{{ t('settings.settingsPage.options') }}</label>
     <div class="row row-cols-2 row-cols-md-3 g-0 role-options mb-3">
@@ -331,6 +351,12 @@ function removeUser(index) {
 </template>
 
 <style scoped>
+/* the wide fields' width of the settings pages (AppEnvField, a path or a command) : the name and
+   its description alike, room for a sentence */
+.af-role-name :deep(input),
+.af-role-description :deep(input) {
+  max-width: 40rem;
+}
 .af-role-remove-col {
   width: 3.5rem;
 }

@@ -15,6 +15,8 @@
  *  name           String  Cookie key for pagination and column persistence ; also
  *                         enables column presets (kept in this browser's localStorage)
  *  exportName     String  Base filename for the CSV export (omit to hide the button)
+ *  rowSelectable  Function (row) → whether a row can be ticked (default : all) ; the others
+ *                         get a greyed out checkbox, Select all and a range leave them out
  *  initialFilter  String  Initial text of the global search
  *  selectedIds    Set     Parent-owned Set of selected item ids (v-model:selectedIds)
  *  idKey          String  Field used as row id (default 'id')
@@ -50,6 +52,7 @@ const props = defineProps({
   selectedIds: { type: Object, default: () => new Set() }, // Set
   idKey: { type: String, default: 'id' },
   selectable: { type: Boolean, default: true },
+  rowSelectable: { type: Function, default: null },
   activeId: { type: [String, Number], default: null },
   exportName: { type: String, default: null },
   initialFilter: { type: String, default: '' },
@@ -61,6 +64,24 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update:selectedIds', 'row-click']);
+
+// ─── rows that cannot be ticked ───────────────────────────────────────────────
+// rowSelectable(row) says which rows can be ticked (the roles the config must keep cannot) :
+// their checkbox is greyed out, and every selection sent leaves them out, however it was made
+// (a click, a range, Select all)
+const canSelect = (item) => !props.rowSelectable || props.rowSelectable(item);
+
+/**
+ * Sends a selection, without the rows that cannot be ticked.
+ *
+ * Args:
+ *   ids (Set): the ids selected.
+ */
+function emitSelection(ids) {
+  if (!props.rowSelectable) return emit('update:selectedIds', ids);
+  const blocked = new Set(props.items.filter((i) => !canSelect(i)).map((i) => i[props.idKey]));
+  emit('update:selectedIds', new Set([...ids].filter((id) => !blocked.has(id))));
+}
 
 // ─── Column visibility ───────────────────────────────────────────────────────
 const hiddenColumns = ref(new Set());
@@ -360,7 +381,7 @@ function onRowClick(event, item) {
     anchorIndex = index;
   }
 
-  emit('update:selectedIds', newSet);
+  emitSelection(newSet);
   emit('row-click', item);
 }
 
@@ -407,30 +428,33 @@ function applyDragSelection(endIndex) {
     if (dragAddMode) newSet.add(id);
     else newSet.delete(id);
   }
-  emit('update:selectedIds', newSet);
+  emitSelection(newSet);
 }
 
+// the rows of the page, and of the filter, that can be ticked
+const selectablePage = computed(() => pageItems.value.filter(canSelect));
+const selectableFiltered = computed(() => filteredItems.value.filter(canSelect));
 const allOnPageSelected = computed(() => {
-  if (!pageItems.value.length) return false;
-  return pageItems.value.every((item) => props.selectedIds.has(item[props.idKey]));
+  if (!selectablePage.value.length) return false;
+  return selectablePage.value.every((item) => props.selectedIds.has(item[props.idKey]));
 });
 
 function toggleSelectAll() {
   const newSet = new Set(props.selectedIds);
   if (allOnPageSelected.value) {
-    pageItems.value.forEach((item) => newSet.delete(item[props.idKey]));
+    selectablePage.value.forEach((item) => newSet.delete(item[props.idKey]));
   } else {
-    pageItems.value.forEach((item) => newSet.add(item[props.idKey]));
+    selectablePage.value.forEach((item) => newSet.add(item[props.idKey]));
   }
-  emit('update:selectedIds', newSet);
+  emitSelection(newSet);
 }
 
 function selectAll() {
-  emit('update:selectedIds', new Set(filteredItems.value.map((i) => i[props.idKey])));
+  emitSelection(new Set(selectableFiltered.value.map((i) => i[props.idKey])));
 }
 
 function clearSelection() {
-  emit('update:selectedIds', new Set());
+  emitSelection(new Set());
 }
 
 // ─── CSV export ───────────────────────────────────────────────────────────────
@@ -487,13 +511,13 @@ function exportCsv() {
           <font-awesome-icon icon="xmark" class="me-1" />{{ t('dataTable.clearSelection') }}
         </button>
         <button
-          v-if="selectable && selectedIds.size < filteredItems.length"
+          v-if="selectable && selectedIds.size < selectableFiltered.length"
           class="btn"
           :class="toolButton"
           @click="selectAll"
         >
           <font-awesome-icon icon="check-double" class="me-1" />{{
-            t('dataTable.selectAll', { count: filteredItems.length })
+            t('dataTable.selectAll', { count: selectableFiltered.length })
           }}
         </button>
 
@@ -611,12 +635,13 @@ function exportCsv() {
                 type="checkbox"
                 class="form-check-input"
                 :checked="selectedIds.has(item[idKey])"
+                :disabled="!canSelect(item)"
                 @change.stop="
                   () => {
                     const s = new Set(selectedIds);
                     if (s.has(item[idKey])) s.delete(item[idKey]);
                     else s.add(item[idKey]);
-                    emit('update:selectedIds', s);
+                    emitSelection(s);
                   }
                 "
               />

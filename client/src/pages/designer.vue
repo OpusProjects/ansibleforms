@@ -23,6 +23,7 @@ import {
   roleOptionLabel as roleOptionLabelFor,
   roleToEditable,
   serializeRole,
+  requiredRoleDescription,
 } from '@/config/roles';
 import {
   coerceConstantValue,
@@ -5375,6 +5376,24 @@ onBeforeUnmount(() => {
               <div class="mb-3">
                 <label class="form-label fw-bold">{{ t('designer.roleName') }}</label>
                 <input type="text" class="form-control" v-model="role.name" :disabled="role._required" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold">{{ t('settings.fields.description') }}</label>
+                <!-- admin and public : a fixed description, greyed out as their name -->
+                <input
+                  v-if="role._required"
+                  type="text"
+                  class="form-control"
+                  :value="requiredRoleDescription(t, role.name)"
+                  disabled
+                />
+                <input
+                  v-else
+                  type="text"
+                  class="form-control"
+                  v-model="role.description"
+                  :placeholder="t('settings.settingsPage.roleDescriptionPlaceholder')"
+                />
               </div>
               <template v-if="!role._public">
                 <label class="form-label fw-bold">{{ t('settings.settingsPage.groups') }}</label>

@@ -210,3 +210,11 @@
 .bs-dt-selected .bs-dt-row-menu:hover {
   color: inherit;
 }
+
+/* a row that cannot be ticked (BsDataTable's rowSelectable : the roles the config must keep) : its
+   checkbox filled grey, not merely faded, so it reads as off limits */
+.bs-dt-select .form-check-input:disabled {
+  background-color: var(--bs-secondary-bg);
+  border-color: var(--bs-border-color);
+  opacity: 1;
+}
