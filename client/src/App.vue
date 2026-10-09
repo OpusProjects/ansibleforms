@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted } from 'vue';
+import { onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import { Toaster } from 'vue-sonner';
@@ -10,6 +10,7 @@ import { useAppStore } from '@/stores/app';
 import State from '@/lib/State';
 import { isNewerBuild, clientSha } from '@/lib/Version';
 import Theme from '@/lib/Theme';
+import { preloadMenus } from '@/lib/menuPreload';
 
 const route = useRoute();
 const router = useRouter();
@@ -166,6 +167,15 @@ function focusScrollArea() {
   }
 }
 router.afterEach(() => setTimeout(focusScrollArea));
+
+// a user known (a login, a page loaded) : the left menus' data in the background, so even the
+// first visit to a section draws its menu whole (lib/menuPreload.js)
+watch(
+  () => appStore.profile?.username,
+  (username) => {
+    if (username) preloadMenus(appStore);
+  },
+);
 
 onMounted(async () => {
   console.log('App is mounted');
