@@ -47,6 +47,7 @@ CREATE TABLE `credentials` (
   `db_type` varchar(10) DEFAULT NULL,
   `db_name` varchar(255) DEFAULT NULL,  
   `is_database` tinyint(4) DEFAULT 1,
+  `credential_type` varchar(20) DEFAULT NULL,
   `vault_path` varchar(500) DEFAULT NULL,
   `managed` tinyint(4) DEFAULT 0,
   -- the secret store a credential reads its user and password from, and where in it
