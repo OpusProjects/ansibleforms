@@ -27,26 +27,6 @@ onMounted(async () => {
       <AppSidebar />
       <div class="d-flex flex-column w-100">
         <AppAdminMulti v-if="authenticated" :apiVersion="2" :settings="settings.oauth2_providers" />
-        <div class="alert alert-warning m-3" role="alert">
-          <h5 class="alert-heading">
-            <i class="fas fa-exclamation-triangle"></i> {{ t('admin.oauth2.callbackWarningTitle') }}
-          </h5>
-          <p class="mb-0">
-            <strong>{{ t('admin.oauth2.callbackWarningEditNote') }}</strong
-            >, {{ t('admin.oauth2.callbackWarningUpdated') }}
-          </p>
-          <ul class="mb-0 mt-2">
-            <li>
-              <strong>{{ t('admin.oauth2.entraId') }}</strong> <code>/api/v2/auth/azureadoauth2/callback</code>
-            </li>
-            <li>
-              <strong>{{ t('admin.oauth2.openId') }}</strong> <code>/api/v2/auth/oidc/callback</code>
-            </li>
-          </ul>
-          <p class="mb-0 mt-2">
-            <strong>{{ t('admin.oauth2.actionRequired') }}</strong> {{ t('admin.oauth2.actionRequiredMsg') }}
-          </p>
-        </div>
         <div class="accordion m-3" id="providerHelpAccordion">
           <div class="accordion-item">
             <h2 class="accordion-header" id="headingEntraId">

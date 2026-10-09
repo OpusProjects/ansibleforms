@@ -1118,15 +1118,6 @@ export default {
       validEmail: 'Ha de ser una adreça de correu vàlida',
     },
     oauth2: {
-      callbackWarningTitle: "Important: canvi de l'URL de retorn (v6.1.5+)",
-      callbackWarningEditNote: 'En editar proveïdors OAuth2 existents',
-      callbackWarningUpdated:
-        "els URL de retorn s'actualitzaran automàticament per utilitzar els endpoints de l'API /v2:",
-      entraId: 'Entra ID:',
-      openId: 'Open ID:',
-      actionRequired: 'Acció necessària:',
-      actionRequiredMsg:
-        "Després d'actualitzar un proveïdor, actualitza els URI de redirecció permesos a la configuració del teu proveïdor OAuth2 perquè incloguin aquests URL de retorn nous.",
       entraIdHelp: "Ajuda d'Entra ID",
       requiredPermissions: "Permisos d'API necessaris",
       delegatedUserRead: 'Delegated User.Read',

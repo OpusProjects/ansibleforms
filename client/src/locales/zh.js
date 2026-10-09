@@ -1076,13 +1076,6 @@ export default {
       validEmail: '必须是有效的邮箱地址',
     },
     oauth2: {
-      callbackWarningTitle: '重要：回调 URL 变更（v6.1.5+）',
-      callbackWarningEditNote: '编辑现有 OAuth2 提供商时',
-      callbackWarningUpdated: '回调 URL 将自动更新为使用 /v2 API 端点：',
-      entraId: 'Entra ID：',
-      openId: 'Open ID：',
-      actionRequired: '需要操作：',
-      actionRequiredMsg: '更新提供商条目后，请在 OAuth2 提供商配置中更新允许的重定向 URI，加入这些新的回调 URL。',
       entraIdHelp: 'Entra ID 帮助',
       requiredPermissions: '所需 API 权限',
       delegatedUserRead: '委托权限 User.Read',

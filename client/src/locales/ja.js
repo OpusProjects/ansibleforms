@@ -1099,14 +1099,6 @@ export default {
       validEmail: '有効なメールアドレスである必要があります',
     },
     oauth2: {
-      callbackWarningTitle: '重要: コールバック URL の変更 (v6.1.5 以降)',
-      callbackWarningEditNote: '既存の OAuth2 プロバイダーを編集すると、',
-      callbackWarningUpdated: 'コールバック URL は /v2 API エンドポイントを使用するよう自動的に更新されます:',
-      entraId: 'Entra ID:',
-      openId: 'Open ID:',
-      actionRequired: '対応が必要:',
-      actionRequiredMsg:
-        'プロバイダーのエントリを更新した後、OAuth2 プロバイダーの設定で許可するリダイレクト URI に、これらの新しいコールバック URL を追加してください。',
       entraIdHelp: 'Entra ID のヘルプ',
       requiredPermissions: '必要な API のアクセス許可',
       delegatedUserRead: '委任された User.Read',

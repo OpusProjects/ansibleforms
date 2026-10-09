@@ -1124,14 +1124,6 @@ export default {
       validEmail: 'Muss eine gueltige E-Mail-Adresse sein',
     },
     oauth2: {
-      callbackWarningTitle: 'Wichtig: Callback-URL-Aenderung (v6.1.5+)',
-      callbackWarningEditNote: 'Beim Bearbeiten bestehender OAuth2-Anbieter',
-      callbackWarningUpdated: 'werden die Callback-URLs automatisch auf die /v2-API-Endpunkte aktualisiert:',
-      entraId: 'Entra ID:',
-      openId: 'Open ID:',
-      actionRequired: 'Erforderliche Aktion:',
-      actionRequiredMsg:
-        'Aktualisieren Sie nach dem Bearbeiten eines Anbieters die erlaubten Redirect-URIs in Ihrer OAuth2-Anbieterkonfiguration, damit diese neuen Callback-URLs enthalten sind.',
       entraIdHelp: 'Entra-ID-Hilfe',
       requiredPermissions: 'Erforderliche API-Berechtigungen',
       delegatedUserRead: 'Delegiertes User.Read',
