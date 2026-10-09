@@ -188,7 +188,7 @@ onUnmounted(() => {
             :aria-label="t('logs.title')"
           >
             <div v-for="(t, i) in filtered" :key="i">
-              <div class="text-end pe-1 me-3 d-inline-block bg-secondary-subtle" style="width: 40px">{{ i + 1 }}</div>
+              <div class="text-end pe-1 me-3 d-inline-block af-line-no" style="width: 40px">{{ i + 1 }}</div>
               <span v-for="(s, si) in t" :key="si" v-text="s.text" :class="s.foreground || ''"></span>
             </div>
           </div>

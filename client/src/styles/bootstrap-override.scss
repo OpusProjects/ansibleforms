@@ -29,6 +29,12 @@
   background-color: var(--af-bg-secondary-subtle-color) !important;
 }
 
+// The line numbers' column of a log (the server log, a repository's git output) : a grey a
+// step darker than the subtle one, so the column reads apart from the lines in either theme
+.af-line-no {
+  background-color: var(--bs-secondary-bg);
+}
+
 .bg-success-subtle {
   background-color: var(--af-bg-success-subtle-color) !important;
 }
@@ -88,14 +94,57 @@
   color: var(--af-overlay-icon-color) !important;
 }
 
-// Placeholder styling for input fields
+// The border of every field, text area, code editor and card : a grey dark enough to see on
+// the white page in the light theme, Bootstrap's own border elsewhere
+:root,
+[data-bs-theme='dark'],
+[data-bs-theme='color'] {
+  --af-field-border: var(--bs-border-color);
+}
+[data-bs-theme='light'] {
+  --af-field-border: #b6bec6;
+}
+
+// Placeholder styling for input fields : dark enough to read (the half-transparent light grey
+// was all but invisible)
 [data-bs-theme='light'] {
   input::placeholder,
   textarea::placeholder,
   select::placeholder {
-    color: #adb5bd !important;
-    opacity: 0.5 !important;
+    color: #6c757d !important;
+    opacity: 1 !important;
     font-style: italic;
+  }
+  // the fields, dropdowns and the icon boxes beside them : one border, darker than
+  // Bootstrap's, so a field's edge shows on the white page
+  .form-control,
+  .form-select,
+  .input-group-text,
+  .af-search-clear {
+    border-color: var(--af-field-border);
+  }
+  // the cards (a table, the server log, a settings page) framed in that grey as well, and the
+  // text areas with it, as fields
+  .card {
+    --bs-card-border-color: var(--af-field-border);
+  }
+  textarea.form-control {
+    border-color: var(--af-field-border);
+  }
+  // the code editors (designer, YAML fields) and the chat's input box : framed like a field
+  .ace-chrome,
+  .ace-monokai,
+  .af-chat-compose:not(:focus-within) {
+    border-color: var(--af-field-border);
+  }
+  // an unchecked checkbox or radio : its border in the same grey as the fields
+  .form-check-input:not(:checked) {
+    border-color: var(--af-field-border);
+  }
+  // an unchecked switch : its border and knob in the same grey as the fields
+  .form-switch .form-check-input:not(:checked) {
+    --bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23b6bec6'/%3e%3c/svg%3e");
+    border-color: var(--af-field-border);
   }
 }
 
