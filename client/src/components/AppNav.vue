@@ -130,6 +130,8 @@ const menu = computed(() => {
   m.unshift({
     title: navHomeLabel.value,
     link: '/',
+    // a form is one of the forms : the link stays active on it
+    also: ['/form'],
     icon: navHomeIcon.value,
     target: '_self',
   });

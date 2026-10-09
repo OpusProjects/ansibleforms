@@ -8,10 +8,12 @@ import axios from 'axios';
 import TokenStorage from '@/lib/TokenStorage';
 import Helpers from '@/lib/Helpers';
 import { useI18n } from 'vue-i18n';
+import { useRouteTab } from '@/composables/useRouteTab';
 
 const { t } = useI18n();
 const authenticated = ref(false);
-const activeTab = ref('smtp');
+// the tab shown, kept in the url (?tab=) : a link or a bookmark opens it, Back returns to the last
+const { activeTab } = useRouteTab('smtp', (key) => ['smtp', 'test'].includes(key));
 const item = ref({});
 const originalItem = ref(null);
 

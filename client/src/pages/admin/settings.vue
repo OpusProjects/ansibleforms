@@ -9,10 +9,12 @@ import TokenStorage from '@/lib/TokenStorage';
 import Helpers from '@/lib/Helpers';
 import Theme from '@/lib/Theme';
 import { useI18n } from 'vue-i18n';
+import { useRouteTab } from '@/composables/useRouteTab';
 
 const { t } = useI18n();
 
-const activeTab = ref('env_configuration');
+// the tab shown, kept in the url (?tab=) : a link or a bookmark opens it, Back returns to the last
+const { activeTab } = useRouteTab('env_configuration', (key) => key.startsWith('env_'));
 
 const env = ref({});
 

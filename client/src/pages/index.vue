@@ -88,6 +88,8 @@ const categoryTitle = computed(() => {
   const crumbs = names.map((name, i) => ({
     title: name,
     icon: findCategory(formConfig.value?.categories, names.slice(0, i + 1))?.icon || 'folder',
+    // each step a link to its category
+    to: { path: route.path, query: { ...route.query, category: names.slice(0, i + 1).join('/') } },
   }));
   return { title: names.join(' › '), icon: crumbs[crumbs.length - 1].icon, crumbs: crumbs.length > 1 ? crumbs : [] };
 });
