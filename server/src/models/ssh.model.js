@@ -38,6 +38,9 @@ Ssh.generate = function(force){
 Ssh.update = function (record) {
     logger.info(`Updating ssh key`)
     try{
+      // the .ssh folder of the home path may not exist yet (a fresh install, a new HOME_PATH) :
+      // made first, private to the app, or the key could not be written
+      fs.mkdirSync(path.dirname(privateKeyPath()),{recursive:true,mode:0o700})
       // write new private key
       fs.writeFileSync(privateKeyPath(),record.key,{mode:0o600})
       // autogenerate new public key
@@ -58,8 +61,10 @@ Ssh.update = function (record) {
 
     }catch(e){
       logger.error(e)
-      fs.rmSync(privateKeyPath(),true)
-      fs.rmSync(publicKeyPath(),true)
+      // force : a key that was never written is not a second error hiding the first (rmSync takes
+      // options, a bare `true` threw a TypeError instead of reporting why the key failed)
+      fs.rmSync(privateKeyPath(),{force:true})
+      fs.rmSync(publicKeyPath(),{force:true})
       throw e
     }
 };
