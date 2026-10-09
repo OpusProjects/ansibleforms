@@ -10,7 +10,8 @@
 /*      description: String - what the page is for, in a popover  */
 /*                   behind an info icon after the title          */
 /*      crumbs: Array of { title, icon, to } - a title in steps,  */
-/*              each a link when it has a route (to)              */
+/*              each a link when it has a route (to) ; a title of */
+/*              one step links to the page itself                 */
 /*      bare: Boolean - the content without the card around it    */
 /*                                                                */
 /*  @slots:                                                       */
@@ -29,6 +30,10 @@
 /*  filters, columns), the buttons act on it.                     */
 /*                                                                */
 /******************************************************************/
+import { useRoute } from 'vue-router';
+
+// a title of one step links to the page itself : its plain address, without a tab or a filter
+const route = useRoute();
 
 defineProps({
   icon: {
@@ -74,10 +79,9 @@ defineProps({
           <AppInfoPopover v-if="description" :text="description" />
         </h3>
         <h3 v-else>
-          <span class="me-2">
-            <FaIcon :icon="icon" />
-          </span>
-          {{ title }}
+          <router-link :to="route.path" class="af-crumb-link"
+            ><span class="me-2"> <FaIcon :icon="icon" /> </span>{{ title }}</router-link
+          >
           <AppInfoPopover v-if="description" :text="description" />
         </h3>
         <slot name="feedback"></slot>
