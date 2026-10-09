@@ -121,6 +121,8 @@ const dirty = computed(() => {
 useUnsavedGuard(dirty, () => t('settings.common.unsavedChanges'));
 
 const running = computed(() => repo.value?.status === 'running');
+// git's output, a line each (the trailing newline adds none)
+const outputLines = computed(() => (repo.value?.output || '').replace(/\n$/, '').split('\n'));
 // pushed back : only what the app writes to it, its forms or its settings
 const canPush = computed(() => !!(repo.value?.use_for_forms || repo.value?.use_for_config));
 const cronError = computed(() => (edit.value?.pull_scheduled ? cronValidationMessage(t, edit.value.cron) : null));
@@ -484,7 +486,13 @@ onMounted(async () => {
             </template>
             <!-- Output : what git said the last time -->
             <template v-else>
-              <pre v-if="repo.output" class="af-repo-output mb-0">{{ repo.output }}</pre>
+              <!-- as the server log shows its lines : each with its number in a grey column -->
+              <div v-if="repo.output" class="af-repo-output font-monospace" tabindex="0" role="region">
+                <div v-for="(line, i) in outputLines" :key="i" class="af-repo-output-line">
+                  <span class="af-line-no af-repo-line-no">{{ i + 1 }}</span
+                  ><span class="af-repo-line">{{ line }}</span>
+                </div>
+              </div>
               <p v-else class="text-body-secondary mb-0">{{ t('settings.repositories.noOutput') }}</p>
             </template>
           </div>
@@ -544,14 +552,36 @@ onMounted(async () => {
   color: var(--bs-secondary-color) !important;
   opacity: 0.6;
 }
-/* git's output : scrolls within the card, long lines kept */
+/* git's output, as the server log : a bordered box that scrolls within the card, each line
+   numbered in a grey column, git's own spacing kept */
 .af-repo-output {
   max-height: 60vh;
   overflow: auto;
-  padding: 0.75rem;
-  border-radius: 0.375rem;
-  background: var(--bs-tertiary-bg);
+  /* the fields' darker border, as the inputs on the other tabs */
+  border: 1px solid var(--af-field-border);
+  border-radius: var(--bs-border-radius);
   font-size: 0.85rem;
+}
+.af-repo-output-line {
+  display: flex;
+}
+.af-repo-line-no {
+  flex: 0 0 3rem;
+  padding: 0 0.5rem;
+  margin-right: 0.75rem;
+  text-align: right;
+  color: var(--bs-secondary-color);
+  user-select: none;
+}
+.af-repo-line {
+  white-space: pre;
+}
+/* the first and last lines a little away from the box's top and bottom, the grey column too */
+.af-repo-output-line:first-child > span {
+  padding-top: 0.4rem;
+}
+.af-repo-output-line:last-child > span {
+  padding-bottom: 0.4rem;
 }
 </style>
 <route lang="yaml">
