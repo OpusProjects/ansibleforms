@@ -26,6 +26,14 @@ const pageTabs = computed(() => [
   { key: 'providers', label: t('settings.oauth2.tabProviders'), icon: 'right-to-bracket' },
 ]);
 const { activeTab } = useRouteTab('general', (key) => ['general', 'providers'].includes(key));
+// the title says the tab : SSO › General, SSO › Providers, each step a link
+const crumbs = computed(() => {
+  const tab = pageTabs.value.find((x) => x.key === activeTab.value);
+  return [
+    { title: t('sidebar.oauth2'), icon: 'right-to-bracket', to: '/admin/sso' },
+    { title: tab.label, icon: tab.icon, to: { path: '/admin/sso', query: { tab: tab.key } } },
+  ];
+});
 
 // ─── General : the switch ─────────────────────────────────────────────────────
 const { envItems, envEdits, envDirty, envRestartPending, loadEnvironmentVariables, saveEnvironmentVariables } =
@@ -47,6 +55,7 @@ onMounted(async () => {
         v-if="authenticated && activeTab === 'providers'"
         :apiVersion="2"
         :settings="settings.oauth2_providers"
+        :crumbs="crumbs"
       >
         <template #tabs>
           <ul class="nav nav-tabs mb-0">
@@ -69,6 +78,7 @@ onMounted(async () => {
         v-else-if="authenticated"
         icon="right-to-bracket"
         :title="t('sidebar.oauth2')"
+        :crumbs="crumbs"
         :description="t('settings.oauth2.description')"
       >
         <template #tabs>

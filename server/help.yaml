@@ -570,7 +570,7 @@
     version: 7.0.0
     type: boolean
     allowed: 0, 1
-    short: Enable single sign-on
+    short: Enable Single Sign-On
     hint: Users can sign in with the SSO providers (Entra ID, OIDC)
     default: 1
     description: |
