@@ -20,6 +20,8 @@
 /*      step to the records it applies to. Creating walks the     */
 /*      steps with Previous / Next and saves on the last ;        */
 /*      editing may jump to any step and save from any            */
+/*      ; notes(item) gives a step its help, shown above its      */
+/*      fields : [{ title, text, items }]                         */
 /*  settings.beforeSave: (item) => object - what a create or an   */
 /*      update sends, from the dialog's values                    */
 /*  settings.defaultPicker: { key, groupBy, groups, title,        */
@@ -749,6 +751,12 @@ watch(action, () => {
   stepReached.value = 0;
 });
 const isLastStep = computed(() => stepIndex.value === steps.value.length - 1);
+// the help of the step shown (a step's notes(item)) : what to know before filling it in, as
+// the permissions a provider needs
+const stepNotes = computed(() => {
+  const step = wizardActive.value ? steps.value[stepIndex.value] : null;
+  return step && typeof step.notes === 'function' ? step.notes(item.value || {}).filter(Boolean) : [];
+});
 
 /**
  * Whether a field is on the step shown (every field when the dialog is no wizard).
@@ -1447,6 +1455,14 @@ defineExpose({
           <span class="af-wizard-label">{{ step.label }}</span>
         </li>
       </ol>
+      <!-- the help of the step shown -->
+      <div v-for="(note, n) in stepNotes" :key="'note-' + n" class="alert alert-info af-wizard-note">
+        <div v-if="note.title" class="fw-bold">{{ note.title }}</div>
+        <div v-if="note.text">{{ note.text }}</div>
+        <ul v-if="note.items && note.items.length" class="mb-0">
+          <li v-for="(line, l) in note.items" :key="l">{{ line }}</li>
+        </ul>
+      </div>
       <template v-for="field in dialogFields" :key="field.key">
         <!-- DATETIME FIELD -->
         <div v-if="showField(field) && field.type === 'datetime'" class="row mb-3">
@@ -1655,6 +1671,13 @@ defineExpose({
 }
 .af-nested-dialogs :deep(.modal-backdrop) {
   z-index: 1060;
+}
+/* the help of a wizard step : compact, its list close to its title */
+.af-wizard-note {
+  padding: 0.5rem 0.75rem;
+}
+.af-wizard-note ul {
+  padding-left: 1.25rem;
 }
 /* the steps of a wizard dialog : numbered, joined by a line, the one shown in the primary
    colour, those passed with a check */

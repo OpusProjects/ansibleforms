@@ -635,6 +635,9 @@ export default {
       labelPlural: 'OAuth2 Providers',
       description: 'Configureer externe identiteitsproviders voor single sign-on (Azure AD, OIDC, enz.).',
       editProvider: 'Provider bewerken',
+      stepProvider: 'Provider',
+      stepSignIn: 'Aanmelden',
+      stepGroups: 'Groepen',
       deleteProvider: 'Provider verwijderen',
       provider: 'Provider',
       tenantId: 'Tenant ID',
@@ -1111,17 +1114,14 @@ export default {
       validEmail: 'Moet een geldig e-mailadres zijn',
     },
     oauth2: {
-      entraIdHelp: 'Entra ID Hulp',
       requiredPermissions: 'Vereiste API machtigingen',
       delegatedUserRead: 'Delegated User.Read',
       delegatedGroupRead: 'Delegated GroupMember.Read.All',
       groupMembership: 'Groepslidmaatschap',
       groupsFromGraph:
-        'Wordt bij het aanmelden uit Microsoft Graph gelezen (directe en geneste lidmaatschappen, op weergavenaam). De groups-claim van het token wordt niet gebruikt en hoeft dus niet geconfigureerd te worden.',
+        'Bij aanmelden uit Microsoft Graph gelezen, geneste groepen inbegrepen; geen groups-claim nodig.',
       groupsRoleMapping:
         'Noem een groep in een rol als azuread/ gevolgd door de weergavenaam (bijv. azuread/AF-Admins).',
-      openIdHelp: 'Open ID Hulp',
-      openIdNotice: 'Let op:',
       openIdTestedWith: 'Open ID is tot nu toe alleen getest met Keycloak.',
     },
   },
