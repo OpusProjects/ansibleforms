@@ -672,6 +672,10 @@ export default {
       tabProviders: 'Fournisseurs',
       active: 'Actif',
       useForSignIn: 'Utiliser pour la connexion',
+      activeHelp:
+        "Les utilisateurs se connectent avec lui lorsqu'ils choisissent {type} ; l'activer désactive les autres fournisseurs {type}.",
+      providerNotFound: "Aucun fournisseur SSO n'a l'id '{id}'.",
+      changeSecret: 'Changer le secret',
       stepProvider: 'Fournisseur',
       stepSignIn: 'Connexion',
       stepGroups: 'Groupes',

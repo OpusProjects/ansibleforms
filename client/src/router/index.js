@@ -23,6 +23,7 @@ const error = () => import('@/pages/error.vue');
 // admin
 const credentials = () => import('@/pages/admin/credentials.vue');
 const sso = () => import('@/pages/admin/sso.vue');
+const ssoProvider = () => import('@/pages/admin/sso-provider.vue');
 const groups = () => import('@/pages/admin/groups.vue');
 const group = () => import('@/pages/admin/group.vue');
 const knownHosts = () => import('@/pages/admin/knownHosts.vue');
@@ -134,6 +135,8 @@ const routes = [
   // admin routes
   { path: '/admin/credentials', name: '/admin/credentials', component: credentials, beforeEnter: checkSettings },
   { path: '/admin/sso', name: '/admin/sso', component: sso, beforeEnter: checkSettings },
+  // an SSO provider's page : its Details, Sign-in and Groups tabs
+  { path: '/admin/sso/:id', name: '/admin/sso/:id', component: ssoProvider, beforeEnter: checkSettings },
   // its address before it was called SSO : old links and bookmarks still arrive
   { path: '/admin/oauth2', redirect: (to) => ({ path: '/admin/sso', query: to.query }) },
   { path: '/admin/groups', name: '/admin/groups', component: groups, beforeEnter: checkSettings },

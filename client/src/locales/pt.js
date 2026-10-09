@@ -668,6 +668,10 @@ export default {
       tabProviders: 'Fornecedores',
       active: 'Ativo',
       useForSignIn: 'Usar para iniciar sessão',
+      activeHelp:
+        'Os utilizadores iniciam sessão com ele quando escolhem {type}; ativá-lo desativa os outros fornecedores {type}.',
+      providerNotFound: "Não existe nenhum fornecedor SSO com o id '{id}'.",
+      changeSecret: 'Alterar o segredo',
       stepProvider: 'Fornecedor',
       stepSignIn: 'Início de sessão',
       stepGroups: 'Grupos',

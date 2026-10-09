@@ -663,6 +663,10 @@ export default {
       tabProviders: 'プロバイダー',
       active: '有効',
       useForSignIn: 'サインインに使用',
+      activeHelp:
+        '{type} を選んだユーザーはこれでサインインします。オンにすると他の {type} プロバイダーはオフになります。',
+      providerNotFound: "ID '{id}' の SSO プロバイダーはありません。",
+      changeSecret: 'シークレットを変更',
       stepProvider: 'プロバイダー',
       stepSignIn: 'サインイン',
       stepGroups: 'グループ',
