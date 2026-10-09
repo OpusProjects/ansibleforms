@@ -194,14 +194,12 @@ onMounted(async () => {
                 </tr>
               </tbody>
             </table>
-            <div class="d-flex justify-content-end mt-3">
-              <BsButton icon="plus" colorClass="secondary" :disabled="readOnly" @click="addConstant()">{{
-                t('settings.settingsPage.addConstant')
-              }}</BsButton>
-            </div>
           </div>
         </template>
         <template #actions>
+          <BsButton icon="plus" :disabled="readOnly" @click="addConstant()">{{
+            t('settings.settingsPage.addConstant')
+          }}</BsButton>
           <BsButton
             icon="save"
             :colorClass="isConstantsDirty ? 'primary' : 'secondary'"

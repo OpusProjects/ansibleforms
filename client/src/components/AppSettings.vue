@@ -17,17 +17,15 @@
 /*      tabs          tabs above the card                         */
 /*      feedback      status text next to the title               */
 /*      footer        free content directly under the card        */
-/*      actions       THE action bar, under the card              */
-/*      headerActions view controls only, next to the title       */
+/*      actions       the page's buttons, top right               */
+/*      headerActions view controls, next to the title            */
 /*                                                                */
 /*  BUTTON PLACEMENT STANDARD                                     */
-/*  Every action button belongs in #actions, under the card :     */
-/*  Save, Upload, Remove, Test and 'New <x>' alike. Do not put    */
-/*  buttons next to the title.                                    */
-/*  #headerActions is reserved for controls that decide WHAT the   */
-/*  card shows (filters, a line-count select, auto-refresh),      */
-/*  which belong above the content they filter rather than after   */
-/*  it. It is not a second home for buttons.                      */
+/*  Every action button belongs in #actions : Save, Upload,       */
+/*  Remove, Test and 'New <x>' alike. They sit at the top right   */
+/*  corner of the page, on the title line, after the controls of  */
+/*  #headerActions - those decide WHAT the card shows (search,    */
+/*  filters, columns), the buttons act on it.                     */
 /*                                                                */
 /******************************************************************/
 
@@ -76,26 +74,24 @@ defineProps({
           <AppInfoPopover v-if="description" :text="description" />
         </h3>
         <slot name="feedback"></slot>
-        <template v-if="$slots.headerActions">
+        <template v-if="$slots.headerActions || $slots.actions">
           <div class="flex-fill"></div>
           <slot name="headerActions"></slot>
+          <!-- the page's buttons : top right, after the view controls -->
+          <div v-if="$slots.actions" class="d-flex align-items-center flex-shrink-0 af-header-buttons">
+            <slot name="actions"></slot>
+          </div>
         </template>
       </div>
       <slot name="tabs"></slot>
-      <!-- the 16px under the last card : the action bar's margin when there is one, else the
-           card's own (the margin the designer also gives its card, so the two do not add up) -->
-      <div v-if="!bare" class="card" :class="{ 'tab-card-flush-card': $slots.tabs, 'af-page-end': !$slots.actions }">
+      <!-- the 16px under the last card (the margin the designer also gives its card) -->
+      <div v-if="!bare" class="card af-page-end" :class="{ 'tab-card-flush-card': $slots.tabs }">
         <div class="card-body">
           <slot></slot>
         </div>
       </div>
       <div v-else class="af-bare-content"><slot></slot></div>
       <slot name="footer"></slot>
-      <!-- only reserve the footer action bar when there is something in it,
-                 otherwise every page without #actions gains dead vertical space -->
-      <div v-if="$slots.actions" class="d-flex align-items-center justify-content-end mt-3 mb-3">
-        <slot name="actions"></slot>
-      </div>
     </div>
   </section>
 </template>
@@ -117,10 +113,21 @@ h3 {
 .af-bare-content {
   padding-bottom: 1rem;
 }
-/* a page without an action bar (the jobs) : the same 16px under its card as the action bar
-   leaves under the others, instead of the card touching the bottom of the window */
+/* 16px under the card, instead of it touching the bottom of the window */
 .af-page-end {
   margin-bottom: 1rem;
+}
+/* the buttons after the view controls : the same gap as between those ; a button's own
+   leading margin (ms-3, from when they sat under the card) is replaced by it */
+.af-header-buttons {
+  gap: 0.5rem;
+}
+:slotted(.af-header-buttons) > .btn,
+.af-header-buttons > :deep(.btn) {
+  margin-left: 0 !important;
+}
+.af-header-buttons:not(:first-child) {
+  margin-left: 0.5rem;
 }
 .tab-card-flush-card {
   border-top-left-radius: 0;

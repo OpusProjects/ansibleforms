@@ -5300,9 +5300,7 @@ onBeforeUnmount(() => {
             </button>
           </div>
           <div :class="[newRole.groups.length > 0 ? 'mt-3' : 'mt-1', 'mb-4']">
-            <BsButton icon="plus" colorClass="secondary" @click="roleAddGroup(newRole)">{{
-              t('settings.settingsPage.addGroup')
-            }}</BsButton>
+            <BsButton icon="plus" @click="roleAddGroup(newRole)">{{ t('settings.settingsPage.addGroup') }}</BsButton>
           </div>
           <label class="form-label fw-bold">{{ t('settings.settingsPage.users') }}</label>
           <div
@@ -5328,9 +5326,7 @@ onBeforeUnmount(() => {
             </button>
           </div>
           <div :class="[newRole.users.length > 0 ? 'mt-3' : 'mt-1', 'mb-4']">
-            <BsButton icon="plus" colorClass="secondary" @click="roleAddUser(newRole)">{{
-              t('settings.settingsPage.addUser')
-            }}</BsButton>
+            <BsButton icon="plus" @click="roleAddUser(newRole)">{{ t('settings.settingsPage.addUser') }}</BsButton>
           </div>
           <label class="form-label fw-bold">{{ t('settings.settingsPage.options') }}</label>
           <div class="row row-cols-2 row-cols-md-3 g-0 role-options mb-3">
@@ -5413,9 +5409,7 @@ onBeforeUnmount(() => {
                   </button>
                 </div>
                 <div :class="[role.groups.length > 0 ? 'mt-3' : 'mt-1', 'mb-4']">
-                  <BsButton icon="plus" colorClass="secondary" @click="roleAddGroup(role)">{{
-                    t('settings.settingsPage.addGroup')
-                  }}</BsButton>
+                  <BsButton icon="plus" @click="roleAddGroup(role)">{{ t('settings.settingsPage.addGroup') }}</BsButton>
                 </div>
                 <label class="form-label fw-bold">{{ t('settings.settingsPage.users') }}</label>
                 <div
@@ -5449,9 +5443,7 @@ onBeforeUnmount(() => {
                   </button>
                 </div>
                 <div :class="[role.users.length > 0 ? 'mt-3' : 'mt-1', 'mb-4']">
-                  <BsButton icon="plus" colorClass="secondary" @click="roleAddUser(role)">{{
-                    t('settings.settingsPage.addUser')
-                  }}</BsButton>
+                  <BsButton icon="plus" @click="roleAddUser(role)">{{ t('settings.settingsPage.addUser') }}</BsButton>
                 </div>
               </template>
               <p v-else class="text-muted small mt-1 mb-4">{{ t('settings.settingsPage.publicRoleNote') }}</p>
@@ -6145,12 +6137,8 @@ onBeforeUnmount(() => {
               </button>
             </div>
             <div class="d-flex gap-2 mt-2">
-              <BsButton icon="plus" colorClass="secondary" @click="addFieldValue('string')">{{
-                t('designer.addValue')
-              }}</BsButton>
-              <BsButton icon="plus" colorClass="secondary" @click="addFieldValue('object')">{{
-                t('designer.addValueObject')
-              }}</BsButton>
+              <BsButton icon="plus" @click="addFieldValue('string')">{{ t('designer.addValue') }}</BsButton>
+              <BsButton icon="plus" @click="addFieldValue('object')">{{ t('designer.addValueObject') }}</BsButton>
             </div>
           </div>
           <div class="d-flex justify-content-end mt-2">

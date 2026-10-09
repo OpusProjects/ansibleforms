@@ -147,7 +147,8 @@
   overflow-x: auto;
   overflow-y: hidden;
   border-bottom: 0;
-  box-shadow: inset 0 -1px 0 var(--bs-border-color);
+  /* the cards' grey (--af-field-border) : the tabs are the top of the card under them */
+  box-shadow: inset 0 -1px 0 var(--af-field-border, var(--bs-border-color));
   scrollbar-width: thin;
 }
 .nav-tabs .nav-item {
@@ -157,7 +158,7 @@
   padding-left: 0;
 }
 .nav-tabs .nav-link {
-  border: 1px solid var(--bs-border-color);
+  border: 1px solid var(--af-field-border, var(--bs-border-color));
   border-bottom-color: transparent;
   margin-bottom: 0;
   white-space: nowrap;
@@ -170,14 +171,15 @@
 .nav-tabs .nav-link:hover:not(.active) {
   color: var(--bs-primary);
   background-color: var(--bs-tertiary-bg);
-  border-color: var(--bs-border-color) var(--bs-border-color) transparent;
+  border-color: var(--af-field-border, var(--bs-border-color)) var(--af-field-border, var(--bs-border-color))
+    transparent;
 }
 .nav-tabs .nav-link.active {
   background-color: var(--bs-body-bg) !important;
   color: var(--bs-primary) !important;
   border-top-color: var(--bs-primary) !important;
-  border-left-color: var(--bs-border-color) !important;
-  border-right-color: var(--bs-border-color) !important;
+  border-left-color: var(--af-field-border, var(--bs-border-color)) !important;
+  border-right-color: var(--af-field-border, var(--bs-border-color)) !important;
   border-bottom-color: var(--bs-body-bg) !important;
   box-shadow: inset 0 2px 0 var(--bs-primary);
   position: relative;
