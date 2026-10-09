@@ -313,6 +313,8 @@ defineProps({
         <BsInputSelectRaw
           v-if="type === 'select'"
           :readonly="readonly"
+          :valueKey="valueKey"
+          :labelKey="labelKey"
           :disabled="disabled"
           :style="style"
           :cssClass="cssClass"
@@ -396,6 +398,8 @@ defineProps({
           <BsInputSelectRaw
             v-if="type === 'select'"
             :readonly="readonly"
+            :valueKey="valueKey"
+            :labelKey="labelKey"
             :disabled="disabled"
             :style="style"
             :cssClass="cssClass"
@@ -436,6 +440,8 @@ defineProps({
         <BsInputSelectRaw
           v-if="type === 'select'"
           :readonly="readonly"
+          :valueKey="valueKey"
+          :labelKey="labelKey"
           :disabled="disabled"
           :style="style"
           :cssClass="cssClass"
