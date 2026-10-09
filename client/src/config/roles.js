@@ -75,6 +75,23 @@ export function roleOptionDefaults(roleName) {
 // Translated label of a role option. The keys all follow the
 // settings.settingsPage.roleOption<Key> convention, so derive the i18n key from
 // the option name instead of maintaining a second map per editor.
+/**
+ * The description of a role the config must keep (admin, public) : fixed and translated, never
+ * typed or stored ; '' for any other role.
+ *
+ * Args:
+ *   t (function): the vue-i18n translate function.
+ *   name (string): the role's name.
+ *
+ * Returns:
+ *   string: its description, or ''.
+ */
+export function requiredRoleDescription(t, name) {
+  if (name === 'admin') return t('settings.settingsPage.roleDescriptionAdmin');
+  if (name === 'public') return t('settings.settingsPage.roleDescriptionPublic');
+  return '';
+}
+
 export function roleOptionLabel(t, key) {
   return t('settings.settingsPage.roleOption' + key.charAt(0).toUpperCase() + key.slice(1));
 }
@@ -113,6 +130,8 @@ export function roleToEditable(r) {
   if (!r.options || r.options.allowMcp === undefined) options.allowMcp = options.allowChat;
   return {
     name: r.name || '',
+    // what the role is for, in a few words (the roles list shows it)
+    description: typeof r.description === 'string' ? r.description : '',
     groups: (r.groups || []).map(parseProviderEntry),
     users: (r.users || []).map(parseProviderEntry),
     options,
@@ -152,6 +171,10 @@ export function serializeRole(r) {
   const name = (r.name || '').trim();
   const isPublic = name === 'public';
   const role = { name };
+  // written only when there is one, so a role without stays as it was in the yaml ; admin and
+  // public have a fixed one (requiredRoleDescription), never stored
+  const description = (r.description || '').trim();
+  if (description && name !== 'admin' && name !== 'public') role.description = description;
   const clean = (list) =>
     (list || [])
       .filter((e) => e && typeof e.name === 'string' && e.name.trim())

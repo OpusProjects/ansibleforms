@@ -104,3 +104,24 @@ describe('allowMcp follows allowChat unless it is set', () => {
     expect(serializeRole(roleToEditable({ name: 'ops', groups: ['local/x'] })).options).toBeUndefined();
   });
 });
+
+// 4. a role's description : read, written back only when there is one (a role without stays as
+//    it was in the yaml), trimmed
+describe('a role keeps its description', () => {
+  it('reads it, writes it trimmed, and writes nothing when empty', () => {
+    const loaded = roleToEditable({ name: 'ops', description: 'Runs the network forms', groups: ['local/x'] });
+    expect(loaded.description).toBe('Runs the network forms');
+    expect(serializeRole({ ...loaded, description: '  Runs the network forms  ' }).description).toBe(
+      'Runs the network forms',
+    );
+    expect('description' in serializeRole({ ...loaded, description: '   ' })).toBe(false);
+    expect(roleToEditable({ name: 'ops' }).description).toBe('');
+  });
+
+  it('admin and public never write one : theirs is fixed', () => {
+    for (const name of ['admin', 'public']) {
+      const out = serializeRole({ ...roleToEditable({ name, groups: [] }), description: 'typed by hand' });
+      expect('description' in out).toBe(false);
+    }
+  });
+});
