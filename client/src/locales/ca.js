@@ -721,6 +721,9 @@ export default {
       runAt: 'Executa el',
       runAtHelp: "La data i l'hora per executar aquesta tasca una vegada",
       extraVarsHelp: "No hi ha cap formulari que proporcioni les extra vars, les has d'afegir aquí.",
+      state_idle: 'Inactiu',
+      state_queued: 'En cua',
+      state_running: 'En execució',
     },
     mailServers: {
       label: 'Servidor de correu',

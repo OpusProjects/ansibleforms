@@ -726,6 +726,9 @@ export default {
       runAt: 'Ausfuehren um',
       runAtHelp: 'Datum und Uhrzeit fuer die einmalige Ausfuehrung dieses Jobs',
       extraVarsHelp: 'Es gibt kein Formular fuer die Extra-Variablen, Sie muessen sie hier hinzufuegen.',
+      state_idle: 'Bereit',
+      state_queued: 'In Warteschlange',
+      state_running: 'Läuft',
     },
     runners: {
       label: 'Runner',

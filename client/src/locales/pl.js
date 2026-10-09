@@ -719,6 +719,9 @@ export default {
       runAt: 'Uruchom o',
       runAtHelp: 'Data i godzina jednorazowego uruchomienia tego zadania',
       extraVarsHelp: 'Brak formularza, który dostarczy extra vars, musisz dodać je tutaj.',
+      state_idle: 'Bezczynny',
+      state_queued: 'W kolejce',
+      state_running: 'Uruchomiony',
     },
     mailServers: {
       label: 'Serwer poczty',

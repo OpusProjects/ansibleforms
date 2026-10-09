@@ -719,6 +719,9 @@ export default {
       runAt: 'Esegui alle',
       runAtHelp: 'Data e ora per eseguire questo job una sola volta',
       extraVarsHelp: 'Non esiste un modulo per fornire le variabili extra, devi aggiungerle qui.',
+      state_idle: 'Inattivo',
+      state_queued: 'In coda',
+      state_running: 'In esecuzione',
     },
     runners: {
       label: 'Runner',

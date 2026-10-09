@@ -89,6 +89,24 @@ export function statusPill(t, value) {
  * Returns:
  *   string: the pill's HTML, escaped.
  */
+/**
+ * A schedule's state as a pill : running (a run in progress) blue, queued (waiting for a
+ * worker) amber, idle grey ; none an en dash.
+ *
+ * Args:
+ *   t (function): the translation function.
+ *   state (string): idle, queued or running.
+ *
+ * Returns:
+ *   string: the pill's HTML, escaped.
+ */
+export function schedulePill(t, state) {
+  if (!state) return '–';
+  const known = { running: PILL.blue, queued: PILL.amber, idle: PILL.grey };
+  const label = known[state] ? t(`settings.schedules.state_${state}`) : state;
+  return `<span class="badge rounded-pill fw-semibold af-pill ${known[state] || PILL.grey}"><span class="af-pill-label">${escapeHtml(label)}</span></span>`;
+}
+
 export function registrationPill(t, state) {
   const known = { automatic: PILL.blue, unresponsive: PILL.amber };
   const key = known[state] ? state : 'manual';
@@ -827,10 +845,24 @@ export default function getSettings(t) {
         { key: 'vars', label: t('settings.schedules.stepExtraVars') },
       ],
       actions: [
+        // in the row menu, as every list's : editing, running it now, its last output, then
+        // Delete last, each apart
         { name: 'edit', icon: 'pencil', title: t('settings.schedules.editSchedule'), color: 'edit' },
+        {
+          name: 'trigger',
+          icon: 'play',
+          title: t('settings.schedules.runSchedule'),
+          color: 'refresh',
+          dividerBefore: true,
+        },
+        {
+          name: 'preview',
+          icon: 'terminal',
+          title: t('settings.common.showOutput'),
+          color: 'preview',
+          dividerBefore: true,
+        },
         { name: 'delete', icon: 'trash', title: t('settings.schedules.deleteSchedule'), color: 'delete' },
-        { name: 'trigger', icon: 'play', title: t('settings.schedules.runSchedule'), color: 'refresh' },
-        { name: 'preview', icon: 'info-circle', title: t('settings.common.showOutput'), color: 'preview' },
       ],
       // the table's columns share its width (the widths below) : a date with its time and zone
       // gets room around it at any screen width, the one word columns (status, state) less
@@ -916,7 +948,8 @@ export default function getSettings(t) {
           width: '10%',
           label: t('settings.fields.status'),
           noInput: true,
-          render: (v) => (v ? escapeHtml(v) : '–'),
+          // the last run's outcome as a pill, as a job's status
+          render: (v) => statusPill(t, v),
         },
         // none yet (a schedule that never ran) : an en dash rather than an empty cell
         {
@@ -924,7 +957,8 @@ export default function getSettings(t) {
           width: '9%',
           label: t('settings.fields.state'),
           noInput: true,
-          render: (v) => (v ? escapeHtml(v) : '–'),
+          // running blue, queued amber, idle grey
+          render: (v) => schedulePill(t, v),
         },
         {
           key: 'last_run',
