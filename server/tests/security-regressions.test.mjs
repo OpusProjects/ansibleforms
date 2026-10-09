@@ -92,6 +92,43 @@ describe("the client cannot choose what a job actually runs", () => {
       assert.equal(stripReservedExtravars({ __template__: "step-chosen" }, form).__template__, "step-chosen");
     });
 
+    test("a wizard step's subform fields count as declarations (#754)", () => {
+      const form = {
+        wizard: [{ subform: "general" }, { subform: "hardware" }],
+        subforms: [
+          { name: "general", type: "subform", fields: [{ name: "vm_name" }, { name: "__playbook__" }] },
+          { name: "hardware", type: "subform", fields: [{ name: "cpu" }] },
+        ],
+        fields: [],
+      };
+      const out = stripReservedExtravars({ vm_name: "web01", __playbook__: "serverlinux_config.yaml" }, form);
+      assert.equal(out.__playbook__, "serverlinux_config.yaml");
+    });
+
+    test("a wizard step's defaultModel moves its fields off the top level", () => {
+      const form = {
+        wizard: [{ subform: "general", defaultModel: "general" }],
+        subforms: [{ name: "general", fields: [{ name: "__playbook__" }] }],
+      };
+      // the field lands at general.__playbook__, so a top-level __playbook__ is not declared
+      assert.equal("__playbook__" in stripReservedExtravars({ __playbook__: "x" }, form), false);
+      // unless its model escapes to the root
+      form.subforms[0].fields[0].model = "/__playbook__";
+      assert.equal(stripReservedExtravars({ __playbook__: "x" }, form).__playbook__, "x");
+    });
+
+    test("a field whose model writes the reserved key counts as a declaration", () => {
+      const form = { fields: [{ name: "which_playbook", model: "__playbook__" }] };
+      assert.equal(stripReservedExtravars({ __playbook__: "chosen" }, form).__playbook__, "chosen");
+      const several = { fields: [{ name: "pb", model: ["other.path", "__playbook__"] }] };
+      assert.equal(stripReservedExtravars({ __playbook__: "chosen" }, several).__playbook__, "chosen");
+    });
+
+    test("a wizard step pointing at a subform that is not there declares nothing", () => {
+      const form = { wizard: [{ subform: "missing" }], subforms: [] };
+      assert.equal("__playbook__" in stripReservedExtravars({ __playbook__: "x" }, form), false);
+    });
+
     test("a form declaring nothing still strips everything, as before", () => {
       const out = stripReservedExtravars({ __template__: "attacker" }, { fields: [{ name: "hostname" }] });
       assert.equal("__template__" in out, false);
