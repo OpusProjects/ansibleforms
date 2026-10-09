@@ -531,6 +531,8 @@ export default {
       addItem: 'Añadir {item}',
       edit: 'Editar',
       save: 'Guardar',
+      unsavedLeave: 'Salir sin guardar',
+      unsavedTitle: 'Cambios sin guardar',
       unsavedChanges: 'Tiene cambios sin guardar. ¿Salir de esta página y perderlos?',
       seedManaged: 'Seed de configuración',
       seedManagedField: 'Definido en el archivo config seed: cámbialo allí y reinicia.',

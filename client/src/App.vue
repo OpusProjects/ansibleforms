@@ -201,6 +201,8 @@ onMounted(async () => {
     :offset="{ bottom: '6rem', right: '1.25rem' }"
   />
   <AppChat />
+  <!-- asked when a page with unsaved changes is left (useUnsavedGuard) -->
+  <AppUnsavedDialog />
   <router-view v-if="isLoaded || route.name === '/schema' || route.name === '/login' || route.name === '/error'" />
   <div v-else class="d-flex justify-content-center align-items-center vh-100">
     <div class="text-center">

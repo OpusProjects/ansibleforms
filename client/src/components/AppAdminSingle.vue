@@ -33,6 +33,7 @@ import { useVuelidate } from '@vuelidate/core';
 import { required, helpers, email, sameAs } from '@vuelidate/validators';
 import { useI18n } from 'vue-i18n';
 import { useRouteTab } from '@/composables/useRouteTab';
+import { useUnsavedGuard } from '@/composables/useUnsavedGuard';
 import { useRoute } from 'vue-router';
 
 const { t } = useI18n();
@@ -220,6 +221,12 @@ function isVisible(field) {
 // seed re-applies on every start, so an editable form here could only mislead. The
 // values stay visible - an operator still needs to read what is in force.
 const isManaged = computed(() => !!item.value?.managed);
+// leaving with the form changed and unsaved asks first : its fields (not when the seed owns
+// them, nothing can be saved) or what the page adds to it (extraDirty)
+useUnsavedGuard(
+  computed(() => (isDirty.value && !isManaged.value) || props.extraDirty),
+  () => t('settings.common.unsavedChanges'),
+);
 
 const disabledFields = computed(() => {
   const disabledFields = {};

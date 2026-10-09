@@ -530,6 +530,8 @@ export default {
       addItem: '{item}を追加',
       edit: '編集',
       save: '保存',
+      unsavedLeave: '保存せずに移動',
+      unsavedTitle: '未保存の変更',
       unsavedChanges: '保存されていない変更があります。このページを離れて変更を破棄しますか?',
       seedManaged: 'Config seed',
       seedManagedField: '構成シードファイルで設定：そこで変更して再起動してください。',

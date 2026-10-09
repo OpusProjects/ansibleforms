@@ -531,6 +531,8 @@ export default {
       addItem: 'Dodaj {item}',
       edit: 'Edytuj',
       save: 'Zapisz',
+      unsavedLeave: 'Wyjdź bez zapisywania',
+      unsavedTitle: 'Niezapisane zmiany',
       unsavedChanges: 'Masz niezapisane zmiany. Opuścić tę stronę i je utracić?',
       seedManaged: 'Config seed',
       seedManagedField: 'Ustawione w pliku config seed: zmień je tam, potem uruchom ponownie.',

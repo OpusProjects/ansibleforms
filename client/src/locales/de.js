@@ -538,6 +538,8 @@ export default {
       addItem: '{item} hinzufügen',
       edit: 'Bearbeiten',
       save: 'Speichern',
+      unsavedLeave: 'Ohne Speichern verlassen',
+      unsavedTitle: 'Ungespeicherte Änderungen',
       unsavedChanges: 'Sie haben ungespeicherte Änderungen. Diese Seite verlassen und sie verwerfen?',
       seedManaged: 'Konfigurations-Seed',
       seedManagedField: 'In der Config-Seed-Datei gesetzt: dort ändern, dann neu starten.',
