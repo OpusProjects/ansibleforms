@@ -23,7 +23,7 @@ Everything about installing, configuring and writing forms is documented at [ans
 ## Installation
 
 AnsibleForms ships as two container images next to a MySQL database: `ghcr.io/ansibleforms/ansibleforms`, the
-application, and `ghcr.io/ansibleforms/ansibleforms-rte`, the runtime environment that runs its playbooks.
+application, and `ghcr.io/ansibleforms/ansibleforms-rte-runner`, the runtime environment that runs its playbooks.
 Build your own RTE on it, with the collections and python packages your playbooks use, or take
 `ansibleforms-rte-legacy`, which has what the 6.5 image had ([examples/rte](examples/rte)).
 The [installation guide](https://ansibleforms.com/installation) covers every option; the two ready-made setups are:

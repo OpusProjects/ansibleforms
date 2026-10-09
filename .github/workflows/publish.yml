@@ -2,7 +2,7 @@ name: Publish
 
 # Builds and pushes the images, all with the same tags : the application (ansibleforms,
 # Dockerfile) and the runtime environment that runs its playbooks, in three layers -
-# ansibleforms-rte-base (Dockerfile.rte-base), ansibleforms-rte (Dockerfile.rte) and
+# ansibleforms-rte-base (Dockerfile.rte-base), ansibleforms-rte-runner (Dockerfile.rte-runner) and
 # ansibleforms-rte-legacy (Dockerfile.rte-legacy). Called by release.yml when a release is created
 # and by rc.yml for a release candidate. "Run workflow" re-publishes an existing release tag,
 # for when a push failed half way. The tags are the list in installation.md (Image
@@ -116,9 +116,9 @@ jobs:
           tags="${tags#,}"
           echo "list=$tags" >> "$GITHUB_OUTPUT"
           echo "$tags" | tr ',' '\n'
-          # the three RTE layers (Dockerfile.rte-base, .rte, .rte-legacy) : the same tags on
+          # the three RTE layers (Dockerfile.rte-base, .rte-runner, .rte-legacy) : the same tags on
           # their own image names
-          for image in rte-base rte rte-legacy; do
+          for image in rte-base rte-runner rte-legacy; do
             list=""
             for n in $names; do
               list="$list,$ghcr-$image:$n"
@@ -174,14 +174,14 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
-          file: Dockerfile.rte
+          file: Dockerfile.rte-runner
           push: true
-          tags: ${{ steps.tags.outputs.rte }}
+          tags: ${{ steps.tags.outputs.rte_runner }}
           build-args: |
             BASE_IMAGE=${{ steps.tags.outputs.ghcr }}-rte-base@${{ steps.rte_base.outputs.digest }}
             VERSION=${{ env.VERSION }}
-          cache-from: type=gha,scope=rte
-          cache-to: type=gha,mode=max,scope=rte
+          cache-from: type=gha,scope=rte-runner
+          cache-to: type=gha,mode=max,scope=rte-runner
 
       - name: Build and push the RTE (legacy)
         uses: docker/build-push-action@v7
@@ -191,7 +191,7 @@ jobs:
           push: true
           tags: ${{ steps.tags.outputs.rte_legacy }}
           build-args: |
-            BASE_IMAGE=${{ steps.tags.outputs.ghcr }}-rte@${{ steps.rte.outputs.digest }}
+            BASE_IMAGE=${{ steps.tags.outputs.ghcr }}-rte-runner@${{ steps.rte.outputs.digest }}
             VERSION=${{ env.VERSION }}
           cache-from: type=gha,scope=rte-legacy
           cache-to: type=gha,mode=max,scope=rte-legacy
@@ -204,7 +204,7 @@ jobs:
             echo '```'
             echo "${{ steps.tags.outputs.list }}" | tr ',' '\n'
             echo "${{ steps.tags.outputs.rte_base }}" | tr ',' '\n'
-            echo "${{ steps.tags.outputs.rte }}" | tr ',' '\n'
+            echo "${{ steps.tags.outputs.rte_runner }}" | tr ',' '\n'
             echo "${{ steps.tags.outputs.rte_legacy }}" | tr ',' '\n'
             echo '```'
             echo ""

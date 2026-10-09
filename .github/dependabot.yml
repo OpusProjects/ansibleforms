@@ -45,7 +45,7 @@ updates:
 
   # Moves the digest pins (the docker updater reads every file named *Dockerfile* in the
   # directory) : node:24-bookworm(-slim) in Dockerfile, the app, and node:24-trixie-slim in
-  # Dockerfile.rte-base. Dockerfile.rte and .rte-legacy build FROM our own layers (BASE_IMAGE).
+  # Dockerfile.rte-base. Dockerfile.rte-runner and .rte-legacy build FROM our own layers (BASE_IMAGE).
   - package-ecosystem: docker
     directory: /
     schedule:
@@ -57,11 +57,11 @@ updates:
       - dependency-name: '*'
         update-types: ['version-update:semver-major']
 
-  # The python packages of the RTE images (docker/rte for ansibleforms-rte, docker/rte-legacy
+  # The python packages of the RTE images (docker/rte-runner for ansibleforms-rte-runner, docker/rte-legacy
   # for ansibleforms-rte-legacy) : pinned, so an image changes only with a commit here
   - package-ecosystem: pip
     directories:
-      - /docker/rte
+      - /docker/rte-runner
       - /docker/rte-legacy
     schedule:
       interval: weekly

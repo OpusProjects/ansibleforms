@@ -1,5 +1,5 @@
 # The python packages the AnsibleForms image had before 7, on top of the RTE's own
-# (docker/rte/requirements.txt) : the ansibleforms-rte-legacy image (Dockerfile.rte-legacy).
+# (docker/rte-runner/requirements.txt) : the ansibleforms-rte-legacy image (Dockerfile.rte-legacy).
 # `ansible` is the community package with its collections, at the version the 6.5 image had :
 # 12.3.0, so ansible-core 2.19 - legacy means what 6.5 ran, newer ansible is the rte image's.
 # Dependabot proposes updates, within 12.x (no majors).

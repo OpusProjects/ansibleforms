@@ -1,13 +1,13 @@
-# The AnsibleForms RTE, layer 3 of 3 : the RTE (Dockerfile.rte) + what the AnsibleForms 6.5
+# The AnsibleForms RTE, layer 3 of 3 : the RTE (Dockerfile.rte-runner) + what the AnsibleForms 6.5
 # image had - ansible 12 with ansible-core 2.19 (6.5's, NOT the rte image's newer one), the
 # python libraries (docker/rte-legacy/requirements.txt), the NetApp, AWS and community
 # collections (docker/rte-legacy/collections.yml) and the os tools. For a 6.5 install whose
 # playbooks expect them : upgrade, and they keep working.
 #
-# Starting fresh ? Take ansibleforms-rte and add only what your playbooks use.
+# Starting fresh ? Take ansibleforms-rte-runner and add only what your playbooks use.
 #
 # BASE_IMAGE : CI passes the RTE it built in the same run, by digest (publish.yml).
-ARG BASE_IMAGE=ghcr.io/ansibleforms/ansibleforms-rte:7
+ARG BASE_IMAGE=ghcr.io/ansibleforms/ansibleforms-rte-runner:7
 FROM ${BASE_IMAGE}
 
 ARG VERSION=

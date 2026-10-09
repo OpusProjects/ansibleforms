@@ -7,11 +7,11 @@ it in three layers, each built on the one before. Build your own on the layer th
 | Image | What is in it | Use it |
 |---|---|---|
 | `ghcr.io/ansibleforms/ansibleforms-rte-base` | node and the AnsibleForms server, git, ssh. No python and no ansible, so it runs no playbook by itself. | To build an RTE with **your own** python and ansible version: [Dockerfile.own-ansible](Dockerfile.own-ansible) |
-| `ghcr.io/ansibleforms/ansibleforms-rte` | the base + python 3.13, ansible-core and a few common libraries (`jmespath`, `netaddr`, `requests`, `paramiko`). No collections. | **The default.** Run it as it is, or add the collections and libraries your playbooks use: [Dockerfile.netapp](Dockerfile.netapp), [Dockerfile.vmware](Dockerfile.vmware) |
+| `ghcr.io/ansibleforms/ansibleforms-rte-runner` | the base + python 3.13, ansible-core and a few common libraries (`jmespath`, `netaddr`, `requests`, `paramiko`). No collections. | **The default.** Run it as it is, or add the collections and libraries your playbooks use: [Dockerfile.netapp](Dockerfile.netapp), [Dockerfile.vmware](Dockerfile.vmware) |
 | `ghcr.io/ansibleforms/ansibleforms-rte-legacy` | the RTE + what the AnsibleForms image had before 7: the `ansible` package, the NetApp, AWS and community collections, pandas, pyvmomi, boto3 and more | **Upgrading from 6.5** with playbooks that use those. It keeps them working without a build of your own. |
 
-What each layer adds: [Dockerfile.rte-base](../../Dockerfile.rte-base), [Dockerfile.rte](../../Dockerfile.rte)
-(with [docker/rte/requirements.txt](../../docker/rte/requirements.txt)), and
+What each layer adds: [Dockerfile.rte-base](../../Dockerfile.rte-base), [Dockerfile.rte-runner](../../Dockerfile.rte-runner)
+(with [docker/rte-runner/requirements.txt](../../docker/rte-runner/requirements.txt)), and
 [Dockerfile.rte-legacy](../../Dockerfile.rte-legacy) (with [docker/rte-legacy/](../../docker/rte-legacy)).
 
 ## Build and run it

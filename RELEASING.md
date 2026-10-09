@@ -97,13 +97,13 @@ and with the same tags as the app :
 | Image | Dockerfile | Adds |
 |---|---|---|
 | `ansibleforms-rte-base` | `Dockerfile.rte-base` | node (`node:24-trixie-slim`, pinned by digest) and the server, git, ssh - no python, no ansible |
-| `ansibleforms-rte` | `Dockerfile.rte` | python and the packages in `docker/rte/requirements.txt` (ansible-core and a few libraries) |
+| `ansibleforms-rte-runner` | `Dockerfile.rte-runner` | python and the packages in `docker/rte-runner/requirements.txt` (ansible-core and a few libraries) |
 | `ansibleforms-rte-legacy` | `Dockerfile.rte-legacy` | what the 6.5 image had : `docker/rte-legacy/requirements.txt`, `collections.yml` and a few os tools |
 
 - **Updates** : Dependabot moves the node pin in `Dockerfile.rte-base` and the python pins in
   `docker/rte*/requirements.txt`. Each one is a pull request, so an image changes only with a
   commit. The legacy collections take their latest version at build time, as they did before.
-- **The chain** : `Dockerfile.rte` and `.rte-legacy` take `BASE_IMAGE`. `publish.yml` passes
+- **The chain** : `Dockerfile.rte-runner` and `.rte-legacy` take `BASE_IMAGE`. `publish.yml` passes
   the digest it just pushed, and the Docker check (`docker.yml`) does the same through a
   registry that lives only for the job. Built by hand, they default to the published `:7`.
 - The app (`Dockerfile`) needs only node, git, ssh, the mariadb client and ytt, and builds from

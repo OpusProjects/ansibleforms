@@ -4,7 +4,7 @@
 # choose (examples/rte/Dockerfile.own-ansible).
 #
 #   ansibleforms-rte-base     this image
-#     └ ansibleforms-rte      + python, ansible-core and the essentials (Dockerfile.rte)
+#     └ ansibleforms-rte-runner      + python, ansible-core and the essentials (Dockerfile.rte-runner)
 #         └ ansibleforms-rte-legacy   + what the 6.5 image had (Dockerfile.rte-legacy)
 #
 # trixie, not the app's bookworm : its python 3.13 runs the current ansible-core, bookworm's

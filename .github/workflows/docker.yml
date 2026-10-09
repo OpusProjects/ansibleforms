@@ -10,7 +10,7 @@ on:
     branches: [main, 'release/**']
     paths:
       - 'Dockerfile'
-      - 'Dockerfile.rte'
+      - 'Dockerfile.rte-runner'
       - 'Dockerfile.rte-base'
       - 'Dockerfile.rte-legacy'
       - 'docker/**'
@@ -82,13 +82,13 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
-          file: Dockerfile.rte
+          file: Dockerfile.rte-runner
           push: true
-          tags: localhost:5000/ansibleforms-rte:ci
+          tags: localhost:5000/ansibleforms-rte-runner:ci
           build-args: |
             BASE_IMAGE=localhost:5000/ansibleforms-rte-base@${{ steps.rte_base.outputs.digest }}
-          cache-from: type=gha,scope=rte
-          cache-to: type=gha,mode=max,scope=rte
+          cache-from: type=gha,scope=rte-runner
+          cache-to: type=gha,mode=max,scope=rte-runner
 
       - name: Build the RTE legacy (no publish)
         uses: docker/build-push-action@v7
@@ -98,6 +98,6 @@ jobs:
           push: false
           outputs: type=cacheonly
           build-args: |
-            BASE_IMAGE=localhost:5000/ansibleforms-rte@${{ steps.rte.outputs.digest }}
+            BASE_IMAGE=localhost:5000/ansibleforms-rte-runner@${{ steps.rte.outputs.digest }}
           cache-from: type=gha,scope=rte-legacy
           cache-to: type=gha,mode=max,scope=rte-legacy
