@@ -96,7 +96,8 @@ watch(
 );
 const menuOptions = computed(() => [
   { title: t('nav.jobs'), link: '/jobs', icon: 'history' },
-  { title: t('nav.settings'), link: '/admin/settings', icon: 'gear' },
+  // every settings page (all under /admin) keeps Settings active, not its General page alone
+  { title: t('nav.settings'), link: '/admin/settings', also: ['/admin'], icon: 'gear' },
   { title: t('nav.designer'), link: '/designer', icon: 'pen-to-square' },
 ]);
 const helpMenuOptions = computed(() => [

@@ -159,7 +159,7 @@ export function searchPages(t, options) {
       link: '/admin/audit',
       permission: 'showSettings',
     },
-    { title: t('sidebar.logs'), section: settings, icon: 'file-lines', link: '/logs', permission: 'showLogs' },
+    { title: t('sidebar.logs'), section: settings, icon: 'file-lines', link: '/admin/logs', permission: 'showLogs' },
   ];
   return pages.filter((p) => !p.permission || !!options?.[p.permission]);
 }
