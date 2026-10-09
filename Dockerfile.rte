@@ -1,47 +1,29 @@
-# The AnsibleForms RTE (runtime environment) : the server started with AF_ROLE=rte, which
-# runs playbooks for an AnsibleForms app. It builds from base-server, which holds what the
-# all-in-one image of 6.x had : ansible, the python packages and the NetApp and community
-# collections. The app itself (Dockerfile) runs on plain node.
+# The AnsibleForms RTE, layer 2 of 3 - the one to run, and to build on : the base
+# (Dockerfile.rte-base) + python, ansible-core and the few libraries most playbooks expect
+# (docker/rte/requirements.txt). No collections : add the ones your playbooks use.
 #
-# Make it your own : fork this file, add what your playbooks need after the final FROM,
+#   FROM ghcr.io/ansibleforms/ansibleforms-rte:7
 #   RUN ansible-galaxy collection install vmware.vmware -p /usr/share/ansible/collections
-#   RUN /venv/bin/pip install pyvmomi
-# and build it : docker build -f Dockerfile.rte -t my-rte .
+#   RUN pip install --no-cache-dir pyvmomi
 #
-# The base is pinned by digest : Dependabot proposes a new pin as a pull request.
-FROM ghcr.io/ansibleforms/base-server:latest@sha256:e7b859d2c855c0ca9841d7cba68aaeefabf570347482fc8f756fac89454e3406 AS builder
-
-ARG GIT_SHA=unknown
-ARG BUILD_TIME=unknown
-ARG VERSION=
-
-WORKDIR /app/server
-COPY ./server/package*.json ./
-RUN npm ci --omit=dev
-COPY ./server .
-COPY ./scripts/generate-build-info.sh /tmp/generate-build-info.sh
-RUN chmod +x /tmp/generate-build-info.sh && /tmp/generate-build-info.sh . "$GIT_SHA" "$BUILD_TIME" "$VERSION"
-# no web interface in an RTE
-RUN rm -f .env.* && rm -rf ./views
-
-FROM ghcr.io/ansibleforms/base-server:latest@sha256:e7b859d2c855c0ca9841d7cba68aaeefabf570347482fc8f756fac89454e3406 AS final
+# More in examples/rte. A 6.5 install whose playbooks use the collections that image had :
+# ansibleforms-rte-legacy (Dockerfile.rte-legacy).
+#
+# BASE_IMAGE : CI passes the base it built in the same run, by digest (publish.yml).
+ARG BASE_IMAGE=ghcr.io/ansibleforms/ansibleforms-rte-base:7
+FROM ${BASE_IMAGE}
 
 ARG VERSION=
-LABEL org.opencontainers.image.source="https://github.com/ansibleforms/ansibleforms" \
-      org.opencontainers.image.url="https://ansibleforms.com" \
-      org.opencontainers.image.title="AnsibleForms RTE" \
-      org.opencontainers.image.description="Runtime environment that runs Ansible playbooks for AnsibleForms" \
-      org.opencontainers.image.licenses="GPL-3.0" \
+LABEL org.opencontainers.image.title="AnsibleForms RTE" \
+      org.opencontainers.image.description="Runtime environment that runs Ansible playbooks for AnsibleForms : python, ansible-core and the essentials" \
       org.opencontainers.image.version="${VERSION}"
 
-WORKDIR /app/dist
-COPY --from=builder /app/server/. ./
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends python3 python3-venv \
+ && rm -rf /var/lib/apt/lists/* \
+ && python3 -m venv /venv
+ENV PATH="/venv/bin:$PATH"
+
+COPY ./docker/rte/requirements.txt /tmp/rte-requirements.txt
+RUN pip install --no-cache-dir -r /tmp/rte-requirements.txt && rm /tmp/rte-requirements.txt
 COPY ./server/ansible.cfg /etc/ansible/ansible.cfg
-
-# tini as PID 1 : it hands SIGTERM to node and reaps the ansible workers a playbook leaves behind
-RUN apt-get update && apt-get install -y --no-install-recommends tini && rm -rf /var/lib/apt/lists/*
-
-ENV AF_ROLE=rte
-# the port takes a connection (server/healthcheck.js) ; its API answers only with the token
-HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD ["node", "./healthcheck.js"]
-ENTRYPOINT ["/usr/bin/tini", "--", "node", "./index.js"]

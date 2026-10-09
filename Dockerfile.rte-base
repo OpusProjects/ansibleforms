@@ -1,0 +1,49 @@
+# The AnsibleForms RTE, layer 1 of 3 : node and the AnsibleForms server (AF_ROLE=rte), with
+# what the server itself calls - git and ssh - and nothing else. No python and no ansible, so
+# it runs no playbook by itself : it is the base for an RTE with the python and the ansible you
+# choose (examples/rte/Dockerfile.own-ansible).
+#
+#   ansibleforms-rte-base     this image
+#     └ ansibleforms-rte      + python, ansible-core and the essentials (Dockerfile.rte)
+#         └ ansibleforms-rte-legacy   + what the 6.5 image had (Dockerfile.rte-legacy)
+#
+# trixie, not the app's bookworm : its python 3.13 runs the current ansible-core, bookworm's
+# 3.11 stops at 2.19. Pinned by digest ; Dependabot proposes a new pin as a pull request.
+FROM node:24-trixie-slim@sha256:173f125896c3b47ddf056734c7ea789d04595a6a08769a8f78e0df642781fb66 AS builder
+
+ARG GIT_SHA=unknown
+ARG BUILD_TIME=unknown
+ARG VERSION=
+
+WORKDIR /app/server
+COPY ./server/package*.json ./
+RUN npm ci --omit=dev
+COPY ./server .
+COPY ./scripts/generate-build-info.sh /tmp/generate-build-info.sh
+RUN chmod +x /tmp/generate-build-info.sh && /tmp/generate-build-info.sh . "$GIT_SHA" "$BUILD_TIME" "$VERSION"
+# no web interface in an RTE
+RUN rm -f .env.* && rm -rf ./views
+
+FROM node:24-trixie-slim@sha256:173f125896c3b47ddf056734c7ea789d04595a6a08769a8f78e0df642781fb66 AS final
+
+ARG VERSION=
+LABEL org.opencontainers.image.source="https://github.com/ansibleforms/ansibleforms" \
+      org.opencontainers.image.url="https://ansibleforms.com" \
+      org.opencontainers.image.title="AnsibleForms RTE base" \
+      org.opencontainers.image.description="The AnsibleForms RTE without python or ansible : the base to build your own runtime environment on" \
+      org.opencontainers.image.licenses="GPL-3.0" \
+      org.opencontainers.image.version="${VERSION}"
+
+# tini as PID 1 : it hands SIGTERM to node and reaps the ansible workers a playbook leaves
+# behind ; git and ssh for playbooks that clone or reach hosts, sshpass for password logins
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends tini git openssh-client sshpass ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app/dist
+COPY --from=builder /app/server/. ./
+
+ENV AF_ROLE=rte
+# the port takes a connection (server/healthcheck.js) ; its API answers only with the token
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD ["node", "./healthcheck.js"]
+ENTRYPOINT ["/usr/bin/tini", "--", "node", "./index.js"]

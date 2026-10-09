@@ -1,0 +1,11 @@
+# The collections the AnsibleForms image had before 7, installed at build time in their
+# latest version (as they were) : the ansibleforms-rte-legacy image (Dockerfile.rte-legacy).
+collections:
+  - name: netapp.ontap
+  - name: netapp.elementsw
+  - name: netapp.um_info
+  - name: netapp.storagegrid
+  - name: amazon.aws
+  - name: community.general
+  - name: community.mysql
+  - name: ansible.mysql

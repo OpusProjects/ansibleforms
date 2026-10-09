@@ -61,7 +61,7 @@ Three choices carry the design:
 | `rte/ansible-core.js` | The one place a playbook runs: `runAnsibleJob`, `buildAnsibleArgs` (no shell), `executeCommand` (process group, abort flag, output limit, job log). |
 | `models/runner.model.js` | The `runners` table: per-type validation, one default per type, masked secrets. |
 | `models/job.model.js` | `Job.launch`, `Job.continue` (approval), multistep, notifications, `Job.lastOrder`. |
-| `/Dockerfile.rte`, `/examples/rte/Dockerfile.minimal` | The published RTE image (everything the app image had in v6) and a minimal fork template. |
+| `/Dockerfile.rte-base`, `/Dockerfile.rte`, `/Dockerfile.rte-legacy`, `/examples/rte` | The RTE images in three layers - the base (no python, no ansible), the RTE (ansible-core and the essentials), legacy (what the v6 image had) - and examples to build your own on them. |
 
 ### The runner contract
 
@@ -222,9 +222,12 @@ docker run -d --name rte -p 8010:8000 \
   ghcr.io/ansibleforms/ansibleforms-rte:7
 ```
 
-Customers make it their own by forking `Dockerfile.rte` (the full flavour) or
-`examples/rte/Dockerfile.minimal` (ansible-core only) and adding
-`RUN ansible-galaxy collection install ...` / `pip install ...`.
+Customers make it their own by building FROM one of the three layers:
+- `ansibleforms-rte-base`, with their own python and ansible ;
+- `ansibleforms-rte`, adding `RUN ansible-galaxy collection install ...` / `pip install ...` ;
+- `ansibleforms-rte-legacy`, which has what the 6.5 image had.
+
+See [examples/rte](../../../examples/rte).
 
 ## Security
 

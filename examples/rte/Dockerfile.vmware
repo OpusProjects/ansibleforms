@@ -1,0 +1,7 @@
+# An RTE for VMware playbooks : the AnsibleForms RTE + the vmware collections and the vSphere
+# python libraries. Keep the tag on the app's release (7, or the exact 7.x.y the app runs).
+#
+#   docker build -f examples/rte/Dockerfile.vmware -t my-rte-vmware .
+FROM ghcr.io/ansibleforms/ansibleforms-rte:7
+RUN ansible-galaxy collection install vmware.vmware community.vmware -p /usr/share/ansible/collections \
+ && pip install --no-cache-dir pyvmomi

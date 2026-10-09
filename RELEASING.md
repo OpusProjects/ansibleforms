@@ -89,21 +89,27 @@ the registry credentials.
 Actions → **Publish** → Run workflow → enter the tag (for example `6.3.1`). The workflow
 refuses when `server/package.json` at that tag names another version.
 
-## The base image
+## The RTE images
 
-`ghcr.io/ansibleforms/base-server` holds node, python, ansible and the os packages. The RTE
-(`Dockerfile.rte`), which runs the playbooks, builds from it. The app (`Dockerfile`) does not:
-it needs only node, git, ssh, the mariadb client and ytt, and builds from the official
-`node:24-bookworm-slim` image (pinned by digest, moved by Dependabot). base-server is
-built in [ansibleforms/base-images](https://github.com/ansibleforms/base-images) and
-versioned by date (`2026.10.05`, plus `latest`), independent of the application.
+The RTE is published in three layers, each built FROM the one before, in the same publish run
+and with the same tags as the app :
 
-- **Build it:** in base-images, a merged change to `base-server/` publishes a new build, or
-  Actions → **Build** → Run workflow rebuilds it with fresh packages.
-- **Use it:** `Dockerfile.rte` pins the base by digest, so a new base changes
-  nothing until the pin moves. Dependabot opens a `build(deps): bump base-server` pull
-  request for that. Build a release candidate of it to test the app on the new base, then
-  merge it. Retitle it `fix(base): ...` if the update should appear in the changelog.
+| Image | Dockerfile | Adds |
+|---|---|---|
+| `ansibleforms-rte-base` | `Dockerfile.rte-base` | node (`node:24-trixie-slim`, pinned by digest) and the server, git, ssh - no python, no ansible |
+| `ansibleforms-rte` | `Dockerfile.rte` | python and the packages in `docker/rte/requirements.txt` (ansible-core and a few libraries) |
+| `ansibleforms-rte-legacy` | `Dockerfile.rte-legacy` | what the 6.5 image had : `docker/rte-legacy/requirements.txt`, `collections.yml` and a few os tools |
+
+- **Updates** : Dependabot moves the node pin in `Dockerfile.rte-base` and the python pins in
+  `docker/rte*/requirements.txt`. Each one is a pull request, so an image changes only with a
+  commit. The legacy collections take their latest version at build time, as they did before.
+- **The chain** : `Dockerfile.rte` and `.rte-legacy` take `BASE_IMAGE`. `publish.yml` passes
+  the digest it just pushed, and the Docker check (`docker.yml`) does the same through a
+  registry that lives only for the job. Built by hand, they default to the published `:7`.
+- The app (`Dockerfile`) needs only node, git, ssh, the mariadb client and ytt, and builds from
+  `node:24-bookworm-slim` (pinned by digest, moved by Dependabot).
+- `ghcr.io/ansibleforms/base-server` ([ansibleforms/base-images](https://github.com/ansibleforms/base-images))
+  is the base of the 6.x line only.
 
 ## A patch release of 6.x
 

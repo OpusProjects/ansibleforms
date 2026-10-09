@@ -1,6 +1,6 @@
 name: Docker
 
-# Builds the two images (the app and the RTE) without pushing them, so "does the image still assemble" is answered at
+# Builds the images (the app and the three RTE layers) without pushing them, so "does the image still assemble" is answered at
 # review time instead of by hand during publish.sh. Path-filtered because it is the slow
 # one - it runs npm ci and a vite build inside the image - and for that reason it is not
 # a check worth requiring in branch protection.
@@ -11,6 +11,9 @@ on:
     paths:
       - 'Dockerfile'
       - 'Dockerfile.rte'
+      - 'Dockerfile.rte-base'
+      - 'Dockerfile.rte-legacy'
+      - 'docker/**'
       - 'server/ansible.cfg'
       - 'server/healthcheck.js'
       - 'client/package.json'
@@ -32,10 +35,19 @@ jobs:
   build:
     name: Build image
     runs-on: ubuntu-latest
+    # a registry for this job only : the RTE layers build on one another through it
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
     steps:
       - uses: actions/checkout@v7
 
       - uses: docker/setup-buildx-action@v4
+        with:
+          # the builder reaches the job's registry on localhost
+          driver-opts: network=host
 
       - name: Build (no push)
         uses: docker/build-push-action@v7
@@ -50,14 +62,42 @@ jobs:
           cache-from: type=gha,scope=app
           cache-to: type=gha,mode=max,scope=app
 
-      - name: Build the RTE (no push)
+      # The RTE layers build FROM one another : each is pushed to a registry that lives only
+      # for this job, and the next one builds on it by digest, as publish.yml does on ghcr
+      - name: Build the RTE base (no publish)
+        id: rte_base
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile.rte-base
+          push: true
+          tags: localhost:5000/ansibleforms-rte-base:ci
+          build-args: |
+            GIT_SHA=${{ github.sha }}
+          cache-from: type=gha,scope=rte-base
+          cache-to: type=gha,mode=max,scope=rte-base
+
+      - name: Build the RTE (no publish)
+        id: rte
         uses: docker/build-push-action@v7
         with:
           context: .
           file: Dockerfile.rte
+          push: true
+          tags: localhost:5000/ansibleforms-rte:ci
+          build-args: |
+            BASE_IMAGE=localhost:5000/ansibleforms-rte-base@${{ steps.rte_base.outputs.digest }}
+          cache-from: type=gha,scope=rte
+          cache-to: type=gha,mode=max,scope=rte
+
+      - name: Build the RTE legacy (no publish)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile.rte-legacy
           push: false
           outputs: type=cacheonly
           build-args: |
-            GIT_SHA=${{ github.sha }}
-          cache-from: type=gha,scope=rte
-          cache-to: type=gha,mode=max,scope=rte
+            BASE_IMAGE=localhost:5000/ansibleforms-rte@${{ steps.rte.outputs.digest }}
+          cache-from: type=gha,scope=rte-legacy
+          cache-to: type=gha,mode=max,scope=rte-legacy

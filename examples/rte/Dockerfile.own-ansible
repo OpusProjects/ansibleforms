@@ -1,0 +1,24 @@
+# An RTE with the python and the ansible YOU choose : the AnsibleForms RTE base (node and the
+# server, no python, no ansible) + a python from the os and an exact ansible-core. Keep the tag
+# on the app's release (7, or the exact 7.x.y the app runs).
+#
+#   docker build -f examples/rte/Dockerfile.own-ansible --build-arg ANSIBLE_CORE=2.20.6 -t my-rte .
+FROM ghcr.io/ansibleforms/ansibleforms-rte-base:7
+
+ARG ANSIBLE_CORE=2.21.5
+# the base is debian (trixie) : python3 is 3.13. For another python, install it here instead
+# (uv, pyenv, a python:3.x image's binaries, ...) - the RTE only needs `ansible-playbook` on
+# the PATH
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends python3 python3-venv \
+ && rm -rf /var/lib/apt/lists/* \
+ && python3 -m venv /venv \
+ && /venv/bin/pip install --no-cache-dir "ansible-core==${ANSIBLE_CORE}"
+ENV PATH="/venv/bin:$PATH"
+
+# the AnsibleForms output format and collection paths (or your own ansible.cfg)
+COPY ./server/ansible.cfg /etc/ansible/ansible.cfg
+
+# and what your playbooks use, e.g.
+#   RUN ansible-galaxy collection install community.general -p /usr/share/ansible/collections
+#   RUN pip install --no-cache-dir jmespath netaddr
