@@ -92,7 +92,7 @@ function removeUser(index) {
     :label="t('settings.settingsPage.name')"
     :disabled="role._required || readOnly"
   />
-  <label class="form-label fw-bold">{{ t('settings.settingsPage.groups') }}</label>
+  <label class="form-label fw-bold d-block">{{ t('settings.settingsPage.groups') }}</label>
   <div v-for="(grp, gIdx) in role.groups" :key="grp._uid" class="d-flex align-items-center gap-2 mb-2">
     <select
       class="form-select provider-select"
@@ -119,7 +119,9 @@ function removeUser(index) {
   <div v-if="!readOnly && !role._public" :class="[role.groups.length > 0 ? 'mt-3' : 'mt-1', 'mb-4']">
     <BsButton icon="plus" @click="addGroup()">{{ t('settings.settingsPage.addGroup') }}</BsButton>
   </div>
-  <label class="form-label fw-bold">{{ t('settings.settingsPage.users') }}</label>
+  <!-- the public role : no groups or users of its own, it is everyone's -->
+  <p v-if="role._public" class="text-muted small mb-4">{{ t('settings.settingsPage.publicEveryone') }}</p>
+  <label class="form-label fw-bold d-block">{{ t('settings.settingsPage.users') }}</label>
   <div v-for="(usr, uIdx) in role.users" :key="usr._uid" class="d-flex align-items-center gap-2 mb-2">
     <select
       class="form-select provider-select"
@@ -140,6 +142,8 @@ function removeUser(index) {
   <div v-if="!readOnly && !role._public" :class="[role.users.length > 0 ? 'mt-3' : 'mt-1', 'mb-4']">
     <BsButton icon="plus" @click="addUser()">{{ t('settings.settingsPage.addUser') }}</BsButton>
   </div>
+  <!-- the public role : no groups or users of its own, it is everyone's -->
+  <p v-if="role._public" class="text-muted small mb-4">{{ t('settings.settingsPage.publicEveryone') }}</p>
   <p v-if="role._public" class="text-muted small mt-1 mb-4">
     {{ t('settings.settingsPage.publicRoleNote') }}
   </p>

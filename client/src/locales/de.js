@@ -954,6 +954,7 @@ export default {
         'Diese Konfiguration verwendet ytt-Templating und kann hier nicht bearbeitet werden. Bearbeiten Sie stattdessen die Quellvorlage.',
       publicRoleNote:
         'Die Rolle public gilt automatisch fuer alle; Gruppen und Benutzer koennen ihr nicht zugewiesen werden.',
+      publicEveryone: 'Alle, automatisch',
       roleNameRequired: 'Jede Rolle braucht einen Namen',
       duplicateRoleName: "Doppelter Rollenname '{name}', Rollennamen müssen eindeutig sein",
       reservedRoleName:

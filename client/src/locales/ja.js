@@ -935,6 +935,7 @@ export default {
       configTemplated:
         'この設定は ytt テンプレートを使用しているため、ここでは編集できません。代わりにソーステンプレートを編集してください。',
       publicRoleNote: 'public ロールは全員に自動的に適用されます。グループやユーザーを割り当てることはできません。',
+      publicEveryone: '全員（自動）',
       roleNameRequired: 'すべてのロールに名前が必要です',
       duplicateRoleName: "ロール名 '{name}' が重複しています。ロール名は一意である必要があります",
       reservedRoleName: "'{name}' は予約済みのロール名のため、別のロールには使用できません",

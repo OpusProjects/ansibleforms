@@ -952,6 +952,7 @@ export default {
         'Cette configuration utilise le templating ytt et ne peut pas être modifiée ici. Modifiez plutôt le modèle source.',
       publicRoleNote:
         "Le rôle public s'applique automatiquement à tout le monde ; les groupes et utilisateurs ne peuvent pas lui être assignés.",
+      publicEveryone: 'Tout le monde, automatiquement',
       roleNameRequired: 'Chaque role doit avoir un nom',
       duplicateRoleName: "Nom de role '{name}' en double, les noms de role doivent etre uniques",
       reservedRoleName: "'{name}' est un nom de role reserve et ne peut pas etre utilise pour une autre role",

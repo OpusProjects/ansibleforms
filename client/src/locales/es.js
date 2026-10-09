@@ -943,6 +943,7 @@ export default {
       configTemplated:
         'Esta configuración utiliza plantillas ytt y no se puede editar aquí. Edite en su lugar la plantilla de origen.',
       publicRoleNote: 'El rol public se aplica automáticamente a todos; no se pueden asignar grupos ni usuarios.',
+      publicEveryone: 'Todos, automáticamente',
       roleNameRequired: 'Cada rol necesita un nombre',
       duplicateRoleName: "Nombre de rol '{name}' duplicado, los nombres de rol deben ser únicos",
       reservedRoleName: "'{name}' es un nombre de rol reservado y no puede usarse para otro rol",

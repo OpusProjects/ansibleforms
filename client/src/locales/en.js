@@ -935,6 +935,7 @@ export default {
       configTemplated:
         'This configuration uses ytt templating and cannot be edited here. Edit the source template instead.',
       publicRoleNote: 'The public role applies to everyone automatically; groups and users cannot be assigned to it.',
+      publicEveryone: 'Everyone, automatically',
       roleNameRequired: 'Every role needs a name',
       duplicateRoleName: "Duplicate role name '{name}', role names must be unique",
       reservedRoleName: "'{name}' is a reserved role name and cannot be used for another role",
