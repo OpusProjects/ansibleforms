@@ -637,6 +637,9 @@ export default {
       labelPlural: 'Fornecedores OAuth2',
       description: 'Configure fornecedores de identidade externos para início de sessão único (Azure AD, OIDC, etc.).',
       editProvider: 'Editar Fornecedor',
+      stepProvider: 'Fornecedor',
+      stepSignIn: 'Início de sessão',
+      stepGroups: 'Grupos',
       deleteProvider: 'Eliminar Fornecedor',
       provider: 'Fornecedor',
       tenantId: 'Tenant ID',
@@ -1117,17 +1120,13 @@ export default {
       validEmail: 'Tem de ser um email válido',
     },
     oauth2: {
-      entraIdHelp: 'Ajuda do Entra ID',
       requiredPermissions: 'Permissões de API Necessárias',
       delegatedUserRead: 'Delegated User.Read',
       delegatedGroupRead: 'Delegated GroupMember.Read.All',
       groupMembership: 'Pertença a Grupos',
-      groupsFromGraph:
-        'Lida do Microsoft Graph no início de sessão (pertenças diretas e aninhadas, pelo nome a apresentar). A claim groups do token não é usada, por isso não precisa de ser configurada.',
+      groupsFromGraph: 'Lidos do Microsoft Graph no início de sessão, aninhados incluídos; sem claim groups.',
       groupsRoleMapping:
         'Numa função, indique um grupo como azuread/ seguido do seu nome a apresentar (ex. azuread/AF-Admins).',
-      openIdHelp: 'Ajuda do Open ID',
-      openIdNotice: 'Aviso:',
       openIdTestedWith: 'Até agora, o Open ID só foi testado com o Keycloak.',
     },
   },

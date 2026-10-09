@@ -641,6 +641,9 @@ export default {
       description:
         "Configurer des fournisseurs d'identité externes pour l'authentification unique (Azure AD, OIDC, etc.).",
       editProvider: 'Modifier le fournisseur',
+      stepProvider: 'Fournisseur',
+      stepSignIn: 'Connexion',
+      stepGroups: 'Groupes',
       deleteProvider: 'Supprimer le fournisseur',
       provider: 'Fournisseur',
       tenantId: 'ID du tenant',
@@ -1120,17 +1123,13 @@ export default {
       validEmail: 'Doit etre une adresse e-mail valide',
     },
     oauth2: {
-      entraIdHelp: 'Aide Entra ID',
       requiredPermissions: 'Permissions API requises',
       delegatedUserRead: 'Delegated User.Read',
       delegatedGroupRead: 'Delegated GroupMember.Read.All',
       groupMembership: 'Appartenance aux groupes',
-      groupsFromGraph:
-        "Lue dans Microsoft Graph à la connexion (appartenances directes et imbriquées, par nom d'affichage). Le claim groups du jeton n'est pas utilisé et n'a donc pas besoin d'être configuré.",
+      groupsFromGraph: 'Lus dans Microsoft Graph à la connexion, groupes imbriqués compris ; claim groups inutile.',
       groupsRoleMapping:
         "Dans un rôle, désignez un groupe par azuread/ suivi de son nom d'affichage (ex. azuread/AF-Admins).",
-      openIdHelp: 'Aide Open ID',
-      openIdNotice: 'Remarque :',
       openIdTestedWith: "Open ID n'a ete teste jusqu'ici qu'avec Keycloak.",
     },
   },

@@ -636,6 +636,9 @@ export default {
       labelPlural: 'Provider OAuth2',
       description: 'Configurare provider di identità esterni per il single sign-on (Azure AD, OIDC, ecc.).',
       editProvider: 'Modifica provider',
+      stepProvider: 'Provider',
+      stepSignIn: 'Accesso',
+      stepGroups: 'Gruppi',
       deleteProvider: 'Elimina provider',
       provider: 'Provider',
       tenantId: 'Tenant ID',
@@ -1111,17 +1114,13 @@ export default {
       validEmail: 'Deve essere un indirizzo email valido',
     },
     oauth2: {
-      entraIdHelp: 'Aiuto Entra ID',
       requiredPermissions: 'Permessi API richiesti',
       delegatedUserRead: 'Delegated User.Read',
       delegatedGroupRead: 'Delegated GroupMember.Read.All',
       groupMembership: 'Appartenenza ai gruppi',
-      groupsFromGraph:
-        'Letta da Microsoft Graph al login (appartenenze dirette e annidate, per nome visualizzato). Il claim groups del token non viene usato, quindi non è necessario configurarlo.',
+      groupsFromGraph: "Letti da Microsoft Graph all'accesso, gruppi annidati inclusi; nessun claim groups necessario.",
       groupsRoleMapping:
         'In un ruolo, indicare un gruppo come azuread/ seguito dal suo nome visualizzato (es. azuread/AF-Admins).',
-      openIdHelp: 'Aiuto Open ID',
-      openIdNotice: 'Nota:',
       openIdTestedWith: 'Open ID e stato testato finora solo con Keycloak.',
     },
   },

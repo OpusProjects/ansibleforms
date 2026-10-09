@@ -403,6 +403,33 @@ export default function getSettings(t) {
       description: t('settings.oauth2.description'),
       icon: 'key',
       selectable: false,
+      // the dialog in steps : the provider, how the app signs in with it, its groups. The help a
+      // provider needs (the permissions of an Entra ID app, what Open ID was tested with) is in
+      // the step it is for
+      steps: [
+        { key: 'provider', label: t('settings.oauth2.stepProvider') },
+        {
+          key: 'signin',
+          label: t('settings.oauth2.stepSignIn'),
+          notes: (item) => [
+            item.provider === 'azuread' && {
+              title: t('admin.oauth2.requiredPermissions'),
+              items: [t('admin.oauth2.delegatedUserRead'), t('admin.oauth2.delegatedGroupRead')],
+            },
+            item.provider === 'oidc' && { text: t('admin.oauth2.openIdTestedWith') },
+          ],
+        },
+        {
+          key: 'groups',
+          label: t('settings.oauth2.stepGroups'),
+          notes: (item) => [
+            item.provider === 'azuread' && {
+              title: t('admin.oauth2.groupMembership'),
+              items: [t('admin.oauth2.groupsFromGraph'), t('admin.oauth2.groupsRoleMapping')],
+            },
+          ],
+        },
+      ],
       actions: [
         { name: 'edit', title: t('settings.oauth2.editProvider'), icon: 'pencil', color: 'edit' },
         { name: 'delete', title: t('settings.oauth2.deleteProvider'), icon: 'trash', color: 'delete' },
@@ -428,6 +455,7 @@ export default function getSettings(t) {
         { key: 'description', label: t('settings.fields.description'), required: false, icon: 'info-circle' },
         {
           key: 'tenant_id',
+          step: 'signin',
           label: t('settings.oauth2.tenantId'),
           required: false,
           icon: 'building',
@@ -438,6 +466,7 @@ export default function getSettings(t) {
         },
         {
           key: 'client_id',
+          step: 'signin',
           label: t('settings.oauth2.clientId'),
           required: true,
           icon: 'key',
@@ -447,6 +476,7 @@ export default function getSettings(t) {
         },
         {
           key: 'issuer',
+          step: 'signin',
           label: t('settings.oauth2.issuer'),
           required: true,
           icon: 'globe',
@@ -456,6 +486,7 @@ export default function getSettings(t) {
         },
         {
           key: 'redirect_uri',
+          step: 'signin',
           label: t('settings.oauth2.redirectUrl'),
           readonly: false,
           dependency: 'provider',
@@ -468,15 +499,24 @@ export default function getSettings(t) {
         },
         {
           key: 'client_secret',
+          step: 'signin',
           label: t('settings.oauth2.clientSecret'),
           type: 'password',
           required: true,
           icon: 'lock',
           hidden: true,
         },
-        { key: 'groupfilter', label: t('settings.oauth2.groupFilter'), required: false, icon: 'filter', hidden: true },
+        {
+          key: 'groupfilter',
+          step: 'groups',
+          label: t('settings.oauth2.groupFilter'),
+          required: false,
+          icon: 'filter',
+          hidden: true,
+        },
         {
           key: 'scope',
+          step: 'signin',
           label: t('settings.oauth2.scope'),
           required: false,
           icon: 'list',
@@ -486,6 +526,7 @@ export default function getSettings(t) {
         },
         {
           key: 'auth_url',
+          step: 'signin',
           label: t('settings.oauth2.authUrl'),
           required: false,
           icon: 'globe',
@@ -495,6 +536,7 @@ export default function getSettings(t) {
         },
         {
           key: 'token_url',
+          step: 'signin',
           label: t('settings.oauth2.tokenUrl'),
           required: false,
           icon: 'globe',
@@ -504,6 +546,7 @@ export default function getSettings(t) {
         },
         {
           key: 'userinfo_url',
+          step: 'signin',
           label: t('settings.oauth2.userinfoUrl'),
           required: false,
           icon: 'globe',
@@ -513,6 +556,7 @@ export default function getSettings(t) {
         },
         {
           key: 'extra',
+          step: 'signin',
           label: t('settings.oauth2.extra'),
           type: 'textarea',
           required: false,

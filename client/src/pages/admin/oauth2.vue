@@ -27,67 +27,6 @@ onMounted(async () => {
       <AppSidebar />
       <div class="d-flex flex-column w-100">
         <AppAdminMulti v-if="authenticated" :apiVersion="2" :settings="settings.oauth2_providers" />
-        <div class="accordion m-3" id="providerHelpAccordion">
-          <div class="accordion-item">
-            <h2 class="accordion-header" id="headingEntraId">
-              <button
-                class="accordion-button collapsed"
-                type="button"
-                data-bs-toggle="collapse"
-                data-bs-target="#collapseEntraId"
-                aria-expanded="false"
-                aria-controls="collapseEntraId"
-              >
-                {{ t('admin.oauth2.entraIdHelp') }}
-              </button>
-            </h2>
-            <div
-              id="collapseEntraId"
-              class="accordion-collapse collapse"
-              aria-labelledby="headingEntraId"
-              data-bs-parent="#providerHelpAccordion"
-            >
-              <div class="accordion-body">
-                <strong>{{ t('admin.oauth2.requiredPermissions') }}</strong
-                ><br />
-                <ul>
-                  <li>{{ t('admin.oauth2.delegatedUserRead') }}</li>
-                  <li>{{ t('admin.oauth2.delegatedGroupRead') }}</li>
-                </ul>
-                <strong>{{ t('admin.oauth2.groupMembership') }}</strong>
-                <ul>
-                  <li>{{ t('admin.oauth2.groupsFromGraph') }}</li>
-                  <li>{{ t('admin.oauth2.groupsRoleMapping') }}</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-          <div class="accordion-item">
-            <h2 class="accordion-header" id="headingOpenId">
-              <button
-                class="accordion-button collapsed"
-                type="button"
-                data-bs-toggle="collapse"
-                data-bs-target="#collapseOpenId"
-                aria-expanded="false"
-                aria-controls="collapseOpenId"
-              >
-                {{ t('admin.oauth2.openIdHelp') }}
-              </button>
-            </h2>
-            <div
-              id="collapseOpenId"
-              class="accordion-collapse collapse"
-              aria-labelledby="headingOpenId"
-              data-bs-parent="#providerHelpAccordion"
-            >
-              <div class="accordion-body">
-                <strong>{{ t('admin.oauth2.openIdNotice') }}</strong> {{ t('admin.oauth2.openIdTestedWith') }}
-              </div>
-            </div>
-          </div>
-          <!-- Add more accordion-item blocks here for other providers as needed -->
-        </div>
       </div>
     </main>
   </div>

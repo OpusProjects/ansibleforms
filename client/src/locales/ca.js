@@ -637,6 +637,9 @@ export default {
       labelPlural: 'Proveïdors OAuth2',
       description: "Configura proveïdors d'identitat externs per a l'inici de sessió únic (Azure AD, OIDC, etc.).",
       editProvider: 'Edita el proveïdor',
+      stepProvider: 'Proveïdor',
+      stepSignIn: 'Inici de sessió',
+      stepGroups: 'Grups',
       deleteProvider: 'Suprimeix el proveïdor',
       provider: 'Proveïdor',
       tenantId: 'ID del tenant',
@@ -1118,17 +1121,13 @@ export default {
       validEmail: 'Ha de ser una adreça de correu vàlida',
     },
     oauth2: {
-      entraIdHelp: "Ajuda d'Entra ID",
       requiredPermissions: "Permisos d'API necessaris",
       delegatedUserRead: 'Delegated User.Read',
       delegatedGroupRead: 'Delegated GroupMember.Read.All',
       groupMembership: 'Pertinença a grups',
-      groupsFromGraph:
-        "Es llegeix de Microsoft Graph en iniciar la sessió (pertinences directes i niades, pel nom visible). El claim groups del token no s'utilitza, així que no cal configurar-lo.",
+      groupsFromGraph: 'Es llegeixen de Microsoft Graph en iniciar sessió, imbricats inclosos; sense claim groups.',
       groupsRoleMapping:
         'En un rol, indica un grup com a azuread/ seguit del seu nom visible (p. ex. azuread/AF-Admins).',
-      openIdHelp: "Ajuda d'Open ID",
-      openIdNotice: 'Avís:',
       openIdTestedWith: "De moment, Open ID només s'ha provat amb Keycloak.",
     },
   },
