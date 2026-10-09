@@ -2554,7 +2554,9 @@
           "password": { "type": "string", "description": "Stored encrypted ; shown masked" },
           "ignore_certs": { "type": "boolean" },
           "ca_bundle": { "type": "string" },
-          "is_default": { "type": "boolean", "description": "Used by playbook forms that name no runner" }
+          "is_default": { "type": "boolean", "description": "Used by playbook forms that name no runner" },
+          "node_id": { "type": "string", "readOnly": true, "description": "rte : the RTE that registered this runner itself (RTE_REGISTER) ; empty when added by hand or by the config seed" },
+          "state": { "type": "string", "enum": ["automatic", "unresponsive"], "readOnly": true, "description": "Only on a runner an RTE registered itself : automatic while that RTE writes its heartbeat, unresponsive once it stopped (removed by the worker after 10 minutes)" }
         }
       },
       "SecretStore": {

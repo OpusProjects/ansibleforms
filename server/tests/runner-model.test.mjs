@@ -27,6 +27,8 @@ vi.mock("../src/models/crud.model.js", () => ({
   },
 }));
 const cleared = [];
+const deletes = [];
+let aliveNodes = new Set();
 vi.mock("../src/models/db.model.js", () => ({
   default: {
     do: async (sql, params) => {
@@ -34,6 +36,11 @@ vi.mock("../src/models/db.model.js", () => ({
         cleared.push({ sql, params });
         for (const r of rows) if (r.id != params[0] && r.type === params[1]) r.is_default = 0;
         return { changedRows: 1 };
+      }
+      if (/FROM AnsibleForms.`nodes` WHERE id IN/.test(sql)) return params[0].filter((id) => aliveNodes.has(id)).map((id) => ({ id }));
+      if (/^DELETE r FROM AnsibleForms.`runners`/.test(sql)) {
+        deletes.push({ sql, params });
+        return { affectedRows: 2 };
       }
       return [];
     },
@@ -49,6 +56,8 @@ beforeEach(() => {
   ];
   writes = [];
   cleared.length = 0;
+  deletes.length = 0;
+  aliveNodes = new Set();
 });
 
 describe("what each type needs", () => {
@@ -120,5 +129,39 @@ describe("masked secrets", () => {
     assert.equal("token" in write, false);
     assert.equal("password" in write, false);
     assert.equal(rows[1].password, "real");
+  });
+});
+
+describe("runners an RTE registered itself", () => {
+  test("the api cannot set or change which RTE registered a runner", async () => {
+    await Runner.create({ name: "x", type: "rte", uri: "http://x", token: "t", node_id: "rte-x-8000", state: "automatic" });
+    assert.equal(rows.at(-1).node_id, undefined);
+    assert.equal(rows.at(-1).state, undefined);
+    await Runner.update({ node_id: "rte-y-8000" }, 1);
+    assert.equal(rows[0].node_id, undefined);
+  });
+
+  test("the RTE itself can", async () => {
+    await Runner.create({ name: "x", type: "rte", uri: "http://x", token: "t", node_id: "rte-x-8000" }, { fromRte: true });
+    assert.equal(rows.at(-1).node_id, "rte-x-8000");
+  });
+
+  test("automatic while its RTE heartbeats, unresponsive once it stopped, nothing for the others", async () => {
+    aliveNodes = new Set(["rte-a-8000"]);
+    const list = await Runner.withState([
+      { id: 1, name: "a", node_id: "rte-a-8000" },
+      { id: 2, name: "b", node_id: "rte-b-8000" },
+      { id: 3, name: "c", node_id: null },
+    ]);
+    assert.deepEqual(list.map((r) => r.state), ["automatic", "unresponsive", undefined]);
+  });
+
+  test("the sweep removes only registered, unmanaged runners whose RTE is long gone", async () => {
+    assert.equal(await Runner.removeUnresponsive(), 2);
+    const { sql, params } = deletes[0];
+    assert.match(sql, /r.node_id IS NOT NULL/);
+    assert.match(sql, /COALESCE\(r.managed, 0\) = 0/);
+    assert.match(sql, /JOIN AnsibleForms.`nodes` n ON n.id = r.node_id/);
+    assert.deepEqual(params, [600]);
   });
 });

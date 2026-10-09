@@ -791,6 +791,9 @@ export default {
         'RTE : adres, na którym nasłuchuje, np. https://rte-vmware:8000. AWX : jego adres, np. https://aap.example.com.',
       tokenHelp: 'RTE : jego RTE_TOKEN. AWX : token API lub zaznacz Używaj poświadczeń.',
       useCredentials: 'Używaj poświadczeń',
+      state: 'Rejestracja',
+      stateAutomatic: 'automatyczna',
+      stateUnresponsive: 'nie odpowiada',
     },
     mail: {
       label: 'Ustawienia poczty',

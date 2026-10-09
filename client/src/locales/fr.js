@@ -656,6 +656,9 @@ export default {
       uriHelp: 'RTE : où il écoute, ex. https://rte-vmware:8000. AWX : son adresse, ex. https://aap.example.com.',
       tokenHelp: 'RTE : son RTE_TOKEN. AWX : un jeton API, ou cochez Utiliser des identifiants.',
       useCredentials: 'Utiliser des identifiants',
+      state: 'Enregistrement',
+      stateAutomatic: 'automatique',
+      stateUnresponsive: 'ne répond pas',
     },
     secretStores: {
       label: 'Coffre de secrets',

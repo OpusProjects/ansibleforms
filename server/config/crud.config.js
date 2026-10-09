@@ -63,7 +63,8 @@ const crudConfigs = {
       { name: 'ignore_certs', isBoolean: true },
       { name: 'ca_bundle' },
       { name: 'is_default', isBoolean: true },
-      { name: 'managed', isBoolean: true }
+      { name: 'managed', isBoolean: true },
+      { name: 'node_id' }
     ],
     allowCache: true,
     cacheTTL: 3600

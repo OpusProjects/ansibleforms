@@ -795,6 +795,9 @@ export default {
         'RTE : on escolta, p. ex. https://rte-vmware:8000. AWX : la seva adreça, p. ex. https://aap.example.com.',
       tokenHelp: "RTE : el seu RTE_TOKEN. AWX : un token d'API, o marca Utilitza credencials.",
       useCredentials: 'Utilitza credencials',
+      state: 'Registre',
+      stateAutomatic: 'automàtic',
+      stateUnresponsive: 'no respon',
     },
     mail: {
       label: 'Configuració del correu',

@@ -792,6 +792,9 @@ export default {
         'RTE : onde está à escuta, p. ex. https://rte-vmware:8000. AWX : o seu endereço, p. ex. https://aap.example.com.',
       tokenHelp: 'RTE : o seu RTE_TOKEN. AWX : um token de API, ou assinale Usar credenciais.',
       useCredentials: 'Usar credenciais',
+      state: 'Registo',
+      stateAutomatic: 'automático',
+      stateUnresponsive: 'sem resposta',
     },
     mail: {
       label: 'Definições de Correio',
