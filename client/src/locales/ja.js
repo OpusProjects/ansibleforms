@@ -850,17 +850,16 @@ export default {
     runners: {
       label: 'ランナー',
       description:
-        'ジョブの実行場所 : プレイブック用のランタイム環境 (RTE) コンテナー (AF_ROLE=rte の AnsibleForms イメージ)、およびテンプレート用の AWX / Ansible Automation Platform / Ascender。',
+        'ジョブの実行場所: プレイブック用のランタイム環境 (RTE) コンテナー (AF_ROLE=rte の AnsibleForms イメージ)、およびテンプレート用の AWX / Ansible Automation Platform / Ascender。',
       editRunner: 'ランナーを編集',
       deleteRunner: 'ランナーを削除',
-      nameHelp: 'フォームはこの名前でランナーを参照します : runner: <name>。',
+      nameHelp: 'フォームはこの名前でランナーを参照します: runner: <name>。',
       type: '種類',
       isDefault: '既定',
       isDefaultHelp:
-        'その種類の既定 : ランナーを指定しないプレイブックのフォームは既定の RTE で、テンプレートのフォームは既定の AWX で実行されます。既定がない場合、そのジョブは失敗します。ある種類の最初のランナーがその既定になります。',
-      uriHelp:
-        'RTE : 待ち受けるアドレス (例 https://rte-vmware:8000)。AWX : そのアドレス (例 https://aap.example.com)。',
-      tokenHelp: 'RTE : その RTE_TOKEN。AWX : API トークン、または「認証情報を使用」をオン。',
+        'その種類の既定: ランナーを指定しないプレイブックのフォームは既定の RTE で、テンプレートのフォームは既定の AWX で実行されます。既定がない場合、そのジョブは失敗します。ある種類の最初のランナーがその既定になります。',
+      uriHelp: 'RTE: 待ち受けるアドレス (例 https://rte-vmware:8000)。AWX: そのアドレス (例 https://aap.example.com)。',
+      tokenHelp: 'RTE: その RTE_TOKEN。AWX: API トークン、または「認証情報を使用」をオン。',
       useCredentials: '認証情報を使用',
       state: '登録',
       stateAutomatic: '自動',
@@ -1289,7 +1288,7 @@ export default {
     formDescription: '説明',
     formPlaybook: 'Playbook',
     formRunner: 'ランナー',
-    formRunnerHelp: 'ランナーの名前 (接続 > ランナー)。空 : その種類の既定のランナー。',
+    formRunnerHelp: 'ランナーの名前 (接続 > ランナー)。空: その種類の既定のランナー。',
     formTemplate: 'テンプレート',
     formInventory: 'インベントリ',
     formTags: 'タグ',
