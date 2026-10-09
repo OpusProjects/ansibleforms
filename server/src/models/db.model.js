@@ -19,6 +19,11 @@ const poolConfig = { ...dbConfig };
 delete poolConfig.name;           // unsupported property
 delete poolConfig.is_database;    // unsupported property
 poolConfig.multipleStatements = true;
+// DATETIME columns hold UTC (MySQL's NOW() on a UTC server, the ISO strings the app writes) :
+// read them, and write Date parameters, as UTC. The driver's default is the Node process's own
+// timezone, so a container or host with TZ set read every date shifted by its offset - a one
+// time schedule saved for 09:00 came back two hours early in Madrid.
+poolConfig.timezone = 'Z';
 poolConfig.connectionLimit = parseInt(process.env.DB_POOL_SIZE || '20', 10);
 poolConfig.waitForConnections = true;
 poolConfig.queueLimit = 0;        // queue indefinitely (surfaces as latency, not errors)
