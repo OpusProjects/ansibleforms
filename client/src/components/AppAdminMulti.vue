@@ -1004,8 +1004,9 @@ const columnsWithManaged = computed(() => {
       // Text only. This app loads the FontAwesome SVG core and renders icons via
       // the FaIcon component - there is no webfont CSS - so an <i class="fas ...">
       // here produced an empty element and a stray gap, not a lock.
+      // a row the seed does not manage : an en dash, as the other empty cells
       render: (val) =>
-        val ? '<span class="badge text-bg-secondary">' + escapeHtml(t('settings.common.seedManaged')) + '</span>' : '',
+        val ? '<span class="badge text-bg-secondary">' + escapeHtml(t('settings.common.seedManaged')) + '</span>' : '–',
     },
   ];
 });
