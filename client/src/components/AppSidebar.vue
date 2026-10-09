@@ -67,7 +67,7 @@ const sections = computed(() =>
         // 'user-shield' not 'users' : groups already own the people icon, and
         // roles are about what a member may do, not who the members are
         { title: t('sidebar.roles'), icon: 'user-shield', link: '/admin/roles', permission: 'showSettings' },
-        { title: t('sidebar.ldap'), icon: 'globe', link: '/admin/ldap', permission: 'showSettings' },
+        { title: t('sidebar.ldap'), icon: 'address-book', link: '/admin/ldap', permission: 'showSettings' },
         { title: t('sidebar.oauth2'), icon: 'right-to-bracket', link: '/admin/oauth2', permission: 'showSettings' },
       ],
     },

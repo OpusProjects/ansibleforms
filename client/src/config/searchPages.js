@@ -93,7 +93,13 @@ export function searchPages(t, options) {
       link: '/admin/roles',
       permission: 'showSettings',
     },
-    { title: t('sidebar.ldap'), section: settings, icon: 'globe', link: '/admin/ldap', permission: 'showSettings' },
+    {
+      title: t('sidebar.ldap'),
+      section: settings,
+      icon: 'address-book',
+      link: '/admin/ldap',
+      permission: 'showSettings',
+    },
     {
       title: t('sidebar.oauth2'),
       section: settings,

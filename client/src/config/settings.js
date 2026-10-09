@@ -972,7 +972,7 @@ export default function getSettings(t) {
       showDisabledFields: true,
       label: t('settings.ldap.label'),
       description: t('settings.ldap.description'),
-      icon: 'globe',
+      icon: 'address-book',
       actions: [{ name: 'test', title: t('settings.common.testConnection'), icon: 'plug', dependency: 'enable' }],
       fields: [
         {
