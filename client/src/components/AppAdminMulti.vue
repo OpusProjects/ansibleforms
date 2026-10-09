@@ -1581,18 +1581,29 @@ defineExpose({
       </div>
     </template>
   </BsOffCanvas>
-  <!-- the lists a dropdown can create its choice with (createWith) : their dialogs only -->
-  <AppAdminMulti
-    v-for="field in createFields"
-    :key="'create-' + field.key"
-    :ref="(el) => (creators[field.key] = el)"
-    dialogOnly
-    :apiVersion="2"
-    :settings="allSettings[field.createWith]"
-    @created="(name) => onCreated(field, name)"
-  />
+  <!-- the lists a dropdown can create its choice with (createWith) : their dialogs only, over
+       this one's (af-nested-dialogs) -->
+  <div v-if="createFields.length" class="af-nested-dialogs">
+    <AppAdminMulti
+      v-for="field in createFields"
+      :key="'create-' + field.key"
+      :ref="(el) => (creators[field.key] = el)"
+      dialogOnly
+      :apiVersion="2"
+      :settings="allSettings[field.createWith]"
+      @created="(name) => onCreated(field, name)"
+    />
+  </div>
 </template>
 <style scoped>
+/* a dialog opened from this one's (a New button under a dropdown) : above it, its backdrop
+   dimming this dialog as this one's dims the page (Bootstrap's modal is 1055, its backdrop 1050) */
+.af-nested-dialogs :deep(.modal) {
+  z-index: 1065;
+}
+.af-nested-dialogs :deep(.modal-backdrop) {
+  z-index: 1060;
+}
 /* the steps of a wizard dialog : numbered, joined by a line, the one shown in the primary
    colour, those passed with a check */
 .af-wizard-steps {
