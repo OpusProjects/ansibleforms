@@ -105,6 +105,21 @@
   --af-field-border: #b6bec6;
 }
 
+// The grey of a hovered table row, one for every table of the app : ours (styles/tables.scss)
+// and Bootstrap's .table-hover ones (the forms' list, a select's table), whose own darker
+// shade it replaces
+:root,
+[data-bs-theme] {
+  --af-row-hover-bg: var(--bs-tertiary-bg);
+}
+// in the light theme a step darker than the tertiary grey (#f8f9fa), so a hovered row reads
+[data-bs-theme='light'] {
+  --af-row-hover-bg: #f1f3f5;
+}
+.table {
+  --bs-table-hover-bg: var(--af-row-hover-bg);
+}
+
 // Placeholder styling for input fields : dark enough to read (the half-transparent light grey
 // was all but invisible)
 [data-bs-theme='light'] {

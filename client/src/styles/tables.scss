@@ -108,8 +108,11 @@
   tbody tr:last-child td {
     border-bottom: 0;
   }
+  /* the row's hover : the app's one grey (--af-row-hover-bg, bootstrap-override.scss), with no
+     table-hover shade laid over it */
   tbody tr:hover > td {
-    background: var(--bs-tertiary-bg);
+    background: var(--af-row-hover-bg);
+    box-shadow: none;
   }
 }
 
@@ -245,6 +248,9 @@
   color: var(--bs-primary);
   font-weight: 500;
 }
-.af-table tbody tr:hover > td.af-row-open {
+/* underlined while the row is hovered, as a link : on the shared table's cell text too, an
+   inline block (for its ellipsis) that a cell's underline does not reach */
+.af-table tbody tr:hover > td.af-row-open,
+.af-table tbody tr:hover > td.af-row-open > span {
   text-decoration: underline;
 }
