@@ -8,6 +8,7 @@ export default {
     noDatabaseAccess: "データベース操作へのアクセス権がありません",
     noScheduleAccess: "スケジュール済みジョブを管理する権限がありません",
     noChatAccess: "チャットアシスタントを使用する権限がありません",
+    noMcpAccess: "MCP サーバーを使用する権限がありません",
     noStoredJobsAccess: "保存済みジョブを管理する権限がありません",
     noDataSent: "データが送信されていません",
     missingDbConfig: "データベースの設定がありません",

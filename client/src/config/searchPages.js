@@ -145,6 +145,7 @@ export function searchPages(t, options) {
       permission: 'showSettings',
     },
     { title: t('sidebar.chat'), section: settings, icon: 'comments', link: '/admin/chat', permission: 'showSettings' },
+    { title: t('sidebar.mcp'), section: settings, icon: 'robot', link: '/admin/mcp', permission: 'showSettings' },
     {
       title: t('sidebar.audit'),
       section: settings,

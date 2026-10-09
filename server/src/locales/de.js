@@ -8,6 +8,7 @@ export default {
     noDatabaseAccess: "Du hast keinen Zugriff auf Datenbankoperationen",
     noScheduleAccess: "Du hast keine Berechtigung, geplante Jobs zu verwalten",
     noChatAccess: "Sie haben keine Berechtigung, den Chat-Assistenten zu verwenden",
+    noMcpAccess: "Sie haben keine Berechtigung, den MCP-Server zu verwenden",
     noStoredJobsAccess: "Du hast keine Berechtigung, gespeicherte Jobs zu verwalten",
     noDataSent: "Es wurden keine Daten gesendet",
     missingDbConfig: "Fehlende Datenbankkonfiguration",

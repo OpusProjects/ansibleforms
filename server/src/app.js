@@ -216,11 +216,15 @@ const load = async (app) => {
   // does not share its permissions - this one is settings admin, like the pages it rewrites
   app.use(`/api/v2/config-seed`, cors(), authobj, Middleware.checkSettingsMiddleware, configSeedRoutesv2);
 
-  // MCP server for AI agents (ENABLE_MCP) : every tool runs as the authenticated user
-  if (appConfig.enableMcp) {
-    app.use(`/api/v2/mcp`, cors(), authobj, mcpRoutes);
-    logger.notice(`MCP endpoint enabled on ${appConfig.baseUrl}/api/v2/mcp`);
-  }
+  // An AI feature is always mounted, behind a gate that reads its switch per request :
+  // turning it on or off from the settings takes effect at once (envSettings.js), no
+  // restart. Off, the endpoint answers 404 as if it were not there.
+  const featureOn = (key) => (req, res, next) => (appConfig[key] ? next() : res.status(404).json({ error: 'Not found' }));
+
+  // MCP server for AI agents (ENABLE_MCP) : every tool runs as the authenticated user, whose
+  // roles must allow the AI assistants (allowChat, as for the chat)
+  app.use(`/api/v2/mcp`, featureOn('enableMcp'), cors(), authobj, Middleware.checkMcpMiddleware, mcpRoutes);
+  if (appConfig.enableMcp) logger.notice(`MCP endpoint enabled on ${appConfig.baseUrl}/api/v2/mcp`);
 
   // The chat assistant (ENABLE_CHAT) : the same form service as the MCP server, in
   // process, as the authenticated user ; the allowChat role option may switch it off

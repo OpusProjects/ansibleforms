@@ -27,6 +27,7 @@ const groups = () => import('@/pages/admin/groups.vue');
 const knownHosts = () => import('@/pages/admin/knownHosts.vue');
 const ldap = () => import('@/pages/admin/ldap.vue');
 const chatSettings = () => import('@/pages/admin/chat.vue');
+const mcpSettings = () => import('@/pages/admin/mcp.vue');
 const mailSettings = () => import('@/pages/admin/mailSettings.vue');
 const logo = () => import('@/pages/admin/logo.vue');
 const repositories = () => import('@/pages/admin/repositories.vue');
@@ -134,6 +135,7 @@ const routes = [
   { path: '/admin/knownHosts', name: '/admin/knownHosts', component: knownHosts, beforeEnter: checkSettings },
   { path: '/admin/ldap', name: '/admin/ldap', component: ldap, beforeEnter: checkSettings },
   { path: '/admin/chat', name: '/admin/chat', component: chatSettings, beforeEnter: checkSettings },
+  { path: '/admin/mcp', name: '/admin/mcp', component: mcpSettings, beforeEnter: checkSettings },
   { path: '/admin/mailSettings', name: '/admin/mailSettings', component: mailSettings, beforeEnter: checkSettings },
   { path: '/admin/logo', name: '/admin/logo', component: logo, beforeEnter: checkSettings },
   { path: '/admin/repositories', name: '/admin/repositories', component: repositories, beforeEnter: checkSettings },

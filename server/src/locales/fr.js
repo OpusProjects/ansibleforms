@@ -8,6 +8,7 @@ export default {
     noDatabaseAccess: "Vous n'avez pas acces aux operations de base de donnees",
     noScheduleAccess: "Vous n'avez pas la permission de gerer les taches planifiees",
     noChatAccess: "Vous n'avez pas l'autorisation d'utiliser l'assistant de chat",
+    noMcpAccess: "Vous n'avez pas l'autorisation d'utiliser le serveur MCP",
     noStoredJobsAccess: "Vous n'avez pas la permission de gerer les taches enregistrees",
     noDataSent: "Aucune donnee n'a ete envoyee",
     missingDbConfig: "Configuration de base de donnees manquante",

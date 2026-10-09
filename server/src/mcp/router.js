@@ -12,6 +12,7 @@ import Expression from '../models/expression.model.js';
 import Query from '../models/query.model.js';
 import { resolveFormQuery } from '../lib/queryPolicy.js';
 import { createHandlers, registerTools } from './tools.js';
+import appConfig from '../../config/app.config.js';
 
 /**
  * POST /api/v2/mcp - the AnsibleForms MCP server (Streamable HTTP, stateless).
@@ -46,7 +47,10 @@ router.post('/', async (req, res) => {
     return jsonRpcError(res, 401, -32001, 'Unauthorized');
   }
   const server = new McpServer({ name: 'ansibleforms', version });
-  registerTools(server, createHandlers({ user, deps }));
+  // the MCP settings, read per request so a change applies at once : read only, and which
+  // forms are offered (the chat assistant shares the handlers, without this policy)
+  const policy = { readOnly: appConfig.mcpReadOnly, chatFormsOnly: appConfig.mcpChatFormsOnly };
+  registerTools(server, createHandlers({ user, deps, policy }), policy);
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     // plain JSON responses : every tool answers in one piece, and a JSON body is easier on

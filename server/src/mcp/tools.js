@@ -67,16 +67,29 @@ function publicResolution(res) {
  * @param {object} args
  * @param {object} args.user  req.user.user
  * @param {object} args.deps  { Form, Job, Expression, Query, resolveFormQuery }
+ * @param {object} [args.policy]  the MCP settings, from the MCP router only (the chat
+ *   assistant has its own rules) : `readOnly` refuses launch_job and relaunch_job,
+ *   `chatFormsOnly` offers only the forms offered in the chat (enableForChat)
  */
-export function createHandlers({ user, deps }) {
+export function createHandlers({ user, deps, policy = {} }) {
   const { Form, Job, Expression, Query, resolveFormQuery } = deps;
   const roles = user?.roles || [];
+
+  // a form MCP may offer : any the user may open, or with chatFormsOnly those offered in the
+  // chat as well - a form left out is not found, as one the user may not open
+  const offered = (f) => !policy.chatFormsOnly || f?.enableForChat === true;
 
   async function loadForm(name) {
     const formConfig = await Form.load(roles, name);
     const formObj = formConfig?.forms?.[0];
-    if (!formObj) throw new ToolError(`Form '${name}' not found or you do not have access to it`, 'not_found');
+    if (!formObj || !offered(formObj)) throw new ToolError(`Form '${name}' not found or you do not have access to it`, 'not_found');
     return { formConfig, formObj };
+  }
+
+  function refuseWhenReadOnly() {
+    if (policy.readOnly) {
+      throw new ToolError('This MCP server is read only : jobs cannot be launched or relaunched through it', 'access_denied');
+    }
   }
 
   function servicesFor(formConfig, formObj, subformName) {
@@ -140,7 +153,7 @@ export function createHandlers({ user, deps }) {
     async listForms() {
       const cfg = await Form.load(roles);
       return {
-        forms: (cfg?.forms || []).map((f) => ({
+        forms: (cfg?.forms || []).filter(offered).map((f) => ({
           name: f.name,
           description: f.description || '',
           categories: f.categories || [],
@@ -182,6 +195,7 @@ export function createHandlers({ user, deps }) {
     },
 
     async launchJob({ form, values, verbose, expectedPayloadHash }) {
+      refuseWhenReadOnly();
       const { formConfig, formObj } = await loadForm(form);
       if (formObj.type === 'subform') {
         throw new ToolError(`'${formObj.name}' is a subform and cannot be launched on its own`, 'unsupported');
@@ -247,6 +261,12 @@ export function createHandlers({ user, deps }) {
     },
 
     async relaunchJob({ id, values, verbose, preview, expectedPayloadHash }) {
+      if (!preview) refuseWhenReadOnly();
+      // the job's form must be one MCP offers
+      if (policy.chatFormsOnly) {
+        const job = await Job.findById(user, id, true, true);
+        await loadForm(job.form);
+      }
       if (verbose && !user?.options?.allowVerboseMode) {
         throw new ToolError('You do not have permission to run jobs in verbose mode', 'access_denied');
       }
@@ -260,6 +280,10 @@ export function createHandlers({ user, deps }) {
 
     async getJob({ id, tail }) {
       const job = await Job.findById(user, id, true, true);
+      // a job of a form MCP does not offer is not found either
+      if (policy.chatFormsOnly) await loadForm(job.form).catch(() => {
+        throw new ToolError(`Job ${id} not found or you do not have access to it`, 'not_found');
+      });
       return {
         id: job.id,
         form: job.form,
@@ -322,8 +346,11 @@ function wrap(fn) {
   };
 }
 
-/** Register every tool on an McpServer, bound to one user's handlers. */
-export function registerTools(server, handlers) {
+/**
+ * Register every tool on an McpServer, bound to one user's handlers. Read only (the MCP
+ * settings), the tools that launch are not offered at all - the handlers refuse them too.
+ */
+export function registerTools(server, handlers, policy = {}) {
   server.registerTool('list_forms', {
     title: 'List forms',
     description: 'The forms the authenticated user may use, with their description and categories.',
@@ -364,7 +391,7 @@ export function registerTools(server, handlers) {
     annotations: { readOnlyHint: true },
   }, wrap((a) => handlers.resolveField(a)));
 
-  server.registerTool('launch_job', {
+  if (!policy.readOnly) server.registerTool('launch_job', {
     title: 'Launch job',
     description: 'Launch the form with the given values, exactly as a browser submission would : the form '
       + 'is resolved and validated first and the launch is refused while fields are missing, invalid, fail '
@@ -381,7 +408,7 @@ export function registerTools(server, handlers) {
     annotations: { readOnlyHint: false, destructiveHint: true },
   }, wrap((a) => handlers.launchJob(a)));
 
-  server.registerTool('relaunch_job', {
+  if (!policy.readOnly) server.registerTool('relaunch_job', {
     title: 'Relaunch job with changes',
     description: 'Launch a job again with some fields changed : the values the job was launched with, '
       + 'with `values` laid over them, are resolved and validated like launch_job and launched as a new '
