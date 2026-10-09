@@ -875,7 +875,7 @@ defineExpose({
   <BsModal v-if="action == 'delete'" @close="unselectItem">
     <template #title> {{ t('common.delete') }} {{ objectLabel }} </template>
     <template #default>
-      <p class="mt-3 fs-6 user-select-none">
+      <p class="mb-0 fs-6 user-select-none">
         {{ t('settings.common.deleteConfirm') }} <strong>{{ deleteLabel }}</strong
         >?
       </p>

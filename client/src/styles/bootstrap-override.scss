@@ -415,3 +415,18 @@
   margin-bottom: 0.5rem;
   opacity: 0.5;
 }
+
+// A dialog's last element ends at the dialog's padding : its own bottom margin would double the
+// space under it - a field, a paragraph, a radio group or a checkbox
+.modal-body > .mb-3:last-child,
+.modal-body > p:last-child,
+.modal-body > .af-radio-group:last-child .form-check:last-child,
+.modal-body > .form-check:last-child {
+  margin-bottom: 0 !important;
+}
+
+// Switches one under the other in a dialog : 8px apart, not the 16px between two fields - a
+// switch's row is far lower than a field's
+.modal-body > .row.mb-3:has(.form-switch):has(+ .row .form-switch) {
+  margin-bottom: 0.5rem !important;
+}
