@@ -56,6 +56,14 @@
   td:first-child {
     padding-left: 1.25rem;
   }
+  /* the selection column (BsDataTable) : its checkbox, the first cell's padding before it and
+     a little after it - at 2rem the padding alone filled the column and the fixed layout cut
+     the checkbox off as soon as the table narrowed */
+  th.bs-dt-select,
+  td.bs-dt-select {
+    width: calc(1.25rem + 1em + 0.5rem);
+    padding-right: 0.5rem;
+  }
   /* the row menu's dots (BsDataTable's row-actions) : as far from the right edge as the first
      column is from the left one */
   td.bs-dt-row-actions {
