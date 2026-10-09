@@ -99,6 +99,8 @@ import getSettings from '@/config/settings';
 
 // where the table's toolbar goes on the title line (one per instance)
 const toolsId = `af-tools-${Math.random().toString(36).slice(2, 10)}`;
+// and where its pager goes, under the card (one per instance)
+const pagerId = `af-pager-${Math.random().toString(36).slice(2, 10)}`;
 const { t, locale } = useI18n();
 const router = useRouter();
 const emit = defineEmits(['test', 'preview', 'trigger', 'reset', 'sync', 'created']);
@@ -1427,6 +1429,7 @@ defineExpose({
         framed
         @mouseover="onCellHover"
         :toolbarTo="'#' + toolsId"
+        :pagerTo="'#' + pagerId"
         :items="itemList"
         :columns="columnsWithManaged"
         :idKey="idKey"
@@ -1489,6 +1492,8 @@ defineExpose({
       </div>
     </template>
     <template #footer>
+      <!-- the table's pager, under the card -->
+      <div :id="pagerId"></div>
       <slot></slot>
     </template>
     <!-- the page's own tabs (the SSO page : General, Providers), above the card -->

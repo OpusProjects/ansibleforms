@@ -392,6 +392,7 @@ export default {
     search: 'Zoeken',
     noData: 'Geen gegevens beschikbaar',
     actions: 'Acties',
+    pageSize: 'Rijen per pagina',
     previous: 'Vorige',
     next: 'Volgende',
     apply: 'Toepassen',

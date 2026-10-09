@@ -394,6 +394,7 @@ export default {
     search: 'Cerca',
     noData: 'No hi ha dades disponibles',
     actions: 'Accions',
+    pageSize: 'Files per pàgina',
     previous: 'Anterior',
     next: 'Següent',
     apply: 'Aplica',

@@ -9,7 +9,7 @@
 /*    .af-table         the <table> : a grey header bar of small  */
 /*                      uppercase labels, letters centred in      */
 /*                      every cell whatever the font              */
-/*    .af-table-footer  the bar under it : the rows shown, pager  */
+/*    .af-table-pager   under the card : the rows shown, pager     */
 /*    .af-table-search  the search on the page's title line       */
 /*    .af-pill          a pill in a cell (lib/tableCells.js)      */
 /*                                                                */
@@ -127,14 +127,17 @@
   }
 }
 
-.af-table-footer {
+.af-table-pager {
+  /* under the page's card, the same for every table : the rows shown at the left, the page
+     size and the page boxes at the right */
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
   gap: 0.75rem;
-  /* the pager boxes as far from the top line and the bottom edge as from the right one :
-     20px (the line above takes 1) */
-  padding: 19px 1.25rem 20px;
-  border-top: 1px solid var(--bs-border-color);
+  /* the card's 16px above it, as the title's divider is 16px above the card ; the same 16px
+     under it to the bottom of the page */
+  margin: 0 0 1rem;
 
   .pagination,
   nav,
@@ -142,8 +145,16 @@
     margin-bottom: 0;
   }
 }
-/* the rows shown, at the left of the footer : 1-25 of 140 */
+/* a table without a card of its own (a list inside a dialog) : the pager right under it */
+.af-table-pager.af-table-pager-inline {
+  margin: 0.5rem 0 0;
+}
+/* the rows shown, at the left of the pager : 1-25 of 140. Its line trimmed to the digits'
+   height (as a pill's label), so the pager centres the digits themselves between the boxes'
+   top and bottom, not a line box that hangs below them for descenders */
 .af-table-count {
+  display: block;
+  text-box: trim-both cap alphabetic;
   font-size: 0.85rem;
   color: var(--bs-secondary-color);
   white-space: nowrap;

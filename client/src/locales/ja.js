@@ -391,6 +391,7 @@ export default {
     search: '検索',
     noData: 'データがありません',
     actions: '操作',
+    pageSize: '1 ページの行数',
     previous: '前へ',
     next: '次へ',
     apply: '適用',

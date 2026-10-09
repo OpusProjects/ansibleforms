@@ -270,19 +270,22 @@ onMounted(async () => {
                   </tbody>
                 </table>
               </div>
-              <div class="af-table-footer">
-                <span class="af-table-count me-auto">{{ pageRange }}</span>
-                <BsPagination
-                  :key="filterVersion"
-                  :dataList="pageIndexes"
-                  :perPage="25"
-                  :buttonsShown="7"
-                  name="audit"
-                  @change="onPageChange"
-                />
-              </div>
             </div>
           </template>
+        </template>
+        <!-- the pager : the rows shown, the page size and boxes, under the card as every table's -->
+        <template #footer>
+          <div class="af-table-pager">
+            <span class="af-table-count">{{ pageRange }}</span>
+            <BsPagination
+              :key="filterVersion"
+              :dataList="pageIndexes"
+              :perPage="25"
+              :buttonsShown="7"
+              name="audit"
+              @change="onPageChange"
+            />
+          </div>
         </template>
       </AppSettings>
     </main>

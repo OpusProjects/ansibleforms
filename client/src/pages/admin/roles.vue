@@ -108,6 +108,8 @@ async function createRole() {
 // the app's data table, as the other lists : a checkbox per role, Select all and Delete for the
 // selection, the search and the columns on the title line, a row's menu ; a row opens its role
 const toolsId = `af-tools-${Math.random().toString(36).slice(2, 10)}`;
+// and where its pager goes, under the card
+const pagerId = `af-pager-${Math.random().toString(36).slice(2, 10)}`;
 const selectedIds = ref(new Set());
 const escapeHtml = (v) =>
   String(v ?? '')
@@ -281,6 +283,7 @@ onMounted(async () => {
               v-else
               framed
               :toolbarTo="'#' + toolsId"
+              :pagerTo="'#' + pagerId"
               :items="tableItems"
               :columns="columns"
               idKey="id"
@@ -333,6 +336,8 @@ onMounted(async () => {
             </BsDataTable>
           </div>
         </template>
+        <!-- the table's pager, under the card -->
+        <template #footer><div :id="pagerId"></div></template>
         <template #actions>
           <BsButton icon="plus" :disabled="readOnly" @click="addRole()">{{
             t('settings.settingsPage.addRole')
