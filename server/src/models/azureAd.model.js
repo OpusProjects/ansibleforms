@@ -1,10 +1,13 @@
 'use strict';
 import logger from "../lib/logger.js";
 import mysql from "./db.model.js";
+import appConfig from "../../config/app.config.js";
 import crypto from "../lib/crypto.js";
 
 class AzureAd {
   static async isEnabled() {
+    // SSO switched off (ENABLE_SSO, Settings > SSO) : no provider, whatever is configured
+    if (!appConfig.enableSso) return { enable: 0, groupfilter: '' };
     const res = await mysql.do("SELECT enable,groupfilter FROM AnsibleForms.`oauth2_providers` where provider='azuread' and enable;");
     if (res.length > 0) {
       return res[0];

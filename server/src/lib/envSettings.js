@@ -80,6 +80,8 @@ const LIVE = {
   PROCESS_MAX_BUFFER: { key: 'processMaxBuffer', parse: v => parseInt(v, 10) || 1024 * 1024 },
   AWX_API_PREFIX: { key: 'awxApiPrefix', parse: v => v },
   SHOW_DESIGNER: { key: 'showDesigner', parse: v => v == 1 },
+  // the login reads it per request, through AzureAd.isEnabled and OIDC.isEnabled
+  ENABLE_SSO: { key: 'enableSso', parse: v => v == 1 },
   // app.js mounts the MCP server always, behind a gate reading this per request
   ENABLE_MCP: { key: 'enableMcp', parse: v => v == 1 },
   // the chat route's gate, the chat button and the chat service read it per request

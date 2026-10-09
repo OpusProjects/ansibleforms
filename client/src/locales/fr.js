@@ -521,6 +521,7 @@ export default {
       repeatPassword: 'Répéter le mot de passe',
       passwordsDiffer: 'Les deux mots de passe diffèrent',
       tabDetails: 'Détails',
+      tabGeneral: 'Général',
       testConnection: 'Tester la connexion',
       showOutput: 'Afficher la sortie',
       trigger: 'Declencher',
@@ -668,6 +669,9 @@ export default {
       description:
         "Configurer des fournisseurs d'identité externes pour l'authentification unique (Entra ID, OIDC, etc.).",
       editProvider: 'Modifier le fournisseur',
+      tabProviders: 'Fournisseurs',
+      active: 'Actif',
+      useForSignIn: 'Utiliser pour la connexion',
       stepProvider: 'Fournisseur',
       stepSignIn: 'Connexion',
       stepGroups: 'Groupes',

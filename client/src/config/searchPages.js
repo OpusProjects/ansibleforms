@@ -104,7 +104,7 @@ export function searchPages(t, options) {
       title: t('sidebar.oauth2'),
       section: settings,
       icon: 'right-to-bracket',
-      link: '/admin/oauth2',
+      link: '/admin/sso',
       permission: 'showSettings',
     },
     {

@@ -2,11 +2,14 @@
 'use strict';
 import logger from "../lib/logger.js";
 import mysql from "./db.model.js";
+import appConfig from "../../config/app.config.js";
 import crypto from "../lib/crypto.js";
 
 
 class OIDC {
   static async isEnabled() {
+    // SSO switched off (ENABLE_SSO, Settings > SSO) : no provider, whatever is configured
+    if (!appConfig.enableSso) return { enable: 0, groupfilter: '', issuer: '' };
     const res = await mysql.do("SELECT enable,groupfilter,issuer FROM AnsibleForms.`oauth2_providers` WHERE provider='oidc' AND enable;");
     if (res.length > 0) {
       return res[0];

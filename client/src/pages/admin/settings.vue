@@ -175,7 +175,7 @@ function envHelp(e) {
 // the MCP server's switch and options (Settings > Connections > MCP) and the chat assistant's
 // switch (Settings > Connections > Chat assistant)
 const OWNED_ELSEWHERE =
-  /^(VAULT|RTE|MCP)_|^(ENABLE_(MCP|CHAT)|BASE_URL|AF_ROLE|LOCK_PATH|ANSIBLE_PATH|PROCESS_MAX_BUFFER)$/;
+  /^(VAULT|RTE|MCP)_|^(ENABLE_(MCP|CHAT|SSO)|BASE_URL|AF_ROLE|LOCK_PATH|ANSIBLE_PATH|PROCESS_MAX_BUFFER)$/;
 
 const envGroups = computed(() => {
   if (!env.value || !Array.isArray(env.value)) return [];
