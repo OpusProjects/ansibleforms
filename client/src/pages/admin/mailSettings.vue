@@ -9,6 +9,7 @@ import TokenStorage from '@/lib/TokenStorage';
 import Helpers from '@/lib/Helpers';
 import { useI18n } from 'vue-i18n';
 import { useRouteTab } from '@/composables/useRouteTab';
+import { useUnsavedGuard } from '@/composables/useUnsavedGuard';
 
 const { t } = useI18n();
 const authenticated = ref(false);
@@ -28,6 +29,12 @@ const isDirty = computed(() => {
   if (originalItem.value === null) return false;
   return mailFields.some((f) => item.value[f] !== originalItem.value[f]);
 });
+// leaving with the mail settings changed and unsaved asks first (a seeded instance cannot
+// save them : nothing to lose)
+useUnsavedGuard(
+  computed(() => isDirty.value && !isManaged.value),
+  () => t('settings.common.unsavedChanges'),
+);
 
 const rules = computed(() => ({
   item: {

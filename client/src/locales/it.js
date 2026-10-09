@@ -534,6 +534,8 @@ export default {
       addItem: 'Aggiungi {item}',
       edit: 'Modifica',
       save: 'Salva',
+      unsavedLeave: 'Esci senza salvare',
+      unsavedTitle: 'Modifiche non salvate',
       unsavedChanges: 'Ci sono modifiche non salvate. Uscire da questa pagina e perderle?',
       seedManaged: 'Seed di configurazione',
       seedManagedField: 'Impostato nel file config seed: modificalo lì, poi riavvia.',

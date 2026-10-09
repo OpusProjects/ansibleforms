@@ -533,6 +533,8 @@ export default {
       addItem: 'Afegeix {item}',
       edit: 'Edita',
       save: 'Desa',
+      unsavedLeave: 'Surt sense desar',
+      unsavedTitle: 'Canvis sense desar',
       unsavedChanges: "Tens canvis sense desar. Vols sortir d'aquesta pàgina i perdre'ls?",
       seedManaged: 'Config seed',
       seedManagedField: 'Definit al fitxer config seed: canvieu-lo allà i reinicieu.',

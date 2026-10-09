@@ -523,6 +523,8 @@ export default {
       addItem: '添加{item}',
       edit: '编辑',
       save: '保存',
+      unsavedLeave: '不保存并离开',
+      unsavedTitle: '未保存的更改',
       unsavedChanges: '您有未保存的更改。确定离开此页面并放弃这些更改？',
       seedManaged: '配置种子',
       seedManagedField: '在配置种子文件中设置：请在那里修改,然后重启。',

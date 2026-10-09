@@ -537,6 +537,8 @@ export default {
       addItem: 'Ajouter {item}',
       edit: 'Modifier',
       save: 'Enregistrer',
+      unsavedLeave: 'Quitter sans enregistrer',
+      unsavedTitle: 'Modifications non enregistrées',
       unsavedChanges: 'Vous avez des modifications non enregistrées. Quitter cette page et les perdre ?',
       seedManaged: 'Seed de configuration',
       seedManagedField: 'Défini dans le fichier config seed : modifiez-le là, puis redémarrez.',

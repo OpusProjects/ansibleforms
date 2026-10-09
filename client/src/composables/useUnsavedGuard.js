@@ -1,5 +1,6 @@
 import { onMounted, onBeforeUnmount } from 'vue';
 import { onBeforeRouteLeave } from 'vue-router';
+import { askToLeave } from '@/lib/unsavedPrompt';
 
 /**
  * Warn before unsaved changes are thrown away.
@@ -10,10 +11,10 @@ import { onBeforeRouteLeave } from 'vue-router';
  * expanding eight roles, flipping thirty switches and then clicking Users in the sidebar
  * discarded everything silently. That is the same amount of work as a designer session.
  *
- * Deliberately a plain confirm() rather than the designer's modal: these are settings
- * cards with no modal machinery of their own, and a guard that blocks navigation without
- * offering a way forward is worse than the problem. The router guard and the reload guard
- * have to be registered separately - neither covers the other.
+ * Leaving for another page asks in the app's Unsaved changes dialog (AppUnsavedDialog, one
+ * for the whole app) : Leave without saving, or Close to stay. Closing or reloading the tab
+ * can only ask in the browser's own words. The router guard and the reload guard have to be
+ * registered separately - neither covers the other.
  *
  * @param {import('vue').Ref<boolean>} isDirty
  * @param {() => string} message Lazily read, so the locale is resolved at prompt time.
@@ -31,7 +32,7 @@ export function useUnsavedGuard(isDirty, message) {
 
   onBeforeRouteLeave(() => {
     if (!isDirty.value) return true;
-    return window.confirm(message());
+    return askToLeave(message());
   });
 }
 

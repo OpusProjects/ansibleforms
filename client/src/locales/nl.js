@@ -532,6 +532,8 @@ export default {
       addItem: '{item} toevoegen',
       edit: 'Bewerken',
       save: 'Opslaan',
+      unsavedLeave: 'Verlaten zonder opslaan',
+      unsavedTitle: 'Niet-opgeslagen wijzigingen',
       unsavedChanges: 'Er zijn niet-opgeslagen wijzigingen. Deze pagina verlaten en ze verliezen?',
       seedManaged: 'Configuratie-seed',
       seedManagedField: 'Ingesteld in het config-seedbestand: wijzig het daar en herstart.',

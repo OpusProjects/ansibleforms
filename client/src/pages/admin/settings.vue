@@ -7,6 +7,7 @@ import axios from 'axios';
 import { toast } from 'vue-sonner';
 import TokenStorage from '@/lib/TokenStorage';
 import Helpers from '@/lib/Helpers';
+import { useUnsavedGuard } from '@/composables/useUnsavedGuard';
 import Theme from '@/lib/Theme';
 import { useI18n } from 'vue-i18n';
 import { useRouteTab } from '@/composables/useRouteTab';
@@ -386,6 +387,8 @@ async function saveEnvironmentVariables() {
 }
 
 const anyDirty = computed(() => settingsDirty.value || envDirty.value);
+// leaving with settings changed and unsaved asks first
+useUnsavedGuard(anyDirty, () => t('settings.common.unsavedChanges'));
 
 async function saveActiveTab() {
   // A refused settings half must stop the whole save, not let the environment half

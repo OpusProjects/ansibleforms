@@ -529,6 +529,8 @@ export default {
       addItem: 'Add {item}',
       edit: 'Edit',
       save: 'Save',
+      unsavedLeave: 'Leave without saving',
+      unsavedTitle: 'Unsaved changes',
       unsavedChanges: 'You have unsaved changes. Leave this page and lose them?',
       seedManaged: 'Config seed',
       seedManagedField: 'Set in the config seed file: change it there, then restart.',
