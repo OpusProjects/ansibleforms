@@ -1111,14 +1111,6 @@ export default {
       validEmail: 'Deve essere un indirizzo email valido',
     },
     oauth2: {
-      callbackWarningTitle: 'Importante: modifica URL di callback (v6.1.5+)',
-      callbackWarningEditNote: 'Quando modifichi provider OAuth2 esistenti',
-      callbackWarningUpdated: 'gli URL di callback verranno aggiornati automaticamente per usare gli endpoint API /v2:',
-      entraId: 'Entra ID:',
-      openId: 'Open ID:',
-      actionRequired: 'Azione richiesta:',
-      actionRequiredMsg:
-        'Dopo aver aggiornato una voce provider, aggiorna gli URI di redirect consentiti nella configurazione del provider OAuth2 per includere questi nuovi URL di callback.',
       entraIdHelp: 'Aiuto Entra ID',
       requiredPermissions: 'Permessi API richiesti',
       delegatedUserRead: 'Delegated User.Read',

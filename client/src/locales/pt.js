@@ -1117,14 +1117,6 @@ export default {
       validEmail: 'Tem de ser um email válido',
     },
     oauth2: {
-      callbackWarningTitle: 'Importante: Alteração do URL de Callback (v6.1.5+)',
-      callbackWarningEditNote: 'Ao editar fornecedores OAuth2 existentes',
-      callbackWarningUpdated: 'os URL de callback são atualizados automaticamente para usar os endpoints da API /v2:',
-      entraId: 'Entra ID:',
-      openId: 'Open ID:',
-      actionRequired: 'Ação Necessária:',
-      actionRequiredMsg:
-        'Depois de atualizar uma entrada de fornecedor, atualize os URI de redirecionamento permitidos na configuração do seu fornecedor OAuth2 para incluir estes novos URL de callback.',
       entraIdHelp: 'Ajuda do Entra ID',
       requiredPermissions: 'Permissões de API Necessárias',
       delegatedUserRead: 'Delegated User.Read',

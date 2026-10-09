@@ -1112,15 +1112,6 @@ export default {
       validEmail: 'Musi być prawidłowym adresem e-mail',
     },
     oauth2: {
-      callbackWarningTitle: 'Ważne: zmiana adresu URL wywołania zwrotnego (v6.1.5+)',
-      callbackWarningEditNote: 'Podczas edycji istniejących dostawców OAuth2',
-      callbackWarningUpdated:
-        'adresy URL wywołania zwrotnego zostaną automatycznie zaktualizowane do punktów końcowych API /v2:',
-      entraId: 'Entra ID:',
-      openId: 'Open ID:',
-      actionRequired: 'Wymagane działanie:',
-      actionRequiredMsg:
-        'Po zaktualizowaniu wpisu dostawcy zaktualizuj dozwolone adresy URI przekierowania w konfiguracji dostawcy OAuth2, aby obejmowały te nowe adresy URL wywołania zwrotnego.',
       entraIdHelp: 'Pomoc Entra ID',
       requiredPermissions: 'Wymagane uprawnienia API',
       delegatedUserRead: 'Delegowane User.Read',

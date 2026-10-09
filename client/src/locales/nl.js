@@ -1111,14 +1111,6 @@ export default {
       validEmail: 'Moet een geldig e-mailadres zijn',
     },
     oauth2: {
-      callbackWarningTitle: 'Belangrijk: Callback URL wijziging (v6.1.5+)',
-      callbackWarningEditNote: 'Bij het bewerken van bestaande OAuth2 providers',
-      callbackWarningUpdated: "worden de callback URL's automatisch bijgewerkt naar de /v2 API eindpunten:",
-      entraId: 'Entra ID:',
-      openId: 'Open ID:',
-      actionRequired: 'Actie vereist:',
-      actionRequiredMsg:
-        "Werk na het bijwerken van een provider de toegestane redirect URI's bij in uw OAuth2 provider configuratie met deze nieuwe callback URL's.",
       entraIdHelp: 'Entra ID Hulp',
       requiredPermissions: 'Vereiste API machtigingen',
       delegatedUserRead: 'Delegated User.Read',

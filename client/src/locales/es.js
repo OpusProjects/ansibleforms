@@ -1110,15 +1110,6 @@ export default {
       validEmail: 'Debe ser un correo electrónico válido',
     },
     oauth2: {
-      callbackWarningTitle: 'Importante: Cambio de URL de Devolución de Llamada (v6.1.5+)',
-      callbackWarningEditNote: 'Al editar proveedores OAuth2 existentes',
-      callbackWarningUpdated:
-        'las URL de devolución de llamada se actualizarán automáticamente para usar los puntos de conexión de la API /v2:',
-      entraId: 'Entra ID:',
-      openId: 'Open ID:',
-      actionRequired: 'Acción Requerida:',
-      actionRequiredMsg:
-        'Después de actualizar una entrada de proveedor, actualice los URI de redirección permitidos en la configuración de su proveedor OAuth2 para incluir estas nuevas URL de devolución de llamada.',
       entraIdHelp: 'Ayuda de Entra ID',
       requiredPermissions: 'Permisos de API Requeridos',
       delegatedUserRead: 'Delegado User.Read',
