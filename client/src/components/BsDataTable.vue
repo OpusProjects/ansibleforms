@@ -660,9 +660,15 @@ function exportCsv() {
 
 <style scoped>
 /* the selection column : as wide as a checkbox and the cell's padding (framed tables give
-   their first cell more, styles/tables.scss) */
+   their first cell more, styles/tables.scss). Never cut with an ellipsis like the other
+   cells : the space after the checkbox alone overflowed it and drew a … beside the box */
 .bs-dt-select {
   width: 2rem;
+}
+.bs-dt-table tbody td.bs-dt-select,
+.bs-dt-table thead th.bs-dt-select {
+  overflow: visible;
+  text-overflow: clip;
 }
 .bs-dt-toolbar {
   padding: 0.75rem 1.25rem;
