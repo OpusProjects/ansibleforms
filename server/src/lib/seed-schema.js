@@ -162,6 +162,8 @@ const repositoryItem = {
     branch: str,
     user: str,
     password: str,
+    // a credential of the credentials section (or the app), used instead of user/password
+    credential: str,
     use_for_config: bool,
     use_for_forms: bool,
     use_for_playbooks: bool,

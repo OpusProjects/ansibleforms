@@ -545,7 +545,7 @@ const SCHEMA_MANIFEST = {
                                'runners.username', 'runners.password', 'runners.use_credentials', 'runners.node_id', 'jobs.job_log',
                                'jobs.tracker', 'repositories.claim_node', 'repositories.claim_since',
                                'schedule.claim_node', 'schedule.claim_since', 'runners.flavour',
-                               'credentials.credential_type'] },
+                               'credentials.credential_type', 'repositories.credential'] },
   },
 };
 
@@ -864,6 +864,9 @@ async function patchVersion7(messages, success, failed) {
   // is_database flag
   await checkPromise(addColumn("credentials", "credential_type", "varchar(20)", true, "NULL"), messages, success, failed);
   await checkPromise(fillCredentialTypes(), messages, success, failed);
+  // a repository can use a credential of Connections > Credentials instead of its own
+  // user and password
+  await checkPromise(addColumn("repositories", "credential", "varchar(250)", true, "NULL"), messages, success, failed);
   await checkPromise(copyAwxToRunners(), messages, success, failed);
   await checkPromise(addColumn("jobs", "job_log", "longtext", true, "NULL"), messages, success, failed);
 

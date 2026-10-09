@@ -133,6 +133,8 @@ const crudConfigs = {
       { name: 'use_for_forms', isBoolean: true },
       { name: 'use_for_playbooks', isBoolean: true },
       { name: 'use_for_vars_files', isBoolean: true },
+      // a credential of Connections > Credentials : the user and password git uses
+      { name: 'credential' },
       { name: 'rebase_on_start', isBoolean: true },
       { name: 'cron' },
       { name: 'status' },

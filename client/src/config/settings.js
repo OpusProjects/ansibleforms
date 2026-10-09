@@ -202,6 +202,16 @@ export default function getSettings(t) {
       icon: 'fab,git',
       idKey: 'name',
       selectable: false,
+      // Scheduled pull off : no schedule ; the switch itself is not stored
+      beforeSave: ({ pull_scheduled, ...item }) => (pull_scheduled ? item : { ...item, cron: '' }),
+      // the dialog in steps : what the repository is, the credentials to reach it, what it is used
+      // for, when it syncs
+      steps: [
+        { key: 'repository', label: t('settings.repositories.stepRepository') },
+        { key: 'access', label: t('settings.repositories.stepCredentials') },
+        { key: 'usage', label: t('settings.repositories.stepUsage') },
+        { key: 'schedule', label: t('settings.repositories.stepSchedule') },
+      ],
       actions: [
         { name: 'edit', icon: 'pencil', title: t('settings.repositories.editRepository'), color: 'edit' },
         { name: 'delete', icon: 'trash', title: t('settings.repositories.deleteRepository'), color: 'delete' },
@@ -238,9 +248,40 @@ export default function getSettings(t) {
         },
         { key: 'head', label: t('settings.fields.head'), noInput: true },
         { key: 'status', label: t('settings.fields.status'), noInput: true },
-        { key: 'user', icon: 'user', label: t('settings.fields.username'), placeholder: 'my-user', hidden: true },
+        {
+          // a credential of Connections > Credentials, or a New one : the user and password git
+          // uses
+          key: 'credential',
+          step: 'access',
+          icon: 'key',
+          label: t('settings.repositories.credential'),
+          help: t('settings.repositories.helpCredential'),
+          type: 'select',
+          parent: 'credentials',
+          values: 'credential',
+          valueKey: 'name',
+          labelKey: 'name',
+          clearable: true,
+          hidden: true,
+          createWith: 'credentials',
+          createLabel: t('settings.repositories.newCredential'),
+          // a credential for git
+          createDefaults: { credential_type: 'git' },
+        },
+        {
+          key: 'user',
+          // in the credential now ; kept on the record for the repositories that still have one
+          noInput: true,
+          icon: 'user',
+          label: t('settings.fields.username'),
+          placeholder: 'my-user',
+          hidden: true,
+        },
         {
           key: 'password',
+          // in the credential now : on no step of the dialog, only behind Change password for the
+          // repositories that still have their own
+          step: 'own',
           icon: 'lock',
           label: t('settings.fields.password'),
           type: 'password',
@@ -257,12 +298,41 @@ export default function getSettings(t) {
           help: t('settings.repositories.helpUri'),
         },
         {
+          // pulled on a schedule or not : not stored, read from the schedule (beforeSave clears
+          // the schedule when off)
+          key: 'pull_scheduled',
+          step: 'schedule',
+          type: 'checkbox',
+          // at the dialog's left edge, its help on one line
+          flush: true,
+          label: t('settings.repositories.scheduledPull'),
+          help: t('settings.repositories.helpScheduledPull'),
+          hidden: true,
+          noTable: true,
+          initial: (r) => !!(r?.cron && String(r.cron).trim()),
+        },
+        {
           key: 'cron',
+          step: 'schedule',
           icon: 'stopwatch',
-          label: t('settings.fields.cronSchedule'),
+          // under Scheduled Pull : what it schedules is said there
+          label: t('settings.repositories.stepSchedule'),
           type: 'cron',
           hidden: true,
+          // only with Scheduled pull on, and then needed : the switch on with no schedule
+          // would save as off
+          dependency: 'pull_scheduled',
+          required: true,
           validator: cronValidator(t),
+        },
+        {
+          key: 'rebase_on_start',
+          step: 'schedule',
+          type: 'checkbox',
+          flush: true,
+          label: t('settings.repositories.cloneOnStart'),
+          help: t('settings.repositories.helpCloneOnStart'),
+          hidden: true,
         },
         {
           key: 'description',
@@ -273,6 +343,12 @@ export default function getSettings(t) {
         },
         {
           key: 'use_for_config',
+          step: 'usage',
+          // the app uses one repository for it
+          oneOnly: true,
+          shortLabel: t('settings.repositories.useConfigShort'),
+          shortHint: t('settings.repositories.useConfigHint'),
+          isSwitch: false,
           type: 'checkbox',
           label: t('settings.repositories.useForConfig'),
           help: t('settings.repositories.helpUseForConfig'),
@@ -280,6 +356,10 @@ export default function getSettings(t) {
         },
         {
           key: 'use_for_forms',
+          step: 'usage',
+          shortLabel: t('settings.repositories.useFormsShort'),
+          shortHint: t('settings.repositories.useFormsHint'),
+          isSwitch: false,
           type: 'checkbox',
           label: t('settings.repositories.useForForms'),
           help: t('settings.repositories.helpUseForForms'),
@@ -287,6 +367,12 @@ export default function getSettings(t) {
         },
         {
           key: 'use_for_playbooks',
+          step: 'usage',
+          // the app uses one repository for it
+          oneOnly: true,
+          shortLabel: t('settings.repositories.usePlaybooksShort'),
+          shortHint: t('settings.repositories.usePlaybooksHint'),
+          isSwitch: false,
           type: 'checkbox',
           label: t('settings.repositories.useForPlaybooks'),
           help: t('settings.repositories.helpUseForPlaybooks'),
@@ -294,16 +380,15 @@ export default function getSettings(t) {
         },
         {
           key: 'use_for_vars_files',
+          step: 'usage',
+          // the app uses one repository for it
+          oneOnly: true,
+          shortLabel: t('settings.repositories.useVarsFilesShort'),
+          shortHint: t('settings.repositories.useVarsFilesHint'),
+          isSwitch: false,
           type: 'checkbox',
           label: t('settings.repositories.useForVarsFiles'),
           help: t('settings.repositories.helpUseForVarsFiles'),
-          hidden: true,
-        },
-        {
-          key: 'rebase_on_start',
-          type: 'checkbox',
-          label: t('settings.repositories.cloneOnStart'),
-          help: t('settings.repositories.helpCloneOnStart'),
           hidden: true,
         },
       ],
