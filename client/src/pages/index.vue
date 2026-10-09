@@ -181,11 +181,12 @@ onMounted(async () => {
   <AppPageLoading v-if="loading" />
   <div class="flex-shrink-0">
     <main class="d-flex flex-nowrap af-settings-layout">
-      <div v-if="authenticated && forms" class="w-100 d-flex flex-column">
+      <!-- the menu draws at once (its last categories) ; the forms come in beside it -->
+      <div class="w-100 d-flex flex-column">
         <div class="row g-0 flex-grow-1 flex-md-nowrap af-forms-row">
           <!-- the categories : the shared forms menu (a form's page shows it too) -->
           <AppFormsMenu :formConfig="formConfig" :currentCategory="currentCategory" @select="select" />
-          <div class="col h-100 bg-body">
+          <div v-if="authenticated && forms" class="col h-100 bg-body">
             <!-- the same page layout as the other pages : the open category as the title, with the
                  search and the view switch on the right, and the divider under it -->
             <AppSettings

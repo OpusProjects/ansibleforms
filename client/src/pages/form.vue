@@ -859,6 +859,20 @@ function formInCategory(form, category) {
   return own.some((c) => c === category || String(c).startsWith(category + '/'));
 }
 
+/**
+ * The category browsed on the Forms page this session ('' for All Forms), or null when none was.
+ *
+ * Returns:
+ *   string|null: the category.
+ */
+function browsedCategory() {
+  try {
+    return sessionStorage.getItem('af_forms_category');
+  } catch (e) {
+    return null;
+  }
+}
+
 // the category highlighted : the one browsed on the Forms page before opening the form (All
 // Forms included), when the form is in it ; else the form's own first category
 const menuCategory = computed(() => {
@@ -1690,7 +1704,7 @@ onBeforeUnmount(() => {
            highlighted ; a category goes back to the Forms page on it -->
       <AppFormsMenu
         class="d-none d-md-block"
-        :currentCategory="currentForm ? menuCategory : null"
+        :currentCategory="currentForm ? menuCategory : browsedCategory()"
         @select="openCategory"
       />
       <div v-if="authenticated && currentForm" class="section container-fluid w-100 mt-3">

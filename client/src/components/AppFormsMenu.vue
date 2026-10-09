@@ -19,10 +19,11 @@
 /*      select: String - a category was clicked ('' : All Forms)  */
 /*                                                                */
 /******************************************************************/
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Form from '@/lib/Form';
 import TokenStorage from '@/lib/TokenStorage';
+import { cachedFormConfig } from '@/lib/formsMenuCache';
 
 const { t } = useI18n();
 const emit = defineEmits(['select']);
@@ -37,9 +38,20 @@ const props = defineProps({
   },
 });
 
-// the categories and forms : the page's, or the menu's own when the page has none
+// the categories and forms : the page's once it has them, else the menu's own ; meanwhile the
+// last ones of this tab, so the menu draws at once instead of emptying on every page
 const ownConfig = ref(null);
-const config = computed(() => props.formConfig || ownConfig.value || {});
+const config = computed(
+  () => (props.formConfig?.forms ? props.formConfig : null) || ownConfig.value || cachedFormConfig.value || {},
+);
+// the page's list, once loaded, is the one the next page starts with
+watch(
+  () => props.formConfig,
+  (value) => {
+    if (value?.forms) cachedFormConfig.value = value;
+  },
+  { immediate: true },
+);
 const forms = computed(() => config.value?.forms || []);
 const roles = computed(() => TokenStorage.getPayload()?.user?.roles || []);
 const isAll = computed(() => !props.currentCategory);
@@ -51,6 +63,7 @@ onMounted(async () => {
   if (props.formConfig) return;
   try {
     ownConfig.value = await Form.list();
+    cachedFormConfig.value = ownConfig.value;
   } catch (e) {
     // no menu, rather than no page : the form still works without it
     ownConfig.value = {};
