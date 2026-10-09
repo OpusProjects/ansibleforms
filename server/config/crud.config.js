@@ -76,6 +76,24 @@ const crudConfigs = {
     allowCache: true,
     cacheTTL: 3600
   },
+  // The SMTP servers the app sends mail with : one is active
+  mailserver: {
+    table: 'AnsibleForms.mail_servers',
+    fields: [
+      { name: 'id', isKey: true },
+      { name: 'name', isNaturalKey: true, required: true },
+      { name: 'description' },
+      { name: 'server', required: true },
+      { name: 'port' },
+      { name: 'secure', isBoolean: true },
+      { name: 'from_address' },
+      { name: 'credential' },
+      { name: 'is_active', isBoolean: true },
+      { name: 'managed', isBoolean: true }
+    ],
+    allowCache: true,
+    cacheTTL: 3600
+  },
   // HashiCorp Vault, CyberArk, ... : where credentials read their user and password from.
   // Which fields a type uses is up to its provider in src/secrets/providers.
   secretstore: {

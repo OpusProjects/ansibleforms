@@ -175,6 +175,10 @@ export default {
       runner_update: 'Runner actualitzat',
       runner_delete: 'Runner eliminat',
       runner_check_create: 'Connexió del runner provada',
+      mailserver_create: 'Servidor de correu creat',
+      mailserver_update: 'Servidor de correu actualitzat',
+      mailserver_delete: 'Servidor de correu suprimit',
+      mailserver_test_create: 'Correu de prova enviat',
       backup_create: 'Còpia de seguretat creada',
       backup_delete: 'Còpia de seguretat suprimida',
       backup_restore: 'Còpia de seguretat restaurada',
@@ -721,6 +725,28 @@ export default {
       runAtHelp: "La data i l'hora per executar aquesta tasca una vegada",
       extraVarsHelp: "No hi ha cap formulari que proporcioni les extra vars, les has d'afegir aquí.",
     },
+    mailServers: {
+      label: 'Servidor de correu',
+      labelPlural: 'Servidors de correu',
+      description:
+        "Els servidors SMTP amb què l'aplicació envia el correu (aprovacions, notificacions de jobs): un d'ells és actiu.",
+      editServer: 'Edita el servidor de correu',
+      deleteServer: 'Suprimeix el servidor de correu',
+      useForMail: 'Fes servir per al correu',
+      active: 'Actiu',
+      activeHelp: "El servidor amb què l'aplicació envia el correu: s'activa aquí i es desactiva activant-ne un altre.",
+      stepServer: 'Servidor',
+      stepConnection: 'Connexió',
+      stepSender: 'Remitent',
+      stepTest: 'Prova',
+      credential: 'Credencial',
+      helpCredential: 'Una credencial smtp de Connexions > Credencials. Buida per a un relay sense accés.',
+      sendTest: 'Envia un correu de prova',
+      notFound: "No hi ha cap servidor de correu amb l'id '{id}'.",
+      fieldsRequired: "El nom, el servidor i l'adreça del remitent són obligatoris.",
+      fromSeed:
+        "El config seed defineix el correu: l'aplicació el fa servir mentre no hi hagi cap servidor de correu actiu.",
+    },
     secretStores: {
       label: 'Magatzem de secrets',
       description:
@@ -821,6 +847,8 @@ export default {
       notFound: "No hi ha cap credencial amb l'id '{id}'.",
       fieldsRequired: 'El nom i la descripció són obligatoris.',
       loginFromStore: "L'usuari i la contrasenya es llegeixen del magatzem de secrets, a la pestanya Magatzem.",
+      type_smtp: 'SMTP',
+      type_smtpHint: 'Un usuari i una contrasenya per a un servidor de correu',
     },
     ssh: {
       label: 'Clau SSH',

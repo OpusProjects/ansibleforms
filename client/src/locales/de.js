@@ -191,6 +191,10 @@ export default {
       runner_update: 'Runner aktualisiert',
       runner_delete: 'Runner gelöscht',
       runner_check_create: 'Runner-Verbindung getestet',
+      mailserver_create: 'Mailserver erstellt',
+      mailserver_update: 'Mailserver aktualisiert',
+      mailserver_delete: 'Mailserver gelöscht',
+      mailserver_test_create: 'Testmail gesendet',
       expression_create: 'Ausdruck ausgewertet',
       forms_repos_pull_create: 'Formular-Repository abgerufen',
       forms_repos_sync_create: 'Formular-Repository synchronisiert',
@@ -791,6 +795,30 @@ export default {
       tokenOnPage_rte: 'Das RTE_TOKEN des RTE ändern Sie mit Token ändern, oben rechts.',
       tokenOnPage_api: 'Das API-Token ändern Sie mit Token ändern, oben rechts.',
     },
+    mailServers: {
+      label: 'Mailserver',
+      labelPlural: 'Mailserver',
+      description:
+        'Die SMTP-Server, über die die App ihre Mails sendet (Genehmigungen, Job-Benachrichtigungen): einer davon ist aktiv.',
+      editServer: 'Mailserver bearbeiten',
+      deleteServer: 'Mailserver löschen',
+      useForMail: 'Für Mail verwenden',
+      active: 'Aktiv',
+      activeHelp:
+        'Der Server, über den die App ihre Mails sendet: hier eingeschaltet, ausgeschaltet, indem ein anderer aktiv wird.',
+      stepServer: 'Server',
+      stepConnection: 'Verbindung',
+      stepSender: 'Absender',
+      stepTest: 'Test',
+      credential: 'Anmeldeinformation',
+      helpCredential:
+        'Eine SMTP-Anmeldeinformation aus Verbindungen > Anmeldeinformationen. Leer für ein Relay ohne Anmeldung.',
+      sendTest: 'Testmail senden',
+      notFound: "Es gibt keinen Mailserver mit der ID '{id}'.",
+      fieldsRequired: 'Name, Server und Absenderadresse sind erforderlich.',
+      fromSeed:
+        'Der Config Seed setzt die Mail-Einstellungen: Die App sendet damit, solange kein Mailserver aktiv ist.',
+    },
     secretStores: {
       label: 'Secret Store',
       description: 'Externe Secret-Manager wie HashiCorp Vault, aus denen Zugangsdaten Benutzer und Passwort lesen.',
@@ -891,6 +919,8 @@ export default {
       notFound: "Es gibt keine Anmeldeinformation mit der ID '{id}'.",
       fieldsRequired: 'Name und Beschreibung sind erforderlich.',
       loginFromStore: 'Benutzer und Passwort werden aus dem Secret Store gelesen, auf der Registerkarte Speicher.',
+      type_smtp: 'SMTP',
+      type_smtpHint: 'Ein Benutzer und Passwort für einen Mailserver',
     },
     ssh: {
       label: 'SSH-Schluessel',

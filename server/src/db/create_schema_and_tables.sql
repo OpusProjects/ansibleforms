@@ -71,6 +71,25 @@ CREATE TABLE `credentials` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_AnsibleForms_credentials_natural_key` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+-- create mail_servers table : the SMTP servers, one of them active
+-- keep in sync with create_mail_servers_table.sql, which the upgrade patch uses
+DROP TABLE IF EXISTS `mail_servers`;
+CREATE TABLE `mail_servers` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(250) NOT NULL,
+  `description` text DEFAULT NULL,
+  `server` varchar(250) NOT NULL,
+  `port` int(11) DEFAULT NULL,
+  `secure` tinyint(4) DEFAULT 0,
+  `from_address` varchar(250) DEFAULT NULL,
+  -- an smtp credential of Connections > Credentials : the login, none for an open relay
+  `credential` varchar(250) DEFAULT NULL,
+  -- the one the app sends its mail with
+  `is_active` tinyint(4) DEFAULT 0,
+  `managed` tinyint(4) DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_AnsibleForms_mail_servers_natural_key` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 -- create secret_stores table : HashiCorp Vault, CyberArk, ... (one row per store)
 -- keep in sync with create_secret_stores_table.sql, which the upgrade patch uses
 DROP TABLE IF EXISTS `secret_stores`;

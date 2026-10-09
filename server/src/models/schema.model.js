@@ -503,7 +503,7 @@ const SCHEMA_MANIFEST = {
   base: {
     tables: ['groups', 'users', 'tokens', 'credentials', 'ldap', 'jobs', 'job_output',
              'settings', 'repositories', 'schedule', 'audit', 'chat_settings', 'secret_stores', 'runners',
-             'nodes', 'cache_epochs', 'designer_lock', 'user_groups'],
+             'nodes', 'cache_epochs', 'designer_lock', 'user_groups', 'mail_servers'],
   },
   patches: {
     patchVersion4: { columns: ['ldap.groups_search_base', 'ldap.groups_attribute', 'ldap.group_class',
@@ -540,7 +540,7 @@ const SCHEMA_MANIFEST = {
     // dropped), and the job log a playbook writes is stored on the job
     // and the worker and several app nodes : the processes on the database, what changed
     // between them, the designer lock, and the node that follows a job
-    patchVersion7: { tables: ['secret_stores', 'runners', 'nodes', 'cache_epochs', 'designer_lock', 'user_groups'],
+    patchVersion7: { tables: ['secret_stores', 'runners', 'nodes', 'cache_epochs', 'designer_lock', 'user_groups', 'mail_servers'],
                      columns: ['schedule.owner', 'credentials.secret_store', 'credentials.secret_ref', 'settings.vault_env_imported_at', 'jobs.runner',
                                'runners.username', 'runners.password', 'runners.use_credentials', 'runners.node_id', 'jobs.job_log',
                                'jobs.tracker', 'repositories.claim_node', 'repositories.claim_since',
@@ -876,6 +876,11 @@ async function patchVersion7(messages, success, failed) {
   // restricted
   await checkPromise(addColumn("credentials", "client_cert", "text", true, "NULL"), messages, success, failed);
   await checkPromise(addColumn("credentials", "client_key", "text", true, "NULL"), messages, success, failed);
+  // several SMTP servers, one active ; the mail settings become the first, their login an
+  // smtp credential
+  const mailBuffer = fs.readFileSync(`${__dirname}/../db/create_mail_servers_table.sql`);
+  await checkPromise(addTable("mail_servers", mailBuffer.toString()), messages, success, failed);
+  await checkPromise(copyMailSettingsToServers(), messages, success, failed);
   // a description on the local groups and users : what a group is for, who owns an account
   await checkPromise(addColumn("groups", "description", "varchar(250)", true, "NULL"), messages, success, failed);
   await checkPromise(addColumn("users", "description", "varchar(250)", true, "NULL"), messages, success, failed);
@@ -901,7 +906,7 @@ async function patchVersion7(messages, success, failed) {
 // Idempotent by its WHERE clause : only a credential without a valid type gets one
 function fillCredentialTypes() {
   return mysql
-    .do("UPDATE AnsibleForms.`credentials` SET credential_type=IF(is_database,'database','ssh') WHERE credential_type IS NULL OR credential_type NOT IN ('ssh','git','api','database','cyberark')")
+    .do("UPDATE AnsibleForms.`credentials` SET credential_type=IF(is_database,'database','ssh') WHERE credential_type IS NULL OR credential_type NOT IN ('ssh','git','api','database','cyberark','smtp')")
     .then((res) => `Set the type of ${res?.affectedRows ?? 0} credential(s)`);
 }
 
@@ -945,6 +950,38 @@ export async function copyAwxToRunners() {
   const message = n ? `Moved ${n} AWX connection(s) to runners (type awx) and dropped the awx table` : "Dropped the awx table, its connections were already runners";
   logger.warning(message);
   return message;
+}
+
+/**
+ * The mail settings as the first mail server, active, their login an smtp credential.
+ * Idempotent : only while there is no mail server yet. Not on a seeded instance : the seed
+ * owns the mail settings, which stay what it sends with.
+ *
+ * Returns:
+ *   Promise<string|null>: what was done, or null when there was nothing to do.
+ */
+export async function copyMailSettingsToServers() {
+  const servers = await mysql.do("SELECT COUNT(*) AS n FROM AnsibleForms.`mail_servers`");
+  if (servers[0]?.n) return null;
+  const rows = await mysql.do("SELECT * FROM AnsibleForms.`settings` LIMIT 1");
+  const s = rows[0];
+  if (!s?.mail_server || s.managed) return null;
+  let credential = null;
+  if (s.mail_username) {
+    // the password is copied as it is stored : the same key encrypts both tables
+    credential = "mail-login";
+    await mysql.do(
+      "INSERT INTO AnsibleForms.`credentials` (name, user, password, description, is_database, credential_type) " +
+        "SELECT ?, ?, ?, 'The login of the mail server (from the mail settings)', 0, 'smtp' FROM DUAL " +
+        "WHERE NOT EXISTS (SELECT 1 FROM AnsibleForms.`credentials` WHERE name = ?)",
+      [credential, s.mail_username, s.mail_password || null, credential],
+    );
+  }
+  await mysql.do(
+    "INSERT INTO AnsibleForms.`mail_servers` (name, description, server, port, secure, from_address, credential, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, 1)",
+    ["default", "From the mail settings", s.mail_server, s.mail_port || null, s.mail_secure ? 1 : 0, s.mail_from || null, credential],
+  );
+  return "Copied the mail settings to the mail server 'default'" + (credential ? ", its login to the credential 'mail-login'" : "");
 }
 
 // PATCHING : Patch All

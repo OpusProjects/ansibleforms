@@ -56,7 +56,7 @@ const credentialItem = {
     secure: bool,
     is_database: bool,
     // what it is for (is_database follows it) ; without it, is_database decides
-    credential_type: { type: "string", enum: ["ssh", "git", "api", "database", "cyberark"] },
+    credential_type: { type: "string", enum: ["ssh", "git", "api", "database", "cyberark", "smtp"] },
     client_cert: str,
     client_key: str,
     // a credential can take its user and password from a secret store instead of
