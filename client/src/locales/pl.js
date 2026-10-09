@@ -1031,6 +1031,7 @@ export default {
       addRole: 'Dodaj rolę',
       newRole: 'Nowa rola',
       addConstant: 'Dodaj stałą',
+      newConstant: 'Nowa stała',
       addSubkey: 'Dodaj podklucz',
       subkeyCount: '{n} podklucz | {n} podklucze | {n} podkluczy',
       addGroup: 'Dodaj grupę',

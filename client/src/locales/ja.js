@@ -1018,6 +1018,7 @@ export default {
       addRole: 'ロールを追加',
       newRole: '新しいロール',
       addConstant: '定数を追加',
+      newConstant: '新しい定数',
       addSubkey: 'サブキーを追加',
       subkeyCount: '{n} 個のサブキー',
       addGroup: 'グループを追加',

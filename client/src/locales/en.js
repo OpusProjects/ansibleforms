@@ -1020,6 +1020,7 @@ export default {
       addRole: 'Add Role',
       newRole: 'New role',
       addConstant: 'Add Constant',
+      newConstant: 'New constant',
       addSubkey: 'Add Subkey',
       subkeyCount: '{n} subkey | {n} subkeys',
       addGroup: 'Add Group',

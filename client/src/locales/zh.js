@@ -997,6 +997,7 @@ export default {
       addRole: '添加角色',
       newRole: '新建角色',
       addConstant: '添加常量',
+      newConstant: '新建常量',
       addSubkey: '添加子键',
       subkeyCount: '{n} 个子键',
       addGroup: '添加组',

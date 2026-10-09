@@ -1030,6 +1030,7 @@ export default {
       addRole: 'Aggiungi ruolo',
       newRole: 'Nuovo ruolo',
       addConstant: 'Aggiungi costante',
+      newConstant: 'Nuova costante',
       addSubkey: 'Aggiungi sotto-chiave',
       subkeyCount: '{n} sotto-chiave | {n} sotto-chiavi',
       addGroup: 'Aggiungi gruppo',

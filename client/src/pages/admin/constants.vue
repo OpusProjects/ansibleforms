@@ -40,8 +40,31 @@ function findInvalidConstantValue(arr) {
   return null;
 }
 
+// ─── the New constant dialog ──────────────────────────────────────────────────
+// A new constant is filled in a dialog, not as an empty row at the end of the table : it joins
+// the table, and the config is saved, only when the dialog is saved.
+const newConstant = ref(null);
+
+/**
+ * Opens the New constant dialog on an empty constant.
+ */
 function addConstant() {
-  constants.value.push({ _uid: nextUid(), key: '', value: '', children: [] });
+  newConstant.value = { _uid: nextUid(), key: '', value: '', children: [] };
+}
+
+/**
+ * Adds the constant of the dialog to the table and saves the config. The dialog stays open,
+ * and the constant leaves the table again, when the save is refused (no key, a key taken, a
+ * value that is no valid list or map, the config locked).
+ */
+async function createConstant() {
+  const constant = newConstant.value;
+  constants.value.push(constant);
+  if (await saveConstants()) {
+    newConstant.value = null;
+  } else {
+    removeConstant(constant);
+  }
 }
 
 function addSubconstant(parentRow) {
@@ -99,19 +122,19 @@ async function saveConstants() {
   const keyless = findKeylessConstant();
   if (keyless) {
     toast.warning(t('settings.settingsPage.constantKeyRequired', { row: keyless }));
-    return;
+    return false;
   }
   const duplicate = findDuplicateKey(constants.value);
   if (duplicate) {
     toast.warning(t('settings.settingsPage.duplicateConstantKey', { key: duplicate }));
-    return;
+    return false;
   }
   const invalid = findInvalidConstantValue(constants.value);
   if (invalid) {
     toast.warning(t('settings.settingsPage.constantValueInvalid', invalid));
-    return;
+    return false;
   }
-  await save(t('settings.settingsPage.constants'));
+  return !!(await save(t('settings.settingsPage.constants')));
 }
 
 onMounted(async () => {
@@ -121,6 +144,23 @@ onMounted(async () => {
 });
 </script>
 <template>
+  <BsModal v-if="newConstant" size="lg" @close="newConstant = null">
+    <template #title> <FaIcon icon="sliders-h" class="me-2" />{{ t('settings.settingsPage.newConstant') }} </template>
+    <template #default>
+      <BsInput :isFloating="false" v-model="newConstant.key" :label="t('settings.settingsPage.key')" />
+      <label class="form-label fw-bold">{{ t('settings.settingsPage.value') }}</label>
+      <!-- as in the table : a list or a map is written as yaml, on several lines -->
+      <textarea
+        class="form-control"
+        :rows="Math.max(3, constantValueRows(newConstant.value))"
+        v-model="newConstant.value"
+        :placeholder="t('settings.settingsPage.constantValuePlaceholder')"
+      ></textarea>
+    </template>
+    <template #footer>
+      <BsButton icon="save" @click="createConstant()">{{ t('settings.common.save') }}</BsButton>
+    </template>
+  </BsModal>
   <AppNav />
   <div class="flex-shrink-0">
     <main class="d-flex flex-nowrap af-settings-layout">
