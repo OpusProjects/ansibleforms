@@ -654,6 +654,9 @@ export default {
       uriHelp: 'RTE : wo er lauscht, z.B. https://rte-vmware:8000. AWX : seine Adresse, z.B. https://aap.example.com.',
       tokenHelp: 'RTE : sein RTE_TOKEN. AWX : ein API-Token, oder Anmeldedaten verwenden ankreuzen.',
       useCredentials: 'Anmeldedaten verwenden',
+      state: 'Registrierung',
+      stateAutomatic: 'automatisch',
+      stateUnresponsive: 'reagiert nicht',
     },
     secretStores: {
       label: 'Secret Store',

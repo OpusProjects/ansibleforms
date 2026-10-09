@@ -20,8 +20,8 @@ const find = async (req, res) => {
     if (req.query.name) {
       return res.json(RestResult.single(maskSecrets(await Runner.findByName(req.query.name))));
     }
-    const list = await Runner.findAll();
-    return res.json(RestResult.list((list || []).map(maskSecrets)));
+    const list = await Runner.withState(await Runner.findAll());
+    return res.json(RestResult.list(list.map(maskSecrets)));
   } catch (err) {
     Errors.ReturnError(res, err);
   }

@@ -767,6 +767,9 @@ export default {
       uriHelp: 'RTE：其监听地址，例如 https://rte-vmware:8000。AWX：其地址，例如 https://aap.example.com。',
       tokenHelp: 'RTE：其 RTE_TOKEN。AWX：API 令牌，或勾选“使用凭据”。',
       useCredentials: '使用凭据',
+      state: '注册',
+      stateAutomatic: '自动',
+      stateUnresponsive: '无响应',
     },
     mail: {
       label: '邮件设置',

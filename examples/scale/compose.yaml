@@ -38,14 +38,14 @@ services:
     <<: *ansibleforms
     environment: { AF_ROLE: worker }
 
-  # runs the playbooks : add it under Connections > Runners (http://rte:8000, RTE_TOKEN). ansible with
+  # runs the playbooks : it adds itself under Connections > Runners as 'rte' (RTE_URL). ansible with
   # its collections ; ansibleforms-rte-core is the smaller one to build your own on (examples/rte)
   rte:
     image: ghcr.io/ansibleforms/ansibleforms-rte-full:7
     restart: unless-stopped
     depends_on: [db]
     env_file: .env
-    environment: { HTTPS: "0" }
+    environment: { HTTPS: "0", RTE_URL: "http://rte:8000" }
     volumes:
       - persistent:/app/dist/persistent
       - ssh:/root/.ssh

@@ -165,8 +165,13 @@ release, so its tags always match the app's.
 
 1. **Start an RTE** (see [Running it](#running-it)) with the app's database settings, the
    app's `ENCRYPTION_SECRET` and a token (`RTE_TOKEN`).
-2. **Add it**: Connections > Runners > add, type *RTE*, its address and the same token.
-   *Test connection* shows its version and ansible version. An AWX/AAP connection is a
+2. **It adds itself**: an RTE registers itself under Connections > Runners when it starts
+   (`RTE_REGISTER=1`, the default), at `RTE_URL` or else at its own IP address and port, and
+   the first one becomes the default. The Runners page shows it as *automatic*, or
+   *unresponsive* once it stopped answering ; the worker removes it 10 minutes later. To
+   manage runners yourself, set `RTE_REGISTER=0` and add it: Connections > Runners > add,
+   type *RTE*, its address and the same token. *Test connection* shows its version and
+   ansible version. An AWX/AAP connection is a
    runner of type *AWX* (a token, or *Use credentials* with a username and password); the v7
    upgrade moves the existing AAP connections there.
 3. **Point forms at it**: `runner: <name>` on a form or a step (also in the designer's form
@@ -177,7 +182,7 @@ release, so its tags always match the app's.
 | Side | Where | How |
 |---|---|---|
 | RTE | the environment variable `RTE_TOKEN` of the RTE container | `-e RTE_TOKEN=...`, a compose `environment:` entry or a Kubernetes secret. The RTE refuses to start without one of at least 16 characters. |
-| App | the `token` of the runner row | typed on the Runners page, or `token: ${SOME_ENV}` in the config seed. Stored encrypted with `ENCRYPTION_SECRET`; the API only ever shows `********`. |
+| App | the `token` of the runner row | written by the RTE when it registers itself, typed on the Runners page, or `token: ${SOME_ENV}` in the config seed. Stored encrypted with `ENCRYPTION_SECRET`; the API only ever shows `********`. |
 
 It is not an environment variable of the app: every runner row has its own token, so every
 RTE can have a different one. A wrong token fails the job with "the RTE ... refused the token".
@@ -189,6 +194,8 @@ In dev the `dev:rte` script uses `dev-rte-token-not-a-secret`; never outside a d
 |---|---|---|
 | `AF_ROLE` | RTE | `rte` (set in the image); the app is `all` (unset), `app` or `worker` - see [examples/scale](../../../examples/scale) |
 | `RTE_TOKEN` | RTE | the token every call must carry; the app holds the same value on the runner row |
+| `RTE_REGISTER` | RTE | 1 (default): the RTE adds itself as a runner ; 0: add it by hand |
+| `RTE_URL` | RTE | the address the app reaches it on (`http://rte:8000`) ; unset: its IP address and port |
 | `DB_*`, `ENCRYPTION_SECRET` | RTE | the app's own values |
 | `ANSIBLE_PATH`, `PROCESS_MAX_BUFFER`, `REPO_PATH`, `HOME_PATH`, `UPLOAD_PATH` | RTE | where its playbooks, repositories, SSH key and uploads are |
 | `PORT`, `HTTPS`, `HTTPS_CERT`, `HTTPS_KEY` | RTE | as for the app |
@@ -201,9 +208,9 @@ they describe the process, not a setting.
 
 **On a dev machine:** `npm run dev` (in the repository root) starts the client, the app and an
 RTE next to it on port 8010. Both use `server/.env.development`, so they share the
-database and the folders. Then once: Connections > Runners > add a runner `rte-dev`, type RTE, uri
-`http://127.0.0.1:8010`, token `dev-rte-token-not-a-secret`, tick *Default*. More RTEs:
-`PORT=8011 npm run dev:rte` in another terminal, and another row.
+database and the folders. The RTE adds itself as runner `127.0.0.1-8010` (`RTE_URL` is
+`http://127.0.0.1:8010`), or keeps a row you made at that address. More RTEs:
+`PORT=8011 npm run dev:rte` in another terminal ; each adds itself.
 
 | Script (root) | Starts |
 |---|---|
@@ -216,7 +223,7 @@ database and the folders. Then once: Connections > Runners > add a runner `rte-d
 ```bash
 docker run -d --name rte -p 8010:8000 \
   -e DB_HOST=... -e DB_PORT=3306 -e DB_USER=... -e DB_PASSWORD=... \
-  -e ENCRYPTION_SECRET=<the app's> -e RTE_TOKEN=<token> \
+  -e ENCRYPTION_SECRET=<the app's> -e RTE_TOKEN=<token> -e RTE_URL=http://<this host>:8010 \
   -v <playbooks or repositories>:/app/dist/persistent/playbooks \
   -v <the app's .ssh>:/root/.ssh:ro \
   ghcr.io/ansibleforms/ansibleforms-rte-full:7

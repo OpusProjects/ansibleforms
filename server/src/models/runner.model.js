@@ -6,14 +6,23 @@ import logger from '../lib/logger.js';
 import mysql from './db.model.js';
 import { RUNNER_TYPES, getRunner } from '../runners/index.js';
 import { stripTrailingSlashes } from '../lib/url.js';
+import { NODE_DEAD_SECONDS } from '../lib/role.js';
 
 // the secret the api shows instead of a stored token ; sent back it means "unchanged"
 export const SECRET_MASK = '********';
 
+// a runner its RTE registered (rte/register.js) whose RTE has not answered for this long is
+// removed by the worker ; until then the Runners page shows it as unresponsive
+export const UNRESPONSIVE_REMOVE_SECONDS = 600;
+
 class Runner extends CrudModel {
   static modelName = 'runner';
 
-  static normalize(data) {
+  static normalize(data, opts = {}) {
+    // which RTE registered a runner is the RTE's to say (rte/register.js), never the api's
+    if (!opts.fromRte) delete data.node_id;
+    // what the api adds on read (withState) is not stored
+    delete data.state;
     if (data.type !== undefined && !RUNNER_TYPES.includes(data.type)) {
       throw new Errors.BadRequestError(`Unknown runner type '${data.type}' - use one of ${RUNNER_TYPES.join(', ')}`);
     }
@@ -61,7 +70,7 @@ class Runner extends CrudModel {
   // opts carries { fromSeed:true } for the declarative config seed only
   static async create(data, opts = {}) {
     CrudModel.assertRequired(this.modelName, data);
-    data = this.normalize(data);
+    data = this.normalize(data, opts);
     this.assertComplete(data);
     // The first runner of a type is its default : forms that name no runner need one, and
     // nobody should have to remember the tick. Not for the seed, which declares the flag
@@ -78,7 +87,7 @@ class Runner extends CrudModel {
   static async update(data, id, opts = {}) {
     await CrudModel.checkExist(this.modelName, id);
     if (!opts.fromSeed) await CrudModel.assertNotManaged(this.modelName, id);
-    data = this.normalize(data);
+    data = this.normalize(data, opts);
     // the stored row decides what is missing : an update may send only what changed
     const current = await this.findById(id);
     const merged = { ...current, ...data };
@@ -109,6 +118,40 @@ class Runner extends CrudModel {
   static async findDefault(type) {
     const all = await this.findAll();
     return (all || []).find((r) => r.is_default && r.type === type) || null;
+  }
+
+  /**
+   * Adds `state` to runners an RTE registered itself : 'automatic' while its RTE writes its
+   * heartbeat, 'unresponsive' once it stopped (no heartbeat for NODE_DEAD_SECONDS, the Status
+   * page's rule). A runner added by hand or by the seed has no state.
+   */
+  static async withState(runners) {
+    const list = runners || [];
+    const ids = [...new Set(list.map((r) => r.node_id).filter(Boolean))];
+    if (!ids.length) return list;
+    const rows = await mysql.do(
+      'SELECT id FROM AnsibleForms.`nodes` WHERE id IN (?) AND last_seen > (NOW() - INTERVAL ? SECOND)',
+      [ids, NODE_DEAD_SECONDS],
+    );
+    const alive = new Set(rows.map((r) => r.id));
+    return list.map((r) => (r.node_id ? { ...r, state: alive.has(r.node_id) ? 'automatic' : 'unresponsive' } : r));
+  }
+
+  /**
+   * The worker's sweep : runners an RTE registered itself whose RTE has not written its
+   * heartbeat for UNRESPONSIVE_REMOVE_SECONDS - a recreated container registered again under
+   * its new address. Never a runner added by hand or by the seed. A runner whose node row is
+   * missing is left alone : its RTE may not have written its first heartbeat yet.
+   */
+  static async removeUnresponsive() {
+    const res = await mysql.do(
+      'DELETE r FROM AnsibleForms.`runners` r JOIN AnsibleForms.`nodes` n ON n.id = r.node_id ' +
+        'WHERE r.node_id IS NOT NULL AND COALESCE(r.managed, 0) = 0 AND n.last_seen < (NOW() - INTERVAL ? SECOND)',
+      [UNRESPONSIVE_REMOVE_SECONDS],
+    );
+    const n = res?.affectedRows || 0;
+    if (n) this.changed(this.modelName);
+    return n;
   }
 
   /** proves the runner answers and accepts us ; what it reports is up to the runner type */

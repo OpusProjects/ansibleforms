@@ -783,6 +783,9 @@ export default {
         'RTE : 待ち受けるアドレス (例 https://rte-vmware:8000)。AWX : そのアドレス (例 https://aap.example.com)。',
       tokenHelp: 'RTE : その RTE_TOKEN。AWX : API トークン、または「認証情報を使用」をオン。',
       useCredentials: '認証情報を使用',
+      state: '登録',
+      stateAutomatic: '自動',
+      stateUnresponsive: '応答なし',
     },
     mail: {
       label: 'メール設定',

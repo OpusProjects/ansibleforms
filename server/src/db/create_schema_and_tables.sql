@@ -96,6 +96,7 @@ CREATE TABLE `runners` (
   `ca_bundle` text DEFAULT NULL,
   `is_default` tinyint(4) DEFAULT 0,
   `managed` tinyint(4) DEFAULT 0,
+  `node_id` varchar(250) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_AnsibleForms_runners_natural_key` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;

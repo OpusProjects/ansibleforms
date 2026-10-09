@@ -364,8 +364,8 @@
 
       `rte` starts the same image as a runtime environment : a small API that runs playbooks
       for an app, with no web interface, scheduler or seed. An RTE needs the app's database
-      settings (`DB_*`), the same `ENCRYPTION_SECRET`, and `RTE_TOKEN`. The app reaches it
-      through a runner added under Connections > Runners.
+      settings (`DB_*`), the same `ENCRYPTION_SECRET`, and `RTE_TOKEN`. It adds itself under
+      Connections > Runners (`RTE_REGISTER`, `RTE_URL`).
   - name: RTE_TOKEN
     version: 7.0.0
     type: string
@@ -373,7 +373,43 @@
     short: The token between an app and its RTE
     description: |
       On an RTE (`AF_ROLE=rte`) : the bearer token every call must carry ; the RTE refuses to
-      start without one. The app stores the same token on the runner (Connections > Runners).
+      start without one. The app stores the same token on the runner (Connections > Runners) ;
+      an RTE that registers itself (`RTE_REGISTER`) puts it there, and keeps it in step when it
+      changes.
+  - name: RTE_REGISTER
+    version: 7.1.0
+    type: number
+    allowed: 0 or 1
+    short: An RTE adds itself as a runner
+    default: "1"
+    description: |
+      On an RTE (`AF_ROLE=rte`) : 1 (the default) and the RTE adds itself under Connections >
+      Runners when it starts, and checks every 30 seconds that it is still there - no click and
+      no config seed needed. The first RTE becomes the default runner, so playbook forms run on
+      it at once. Its address is `RTE_URL`, or this container's IP address and `PORT` when that
+      is not set.
+
+      A runner the RTE registered shows as *automatic* on the Runners page, and as
+      *unresponsive* once the RTE stopped writing its heartbeat ; the worker removes it 10
+      minutes later. A recreated container registers again under its new address and takes the
+      default from the one that stopped. A runner added by hand at the same address stays
+      yours (its token follows `RTE_TOKEN`) ; one from the config seed is never touched.
+
+      0 : the RTE does not register itself ; add it under Connections > Runners or in the seed.
+  - name: RTE_URL
+    version: 7.1.0
+    type: string
+    allowed: an http:// or https:// address, without a slash on the end
+    short: The address the app reaches an RTE on
+    description: |
+      On an RTE (`AF_ROLE=rte`) that registers itself (`RTE_REGISTER`) : the address the app
+      calls it on, usually the service name - `http://rte:8000` in docker compose, the service
+      in kubernetes. The runner is named after its host (`rte`), so forms can name it with
+      `runner: rte`, and every replica behind that address is the same runner.
+
+      Not set : the RTE registers this container's IP address and `PORT`, named after the node
+      (`rte-<hostname>-<port>`, as on the Status page). That works without any setting, but the
+      address and the name change when the container is recreated - set `RTE_URL` in production.
   - name: JOB_RETENTION_DAYS
     version: 6.3.0
     type: number

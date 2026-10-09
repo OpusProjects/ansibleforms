@@ -25,6 +25,7 @@ import { RTE_CONTRACT } from "./contract.js";
 import { onShutdown } from "../lib/shutdown.js";
 import { appVersion as version } from "../lib/version.js";
 import { startHeartbeat } from "../lib/nodes.js";
+import { registerSelf } from "./register.js";
 
 
 // the jobs this process is running ; a job is only ever run by the RTE that claimed it
@@ -147,6 +148,10 @@ export async function startRte() {
   // its row in `nodes` : the Status page lists it, and when it stops answering the worker ends
   // the jobs it was running (Job.abandonDeadNodes) - a pod replaced under a new name included
   startHeartbeat();
+  // and its row under Connections > Runners (rte/register.js), in the background : a database
+  // being upgraded may not have the runners table yet
+  const registering = registerSelf(process.env, { https: !!httpsConfig.https, port: appConfig.port });
+  if (registering) onShutdown("registration", () => registering.stop());
   // the same check, hourly : nothing of ours should still say 'running' after a day - except
   // what this RTE is running right now, which ends by itself
   setInterval(() => {

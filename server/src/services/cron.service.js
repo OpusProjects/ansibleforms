@@ -6,6 +6,7 @@ import mysql from '../models/db.model.js';
 import Repository from '../models/repository.model.js';
 import Lock from '../models/lock.model.js';
 import Schedule from '../models/schedule.model.js';
+import Runner from '../models/runner.model.js';
 // imported rather than injected like Job/Token/BackupModel : audit.model only pulls
 // in the db pool and the logger, so there is no cycle to avoid here
 import Audit from '../models/audit.model.js';
@@ -361,6 +362,14 @@ class CronService {
         if (schedules > 0) logger.warning(`Released ${schedules} schedule launch(es) held by a node that stopped answering`);
       } catch (err) {
         logger.error('Failed to release the claims of stopped nodes:', err);
+      }
+      // and the runners an RTE registered itself (rte/register.js) whose RTE is gone : a
+      // recreated container registered again under its new address
+      try {
+        const runners = await Runner.removeUnresponsive();
+        if (runners > 0) logger.warning(`Removed ${runners} runner(s) registered by an RTE that stopped answering`);
+      } catch (err) {
+        logger.error('Failed to remove the runners of stopped RTEs:', err);
       }
     });
     this.jobs.system.set('deadNodes', deadNodesTask);

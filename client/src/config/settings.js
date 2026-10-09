@@ -35,6 +35,10 @@ export const CHAT_PROVIDERS = [
 ];
 
 // The secret store types (server/src/secrets/providers/index.js has the same list)
+// for render() output, which goes to v-html : nothing reaches it unescaped, a locale string included
+const escapeHtml = (s) =>
+  String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
 // The runner types (server/src/runners/index.js has the same list)
 export const RUNNER_TYPES = [
   { value: 'rte', label: 'Runtime environment (RTE)' },
@@ -1060,6 +1064,21 @@ export default function getSettings(t) {
           required: true,
           filterable: true,
           help: t('settings.runners.nameHelp'),
+        },
+        // set by the api for a runner its RTE registered itself (rte/register.js) : automatic
+        // while the RTE writes its heartbeat, unresponsive once it stopped - the worker removes
+        // it after 10 minutes. render() output goes to v-html : static markup and a locale string only
+        {
+          key: 'state',
+          label: t('settings.runners.state'),
+          noInput: true,
+          sortable: true,
+          render: (v) =>
+            v === 'automatic'
+              ? `<span class="badge text-bg-info">${escapeHtml(t('settings.runners.stateAutomatic'))}</span>`
+              : v === 'unresponsive'
+                ? `<span class="badge text-bg-warning">${escapeHtml(t('settings.runners.stateUnresponsive'))}</span>`
+                : '',
         },
         {
           key: 'type',
