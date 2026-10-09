@@ -305,6 +305,8 @@ export default function getSettings(t) {
           width: '7rem',
           filterable: false,
           filterType: 'number',
+          // none : an en dash, as the other empty cells
+          render: (v) => (v ? String(v) : '–'),
         },
       ],
       childFields: {

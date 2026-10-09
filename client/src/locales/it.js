@@ -978,6 +978,7 @@ export default {
       roleDescriptionAdmin: 'Accesso completo: tutti i moduli, il designer e le impostazioni.',
       roleDescriptionPublic: 'Ogni utente, automaticamente: ciò che tutti possono fare.',
       roleMemberFrom: 'Dal gruppo',
+      roleUsersAll: 'Tutti',
       removeFromRole: 'Rimuovi dal ruolo',
       duplicateRoleMember: "'{name}' è già nel ruolo '{role}'.",
       roleMemberTaken: "'{name}' è già in questo ruolo.",

@@ -979,6 +979,7 @@ export default {
       roleDescriptionAdmin: 'Pełny dostęp: wszystkie formularze, projektant i ustawienia.',
       roleDescriptionPublic: 'Każdy użytkownik, automatycznie: to, co wolno wszystkim.',
       roleMemberFrom: 'Z grupy',
+      roleUsersAll: 'Wszyscy',
       removeFromRole: 'Usuń z roli',
       duplicateRoleMember: "'{name}' jest już w roli '{role}'.",
       roleMemberTaken: "'{name}' jest już w tej roli.",

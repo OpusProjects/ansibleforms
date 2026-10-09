@@ -968,6 +968,7 @@ export default {
       roleDescriptionAdmin: 'フルアクセス: すべてのフォーム、デザイナー、設定。',
       roleDescriptionPublic: 'すべてのユーザーに自動で適用: 全員ができること。',
       roleMemberFrom: '所属グループ',
+      roleUsersAll: '全員',
       removeFromRole: 'ロールから削除',
       duplicateRoleMember: "'{name}' はすでにロール '{role}' に含まれています。",
       roleMemberTaken: "'{name}' はすでにこのロールに含まれています。",

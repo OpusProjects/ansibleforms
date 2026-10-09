@@ -984,6 +984,7 @@ export default {
       roleDescriptionAdmin: 'Accés total: tots els formularis, el dissenyador i la configuració.',
       roleDescriptionPublic: 'Cada usuari, automàticament: el que tothom pot fer.',
       roleMemberFrom: 'Del grup',
+      roleUsersAll: 'Tots',
       removeFromRole: 'Treu del rol',
       duplicateRoleMember: "'{name}' ja és al rol '{role}'.",
       roleMemberTaken: "'{name}' ja és en aquest rol.",
