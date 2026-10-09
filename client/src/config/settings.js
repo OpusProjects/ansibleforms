@@ -3,6 +3,7 @@
 import { editorStyle } from './editorStyle';
 import Helpers from '@/lib/Helpers';
 import { cronValidationMessage } from './cron';
+import { headerWidth } from '@/lib/tableCells';
 
 // A cron field is validated with the SAME check the editor uses (config/cron.js), which
 // is the only thing that keeps the two from disagreeing.
@@ -1052,6 +1053,8 @@ export default function getSettings(t) {
         },
         {
           key: 'is_default',
+          // a yes / no column : as wide as its header, in the language shown
+          width: headerWidth(t('settings.runners.isDefault')),
           label: t('settings.runners.isDefault'),
           help: t('settings.runners.isDefaultHelp'),
           type: 'checkbox',
