@@ -602,6 +602,13 @@ export default {
       showGroup: 'Show Group',
       deleteGroup: 'Delete Group',
       editGroup: 'Edit Group',
+      addUserToGroup: 'Add user',
+      removeFromGroup: 'Remove from group',
+      noUsers: 'No users in this group yet.',
+      everyUserIn: 'Every user is in this group already.',
+      groupNotFound: "There is no group with the id '{id}'.",
+      nameRequired: 'A name is required',
+      stillHasUsers: 'Remove its users first: a group with users cannot be deleted',
     },
     repositories: {
       label: 'Repository',

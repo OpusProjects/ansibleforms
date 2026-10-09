@@ -594,6 +594,13 @@ export default {
       showGroup: '显示组',
       deleteGroup: '删除组',
       editGroup: '编辑组',
+      addUserToGroup: '添加用户',
+      removeFromGroup: '从组中移除',
+      noUsers: '此组还没有用户。',
+      everyUserIn: '所有用户都已在此组中。',
+      groupNotFound: "没有 ID 为 '{id}' 的组。",
+      nameRequired: '需要名称',
+      stillHasUsers: '请先移除其用户：有用户的组无法删除',
     },
     repositories: {
       label: '仓库',

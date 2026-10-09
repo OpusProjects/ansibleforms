@@ -604,6 +604,13 @@ export default {
       showGroup: 'Mostrar Grupo',
       deleteGroup: 'Eliminar Grupo',
       editGroup: 'Editar Grupo',
+      addUserToGroup: 'Añadir usuario',
+      removeFromGroup: 'Quitar del grupo',
+      noUsers: 'Aún no hay usuarios en este grupo.',
+      everyUserIn: 'Todos los usuarios ya están en este grupo.',
+      groupNotFound: "No hay ningún grupo con el id '{id}'.",
+      nameRequired: 'Se requiere un nombre',
+      stillHasUsers: 'Quite primero sus usuarios: un grupo con usuarios no se puede eliminar',
     },
     repositories: {
       label: 'Repositorio',

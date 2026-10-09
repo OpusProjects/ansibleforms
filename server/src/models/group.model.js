@@ -33,8 +33,15 @@ class Group extends CrudModel {
     static async findById(id) {
         return super.findById(this.modelName, id);
     }
+    // every group with how many users it has (user_count) : those it is the first group of and
+    // those it is another group of (user_groups), each user once
     static async findAll() {
-        return super.findAll(this.modelName);
+        const groups = await super.findAll(this.modelName);
+        if (!Array.isArray(groups) || !groups.length) return groups;
+        const counts = await mysql.do(
+            "SELECT g.id, (SELECT COUNT(*) FROM AnsibleForms.`users` u WHERE u.group_id = g.id OR EXISTS (SELECT 1 FROM AnsibleForms.`user_groups` ug WHERE ug.user_id = u.id AND ug.group_id = g.id)) AS cnt FROM AnsibleForms.`groups` g", []);
+        const byId = new Map((counts || []).map((c) => [c.id, Number(c.cnt) || 0]));
+        return groups.map((g) => ({ ...g, user_count: byId.get(g.id) || 0 }));
     }
     static async findByName(name) {
         return super.findByName(this.modelName, name);

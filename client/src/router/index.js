@@ -24,6 +24,7 @@ const error = () => import('@/pages/error.vue');
 const credentials = () => import('@/pages/admin/credentials.vue');
 const oauth2 = () => import('@/pages/admin/oauth2.vue');
 const groups = () => import('@/pages/admin/groups.vue');
+const group = () => import('@/pages/admin/group.vue');
 const knownHosts = () => import('@/pages/admin/knownHosts.vue');
 const ldap = () => import('@/pages/admin/ldap.vue');
 const chatSettings = () => import('@/pages/admin/chat.vue');
@@ -134,6 +135,8 @@ const routes = [
   { path: '/admin/credentials', name: '/admin/credentials', component: credentials, beforeEnter: checkSettings },
   { path: '/admin/oauth2', name: '/admin/oauth2', component: oauth2, beforeEnter: checkSettings },
   { path: '/admin/groups', name: '/admin/groups', component: groups, beforeEnter: checkSettings },
+  // a group's page : its Details and Users tabs
+  { path: '/admin/groups/:id', name: '/admin/groups/:id', component: group, beforeEnter: checkSettings },
   { path: '/admin/knownHosts', name: '/admin/knownHosts', component: knownHosts, beforeEnter: checkSettings },
   { path: '/admin/ldap', name: '/admin/ldap', component: ldap, beforeEnter: checkSettings },
   { path: '/admin/chat', name: '/admin/chat', component: chatSettings, beforeEnter: checkSettings },

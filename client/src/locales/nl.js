@@ -605,6 +605,13 @@ export default {
       showGroup: 'Groep tonen',
       deleteGroup: 'Groep verwijderen',
       editGroup: 'Groep bewerken',
+      addUserToGroup: 'Gebruiker toevoegen',
+      removeFromGroup: 'Uit groep verwijderen',
+      noUsers: 'Nog geen gebruikers in deze groep.',
+      everyUserIn: 'Elke gebruiker zit al in deze groep.',
+      groupNotFound: "Er is geen groep met id '{id}'.",
+      nameRequired: 'Een naam is verplicht',
+      stillHasUsers: 'Verwijder eerst de gebruikers: een groep met gebruikers kan niet worden verwijderd',
     },
     repositories: {
       label: 'Repository',

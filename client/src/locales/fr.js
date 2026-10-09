@@ -610,6 +610,13 @@ export default {
       showGroup: 'Afficher le groupe',
       deleteGroup: 'Supprimer le groupe',
       editGroup: 'Modifier le groupe',
+      addUserToGroup: 'Ajouter un utilisateur',
+      removeFromGroup: 'Retirer du groupe',
+      noUsers: "Aucun utilisateur dans ce groupe pour l'instant.",
+      everyUserIn: 'Tous les utilisateurs sont déjà dans ce groupe.',
+      groupNotFound: "Aucun groupe n'a l'id '{id}'.",
+      nameRequired: 'Un nom est requis',
+      stillHasUsers: "Retirez d'abord ses utilisateurs : un groupe avec des utilisateurs ne peut pas être supprimé",
     },
     repositories: {
       label: 'Depot',

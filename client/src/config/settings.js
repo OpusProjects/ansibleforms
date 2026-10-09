@@ -213,6 +213,19 @@ export default function getSettings(t) {
           valueKey: 'id',
           labelKey: 'name',
         },
+        // how many groups the user is in : a column, last, to the right ; not in the dialog
+        {
+          key: 'group_ids',
+          label: t('sidebar.groups'),
+          noInput: true,
+          align: 'end',
+          // narrow, beside the row menu : the other columns take the room
+          width: '8.5rem',
+          filterable: false,
+          filterType: 'number',
+          sortValue: (row) => (row.group_ids || []).length,
+          render: (v) => String((v || []).length),
+        },
       ],
     },
     groups: {
@@ -231,9 +244,28 @@ export default function getSettings(t) {
           key: 'group_ids',
         },
       ],
+      // a group has its own page (pages/admin/group.vue) : its row and Edit open it, New the dialog
+      openPage: (item) => `/admin/groups/${item.id}`,
+      // in the row menu : editing, its users, then Delete last, each apart
       actions: [
         { name: 'edit', title: t('settings.groups.editGroup'), icon: 'pencil', color: 'edit' },
-        { name: 'delete', title: t('settings.groups.deleteGroup'), icon: 'trash', color: 'delete' },
+        // the group's Users tab, its Add user dialog open
+        {
+          name: 'add_user',
+          title: t('settings.groups.addUserToGroup'),
+          icon: 'user',
+          color: 'edit',
+          dividerBefore: true,
+          to: (g) => ({ path: `/admin/groups/${g.id}`, query: { tab: 'users', add: '1' } }),
+        },
+        {
+          name: 'delete',
+          title: t('settings.groups.deleteGroup'),
+          icon: 'trash',
+          color: 'delete',
+          // the admins group is never deleted (the server refuses it too)
+          enabledWhen: (g) => g.name !== 'admins',
+        },
       ],
       fields: [
         {
@@ -262,6 +294,17 @@ export default function getSettings(t) {
           required: false,
           filterable: true,
           icon: 'info-circle',
+        },
+        // how many users are in the group (the server counts them) : a column, last, to the right
+        {
+          key: 'user_count',
+          label: t('settings.users.labelPlural'),
+          noInput: true,
+          align: 'end',
+          // narrow, beside the row menu : the other columns take the room
+          width: '7rem',
+          filterable: false,
+          filterType: 'number',
         },
       ],
       childFields: {
