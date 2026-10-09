@@ -44,6 +44,15 @@
 /*  field.keepHelp: the help of an onEdit field when editing      */
 /*  field.columnType 'checkbox': a yes / no column, for a field   */
 /*      that is no checkbox in the dialog (a radio of true/false) */
+/*  field.createWith: a key of config/settings.js - a select gets */
+/*      a New button under it (createLabel), the dialog of that   */
+/*      list opens over this one and selects what it creates ;   */
+/*      createDefaults is what that New presets                   */
+/*  field.needsChoicesOf: the key of a dropdown (createWith) - the*/
+/*      field is hidden while that one has nothing to choose      */
+/*  dialogOnly (prop): no list, only the record dialogs : another */
+/*      dialog opens newItem() (exposed) to create a record, and  */
+/*      gets `created` with its name                              */
 /*                                                                */
 /******************************************************************/
 
@@ -58,13 +67,14 @@ import yaml from 'yaml';
 import { required, helpers, email, sameAs } from '@vuelidate/validators';
 import { useI18n } from 'vue-i18n';
 import BsDataTable from './BsDataTable.vue';
+import getSettings from '@/config/settings';
 
 // INIT
 
 // where the table's toolbar goes on the title line (one per instance)
 const toolsId = `af-tools-${Math.random().toString(36).slice(2, 10)}`;
 const { t } = useI18n();
-const emit = defineEmits(['test', 'preview', 'trigger', 'reset', 'sync']);
+const emit = defineEmits(['test', 'preview', 'trigger', 'reset', 'sync', 'created']);
 
 // PROPS
 
@@ -80,6 +90,11 @@ const props = defineProps({
   apiVersion: {
     type: [String, Number],
     default: 2,
+  },
+  // no list, only the record dialogs : another dialog's New button creates a record with it
+  dialogOnly: {
+    type: Boolean,
+    default: false,
   },
 });
 
@@ -460,9 +475,11 @@ function savePayload() {
   return body;
 }
 
-function newItem() {
+function newItem(defaults = {}) {
   item.value = {};
   setInitialValues();
+  // what the dialog that asked for it presets (a git credential, from a repository's dialog)
+  Object.assign(item.value, defaults);
   fields.value.forEach((field) => {
     if (field.type === 'editor' && item.value[field.key] === undefined) {
       item.value[field.key] = '';
@@ -482,6 +499,9 @@ async function createItem() {
     try {
       await axios.post(`/api/v${props.apiVersion}/${objectType}/`, savePayload(), TokenStorage.getAuthentication());
       toast.success(objectTitle('', t('settings.common.isCreated')));
+      // the dialog that asked for it (a dropdown's New button) selects what was created
+      emit('created', item.value.name ?? item.value[idKey]);
+      if (props.dialogOnly) unselectItem();
       loadItems();
     } catch (err) {
       toast.error(Helpers.parseAxiosResponseError(err, 'Failed to save item'));
@@ -552,6 +572,12 @@ function getParentValues(key) {
 function showField(field) {
   // Only hide if noInput is set, not readonly
   if (field.noInput) return false;
+  // a field that means nothing until another dropdown has a choice (a secret's reference,
+  // with no secret store yet) : hidden until then
+  if (field.needsChoicesOf) {
+    const other = fields.value.find((f) => f.key === field.needsChoicesOf);
+    if (other && noChoices(other)) return false;
+  }
   let depShow = true;
   if (field.dependency) {
     const depValue = item.value[field.dependency];
@@ -663,6 +689,41 @@ const title = computed(() => {
  */
 function textOf(value) {
   return typeof value === 'function' ? value(item.value || {}) : value;
+}
+
+// ─── create from a dropdown ──────────────────────────────────────────────────
+// A select field with `createWith` (a key of config/settings.js) gets a New button under it :
+// the dialog of that list opens over this one, and what it creates is selected here.
+const allSettings = computed(() => getSettings(t));
+const createFields = computed(() => fields.value.filter((f) => f.createWith && allSettings.value[f.createWith]));
+const creators = {};
+
+/**
+ * A dropdown that can create its choice (createWith) with nothing to choose yet : its list
+ * empty, or only the blank entry of a clearable one.
+ *
+ * Args:
+ *   field (object): the dropdown field.
+ *
+ * Returns:
+ *   boolean: true when only its New button is worth showing.
+ */
+function noChoices(field) {
+  if (!field.createWith || !allSettings.value[field.createWith] || !field.parent) return false;
+  return !getParentValues(field.parent).some((v) => v?.[field.valueKey]);
+}
+
+/**
+ * Reloads a dropdown's choices and selects the record just created through its New button.
+ *
+ * Args:
+ *   field (object): the select field.
+ *   name (string): the name of the record created.
+ */
+async function onCreated(field, name) {
+  const list = await loadList(field.values, false, field.valuesApiVersion);
+  parentLists.value[field.parent] = field.clearable ? [{ [field.valueKey]: '', [field.labelKey]: '' }, ...list] : list;
+  if (name !== undefined && name !== null) item.value[field.key] = name;
 }
 
 // ─── wizard ───────────────────────────────────────────────────────────────────
@@ -1154,6 +1215,8 @@ onBeforeUnmount(() => {
 defineExpose({
   loadItems,
   setItemProperty,
+  // another dialog's New button creates a record with this one's dialog (dialogOnly)
+  newItem,
 });
 </script>
 <template>
@@ -1169,7 +1232,12 @@ defineExpose({
       <BsButton icon="trash" @click="removeItem()">{{ t('common.delete') }}</BsButton>
     </template>
   </BsModal>
-  <AppSettings :icon="objectIcon" :title="settings.pageTitle || objectLabelPlural" :description="objectDescription">
+  <AppSettings
+    v-if="!dialogOnly"
+    :icon="objectIcon"
+    :title="settings.pageTitle || objectLabelPlural"
+    :description="objectDescription"
+  >
     <!-- the table's search and columns, on the title line as the Forms page has its search -->
     <template #headerActions>
       <div :id="toolsId"></div>
@@ -1440,6 +1508,17 @@ defineExpose({
           <div v-if="textOf(field.help)" class="form-text mt-1">{{ textOf(field.help) }}</div>
         </div>
 
+        <!-- A DROPDOWN WITH NOTHING TO CHOOSE YET (createWith, an empty list) : only its New
+             button, where the dropdown would be -->
+        <div v-else-if="showField(field) && noChoices(field) && action !== 'select'" class="row mb-3">
+          <label class="col-sm-2 col-form-label fw-bold">{{ field.label }}</label>
+          <div class="col-sm-10 d-flex align-items-center">
+            <BsButton icon="plus" @click="creators[field.key]?.newItem(field.createDefaults)">{{
+              field.createLabel
+            }}</BsButton>
+          </div>
+        </div>
+
         <!-- ALL OTHER FIELD TYPES -->
         <BsInput
           v-else-if="showField(field) && field.type !== 'datetime' && field.type !== 'cron'"
@@ -1463,6 +1542,23 @@ defineExpose({
           :lang="field.lang"
           :values="getParentValues(field.parent)"
         />
+        <!-- a dropdown that can create its choice : the dialog of that list, over this one -->
+        <div
+          v-if="
+            showField(field) &&
+            field.createWith &&
+            allSettings[field.createWith] &&
+            action !== 'select' &&
+            !noChoices(field)
+          "
+          class="row mb-3 mt-n2"
+        >
+          <div class="offset-sm-2 col-sm-10">
+            <BsButton icon="plus" @click="creators[field.key]?.newItem(field.createDefaults)">{{
+              field.createLabel
+            }}</BsButton>
+          </div>
+        </div>
       </template>
       <div v-if="action == 'select' && childLists">
         <ul class="nav nav-tabs">
@@ -1485,6 +1581,16 @@ defineExpose({
       </div>
     </template>
   </BsOffCanvas>
+  <!-- the lists a dropdown can create its choice with (createWith) : their dialogs only -->
+  <AppAdminMulti
+    v-for="field in createFields"
+    :key="'create-' + field.key"
+    :ref="(el) => (creators[field.key] = el)"
+    dialogOnly
+    :apiVersion="2"
+    :settings="allSettings[field.createWith]"
+    @created="(name) => onCreated(field, name)"
+  />
 </template>
 <style scoped>
 /* the steps of a wizard dialog : numbered, joined by a line, the one shown in the primary

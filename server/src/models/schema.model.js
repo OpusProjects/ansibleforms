@@ -544,7 +544,8 @@ const SCHEMA_MANIFEST = {
                      columns: ['schedule.owner', 'credentials.secret_store', 'credentials.secret_ref', 'settings.vault_env_imported_at', 'jobs.runner',
                                'runners.username', 'runners.password', 'runners.use_credentials', 'runners.node_id', 'jobs.job_log',
                                'jobs.tracker', 'repositories.claim_node', 'repositories.claim_since',
-                               'schedule.claim_node', 'schedule.claim_since', 'runners.flavour'] },
+                               'schedule.claim_node', 'schedule.claim_since', 'runners.flavour',
+                               'credentials.credential_type'] },
   },
 };
 
@@ -859,6 +860,10 @@ async function patchVersion7(messages, success, failed) {
   await checkPromise(addColumn("runners", "node_id", "varchar(250)", true, "NULL"), messages, success, failed);
   // an awx runner that is an AAP or an Ascender (empty is AWX) : which product it is
   await checkPromise(addColumn("runners", "flavour", "varchar(20)", true, "NULL"), messages, success, failed);
+  // what a credential is for : ssh, git, api or database ; the existing ones from their
+  // is_database flag
+  await checkPromise(addColumn("credentials", "credential_type", "varchar(20)", true, "NULL"), messages, success, failed);
+  await checkPromise(fillCredentialTypes(), messages, success, failed);
   await checkPromise(copyAwxToRunners(), messages, success, failed);
   await checkPromise(addColumn("jobs", "job_log", "longtext", true, "NULL"), messages, success, failed);
 
@@ -875,6 +880,13 @@ async function patchVersion7(messages, success, failed) {
     await checkPromise(addColumn(table, "claim_node", "varchar(250)", true, "NULL"), messages, success, failed);
     await checkPromise(addColumn(table, "claim_since", "datetime", true, "NULL"), messages, success, failed);
   }
+}
+
+// Idempotent by its WHERE clause : only a credential without a valid type gets one
+function fillCredentialTypes() {
+  return mysql
+    .do("UPDATE AnsibleForms.`credentials` SET credential_type=IF(is_database,'database','ssh') WHERE credential_type IS NULL OR credential_type NOT IN ('ssh','git','api','database')")
+    .then((res) => `Set the type of ${res?.affectedRows ?? 0} credential(s)`);
 }
 
 // Idempotent by its WHERE clause : a row is copied once, and never over a store chosen since

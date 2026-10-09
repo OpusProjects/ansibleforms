@@ -40,6 +40,9 @@ export const CHAT_PROVIDERS = [
 const escapeHtml = (s) =>
   String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
+// what a credential is for (its type), in the order the dialog offers them
+export const CREDENTIAL_TYPES = ['ssh', 'git', 'api', 'database'];
+
 // The flavours of an awx runner (server/src/models/runner.model.js has the same list) : which
 // product it is (its uri carries its API path)
 export const RUNNER_FLAVOURS = [
@@ -562,6 +565,30 @@ export default function getSettings(t) {
       description: t('settings.credentials.description'),
       icon: 'lock',
       selectable: false,
+      // the dialog in steps : what the credential is, what it is for, its user and password,
+      // where they are kept, what it connects to (a login's or a database's host ; git and an
+      // api have their address where they are used)
+      steps: [
+        { key: 'credential', label: t('settings.credentials.stepCredential') },
+        { key: 'type', label: t('settings.credentials.stepType') },
+        { key: 'login', label: t('settings.credentials.stepLogin') },
+        { key: 'store', label: t('settings.credentials.stepStore') },
+        {
+          key: 'connection',
+          label: t('settings.credentials.stepConnection'),
+          when: (item) => ['ssh', 'database'].includes(item.credential_type),
+        },
+      ],
+      // where the user and password are kept is not stored : a secret store (then the user and
+      // password typed are not kept) or MySQL, the app's database (then no secret store)
+      beforeSave: ({ secret_source, ...item }) => {
+        if (secret_source === 'store') {
+          delete item.user;
+          delete item.password;
+          return item;
+        }
+        return { ...item, secret_store: '', secret_ref: '' };
+      },
       actions: [
         { name: 'edit', title: t('settings.credentials.editCredential'), icon: 'pencil', color: 'edit' },
         { name: 'delete', title: t('settings.credentials.deleteCredential'), icon: 'trash', color: 'delete' },
@@ -586,12 +613,27 @@ export default function getSettings(t) {
           icon: 'key',
         },
         {
-          key: 'is_database',
-          label: t('settings.credentials.forDatabase'),
-          type: 'checkbox',
+          // where the user and password are kept : MySQL (the app's database, encrypted) or a
+          // secret store (not stored, read from the record ; beforeSave clears the other side)
+          key: 'secret_source',
+          step: 'store',
+          label: t('settings.credentials.stepStore'),
+          type: 'radio',
+          options: [
+            {
+              value: 'local',
+              label: t('settings.credentials.secretLocal'),
+              hint: t('settings.credentials.secretLocalHint'),
+            },
+            {
+              value: 'store',
+              label: t('settings.credentials.secretFromStore'),
+              hint: t('settings.credentials.secretFromStoreHint'),
+            },
+          ],
+          initial: (r) => (r?.secret_store ? 'store' : 'local'),
           hidden: true,
-          placeholder: t('settings.credentials.enableDbFields'),
-          required: false,
+          noTable: true,
         },
         {
           key: 'name',
@@ -603,7 +645,44 @@ export default function getSettings(t) {
           isKey: true,
         },
         {
+          // what it is for : radio buttons ; a host for ssh or a database, its type and name for
+          // a database
+          key: 'credential_type',
+          step: 'type',
+          label: t('settings.credentials.type'),
+          type: 'radio',
+          options: CREDENTIAL_TYPES.map((value) => ({
+            value,
+            label: t(`settings.credentials.type_${value}`),
+            hint: t(`settings.credentials.type_${value}Hint`),
+          })),
+          // a type the record does not have (none yet, an unknown one) : from its is_database flag
+          initial: (r) =>
+            CREDENTIAL_TYPES.includes(r?.credential_type)
+              ? r.credential_type
+              : r?.id && r?.is_database
+                ? 'database'
+                : 'ssh',
+          render: (v, r) =>
+            escapeHtml(
+              t(`settings.credentials.type_${CREDENTIAL_TYPES.includes(v) ? v : r?.is_database ? 'database' : 'ssh'}`),
+            ),
+          sortable: true,
+          filterable: true,
+        },
+        {
+          // set by the type (the server keeps it in step) : a column only
+          key: 'is_database',
+          label: t('settings.credentials.forDatabase'),
+          noInput: true,
+          columnType: 'checkbox',
+          filterType: 'boolean',
+          hidden: true,
+          required: false,
+        },
+        {
           key: 'user',
+          step: 'login',
           label: t('settings.fields.user'),
           sortable: true,
           required: false,
@@ -612,6 +691,9 @@ export default function getSettings(t) {
         },
         {
           key: 'password',
+          step: 'login',
+          // shown when editing too, as ******** : left empty, the stored one stays
+          onEdit: true,
           label: t('settings.fields.password'),
           type: 'password',
           sortable: false,
@@ -622,6 +704,12 @@ export default function getSettings(t) {
         },
         {
           key: 'secret_store',
+          step: 'store',
+          // none yet : only a New secret store button
+          createWith: 'secretStores',
+          createLabel: t('settings.credentials.newSecretStore'),
+          dependency: 'secret_source',
+          dependencyValues: ['store'],
           label: t('settings.credentials.secretStore'),
           help: t('settings.credentials.secretStoreHelp'),
           type: 'select',
@@ -638,6 +726,8 @@ export default function getSettings(t) {
         },
         {
           key: 'secret_ref',
+          // no secret store yet : nothing to refer to
+          needsChoicesOf: 'secret_store',
           label: t('settings.credentials.secretRef'),
           placeholder: t('settings.credentials.secretRefPlaceholder'),
           help: t('settings.credentials.secretRefHelp'),
@@ -646,10 +736,15 @@ export default function getSettings(t) {
           filterable: false,
           icon: 'shield-alt',
           hidden: true,
-          dependency: 'secret_store',
+          step: 'store',
+          dependency: 'secret_source',
+          dependencyValues: ['store'],
         },
         {
           key: 'host',
+          step: 'connection',
+          dependency: 'credential_type',
+          dependencyValues: ['ssh', 'database'],
           label: t('settings.fields.host'),
           sortable: true,
           required: false,
@@ -658,6 +753,9 @@ export default function getSettings(t) {
         },
         {
           key: 'port',
+          step: 'connection',
+          dependency: 'credential_type',
+          dependencyValues: ['ssh', 'database'],
           label: t('settings.fields.port'),
           type: 'number',
           sortable: true,
@@ -676,6 +774,7 @@ export default function getSettings(t) {
         },
         {
           key: 'db_type',
+          step: 'connection',
           label: t('settings.credentials.databaseType'),
           type: 'select',
           sortable: false,
@@ -693,17 +792,20 @@ export default function getSettings(t) {
           valueKey: 'value',
           filterable: true,
           icon: 'database',
-          dependency: 'is_database',
+          dependency: 'credential_type',
+          dependencyValues: ['database'],
         },
         {
           key: 'db_name',
+          step: 'connection',
           label: t('settings.credentials.database'),
           sortable: false,
           hidden: true,
           required: false,
           filterable: false,
           icon: 'database',
-          dependency: 'is_database',
+          dependency: 'credential_type',
+          dependencyValues: ['database'],
         },
       ],
     },
