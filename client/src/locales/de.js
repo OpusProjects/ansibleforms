@@ -739,6 +739,7 @@ export default {
       useCredentials: 'Anmeldedaten verwenden',
       state: 'Registrierung',
       stateAutomatic: 'automatisch',
+      stateManual: 'manuell',
       stateUnresponsive: 'reagiert nicht',
       authToken: 'Token',
       authTokenHint: 'Ein API-Token',
@@ -777,6 +778,15 @@ export default {
       uriHelp_awx: 'Die AWX-Adresse mit ihrem API-Pfad, /api/v2.',
       uriHelp_aap: 'Die AAP-Adresse mit ihrem API-Pfad: /api/controller/v2 ab AAP 2.5, davor /api/v2.',
       uriHelp_ascender: 'Die Ascender-Adresse mit ihrem API-Pfad, /api/v2.',
+      notFound: "Es gibt keinen Runner mit der ID '{id}'.",
+      fieldsRequired: 'Name und URI sind erforderlich.',
+      changeToken: 'Token ändern',
+      changeAuth: 'Authentifizierung ändern',
+      defaultHelp:
+        'Der Standard für {forms}: hier eingeschaltet, ausgeschaltet, indem ein anderer Runner Standard wird.',
+      passwordOnPage: 'Das Passwort ändern Sie mit Passwort ändern, oben rechts.',
+      tokenOnPage_rte: 'Das RTE_TOKEN des RTE ändern Sie mit Token ändern, oben rechts.',
+      tokenOnPage_api: 'Das API-Token ändern Sie mit Token ändern, oben rechts.',
     },
     secretStores: {
       label: 'Secret Store',

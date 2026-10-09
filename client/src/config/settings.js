@@ -77,6 +77,25 @@ export function statusPill(t, value) {
   return `<span class="badge rounded-pill border fw-semibold af-pill ${known[value] || PILL.grey}"><span class="af-pill-label">${escapeHtml(label)}</span></span>`;
 }
 
+/**
+ * A runner's registration as a pill, as a repository's status : automatic (its RTE registered
+ * it and writes its heartbeat) blue, unresponsive (the heartbeat stopped, removed after 10
+ * minutes) amber, manual (added by hand, through the api or by the config seed) grey.
+ *
+ * Args:
+ *   t (function): the translation function.
+ *   state (string): automatic, unresponsive, or none (manual).
+ *
+ * Returns:
+ *   string: the pill's HTML, escaped.
+ */
+export function registrationPill(t, state) {
+  const known = { automatic: PILL.blue, unresponsive: PILL.amber };
+  const key = known[state] ? state : 'manual';
+  const label = t(`settings.runners.state${key[0].toUpperCase()}${key.slice(1)}`);
+  return `<span class="badge rounded-pill border fw-semibold af-pill ${known[state] || PILL.grey}"><span class="af-pill-label">${escapeHtml(label)}</span></span>`;
+}
+
 // what a credential is for (its type), in the order the dialog offers them
 export const CREDENTIAL_TYPES = ['ssh', 'git', 'api', 'database'];
 
@@ -1642,11 +1661,29 @@ export default function getSettings(t) {
         type: kind === 'rte' ? 'rte' : 'awx',
         flavour: ['aap', 'ascender'].includes(kind) ? kind : null,
       }),
+      // a runner has its own page (pages/admin/runner.vue) : its row and Edit open it, New the wizard
+      openPage: (item) => `/admin/runners/${item.id}`,
+      // in the row menu : editing, the test, its token or password (on its page), then Delete
+      // last, each apart
       actions: [
         { name: 'edit', title: t('settings.runners.editRunner'), icon: 'pencil', color: 'edit' },
+        {
+          name: 'test',
+          title: t('settings.common.testConnection'),
+          icon: 'plug',
+          color: 'test',
+          dividerBefore: true,
+        },
+        {
+          // its token, or its user and password : its page's Authentication tab
+          name: 'change_credentials',
+          title: t('settings.runners.changeAuth'),
+          icon: 'key',
+          color: 'change',
+          dividerBefore: true,
+          to: (r) => ({ path: `/admin/runners/${r.id}`, query: { tab: 'auth' } }),
+        },
         { name: 'delete', title: t('settings.runners.deleteRunner'), icon: 'trash', color: 'delete' },
-        { name: 'change_password', title: t('settings.common.changePassword'), icon: 'lock', color: 'change' },
-        { name: 'test', title: t('settings.common.testConnection'), icon: 'plug', color: 'test' },
       ],
       fields: [
         {
@@ -1680,19 +1717,14 @@ export default function getSettings(t) {
         },
         // set by the api for a runner its RTE registered itself (rte/register.js) : automatic
         // while the RTE writes its heartbeat, unresponsive once it stopped - the worker removes
-        // it after 10 minutes. A column only, never sent (beforeSave). render() output goes to
-        // v-html : static markup and a locale string only
+        // it after 10 minutes. Any other runner is manual. A column only, never sent (beforeSave). render() output goes to
+        // v-html : static markup and a locale string only, as a pill (registrationPill)
         {
           key: 'state',
           label: t('settings.runners.state'),
           noInput: true,
           sortable: true,
-          render: (v) =>
-            v === 'automatic'
-              ? `<span class="badge text-bg-info">${escapeHtml(t('settings.runners.stateAutomatic'))}</span>`
-              : v === 'unresponsive'
-                ? `<span class="badge text-bg-warning">${escapeHtml(t('settings.runners.stateUnresponsive'))}</span>`
-                : '',
+          render: (v) => registrationPill(t, v),
         },
         {
           // RTE, AWX, AAP or Ascender : one choice, radio buttons (not stored : the type and the
