@@ -91,6 +91,13 @@ export default function getSettings(t) {
       description: t('settings.users.description'),
       icon: 'user',
       selectable: false,
+      // the dialog in steps : who the user is, the password (editing : left empty, it stays), the
+      // group that gives the roles
+      steps: [
+        { key: 'user', label: t('settings.users.stepUser') },
+        { key: 'password', label: t('settings.users.stepPassword') },
+        { key: 'group', label: t('settings.users.stepGroup') },
+      ],
       actions: [
         { name: 'edit', title: t('settings.users.editUser'), icon: 'pencil', color: 'edit' },
         { name: 'delete', title: t('settings.users.deleteUser'), icon: 'trash', color: 'delete' },
@@ -126,6 +133,9 @@ export default function getSettings(t) {
         },
         {
           key: 'password',
+          step: 'password',
+          // shown when editing too, as ******** : left empty, the stored one stays
+          onEdit: true,
           label: t('settings.fields.password'),
           type: 'password',
           sortable: false,
@@ -145,11 +155,12 @@ export default function getSettings(t) {
         },
         {
           key: 'group_id',
+          step: 'group',
           label: t('settings.fields.group'),
           type: 'select',
           sortable: false,
           required: true,
-          filterable: false,
+          filterable: true,
           icon: 'users',
           parent: 'group',
           values: 'group',

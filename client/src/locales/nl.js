@@ -579,6 +579,9 @@ export default {
       labelPlural: 'Gebruikers',
       description: 'Lokale gebruikersaccounts voor authenticatie en toegangsbeheer.',
       editUser: 'Gebruiker bewerken',
+      stepUser: 'Gebruiker',
+      stepPassword: 'Wachtwoord',
+      stepGroup: 'Groep',
       deleteUser: 'Gebruiker verwijderen',
     },
     groups: {

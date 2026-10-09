@@ -580,6 +580,9 @@ export default {
       labelPlural: 'Usuaris',
       description: "Comptes d'usuari locals per a l'autenticació i el control d'accés.",
       editUser: "Edita l'usuari",
+      stepUser: 'Usuari',
+      stepPassword: 'Contrasenya',
+      stepGroup: 'Grup',
       deleteUser: "Suprimeix l'usuari",
     },
     groups: {

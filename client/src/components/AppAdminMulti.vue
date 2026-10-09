@@ -810,7 +810,7 @@ function stepErrors() {
   return dialogFields.value.filter(
     (field) =>
       showField(field) &&
-      !['password', 'token', 'client_secret'].includes(field.key) &&
+      (!['password', 'token', 'client_secret'].includes(field.key) || action.value === 'new') &&
       $v.value.item[field.key]?.$invalid,
   );
 }
@@ -841,7 +841,8 @@ const isInvalid = computed(() => {
   for (const field of fields.value) {
     if (
       showField(field) &&
-      !['password', 'token', 'client_secret'].includes(field.key) &&
+      // a secret is checked by Change password, and when creating : a required one is needed then
+      (!['password', 'token', 'client_secret'].includes(field.key) || action.value === 'new') &&
       $v.value.item[field.key]?.$invalid
     ) {
       return true;
