@@ -517,6 +517,10 @@ export default {
       isCreated: "s'ha creat",
       isUpdated: "s'ha actualitzat",
       isDeleted: "s'ha suprimit",
+      bulkDeleteConfirm: 'Voleu eliminar {count} element(s)?',
+      bulkDeleteConfirmSkip:
+        'Voleu eliminar {count} element(s)? {skipped} element(s) seleccionat(s) no es poden eliminar i es deixen com estan.',
+      bulkDeleteNone: 'Cap dels elements seleccionats es pot eliminar.',
       newItem: 'Nou element: {item}',
       edit: 'Edita',
       save: 'Desa',

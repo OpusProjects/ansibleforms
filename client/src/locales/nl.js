@@ -516,6 +516,10 @@ export default {
       isCreated: 'is aangemaakt',
       isUpdated: 'is bijgewerkt',
       isDeleted: 'is verwijderd',
+      bulkDeleteConfirm: '{count} item(s) verwijderen?',
+      bulkDeleteConfirmSkip:
+        '{count} item(s) verwijderen? {skipped} geselecteerde item(s) kunnen niet verwijderd worden en blijven staan.',
+      bulkDeleteNone: 'Geen van de geselecteerde items kan verwijderd worden.',
       newItem: 'Nieuwe {item}',
       edit: 'Bewerken',
       save: 'Opslaan',

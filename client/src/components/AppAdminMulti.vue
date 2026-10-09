@@ -618,7 +618,13 @@ const isInvalidPassword = computed(() => {
 });
 
 // BsDataTable mode (always on — BsDataTable is the only table renderer)
-const dataTableSelectable = computed(() => props.settings.selectable !== false);
+// the list's delete action : with one, the rows get checkboxes, to delete several at once
+const deleteAction = computed(() => actions.value.find((a) => a.name === 'delete') || null);
+// checkboxes : a list that is selectable (the default), or one whose rows can be deleted
+const dataTableSelectable = computed(() => props.settings.selectable !== false || !!deleteAction.value);
+// a click on a row selects it only on a selectable list ; a list that opens its rows on a
+// click (selectable: false) keeps doing so, its checkboxes alone selecting
+const rowClickSelects = computed(() => props.settings.selectable !== false);
 const selectedIds = ref(new Set());
 const activeRowId = ref(null);
 
@@ -800,7 +806,7 @@ function dispatchAction(action, item) {
 }
 
 function onDataTableRowClick(item) {
-  if (!dataTableSelectable.value) {
+  if (!rowClickSelects.value) {
     activeRowId.value = item[idKey];
     // A seed-managed row must open READ-ONLY here too. Clicking the row is the
     // normal way to edit on these pages (selectable:false + an edit action), and
@@ -821,9 +827,19 @@ async function bulkDelete() {
   // only what is still on screen : a selected row that has since disappeared must not
   // be guessed at, and the count in the confirmation has to be the count acted on
   const present = new Map(itemList.value.map((r) => [r[idKey], r]));
-  const ids = [...selectedIds.value].filter((id) => present.has(id));
-  if (!ids.length) return;
-  if (!confirm(`Delete ${ids.length} item(s)?`)) return;
+  // and only what may be deleted : a row the config seed manages, or whose delete is off
+  // (its dependency), is left alone - its delete in the row menu is greyed out too
+  const deletable = (row) => !deleteAction.value || isActionEnabled(deleteAction.value, row);
+  const ids = [...selectedIds.value].filter((id) => present.has(id) && deletable(present.get(id)));
+  const skipped = [...selectedIds.value].filter((id) => present.has(id)).length - ids.length;
+  if (!ids.length) {
+    if (skipped) toast.warning(t('settings.common.bulkDeleteNone'));
+    return;
+  }
+  const question = skipped
+    ? t('settings.common.bulkDeleteConfirmSkip', { count: ids.length, skipped })
+    : t('settings.common.bulkDeleteConfirm', { count: ids.length });
+  if (!confirm(question)) return;
   try {
     await Promise.all(
       ids.map((id) => {
@@ -903,7 +919,8 @@ defineExpose({
         :idKey="idKey"
         :selectedIds="selectedIds"
         :selectable="dataTableSelectable"
-        :activeId="!dataTableSelectable ? activeRowId : null"
+        :activeId="!rowClickSelects ? activeRowId : null"
+        :rowClickSelects="rowClickSelects"
         :name="Helpers.cleanupString(objectLabelPlural)"
         :exportName="Helpers.cleanupString(objectLabelPlural)"
         @update:selectedIds="selectedIds = $event"
