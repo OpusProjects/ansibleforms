@@ -584,6 +584,9 @@ export default {
       labelPlural: 'Utilisateurs',
       description: "Comptes utilisateurs locaux pour l'authentification et le contrôle d'accès.",
       editUser: "Modifier l'utilisateur",
+      stepUser: 'Utilisateur',
+      stepPassword: 'Mot de passe',
+      stepGroup: 'Groupe',
       deleteUser: "Supprimer l'utilisateur",
     },
     groups: {

@@ -578,6 +578,9 @@ export default {
       labelPlural: 'Użytkownicy',
       description: 'Lokalne konta użytkowników do uwierzytelniania i kontroli dostępu.',
       editUser: 'Edytuj użytkownika',
+      stepUser: 'Użytkownik',
+      stepPassword: 'Hasło',
+      stepGroup: 'Grupa',
       deleteUser: 'Usuń użytkownika',
     },
     groups: {

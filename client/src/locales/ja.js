@@ -577,6 +577,9 @@ export default {
       labelPlural: 'ユーザー',
       description: '認証とアクセス制御のためのローカルユーザーアカウントです。',
       editUser: 'ユーザーを編集',
+      stepUser: 'ユーザー',
+      stepPassword: 'パスワード',
+      stepGroup: 'グループ',
       deleteUser: 'ユーザーを削除',
     },
     groups: {

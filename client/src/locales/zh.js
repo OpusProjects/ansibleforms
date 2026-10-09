@@ -568,6 +568,9 @@ export default {
       labelPlural: '用户',
       description: '用于身份验证和访问控制的本地用户账户。',
       editUser: '编辑用户',
+      stepUser: '用户',
+      stepPassword: '密码',
+      stepGroup: '组',
       deleteUser: '删除用户',
     },
     groups: {

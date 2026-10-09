@@ -585,6 +585,9 @@ export default {
       labelPlural: 'Benutzer',
       description: 'Lokale Benutzerkonten für Authentifizierung und Zugriffskontrolle.',
       editUser: 'Benutzer bearbeiten',
+      stepUser: 'Benutzer',
+      stepPassword: 'Passwort',
+      stepGroup: 'Gruppe',
       deleteUser: 'Benutzer loeschen',
     },
     groups: {

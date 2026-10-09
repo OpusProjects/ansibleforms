@@ -576,6 +576,9 @@ export default {
       labelPlural: 'Users',
       description: 'Local user accounts for authentication and access control.',
       editUser: 'Edit User',
+      stepUser: 'User',
+      stepPassword: 'Password',
+      stepGroup: 'Group',
       deleteUser: 'Delete User',
     },
     groups: {
