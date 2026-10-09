@@ -879,6 +879,9 @@ export default {
       type_cyberark: 'CyberArk',
       type_cyberarkHint: 'El AppID, el certificado y la clave de cliente con los que accede un almacén CyberArk',
       clientKeyKeep: 'Si se deja vacía, se conserva la clave de cliente guardada.',
+      notFound: "No hay ninguna credencial con el id '{id}'.",
+      fieldsRequired: 'El nombre y la descripción son obligatorios.',
+      loginFromStore: 'El usuario y la contraseña se leen del almacén de secretos, en la pestaña Almacén.',
     },
     ssh: {
       label: 'Clave SSH',

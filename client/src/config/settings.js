@@ -1035,17 +1035,32 @@ export default function getSettings(t) {
         }
         return { ...item, secret_store: '', secret_ref: '' };
       },
+      // a credential has its own page (pages/admin/credential.vue) : its row and Edit open it, New
+      // the wizard
+      openPage: (item) => `/admin/credentials/${item.id}`,
+      // in the row menu, as the runners' : editing, the test (a database's), the password, then
+      // Delete last, each apart
       actions: [
         { name: 'edit', title: t('settings.credentials.editCredential'), icon: 'pencil', color: 'edit' },
-        { name: 'delete', title: t('settings.credentials.deleteCredential'), icon: 'trash', color: 'delete' },
-        { name: 'change_password', title: t('settings.common.changePassword'), icon: 'lock', color: 'change' },
         {
           name: 'test',
           title: t('settings.common.testConnection'),
           icon: 'plug',
           color: 'test',
           dependency: 'is_database',
+          dividerBefore: true,
         },
+        {
+          // its password, typed twice ; a CyberArk's client key and one read from a secret store
+          // are not passwords to change
+          name: 'change_password',
+          title: t('settings.common.changePassword'),
+          icon: 'lock',
+          color: 'change',
+          dividerBefore: true,
+          enabledWhen: (c) => c.credential_type !== 'cyberark' && !c.secret_store,
+        },
+        { name: 'delete', title: t('settings.credentials.deleteCredential'), icon: 'trash', color: 'delete' },
       ],
       fields: [
         {

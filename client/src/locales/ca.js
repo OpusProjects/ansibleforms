@@ -818,6 +818,9 @@ export default {
       type_cyberark: 'CyberArk',
       type_cyberarkHint: "L'AppID, el certificat i la clau de client amb què accedeix un magatzem CyberArk",
       clientKeyKeep: 'Si es deixa buida, es conserva la clau de client desada.',
+      notFound: "No hi ha cap credencial amb l'id '{id}'.",
+      fieldsRequired: 'El nom i la descripció són obligatoris.',
+      loginFromStore: "L'usuari i la contrasenya es llegeixen del magatzem de secrets, a la pestanya Magatzem.",
     },
     ssh: {
       label: 'Clau SSH',

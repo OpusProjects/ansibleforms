@@ -887,6 +887,9 @@ export default {
       type_cyberark: 'CyberArk',
       type_cyberarkHint: "L'AppID, le certificat et la clé client avec lesquels un coffre CyberArk se connecte",
       clientKeyKeep: 'Laissée vide, la clé client enregistrée est conservée.',
+      notFound: "Aucun identifiant avec l'id '{id}'.",
+      fieldsRequired: 'Le nom et la description sont obligatoires.',
+      loginFromStore: "L'utilisateur et le mot de passe sont lus dans le coffre de secrets, onglet Stockage.",
     },
     ssh: {
       label: 'Cle SSH',

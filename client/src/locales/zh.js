@@ -796,6 +796,9 @@ export default {
       type_cyberark: 'CyberArk',
       type_cyberarkHint: 'CyberArk 密钥库登录所用的 AppID、客户端证书和密钥',
       clientKeyKeep: '留空则保留已存储的客户端密钥。',
+      notFound: "没有 ID 为 '{id}' 的凭据。",
+      fieldsRequired: '名称和描述为必填项。',
+      loginFromStore: '用户和密码从密钥库读取，见“存储”选项卡。',
     },
     ssh: {
       label: 'SSH 密钥',

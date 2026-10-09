@@ -817,6 +817,9 @@ export default {
       type_cyberark: 'CyberArk',
       type_cyberarkHint: 'O AppID, o certificado e a chave de cliente com que um cofre CyberArk acede',
       clientKeyKeep: 'Deixada vazia, a chave de cliente guardada mantém-se.',
+      notFound: "Não existe nenhuma credencial com o id '{id}'.",
+      fieldsRequired: 'O nome e a descrição são obrigatórios.',
+      loginFromStore: 'O utilizador e a palavra-passe são lidos do cofre de segredos, no separador Armazenamento.',
     },
     ssh: {
       label: 'Chave SSH',

@@ -888,6 +888,9 @@ export default {
       type_cyberark: 'CyberArk',
       type_cyberarkHint: 'AppID, Client-Zertifikat und Schlüssel, mit denen sich ein CyberArk Secret Store anmeldet',
       clientKeyKeep: 'Leer gelassen bleibt der gespeicherte Client-Schlüssel.',
+      notFound: "Es gibt keine Anmeldeinformation mit der ID '{id}'.",
+      fieldsRequired: 'Name und Beschreibung sind erforderlich.',
+      loginFromStore: 'Benutzer und Passwort werden aus dem Secret Store gelesen, auf der Registerkarte Speicher.',
     },
     ssh: {
       label: 'SSH-Schluessel',

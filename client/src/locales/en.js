@@ -873,6 +873,9 @@ export default {
       type_cyberark: 'CyberArk',
       type_cyberarkHint: 'The AppID, client certificate and key a CyberArk secret store logs in with',
       clientKeyKeep: 'Left empty, the stored client key stays.',
+      notFound: "There is no credential with the id '{id}'.",
+      fieldsRequired: 'Name and description are required.',
+      loginFromStore: 'The user and password are read from the secret store, on the Store tab.',
     },
     ssh: {
       label: 'SSH Key',

@@ -880,6 +880,9 @@ export default {
       type_cyberark: 'CyberArk',
       type_cyberarkHint: 'De AppID, het clientcertificaat en de sleutel waarmee een CyberArk secret store aanmeldt',
       clientKeyKeep: 'Leeg gelaten blijft de opgeslagen clientsleutel.',
+      notFound: "Er is geen referentie met id '{id}'.",
+      fieldsRequired: 'Naam en beschrijving zijn verplicht.',
+      loginFromStore: 'Gebruiker en wachtwoord worden uit de secret store gelezen, op het tabblad Opslag.',
     },
     ssh: {
       label: 'SSH Sleutel',
