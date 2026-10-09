@@ -12,6 +12,50 @@ import { safeParse } from "../../lib/safejson.js";
 // used when a job runs, long after both modules have loaded
 import Job from "../../models/job.model.js";
 
+/**
+ * The API path a runner's uri lacks : none when the uri carries it
+ * (https://aap.example.com/api/controller/v2) ; a uri without an /api/ path - a runner made
+ * before, a seed that declares one - gets AWX_API_PREFIX, as it always did.
+ *
+ * Args:
+ *   runner (object): the runner (its `uri`).
+ *
+ * Returns:
+ *   string: the prefix to add after the uri, '' when it has its own.
+ */
+export function apiPrefix(runner) {
+  try {
+    if (new URL(runner?.uri).pathname.includes("/api/")) return "";
+  } catch (e) {
+    // not a url : the prefix, and the request says what is wrong with it
+  }
+  return appConfig.awxApiPrefix;
+}
+
+/**
+ * The server a runner's uri points at, without its API path : what the links AWX returns
+ * (a template's related.launch, a job's url, all root-relative such as /api/v2/jobs/12/) are
+ * added to. A uri carrying its API path (https://aap.example.com/api/controller/v2) would
+ * otherwise double it.
+ *
+ * Args:
+ *   runner (object): the runner (its `uri`).
+ *
+ * Returns:
+ *   string: the uri's origin when it carries an API path, else the uri itself (as before).
+ */
+export function serverOf(runner) {
+  const uri = String(runner?.uri || "");
+  try {
+    // AWX's links are root-relative, a path before /api/ included (/tower/api/v2/jobs/12/)
+    const url = new URL(uri);
+    if (url.pathname.includes("/api/")) return url.origin;
+  } catch (e) {
+    // not a url : as it is, and the request says what is wrong with it
+  }
+  return uri;
+}
+
 function delay(t, v) {
   return new Promise((resolve) => setTimeout(resolve, t, v));
 }
@@ -72,7 +116,7 @@ async function lostContact(jobid, counter, job, message) {
 
 /** proves the connection works : it lists the job templates the credentials can see */
 export async function check(awx) {
-  const uri = `${awx.uri}${appConfig.awxApiPrefix}`;
+  const uri = `${awx.uri}${apiPrefix(awx)}`;
   logger.info(`Checking AWX connection at ${uri}`);
   let data;
   try {
@@ -97,7 +141,7 @@ Awx.abortJob = async function (awx, id, isWorkflow = false) {
   const jobsPath = isWorkflow ? "/workflow_jobs/" : "/jobs/";
   try {
     const axiosResult = await axios.post(
-      awxConfig.uri + appConfig.awxApiPrefix + jobsPath + id + "/cancel/",
+      awxConfig.uri + apiPrefix(awxConfig) + jobsPath + id + "/cancel/",
       {},
       axiosConfig
     );
@@ -307,7 +351,7 @@ Awx.launchTemplate = async function (
     var axiosResult;
     try {
       axiosResult = await axios.post(
-        awxConfig.uri + template.related.launch,
+        serverOf(awxConfig) + template.related.launch,
         postdata,
         axiosConfig
       );
@@ -417,7 +461,7 @@ Awx.trackJob = async function (
   logger.info(`searching for job with id ${job.id}`);
   try {
     // get job info
-    const axiosResult = await axios.get(awxConfig.uri + job.url, axiosConfig);
+    const axiosResult = await axios.get(serverOf(awxConfig) + job.url, axiosConfig);
     var j = axiosResult.data;
     if (j) {
       // logger.debug(inspect(j))
@@ -616,7 +660,7 @@ Awx.getWorkflowNodes = async function (awx, job) {
   var url = job.related.workflow_nodes;
   // the node list is paginated, follow the next links
   while (url) {
-    const axiosResult = await axios.get(awxConfig.uri + url, axiosConfig);
+    const axiosResult = await axios.get(serverOf(awxConfig) + url, axiosConfig);
     results = results.concat(axiosResult.data?.results || []);
     url = axiosResult.data?.next;
   }
@@ -658,7 +702,7 @@ Awx.trackWorkflowJob = async function (
   for (;;) {
     try {
       // get workflow job info
-      const axiosResult = await axios.get(awxConfig.uri + job.url, axiosConfig);
+      const axiosResult = await axios.get(serverOf(awxConfig) + job.url, axiosConfig);
       var j = axiosResult.data;
       if (!j) throw new Error(`could not find workflow job with id ${job.id}`);
       logger.debug(`awx workflow job status : ` + j.status);
@@ -687,7 +731,7 @@ Awx.trackWorkflowJob = async function (
         try {
           // get the child job (job, project_update, workflow_approval, ...) and grab its output
           const childResult = await axios.get(
-            awxConfig.uri + node.job_url,
+            serverOf(awxConfig) + node.job_url,
             axiosConfig
           );
           nodeOutput =
@@ -813,7 +857,7 @@ Awx.getJobTextOutput = async function (awx, job) {
     // (issue #733), the download formats are not limited. Below the limit both return the
     // same plain text, in the same time.
     const axiosResult = await axios.get(
-      awxConfig.uri + job.related.stdout + "?format=txt_download",
+      serverOf(awxConfig) + job.related.stdout + "?format=txt_download",
       { ...axiosConfig, responseType: "text" }
     );
     return axiosResult.data;
@@ -830,7 +874,7 @@ Awx.findJobTemplateByName = async function (awx, name) {
   const axiosConfig = getAuthorization(awxConfig);
   var axiosResult = await axios.get(
     awxConfig.uri +
-      appConfig.awxApiPrefix +
+      apiPrefix(awxConfig) +
       "/job_templates/?name=" +
       encodeURIComponent(name),
     axiosConfig
@@ -845,7 +889,7 @@ Awx.findJobTemplateByName = async function (awx, name) {
     // trying workflow job templates
     axiosResult = await axios.get(
       awxConfig.uri +
-        appConfig.awxApiPrefix +
+        apiPrefix(awxConfig) +
         "/workflow_job_templates/?name=" +
         encodeURIComponent(name),
       axiosConfig
@@ -873,7 +917,7 @@ Awx.findCredentialByName = async function (awx, name) {
   const axiosConfig = getAuthorization(awxConfig);
   const axiosResult = await axios.get(
     awxConfig.uri +
-      appConfig.awxApiPrefix +
+      apiPrefix(awxConfig) +
       "/credentials/?name=" +
       encodeURIComponent(name),
     axiosConfig
@@ -903,7 +947,7 @@ Awx.findExecutionEnvironmentByName = async function (awx, name) {
   try {
     axiosResult = await axios.get(
       awxConfig.uri +
-        appConfig.awxApiPrefix +
+        apiPrefix(awxConfig) +
         "/execution_environments/?name=" +
         encodeURIComponent(name),
       axiosConfig
@@ -935,7 +979,7 @@ Awx.findInstanceGroupByName = async function (awx, name) {
   try {
     axiosResult = await axios.get(
       awxConfig.uri +
-        appConfig.awxApiPrefix +
+        apiPrefix(awxConfig) +
         "/instance_groups/?name=" +
         encodeURIComponent(name),
       axiosConfig
@@ -961,7 +1005,7 @@ Awx.findCredentialsByTemplate = async function (awx, id) {
   const axiosConfig = getAuthorization(awxConfig);
   const axiosResult = await axios.get(
     awxConfig.uri +
-      appConfig.awxApiPrefix +
+      apiPrefix(awxConfig) +
       "/job_templates/" +
       id +
       "/credentials/",
@@ -986,7 +1030,7 @@ Awx.findInventoryByName = async function (awx, name) {
   try {
     axiosResult = await axios.get(
       awxConfig.uri +
-        appConfig.awxApiPrefix +
+        apiPrefix(awxConfig) +
         "/inventories/?name=" +
         encodeURIComponent(name),
       axiosConfig

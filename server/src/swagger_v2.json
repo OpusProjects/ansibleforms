@@ -2555,6 +2555,7 @@
           "ignore_certs": { "type": "boolean" },
           "ca_bundle": { "type": "string" },
           "is_default": { "type": "boolean", "description": "Used by playbook forms that name no runner" },
+          "flavour": { "type": "string", "enum": ["aap", "ascender"], "nullable": true, "description": "awx : which product it is, Ansible Automation Platform or Ascender ; none is AWX. Its uri may carry its API path (https://aap.example.com/api/controller/v2)" },
           "node_id": { "type": "string", "readOnly": true, "description": "rte : the RTE that registered this runner itself (RTE_REGISTER) ; empty when added by hand or by the config seed" },
           "state": { "type": "string", "enum": ["automatic", "unresponsive"], "readOnly": true, "description": "Only on a runner an RTE registered itself : automatic while that RTE writes its heartbeat, unresponsive once it stopped (removed by the worker after 10 minutes)" }
         }
