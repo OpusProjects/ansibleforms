@@ -1645,8 +1645,10 @@ onBeforeUnmount(() => {
 <template>
   <AppNav />
   <div class="flex-shrink-0">
-    <main class="d-flex container-xxl" :class="{ 'd-none': hideForm }">
-      <div v-if="authenticated && currentForm" class="container-fluid pt-5">
+    <main class="d-flex flex-nowrap af-settings-layout" :class="{ 'd-none': hideForm }">
+      <!-- the left column of the other pages (their menu), empty for now -->
+      <aside class="af-form-sidebar bg-body-tertiary" aria-hidden="true"></aside>
+      <div v-if="authenticated && currentForm" class="section container-fluid w-100 mt-3">
         <!-- BREADCRUMBS (only when editing a subform) -->
         <nav v-if="activeEntry" aria-label="breadcrumb">
           <ol class="breadcrumb mb-2">
@@ -1656,95 +1658,87 @@ onBeforeUnmount(() => {
           </ol>
         </nav>
 
-        <!-- TITLE: main form title, replaced by subform title while editing -->
-        <h2 class="d-flex align-items-center">
-          <template v-if="activeEntry">
-            {{ activeEntry.subtitle || activeEntry.title }}
-            <BsButton
-              v-if="activeEntry.subform?.help"
-              cssClass="btn-sm ms-3 fw-normal"
-              cssClassToggle="btn-sm ms-3 fw-normal"
-              icon="question-circle"
-              iconToggle="question-circle"
-              :toggle="activeEntry.showHelp"
-              @click="activeEntry.showHelp = !activeEntry.showHelp"
-            >
-              {{ t('form.showHelp') }}
-              <template #toggle>{{ t('form.hideHelp') }}</template>
-            </BsButton>
-          </template>
-          <template v-else>
-            {{ currentForm.name }}
-            <BsButton
-              v-if="currentForm.help"
-              cssClass="btn-sm ms-3 fw-normal"
-              cssClassToggle="btn-sm ms-3 fw-normal"
-              icon="question-circle"
-              iconToggle="question-circle"
-              :toggle="showHelp"
-              @click="showHelp = !showHelp"
-            >
-              {{ t('form.showHelp') }}
-              <template #toggle>{{ t('form.hideHelp') }}</template>
-            </BsButton>
-          </template>
-        </h2>
-
-        <!-- HELP -->
-        <div
-          v-if="activeEntry && activeEntry.subform?.help && activeEntry.showHelp"
-          class="alert alert-light"
-          role="alert"
-        >
-          <vue-showdown :markdown="activeEntry.subform.help" flavor="github" :options="{ ghCodeBlocks: true }" />
-        </div>
-        <div v-else-if="!activeEntry && currentForm.help && showHelp" class="alert alert-light" role="alert">
-          <vue-showdown :markdown="currentForm.help" flavor="github" :options="{ ghCodeBlocks: true }" />
+        <!-- TITLE : the form's (a subform's while editing one), its help in the info popover,
+             its buttons at the right ; the divider under it, as on the other pages -->
+        <div class="d-flex flex-wrap align-items-center border-bottom mb-3 pb-2 af-page-head">
+          <h3 class="mb-0 me-3">
+            {{ activeEntry ? activeEntry.subtitle || activeEntry.title : currentForm.name }}
+            <AppInfoPopover
+              v-if="activeEntry ? activeEntry.subform?.help : currentForm.help"
+              :key="activeEntry ? 'help-' + activeEntry.id : 'help-form'"
+              :text="activeEntry ? activeEntry.subform.help : currentForm.help"
+              markdown
+              placement="bottom"
+              :startOpen="activeEntry ? activeEntry.showHelp : showHelp"
+              :label="t('form.showHelp')"
+            />
+          </h3>
+          <div class="d-flex flex-wrap align-items-center justify-content-end ms-auto af-form-buttons">
+            <!-- a subform being edited : back to the form, load its values, its output -->
+            <template v-if="activeEntry">
+              <BsButton cssClass="text-nowrap" icon="arrow-left" @click="popEdit(activeEntry.id)">
+                {{ t('form.back') }}
+              </BsButton>
+              <BsButton
+                v-if="store.profile.options?.allowStoredJobs"
+                cssClass="text-nowrap"
+                icon="file-import"
+                @click="handleSubformAction(activeEntry, { action: 'load', value: activeEntry.draft })"
+              >
+                {{ t('form.loadFromStore') }}
+              </BsButton>
+              <BsButton
+                v-if="store.profile.options?.showExtraVars"
+                cssClass="text-nowrap"
+                cssClassToggle="text-nowrap"
+                icon="eye"
+                iconToggle="eye-slash"
+                :toggle="showExtraVars"
+                @click="toggleShowExtraVars()"
+              >
+                {{ t('form.showOutput') }}<template #toggle>{{ t('form.hideOutput') }}</template>
+              </BsButton>
+            </template>
+            <!-- the form (or its wizard) : verbose, its extravars, reload, load its values -->
+            <template v-else>
+              <BsInputCheckboxRaw
+                v-if="store.profile.options?.allowVerboseMode"
+                v-model="enableVerbose"
+                :label="'verbose'"
+                cssClass="d-inline-block me-1"
+              />
+              <BsButton
+                v-if="store.profile.options?.showExtraVars"
+                cssClass="text-nowrap"
+                cssClassToggle="text-nowrap"
+                icon="eye"
+                iconToggle="eye-slash"
+                :toggle="showExtraVars"
+                @click="toggleShowExtraVars()"
+                >{{ t('form.showExtravars') }}<template #toggle>{{ t('form.hideExtravars') }}</template>
+              </BsButton>
+              <BsButton cssClass="text-nowrap" icon="redo" @click="reloadForm">
+                {{ t('form.reloadForm') }}
+              </BsButton>
+              <BsButton
+                v-if="store.profile.options?.allowStoredJobs"
+                cssClass="text-nowrap"
+                icon="file-import"
+                @click="
+                  storeCtx = buildMainStoreCtx();
+                  openLoadOffcanvas();
+                "
+              >
+                {{ t('form.loadFromStore') }}
+              </BsButton>
+            </template>
+          </div>
         </div>
         <div class="row">
           <div class="col">
             <!-- WIZARD: stepper + per-step AppForm. Mounted instead of the
                  main form when currentForm.wizard is present. -->
             <div v-if="wizardActive && !activeEntry" class="mb-3">
-              <!-- Wizard toolbar row: mirrors a regular form's
-                   #toolbarbuttons slot. The textual stepper itself lives
-                   one row below, inside each step's AppForm toolbar so it
-                   sits in line with the spinner / show-hidden-fields icons. -->
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <div class="d-flex align-items-center flex-wrap">
-                  <BsButton
-                    v-if="store.profile.options?.showExtraVars"
-                    cssClass="btn-sm me-3 fw-normal"
-                    cssClassToggle="btn-sm me-3 fw-normal"
-                    icon="eye"
-                    iconToggle="eye-slash"
-                    :toggle="showExtraVars"
-                    @click="toggleShowExtraVars()"
-                    >{{ t('form.showExtravars') }}<template #toggle>{{ t('form.hideExtravars') }}</template>
-                  </BsButton>
-                  <BsButton cssClass="btn-sm me-3 fw-normal" icon="redo" @click="reloadForm">
-                    {{ t('form.reloadForm') }}
-                  </BsButton>
-                  <BsButton
-                    v-if="store.profile.options?.allowStoredJobs"
-                    cssClass="btn-sm me-3 fw-normal"
-                    icon="file-import"
-                    @click="
-                      storeCtx = buildMainStoreCtx();
-                      openLoadOffcanvas();
-                    "
-                  >
-                    {{ t('form.loadFromStore') }}
-                  </BsButton>
-                  <BsInputCheckboxRaw
-                    v-if="store.profile.options?.allowVerboseMode"
-                    v-model="enableVerbose"
-                    :label="'verbose'"
-                    cssClass="ms-2 d-inline-block"
-                  />
-                </div>
-              </div>
-
               <!-- Per-step AppForm (or summary view) -->
               <template v-for="(step, idx) in wizardSteps" :key="step.name + ':' + key">
                 <div v-show="idx === wizardIndex">
@@ -1936,43 +1930,6 @@ onBeforeUnmount(() => {
               v-model:status="status"
               @submit-action="handleSubmitAction"
             >
-              <!-- TOOL BAR BUTTONS -->
-              <template #toolbarbuttons>
-                <!-- DEBUG BUTTONS -->
-                <BsButton
-                  v-if="store.profile.options?.showExtraVars"
-                  cssClass="btn-sm me-3 fw-normal"
-                  cssClassToggle="btn-sm me-3 fw-normal"
-                  icon="eye"
-                  iconToggle="eye-slash"
-                  :toggle="showExtraVars"
-                  @click="toggleShowExtraVars()"
-                  >{{ t('form.showExtravars') }}<template #toggle>{{ t('form.hideExtravars') }}</template>
-                </BsButton>
-                <BsButton cssClass="btn-sm me-3 fw-normal" icon="redo" @click="reloadForm">
-                  {{ t('form.reloadForm') }}
-                </BsButton>
-                <BsButton
-                  v-if="store.profile.options?.allowStoredJobs"
-                  cssClass="btn-sm me-3 fw-normal"
-                  icon="file-import"
-                  @click="
-                    storeCtx = buildMainStoreCtx();
-                    openLoadOffcanvas();
-                  "
-                >
-                  {{ t('form.loadFromStore') }}
-                </BsButton>
-
-                <!-- enable verbose logging -->
-                <BsInputCheckboxRaw
-                  v-if="store.profile.options?.allowVerboseMode"
-                  v-model="enableVerbose"
-                  :label="'verbose'"
-                  v-show="!hideForm"
-                  cssClass="ms-2 d-inline-block"
-                />
-              </template>
             </AppForm>
 
             <!-- SUBFORMS: one AppForm per stacked edit, only the deepest is visible. -->
@@ -1992,30 +1949,6 @@ onBeforeUnmount(() => {
                 @cancel="popEdit(entry.id)"
                 @submit-action="(e) => handleSubformAction(entry, e)"
               >
-                <template #toolbarbuttons>
-                  <BsButton cssClass="btn-sm me-3 fw-normal" icon="arrow-left" @click="popEdit(entry.id)">
-                    {{ t('form.back') }}
-                  </BsButton>
-                  <BsButton
-                    v-if="store.profile.options?.allowStoredJobs"
-                    cssClass="btn-sm me-3 fw-normal"
-                    icon="file-import"
-                    @click="handleSubformAction(entry, { action: 'load', value: entry.draft })"
-                  >
-                    {{ t('form.loadFromStore') }}
-                  </BsButton>
-                  <BsButton
-                    v-if="store.profile.options?.showExtraVars"
-                    cssClass="btn-sm me-3 fw-normal"
-                    cssClassToggle="btn-sm me-3 fw-normal"
-                    icon="eye"
-                    iconToggle="eye-slash"
-                    :toggle="showExtraVars"
-                    @click="toggleShowExtraVars()"
-                  >
-                    {{ t('form.showOutput') }}<template #toggle>{{ t('form.hideOutput') }}</template>
-                  </BsButton>
-                </template>
               </AppForm>
             </template>
           </div>
@@ -2302,6 +2235,26 @@ onBeforeUnmount(() => {
   </BsOffCanvas>
 </template>
 <style scoped lang="scss">
+/* the left column of the other pages (their menu) : the same width and panel color, pinned
+   below the header and one screen high ; empty for now */
+.af-form-sidebar {
+  width: 300px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: calc(100vh - var(--af-header-offset));
+}
+/* the form's buttons on its title line : the gap of the other pages' buttons */
+.af-form-buttons {
+  gap: 0.5rem;
+}
+/* a phone : no empty column */
+@media (max-width: 767.98px) {
+  .af-form-sidebar {
+    display: none;
+  }
+}
 *:has(.loader) {
   display: flex-columns;
   justify-content: center;

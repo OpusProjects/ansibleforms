@@ -14,12 +14,23 @@
 /*      text: String - what the popover says                      */
 /*      placement: String - where it opens (default right) ; it   */
 /*                 moves to another side when there is no room    */
+/*      markdown: Boolean - the text is markdown (a form's help) :*/
+/*                shown formatted, Bootstrap's sanitizer keeping  */
+/*                only its plain tags ; wider, scrolling when long*/
+/*      startOpen: Boolean - open once shown (a form's showHelp)  */
+/*      label: String - what the icon is called (default : About  */
+/*             this page)                                         */
 /*                                                                */
 /******************************************************************/
 
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Popover } from 'bootstrap';
+import showdown from 'showdown';
+
+// markdown to html, as the forms' help was shown (github flavour, fenced code)
+const converter = new showdown.Converter({ ghCodeBlocks: true });
+converter.setFlavor('github');
 
 // PROPS
 
@@ -32,7 +43,32 @@ const props = defineProps({
     type: String,
     default: 'right',
   },
+  markdown: {
+    type: Boolean,
+    default: false,
+  },
+  startOpen: {
+    type: Boolean,
+    default: false,
+  },
+  label: {
+    type: String,
+    default: '',
+  },
 });
+
+/**
+ * What the popover shows : the text, or its markdown as html (sanitized by the popover).
+ *
+ * Args:
+ *   text (string): the text.
+ *
+ * Returns:
+ *   string: the popover's content.
+ */
+function content(text) {
+  return props.markdown ? converter.makeHtml(String(text || '')) : text;
+}
 
 // INIT
 const { t } = useI18n();
@@ -68,11 +104,14 @@ onMounted(() => {
   // manual : the icon's click toggles it (see the template), so it does not depend on the
   // browser giving a clicked button the focus, which Safari does not
   popover = new Popover(button.value, {
-    content: props.text,
+    content: content(props.text),
     placement: props.placement,
     trigger: 'manual',
-    html: false,
-    customClass: 'af-info-popover',
+    // markdown : its html, through Bootstrap's sanitizer (its allow list : paragraphs, lists,
+    // code, links...) ; any other text as text
+    html: props.markdown,
+    sanitize: true,
+    customClass: props.markdown ? 'af-info-popover af-help-popover' : 'af-info-popover',
     // its top level with the icon, so it opens to the side and downwards instead of
     // centred on the icon, where it reached up over the header ; it still moves to
     // another side when there is no room (a phone)
@@ -82,12 +121,14 @@ onMounted(() => {
   button.value.addEventListener('hidden.bs.popover', () => (open.value = false));
   document.addEventListener('mousedown', onDocument);
   document.addEventListener('keydown', onDocument);
+  // a form whose help is shown from the start
+  if (props.startOpen) setTimeout(() => popover?.show(), 0);
 });
 
 // another language, or another page using the same component : the new text
 watch(
   () => props.text,
-  (text) => popover?.setContent({ '.popover-body': text }),
+  (text) => popover?.setContent({ '.popover-body': content(text) }),
 );
 
 onBeforeUnmount(() => {
@@ -102,7 +143,7 @@ onBeforeUnmount(() => {
     ref="button"
     type="button"
     class="btn btn-link af-info-btn"
-    :aria-label="t('common.aboutThisPage')"
+    :aria-label="label || t('common.aboutThisPage')"
     :aria-expanded="open"
     @click="popover?.toggle()"
   >
@@ -111,6 +152,23 @@ onBeforeUnmount(() => {
 </template>
 
 <style lang="scss">
+// a form's help : wider than a page's description, scrolling when long, its markdown's blocks
+// with room between them but not after the last
+.af-help-popover {
+  max-width: min(36rem, 90vw);
+  .popover-body {
+    max-height: 60vh;
+    overflow: auto;
+    > :last-child {
+      margin-bottom: 0;
+    }
+    pre {
+      padding: 0.5rem;
+      background: var(--bs-tertiary-bg);
+      border-radius: 0.25rem;
+    }
+  }
+}
 // the icon : quieter than the title it follows, the accent on hover and while open
 .af-info-btn {
   padding: 0 0.25rem;
