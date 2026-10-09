@@ -8,6 +8,7 @@ import fs from "fs";
 import fse from "fs-extra";
 import appConfig from "../../config/app.config.js";
 import CrudModel from './crud.model.js';
+import Credential from './credential.model.v2.js';
 import { bump } from '../lib/epochs.js';
 import { nodeId, NODE_DEAD_SECONDS, uptimeSeconds } from '../lib/role.js';
 
@@ -223,6 +224,30 @@ class Repository extends CrudModel {
   }
 
   // Helper methods (not CRUD operations)
+
+  /**
+   * The repository with the user and password git uses : those of the credential it names
+   * (Connections > Credentials, a secret store behind it is read too), else its own. Only
+   * where git runs - never for the API, which would then show the credential's user.
+   *
+   * Args:
+   *   repo (object): the repository record.
+   *
+   * Returns:
+   *   Promise<object>: a copy with user and password set from its credential, or the record.
+   *
+   * Raises:
+   *   Error: the credential it names does not exist.
+   */
+  static async withCredential(repo) {
+    if (!repo?.credential) return repo
+    const exact = '^' + String(repo.credential).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$'
+    const cred = await Credential.resolveCredential(exact)
+    if (!cred || !cred.user) {
+      throw new Error(`Repository '${repo.name}' uses the credential '${repo.credential}', which is not found`)
+    }
+    return { ...repo, user: cred.user, password: cred.password }
+  }
 
   static getPrivateUri(repo) {
   if(repo.uri){
@@ -480,7 +505,7 @@ class Repository extends CrudModel {
       }
     }
     try {
-      repo = await Repository.findByName(name)
+      repo = await Repository.withCredential(await Repository.findByName(name))
       var uri = Repository.getPrivateUri(repo)
       var branch = repo.branch || undefined
       output = await Repo.clone(uri, name, branch)
@@ -524,6 +549,8 @@ class Repository extends CrudModel {
       // the row is guaranteed to exist - the claim above matched it - so a failure here
       // is a real database or decrypt fault, which is exactly when NOT to degrade
       pullRepo = await Repository.findByName(name).catch(() => { repoUnknown = true; return null })
+      // its credential's password is masked in the output too ; a pull itself does not need it
+      if (pullRepo) pullRepo = await Repository.withCredential(pullRepo).catch(() => pullRepo)
       output = await Repo.pull(name)
       status = "success"
     } catch (e) {
@@ -740,7 +767,7 @@ class Repository extends CrudModel {
       throw new Error(`Repository '${name}' not found or already running, try again later`)
     }
     try {
-      syncRepo = await Repository.findByName(name)
+      syncRepo = await Repository.withCredential(await Repository.findByName(name))
       // a forms repo (read+write forms) or the config-origin repo (so config
       // edits can be committed even when config lives in a separate repo)
       if (!syncRepo.use_for_forms && !syncRepo.use_for_config) {

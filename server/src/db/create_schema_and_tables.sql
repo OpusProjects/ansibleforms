@@ -248,6 +248,7 @@ CREATE TABLE `repositories` (
   `branch` varchar(250) DEFAULT NULL,
   `use_for_config` tinyint(4) DEFAULT 0,
   `use_for_vars_files` tinyint(4) DEFAULT 0,
+  `credential` varchar(250) DEFAULT NULL,
   `cron` varchar(50) DEFAULT NULL,
   `status` varchar(50) DEFAULT NULL,
   -- who holds the status='running' claim and since when (models/repository.model.js claim)

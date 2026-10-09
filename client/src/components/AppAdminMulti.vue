@@ -50,6 +50,11 @@
 /*      createDefaults is what that New presets                   */
 /*  field.needsChoicesOf: the key of a dropdown (createWith) - the*/
 /*      field is hidden while that one has nothing to choose      */
+/*  field.shortLabel / shortHint: a checkbox at the dialog's left */
+/*      edge, its short label and a few grey words on one line ;  */
+/*      a step's short checkboxes are alphabetical                */
+/*  field.oneOnly: a checkbox the app uses on one record only -    */
+/*      greyed out, with who has it, when another record has it   */
 /*  dialogOnly (prop): no list, only the record dialogs : another */
 /*      dialog opens newItem() (exposed) to create a record, and  */
 /*      gets `created` with its name                              */
@@ -73,7 +78,7 @@ import getSettings from '@/config/settings';
 
 // where the table's toolbar goes on the title line (one per instance)
 const toolsId = `af-tools-${Math.random().toString(36).slice(2, 10)}`;
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const emit = defineEmits(['test', 'preview', 'trigger', 'reset', 'sync', 'created']);
 
 // PROPS
@@ -759,8 +764,33 @@ function onStep(field) {
   return (field.step || steps.value[0].key) === steps.value[stepIndex.value]?.key;
 }
 
-// the fields of the dialog, in their order : those of the step shown in a wizard
-const dialogFields = computed(() => fields.value.filter(onStep));
+/**
+ * The other record that already has a one-only checkbox ticked (`oneOnly` : the app uses a
+ * single one, a repository's config.yaml for instance) ; this one may then not tick it.
+ *
+ * Args:
+ *   field (object): the checkbox field.
+ *
+ * Returns:
+ *   string|null: that record's name, or null when no other record has it.
+ */
+function takenBy(field) {
+  if (!field.oneOnly || item.value[field.key]) return null;
+  const other = (itemList.value || []).find(
+    (r) => r[field.key] && r[idKey] !== item.value[idKey] && (r.name ?? r[idKey]) !== item.value.name,
+  );
+  return other ? (other.name ?? other[idKey]) : null;
+}
+
+// the fields of the dialog, in their order : those of the step shown in a wizard. The short
+// checkboxes (shortLabel) of a step are alphabetical in the language shown, in the places they
+// hold among the other fields.
+const dialogFields = computed(() => {
+  const list = fields.value.filter(onStep);
+  const isShort = (f) => f.type === 'checkbox' && f.shortLabel;
+  const sorted = list.filter(isShort).sort((a, b) => a.shortLabel.localeCompare(b.shortLabel, locale.value));
+  return list.map((f) => (isShort(f) ? sorted.shift() : f));
+});
 
 /**
  * The fields of the step shown that fail their rules (a secret is checked by its own action).
@@ -1462,10 +1492,32 @@ defineExpose({
           </div>
         </div>
 
+        <!-- A SHORT CHECKBOX (shortLabel) : at the left edge, its label and a few grey words
+             (shortHint) on one line ; one only (oneOnly) and already ticked on another record :
+             greyed out, and who has it in the tooltip -->
+        <div
+          v-if="showField(field) && field.type === 'checkbox' && field.shortLabel"
+          class="form-check af-short-check"
+          :class="{ 'af-taken': takenBy(field) }"
+          :title="takenBy(field) ? t('settings.common.takenBy', { name: takenBy(field) }) : null"
+        >
+          <input
+            :id="'af-check-' + field.key"
+            v-model="$v.item[field.key].$model"
+            class="form-check-input"
+            type="checkbox"
+            :disabled="field.readonly || !!takenBy(field)"
+          />
+          <label class="form-check-label" :for="'af-check-' + field.key">
+            <span class="af-short-label">{{ field.shortLabel }}</span>
+            <span v-if="field.shortHint" class="text-body-secondary small">{{ field.shortHint }}</span>
+          </label>
+        </div>
+
         <!-- RADIO BUTTONS (type radio) : one choice of field.options, at the dialog's left edge,
              each its label and a few grey words (hint) on one line -->
         <div
-          v-if="showField(field) && field.type === 'radio'"
+          v-else-if="showField(field) && field.type === 'radio'"
           class="mb-3 af-radio-group"
           :class="{ 'af-radio-nested': field.nested }"
           role="radiogroup"
@@ -1656,7 +1708,13 @@ defineExpose({
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* a radio of a group : at the left edge, the list tight */
+/* a one-only checkbox another record already has : the whole line greyed */
+.af-taken .form-check-label,
+.af-taken .form-check-label span {
+  color: var(--bs-secondary-color) !important;
+  opacity: 0.6;
+}
+/* a radio of a group, or a short checkbox : at the left edge, the list tight */
 .af-short-check {
   margin-bottom: 0.6rem;
 }
