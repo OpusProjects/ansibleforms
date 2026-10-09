@@ -63,7 +63,13 @@ const envGroupOrder = [
     key: 'retention',
     label: () => t('settings.settingsPage.envGroupRetention'),
     icon: 'clock-rotate-left',
-    exact: ['JOB_RETENTION_DAYS', 'AUDIT_RETENTION_DAYS', 'NIGHTLY_BACKUP_RETENTION', 'OLD_BACKUP_DAYS'],
+    exact: [
+      'JOB_RETENTION_DAYS',
+      'AUDIT_RETENTION_DAYS',
+      'LOG_RETENTION_DAYS',
+      'NIGHTLY_BACKUP_RETENTION',
+      'OLD_BACKUP_DAYS',
+    ],
   },
   {
     key: 'backups',
@@ -124,11 +130,20 @@ const envGroupOrder = [
     prefix: ['NAV_HOME_'],
     exact: ['DEFAULT_LANGUAGE', 'SHOW_DESIGNER'],
   },
-  { key: 'logging', label: () => t('settings.settingsPage.envGroupLogging'), icon: 'file-alt', prefix: ['LOG_'] },
+  // LOG_RETENTION_DAYS is Retention's, with the other retentions
+  {
+    key: 'logging',
+    label: () => t('settings.settingsPage.envGroupLogging'),
+    icon: 'file-alt',
+    prefix: ['LOG_'],
+    except: ['LOG_RETENTION_DAYS'],
+  },
 ];
 
 // exact name or declared prefix - no regex, so no anchor to get wrong
 function envInGroup(group, name) {
+  // a name a prefix group leaves to another (LOG_RETENTION_DAYS : Retention, not Logging)
+  if ((group.except || []).includes(name)) return false;
   if ((group.exact || []).includes(name)) return true;
   return (group.prefix || []).some((p) => name.startsWith(p));
 }

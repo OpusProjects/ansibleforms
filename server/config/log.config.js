@@ -7,6 +7,20 @@ const __dirname = path.dirname(__filename);
 
 
 
+/**
+ * The days of log files kept : a whole number, 30 when unset or not a number ; 0 keeps them all.
+ *
+ * Args:
+ *   value (string|undefined): LOG_RETENTION_DAYS.
+ *
+ * Returns:
+ *   number: the days, 0 for for ever.
+ */
+export function parseRetentionDays(value) {
+  const days = parseInt(value ?? '30', 10);
+  return Number.isNaN(days) || days < 0 ? 30 : days;
+}
+
 var log_config = {
   level: process.env.LOG_LEVEL || "notice",
   path: process.env.LOG_PATH || path.resolve(__dirname + '/../persistent/logs'),
@@ -22,6 +36,8 @@ var log_config = {
   syslogtype: process.env.LOG_SYSLOG_TYPE || "BSD",
   syslogappname: process.env.LOG_SYSLOG_APPNAME || "AnsibleForms",
   tz: process.env.LOG_TZ || "UTC",
+  // how many days of log files are kept (the main log and the errors log) ; 0 keeps them all
+  retentionDays: parseRetentionDays(process.env.LOG_RETENTION_DAYS),
 };
 if ( !fs.existsSync( log_config.path ) ) {
   try{

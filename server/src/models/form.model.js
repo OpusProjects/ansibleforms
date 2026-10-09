@@ -72,7 +72,6 @@ const configBackupPathForSource = function(source){
 // the snapshot sources that carry their name ; anything else is an 'active' snapshot
 const fixedBackupSources = ['file','database']
 
-const oldBackupDays = appConfig.oldBackupDays
 
 const pathDelimiterRegex = new RegExp(`(?<!\\\\)${path.delimiter}`, 'g');
 
@@ -1102,7 +1101,7 @@ Form.backup = async function(configOnly=false,source='active'){
   var backupformsdir=formsBackupPath +".bak."+timestamp
   var backupconfigfile=configBackupPathForSource(source) +".bak."+timestamp
   var backupfile=path.parse(backupconfigfile).base
-  Form.removeOld(oldBackupDays)
+  Form.removeOld(appConfig.oldBackupDays) // read now : OLD_BACKUP_DAYS changes without a restart
 
   // Back up the ACTIVE base config, whatever serves it : the database (when
   // config_source or the env default says so and forms_yaml is not empty), a
@@ -1479,6 +1478,6 @@ Form.initBackupFolder=function(){
   }catch(e){
     logger.error("Failed to init backup folder\n",e)
   }
-  Form.removeOld(oldBackupDays)
+  Form.removeOld(appConfig.oldBackupDays) // read now : OLD_BACKUP_DAYS changes without a restart
 }
 export default  Form;
