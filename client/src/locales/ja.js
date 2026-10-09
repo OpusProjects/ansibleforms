@@ -1007,6 +1007,7 @@ export default {
       key: 'キー',
       value: '値',
       addCategory: 'カテゴリを追加',
+      newCategory: '新しいカテゴリ',
       addSubcategory: 'サブカテゴリを追加',
       moveUp: '上へ移動',
       moveDown: '下へ移動',

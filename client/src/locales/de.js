@@ -1032,6 +1032,7 @@ export default {
       key: 'Schluessel',
       value: 'Wert',
       addCategory: 'Kategorie hinzufuegen',
+      newCategory: 'Neue Kategorie',
       addSubcategory: 'Unterkategorie hinzufuegen',
       moveUp: 'Nach oben',
       moveDown: 'Nach unten',

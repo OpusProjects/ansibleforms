@@ -1009,6 +1009,7 @@ export default {
       key: 'Key',
       value: 'Value',
       addCategory: 'Add Category',
+      newCategory: 'New category',
       addSubcategory: 'Add Subcategory',
       moveUp: 'Move up',
       moveDown: 'Move down',

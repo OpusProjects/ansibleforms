@@ -1025,6 +1025,7 @@ export default {
       key: 'Chave',
       value: 'Valor',
       addCategory: 'Adicionar Categoria',
+      newCategory: 'Nova categoria',
       addSubcategory: 'Adicionar Subcategoria',
       moveUp: 'Mover para cima',
       moveDown: 'Mover para baixo',

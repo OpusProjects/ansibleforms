@@ -1020,6 +1020,7 @@ export default {
       key: 'Klucz',
       value: 'Wartość',
       addCategory: 'Dodaj kategorię',
+      newCategory: 'Nowa kategoria',
       addSubcategory: 'Dodaj podkategorię',
       moveUp: 'Przenieś w górę',
       moveDown: 'Przenieś w dół',
