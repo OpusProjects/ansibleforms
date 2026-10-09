@@ -2105,11 +2105,7 @@ onBeforeUnmount(() => {
               <template #title>
                 <h3 v-if="job.job_type == 'multistep' && subjob?.output">
                   {{ t('form.mainJob') }} (jobid {{ job.id }})
-                  <sup
-                    ><span class="badge rounded-pill status" :class="Helpers.getColorClassByStatus(job.status, 'bg')">{{
-                      job.status
-                    }}</span></sup
-                  >
+                  <sup><AppStatusPill :status="job.status" /></sup>
                 </h3>
               </template>
             </AppAnsibleOutput>
@@ -2119,13 +2115,7 @@ onBeforeUnmount(() => {
               <template #title>
                 <h3>
                   {{ t('form.currentStep') }} (jobid {{ subjob.id }})
-                  <sup
-                    ><span
-                      class="badge rounded-pill status"
-                      :class="Helpers.getColorClassByStatus(subjob.status, 'bg')"
-                      >{{ subjob.status }}</span
-                    ></sup
-                  >
+                  <sup><AppStatusPill :status="subjob.status" /></sup>
                 </h3>
               </template>
             </AppAnsibleOutput>
