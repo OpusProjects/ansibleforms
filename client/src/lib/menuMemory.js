@@ -1,7 +1,7 @@
 /******************************************************************/
 /*                                                                */
 /*  What the left menus showed last, kept for the tab : the       */
-/*  forms' categories, the inventories, the jobs counted. A menu  */
+/*  forms' categories and the jobs counted. A menu                */
 /*  draws at once with it when its page opens, then takes the     */
 /*  fresh data - it does not empty and refill (a blink) every     */
 /*  time its section is entered. Forgotten at logout : it is the  */

@@ -3,8 +3,8 @@
 /*                                                                */
 /*  App AnsibleForms menu badge                                   */
 /*  The count beside an entry of a left menu : the forms of a     */
-/*  category (Forms), the jobs of a filter (Jobs), the hosts of   */
-/*  an inventory (Inventories). One look in every menu.           */
+/*  category (Forms), the jobs of a filter (Jobs). One look in    */
+/*  every menu.                                                   */
 /*                                                                */
 /*  @props:                                                       */
 /*      count: Number|String - what it shows                      */

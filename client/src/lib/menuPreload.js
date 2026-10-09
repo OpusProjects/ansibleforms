@@ -1,9 +1,9 @@
 /******************************************************************/
 /*                                                                */
 /*  The left menus' data loaded in the background once a user is  */
-/*  known : the forms' categories, the jobs to count, the         */
-/*  inventories. Even the first visit to a section then draws its */
-/*  menu whole, at once, instead of filling it in. Only what the  */
+/*  known : the forms' categories and the jobs to count. Even the */
+/*  first visit to a section then draws its menu whole, at once,  */
+/*  instead of filling it in. Only what the                       */
 /*  user may see, and only what is not remembered yet             */
 /*  (lib/menuMemory.js).                                          */
 /*                                                                */
@@ -20,7 +20,7 @@ const JOBS_COUNTED = 1000;
  * Loads what the menus show, quietly : a failure only leaves that menu to load on its page.
  *
  * Args:
- *   store (object): the app store (the user's profile and options, the inventories switch).
+ *   store (object): the app store (the user's profile and options).
  *
  * Returns:
  *   Promise<void>
@@ -42,17 +42,6 @@ export async function preloadMenus(store) {
     tasks.push(
       axios.get(`/api/v2/job?records=${JOBS_COUNTED}`, auth).then((r) => (jobs.value = r.data?.records || [])),
     );
-  }
-  // ------------------------------------------------------------------
-  // the inventories : switched on, and the user's roles show them
-  // ------------------------------------------------------------------
-  const inventories = remembered('inventories', []);
-  if (
-    store?.profile?.options?.showInventories !== false &&
-    store?.inventoriesEnabled !== false &&
-    !inventories.value?.length
-  ) {
-    tasks.push(axios.get('/api/v2/inventory', auth).then((r) => (inventories.value = r.data?.records || [])));
   }
   await Promise.allSettled(tasks);
 }
