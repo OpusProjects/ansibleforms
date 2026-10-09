@@ -11,5 +11,8 @@ router.get('/:id', userController.findById);
 router.put('/:id', userController.update);
 // Delete a user with id
 router.delete('/:id', userController.delete);
+// A user's groups besides its first one : add one, remove one (a user keeps one)
+router.post('/:id/groups', userController.addGroup);
+router.delete('/:id/groups/:groupId', userController.removeGroup);
 
 export default router

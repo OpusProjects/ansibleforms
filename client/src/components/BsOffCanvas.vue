@@ -11,6 +11,9 @@
 /*      icon: String                                              */
 /*      show: Boolean                                             */
 /*      size: String - sm, md, lg (default) or xl                 */
+/*      dialogClass: String - a class on the dialog box itself    */
+/*         (the root is a fragment : a class on the component     */
+/*         would not reach it)                                    */
 /*                                                                */
 /*  @slots:                                                       */
 /*      default: the content                                      */
@@ -44,6 +47,10 @@ const props = defineProps({
   show: {
     type: Boolean,
     default: false,
+  },
+  dialogClass: {
+    type: String,
+    default: '',
   },
   size: {
     type: String,
@@ -79,7 +86,7 @@ function backdropClick(e) {
     aria-labelledby="offcanvasLabel"
     @click="backdropClick"
   >
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" :class="sizeClass">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" :class="[sizeClass, dialogClass]">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="offcanvasLabel">

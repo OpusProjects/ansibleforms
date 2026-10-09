@@ -23,7 +23,8 @@ class Group extends CrudModel {
             throw new Error("You cannot delete group 'admins'");
         }
         // Prevent deletion of groups that still have users (FK is CASCADE, so we must check manually)
-        const [row] = await mysql.do("SELECT COUNT(*) as cnt FROM AnsibleForms.`users` WHERE group_id = ?", [id]);
+        // as a user's first group, or one of its other groups
+        const [row] = await mysql.do("SELECT COUNT(*) as cnt FROM AnsibleForms.`users` u WHERE u.group_id = ? OR EXISTS (SELECT 1 FROM AnsibleForms.`user_groups` ug WHERE ug.user_id = u.id AND ug.group_id = ?)", [id, id]);
         if (row && row.cnt > 0) {
             throw new Error("Group still has users");
         }

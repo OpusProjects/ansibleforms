@@ -110,6 +110,8 @@ export default function getSettings(t) {
       description: t('settings.users.description'),
       icon: 'user',
       selectable: false,
+      // a user has its own page (pages/admin/user.vue) : its row and Edit open it, New the wizard
+      openPage: (item) => `/admin/users/${item.id}`,
       // the dialog in steps : who the user is, the password (editing : left empty, it stays), the
       // group that gives the roles
       steps: [
@@ -117,10 +119,33 @@ export default function getSettings(t) {
         { key: 'password', label: t('settings.users.stepPassword') },
         { key: 'group', label: t('settings.users.stepGroup') },
       ],
+      // in the row menu : editing, the groups, the password, then Delete last, each apart
       actions: [
         { name: 'edit', title: t('settings.users.editUser'), icon: 'pencil', color: 'edit' },
-        { name: 'delete', title: t('settings.users.deleteUser'), icon: 'trash', color: 'delete' },
-        { name: 'change_password', title: t('settings.common.changePassword'), icon: 'lock', color: 'change' },
+        // the user's Groups tab, its Add group dialog open
+        {
+          name: 'add_group',
+          title: t('settings.users.addToGroup'),
+          icon: 'users',
+          color: 'edit',
+          dividerBefore: true,
+          to: (u) => ({ path: `/admin/users/${u.id}`, query: { tab: 'groups', add: '1' } }),
+        },
+        {
+          name: 'change_password',
+          title: t('settings.common.changePassword'),
+          icon: 'lock',
+          color: 'change',
+          dividerBefore: true,
+        },
+        {
+          name: 'delete',
+          title: t('settings.users.deleteUser'),
+          icon: 'trash',
+          color: 'delete',
+          // the admin user is the way back in : never deleted (the server refuses it too)
+          enabledWhen: (u) => u.username !== 'admin',
+        },
       ],
       fields: [
         {
@@ -174,6 +199,8 @@ export default function getSettings(t) {
         },
         {
           key: 'group_id',
+          // in the dialog, not in the table : the user's page has a Groups tab
+          noTable: true,
           step: 'group',
           label: t('settings.fields.group'),
           type: 'select',
@@ -200,7 +227,8 @@ export default function getSettings(t) {
           label: t('settings.users.label'),
           labelPlural: t('settings.users.labelPlural'),
           icon: 'user',
-          key: 'group_id',
+          // every group of a user (its first one and the others), not its first only
+          key: 'group_ids',
         },
       ],
       actions: [

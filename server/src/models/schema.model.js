@@ -503,7 +503,7 @@ const SCHEMA_MANIFEST = {
   base: {
     tables: ['groups', 'users', 'tokens', 'credentials', 'ldap', 'jobs', 'job_output',
              'settings', 'repositories', 'schedule', 'audit', 'chat_settings', 'secret_stores', 'runners',
-             'nodes', 'cache_epochs', 'designer_lock'],
+             'nodes', 'cache_epochs', 'designer_lock', 'user_groups'],
   },
   patches: {
     patchVersion4: { columns: ['ldap.groups_search_base', 'ldap.groups_attribute', 'ldap.group_class',
@@ -540,7 +540,7 @@ const SCHEMA_MANIFEST = {
     // dropped), and the job log a playbook writes is stored on the job
     // and the worker and several app nodes : the processes on the database, what changed
     // between them, the designer lock, and the node that follows a job
-    patchVersion7: { tables: ['secret_stores', 'runners', 'nodes', 'cache_epochs', 'designer_lock'],
+    patchVersion7: { tables: ['secret_stores', 'runners', 'nodes', 'cache_epochs', 'designer_lock', 'user_groups'],
                      columns: ['schedule.owner', 'credentials.secret_store', 'credentials.secret_ref', 'settings.vault_env_imported_at', 'jobs.runner',
                                'runners.username', 'runners.password', 'runners.use_credentials', 'runners.node_id', 'jobs.job_log',
                                'jobs.tracker', 'repositories.claim_node', 'repositories.claim_since',
@@ -876,7 +876,8 @@ async function patchVersion7(messages, success, failed) {
 
   // 7 : a worker and several app nodes on one database (lib/nodes.js, lib/epochs.js,
   // the designer lock in models/lock.model.js, the node following a job)
-  for (const table of ["nodes", "cache_epochs", "designer_lock"]) {
+  // and a local user's groups besides its first one
+  for (const table of ["nodes", "cache_epochs", "designer_lock", "user_groups"]) {
     const sql = fs.readFileSync(`${__dirname}/../db/create_${table}_table.sql`);
     await checkPromise(addTable(table, sql.toString()), messages, success, failed);
   }

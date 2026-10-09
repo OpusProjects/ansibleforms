@@ -60,6 +60,15 @@
 /*  dialogOnly (prop): no list, only the record dialogs : another */
 /*      dialog opens newItem() (exposed) to create a record, and  */
 /*      gets `created` with its name                              */
+/*  action.to: (item) => route - the action goes to a page        */
+/*  action.dividerBefore: a line above it in the row menu, apart  */
+/*      from the actions before it (Delete always has one)        */
+/*  action.enabledWhen: (item) => boolean - the action is off for */
+/*      the records it returns false for (greyed out ; a delete's */
+/*      also greys the record's checkbox)                         */
+/*  settings.openPage: (item) => path - a record has its own page */
+/*      (a user's) : its row and its Edit open that page instead  */
+/*      of the record dialog ; New still opens the dialog         */
 /*  a cell's [data-af-popover] : its text in a popover on hover   */
 /*      (a cron's meaning in words, config/settings.js cronCell)  */
 /*                                                                */
@@ -69,6 +78,7 @@ import { ref, onMounted, onBeforeUnmount, computed, nextTick } from 'vue';
 import { watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { Popover } from 'bootstrap';
+import { useRouter } from 'vue-router';
 import axios from 'axios';
 import Helpers from '@/lib/Helpers';
 import TokenStorage from '@/lib/TokenStorage';
@@ -84,6 +94,7 @@ import getSettings from '@/config/settings';
 // where the table's toolbar goes on the title line (one per instance)
 const toolsId = `af-tools-${Math.random().toString(36).slice(2, 10)}`;
 const { t, locale } = useI18n();
+const router = useRouter();
 const emit = defineEmits(['test', 'preview', 'trigger', 'reset', 'sync', 'created']);
 
 // PROPS
@@ -376,7 +387,11 @@ async function loadItem() {
 
         for (const childList of children.value) {
           childLists.value[childList.type] = (await loadList(childList.type)).filter(
-            (child) => child[childList.key] == itemId.value,
+            // a list key (a user's group_ids) : the record is one of them
+            (child) =>
+              Array.isArray(child[childList.key])
+                ? child[childList.key].includes(itemId.value)
+                : child[childList.key] == itemId.value,
           );
         }
       }
@@ -753,6 +768,24 @@ watch(action, () => {
   stepIndex.value = 0;
   stepReached.value = 0;
 });
+
+// ─── Change password : the shared dialog ──────────────────────────────────────
+// a record with a password (a user) changes it in AppChangePasswordDialog, typed twice ; a token
+// or a client secret (pasted, not typed) keeps the record dialog
+const usesPasswordDialog = computed(
+  () => action.value === 'change_password' && fields.value.some((f) => f.key === 'password'),
+);
+
+/**
+ * Saves the password the shared dialog hands over.
+ *
+ * Args:
+ *   password (string): the new password, typed twice.
+ */
+function savePasswordFromDialog(password) {
+  item.value.password = password;
+  updateItem(true);
+}
 const isLastStep = computed(() => stepIndex.value === steps.value.length - 1);
 // the help of the step shown (a step's notes(item)) : what to know before filling it in, as
 // the permissions a provider needs
@@ -1002,6 +1035,8 @@ function busyLabel(item) {
 
 function isActionEnabled(action, item) {
   if (isManaged(item) && MANAGED_BLOCKS.has(action.name)) return false;
+  // a record the action may never touch (the admin user's delete)
+  if (typeof action.enabledWhen === 'function' && !action.enabledWhen(item)) return false;
   if (!action.dependency) return true;
   // an array dependency means "enabled if ANY of these fields is truthy"
   if (Array.isArray(action.dependency)) {
@@ -1034,8 +1069,12 @@ function dispatchAction(action, item) {
   if (!isActionEnabled(action, item)) return;
   // a row that is already running its action must not start it again
   if (busyLabel(item)) return;
+  // an action that goes to a page (action.to : the user's Groups tab, its Add group open)
+  if (typeof action.to === 'function') return router.push(action.to(item));
   switch (action.name) {
     case 'edit':
+      // a record with its own page is edited there
+      if (openRecordPage(item)) return;
       return editItem(item);
     case 'delete':
       return deleteItem(item);
@@ -1173,7 +1212,23 @@ async function saveDefaults() {
   if (changed.length) await loadItems();
 }
 
+/**
+ * Opens a record's own page, when it has one (settings.openPage).
+ *
+ * Args:
+ *   item (object): the record.
+ *
+ * Returns:
+ *   boolean: whether a page was opened.
+ */
+function openRecordPage(item) {
+  if (typeof props.settings.openPage !== 'function') return false;
+  router.push(props.settings.openPage(item));
+  return true;
+}
+
 function onDataTableRowClick(item) {
+  if (openRecordPage(item)) return;
   if (!rowClickSelects.value) {
     activeRowId.value = item[idKey];
     // A seed-managed row must open READ-ONLY here too. Clicking the row is the
@@ -1293,7 +1348,7 @@ defineExpose({
 });
 </script>
 <template>
-  <BsModal v-if="action == 'delete'" @close="unselectItem">
+  <BsModal v-if="action == 'delete'" size="md" @close="unselectItem">
     <template #title> {{ t('common.delete') }} {{ objectLabel }} </template>
     <template #default>
       <p class="mb-0 fs-6 user-select-none">
@@ -1326,6 +1381,7 @@ defineExpose({
         :idKey="idKey"
         :selectedIds="selectedIds"
         :selectable="dataTableSelectable"
+        :rowSelectable="deleteAction?.enabledWhen ? (row) => isActionEnabled(deleteAction, row) : null"
         :activeId="!rowClickSelects ? activeRowId : null"
         :rowClickSelects="rowClickSelects"
         :name="Helpers.cleanupString(objectLabelPlural)"
@@ -1351,7 +1407,9 @@ defineExpose({
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
               <template v-for="(action, idx) in actions" :key="action.name + idx">
-                <li v-if="action.name === 'delete'"><hr class="dropdown-divider" /></li>
+                <li v-if="(action.name === 'delete' || action.dividerBefore) && idx > 0">
+                  <hr class="dropdown-divider" />
+                </li>
                 <li>
                   <a
                     class="dropdown-item"
@@ -1387,9 +1445,9 @@ defineExpose({
       <BsButton v-if="defaultPicker" cssClass="text-nowrap" icon="pencil" @click="editDefaults()">{{
         defaultPicker.editLabel
       }}</BsButton>
-      <!-- New : the page's main action, last on the right -->
+      <!-- Add : the page's main action, last on the right -->
       <BsButton v-if="!noCreate" icon="plus" @click="newItem()">{{
-        t('settings.common.newItem', { item: objectLabel })
+        t('settings.common.addItem', { item: objectLabel })
       }}</BsButton>
     </template>
   </AppSettings>
@@ -1447,9 +1505,16 @@ defineExpose({
       >
     </template>
   </BsModal>
+  <!-- a user's password : the shared Change password dialog, typed twice -->
+  <AppChangePasswordDialog
+    v-if="usesPasswordDialog"
+    :icon="objectIcon"
+    @save="savePasswordFromDialog"
+    @close="unselectItem"
+  />
   <BsOffCanvas
     v-if="!loading"
-    :show="['select', 'edit', 'new', 'change_password'].includes(action)"
+    :show="['select', 'edit', 'new', 'change_password'].includes(action) && !usesPasswordDialog"
     :icon="objectIcon"
     :title="title"
     @close="unselectItem"
