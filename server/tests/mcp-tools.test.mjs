@@ -52,9 +52,9 @@ beforeEach(() => {
   };
 });
 
-async function connect(u = user) {
+async function connect(u = user, policy = undefined) {
   const server = new McpServer({ name: "ansibleforms", version: "test" });
-  registerTools(server, createHandlers({ user: u, deps }));
+  registerTools(server, createHandlers({ user: u, deps, policy }), policy);
   const client = new Client({ name: "test", version: "1" });
   const [a, b] = InMemoryTransport.createLinkedPair();
   await Promise.all([server.connect(a), client.connect(b)]);
@@ -359,5 +359,44 @@ describe("MCP tools", () => {
       expect(deps.Job.launch).toHaveBeenCalledTimes(1);
     });
   });
-});
 
+  // the MCP settings (MCP_READ_ONLY, MCP_CHAT_FORMS_ONLY), handed in by the MCP router
+  describe("the MCP policy", () => {
+    test("read only : no launch_job or relaunch_job tool", async () => {
+      const client = await connect(user, { readOnly: true });
+      const { tools } = await client.listTools();
+      expect(tools.map((t) => t.name).sort()).toEqual(["get_form", "get_job", "list_forms", "resolve_field"]);
+    });
+
+    test("read only : the handlers refuse a launch too", async () => {
+      const handlers = createHandlers({ user, deps, policy: { readOnly: true } });
+      await expect(handlers.launchJob({ form: "Create volume", values: {} })).rejects.toMatchObject({ code: "access_denied" });
+      await expect(handlers.relaunchJob({ id: 42 })).rejects.toMatchObject({ code: "access_denied" });
+      expect(deps.Job.launch).not.toHaveBeenCalled();
+    });
+
+    test("chat forms only : a form not offered in the chat is left out of the list", async () => {
+      const client = await connect(user, { chatFormsOnly: true });
+      const r = await call(client, "list_forms");
+      expect(r.data.forms).toEqual([]);
+    });
+
+    test("chat forms only : a form not offered in the chat is not found, nor its jobs", async () => {
+      const client = await connect(user, { chatFormsOnly: true });
+      const form = await client.callTool({ name: "get_form", arguments: { name: "Create volume" } });
+      expect(form.structuredContent.code).toBe("not_found");
+      const job = await client.callTool({ name: "get_job", arguments: { id: 42 } });
+      expect(job.structuredContent.code).toBe("not_found");
+    });
+
+    test("chat forms only : a form offered in the chat is there", async () => {
+      deps.Form.load.mockImplementation(async (roles, name) => {
+        if (!name) return { forms: [{ name: "Create volume", enableForChat: true }] };
+        return { constants: {}, forms: [{ ...structuredClone(volumeForm), enableForChat: true }], errors: [], warnings: [] };
+      });
+      const client = await connect(user, { chatFormsOnly: true });
+      expect((await call(client, "list_forms")).data.forms.map((f) => f.name)).toEqual(["Create volume"]);
+      expect((await call(client, "get_form", { name: "Create volume" })).isError).toBe(false);
+    });
+  });
+});

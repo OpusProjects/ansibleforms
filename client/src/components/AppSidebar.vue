@@ -86,6 +86,7 @@ const sections = computed(() =>
         { title: t('sidebar.runners'), icon: 'rocket', link: '/admin/runners', permission: 'showSettings' },
         { title: t('sidebar.repositories'), icon: 'fab,git', link: '/admin/repositories', permission: 'showSettings' },
         { title: t('sidebar.chat'), icon: 'comments', link: '/admin/chat', permission: 'showSettings' },
+        { title: t('sidebar.mcp'), icon: 'robot', link: '/admin/mcp', permission: 'showSettings' },
       ],
     },
     {

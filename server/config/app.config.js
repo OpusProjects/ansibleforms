@@ -49,6 +49,10 @@ var app_config = {
   // Serve the MCP server for AI agents on /api/v2/mcp. Off by default : it is a new way
   // in, and an operator should opt in to it.
   enableMcp: (process.env.ENABLE_MCP ?? 0) == 1,
+  // MCP : read only (no launch_job, no relaunch_job), and which forms it offers - all the
+  // user's forms, or only those offered in the chat assistant (enableForChat)
+  mcpReadOnly: (process.env.MCP_READ_ONLY ?? 0) == 1,
+  mcpChatFormsOnly: (process.env.MCP_CHAT_FORMS_ONLY ?? 0) == 1,
   // The chat assistant in the browser (a model provider on the Chat assistant admin page
   // is needed too). Off by default : it sends form definitions and values to a model
   // provider, which an operator decides. Changing it needs a restart (routes are mounted).

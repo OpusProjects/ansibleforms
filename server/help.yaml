@@ -577,7 +577,32 @@
       MCP client (a chat backend, an IDE) can list the forms a user may use, resolve their
       fields, launch jobs and follow them. Every request carries an AnsibleForms access token
       and runs as that user, with the same form roles and job visibility as in the browser.
-      Changing it needs a restart. See the MCP page of the documentation.
+      Users whose roles turn off `allowChat` ("Allow AI assistants") cannot use it. Takes
+      effect at once, without a restart. See the MCP page of the documentation.
+  - name: MCP_READ_ONLY
+    version: 7.0.0
+    type: boolean
+    allowed: 0, 1
+    short: Block launching and relaunching jobs (read-only)
+    hint: AI clients can list, open and fill in forms, but not launch or relaunch jobs
+    default: 0
+    description: |
+      With 1, the MCP server is read-only: it offers no `launch_job` and no `relaunch_job`
+      tool and refuses them. An AI client can list the forms, read them, resolve their
+      fields and follow jobs, but runs nothing. A safe way to try an agent before letting it
+      launch playbooks. Takes effect at once, without a restart.
+  - name: MCP_CHAT_FORMS_ONLY
+    version: 7.0.0
+    type: boolean
+    allowed: 0, 1
+    short: Only allow the forms offered in the chat
+    hint: MCP offers only the forms with enableForChat, the chat assistant's list ; otherwise every form the user may open
+    default: 0
+    description: |
+      With 0 (the default) an MCP client sees every form the user's roles may open. With 1
+      it sees only the forms that also set `enableForChat: true` - the chat assistant's
+      allowlist, one list for both - and a form or a job of a form left out is not found.
+      Takes effect at once, without a restart.
   - name: ENABLE_CHAT
     version: 6.5.0
     type: boolean
@@ -1216,7 +1241,7 @@
       - allowScheduledJobs: The user can create and manage scheduled jobs (recurring cron or one-time). Default for admins only. Grant it only to roles you would trust as admins: every user with this option sees and can change all schedules, not only their own, and a schedule they create runs with admin rights, for any form. (Added in 6.1.5)
       - allowStoredJobs: The user can store and load job data for later use. (Added in 6.1.5)
       - allowPlannedJobs: The user can plan a one-time run of a form they may run ("Run later"). The job runs as that user, not as admin, and they cannot see or change other schedules. (Added in 6.1.5)
-      - allowChat: The user can use the chat assistant (when it is enabled). Default true. (Added in 6.5.0)
+      - allowChat: The user can use the AI assistants, the chat assistant and the MCP server (when they are enabled). Default true. (Added in 6.5.0, the MCP server in 7.0.0)
         
       When options are not set, the admin role will have all options.  
       When options are set on the public role, they will have the lowest precedence and can be used as default options for all roles.  
@@ -1372,7 +1397,7 @@
           - allowScheduledJobs: The user can create and manage scheduled jobs (recurring cron or one-time). Default for admins only. Grant it only to roles you would trust as admins: every user with this option sees and can change all schedules, not only their own, and a schedule they create runs with admin rights, for any form. (Added in 6.1.5)
           - allowStoredJobs: The user can store and load job data for later use. (Added in 6.1.5)
           - allowPlannedJobs: The user can plan a one-time run of a form they may run ("Run later"). The job runs as that user, not as admin, and they cannot see or change other schedules. (Added in 6.1.5)
-          - allowChat: The user can use the chat assistant (when it is enabled). Default true. (Added in 6.5.0)
+          - allowChat: The user can use the AI assistants, the chat assistant and the MCP server (when they are enabled). Default true. (Added in 6.5.0, the MCP server in 7.0.0)
 
           When options are not set, the admin role will have all options.  
           When options are set on the public role, they will have the lowest precedence and can be used as default options for all roles.  

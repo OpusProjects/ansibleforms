@@ -50,17 +50,7 @@ const envGroupOrder = [
     icon: 'globe',
     // no BASE_URL : it is in OWNED_ELSEWHERE, which is filtered out before the groups are
     // consulted, so listing it here only claimed a variable this page never renders
-    exact: [
-      'NODE_ENV',
-      'PORT',
-      'HTTPS',
-      'HTTPS_KEY',
-      'HTTPS_CERT',
-      'TRUST_PROXY',
-      'API_BODY_LIMIT_MB',
-      'ENABLE_MCP',
-      'ENABLE_CHAT',
-    ],
+    exact: ['NODE_ENV', 'PORT', 'HTTPS', 'HTTPS_KEY', 'HTTPS_CERT', 'TRUST_PROXY', 'API_BODY_LIMIT_MB', 'ENABLE_CHAT'],
   },
   {
     key: 'database',
@@ -182,7 +172,8 @@ function envHelp(e) {
 // the environment of the container, not edited from inside the app. LOCK_PATH is no longer read
 // (the designer lock is in the database since 7). ANSIBLE_PATH and
 // PROCESS_MAX_BUFFER are read by an RTE only : since 7 the app runs no playbook itself.
-const OWNED_ELSEWHERE = /^VAULT_|^BASE_URL$|^AF_ROLE$|^LOCK_PATH$|^RTE_|^ANSIBLE_PATH$|^PROCESS_MAX_BUFFER$/;
+// the MCP server's switch and options : on Settings > Connections > MCP
+const OWNED_ELSEWHERE = /^VAULT_|^RTE_|^(ENABLE_)?MCP|^(BASE_URL|AF_ROLE|LOCK_PATH|ANSIBLE_PATH|PROCESS_MAX_BUFFER)$/;
 
 const envGroups = computed(() => {
   if (!env.value || !Array.isArray(env.value)) return [];

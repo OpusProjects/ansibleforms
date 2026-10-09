@@ -8,6 +8,7 @@ export default {
     noDatabaseAccess: "No tens accés a les operacions de base de dades",
     noScheduleAccess: "No tens permís per gestionar les tasques programades",
     noChatAccess: "No tens permís per utilitzar l'assistent de xat",
+    noMcpAccess: "No tens permís per utilitzar el servidor MCP",
     noStoredJobsAccess: "No tens permís per gestionar les tasques desades",
     noDataSent: "No s'ha enviat cap dada",
     missingDbConfig: "Falta la configuració de la base de dades",

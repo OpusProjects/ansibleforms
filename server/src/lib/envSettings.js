@@ -80,6 +80,11 @@ const LIVE = {
   PROCESS_MAX_BUFFER: { key: 'processMaxBuffer', parse: v => parseInt(v, 10) || 1024 * 1024 },
   AWX_API_PREFIX: { key: 'awxApiPrefix', parse: v => v },
   SHOW_DESIGNER: { key: 'showDesigner', parse: v => v == 1 },
+  // app.js mounts the MCP server always, behind a gate reading this per request
+  ENABLE_MCP: { key: 'enableMcp', parse: v => v == 1 },
+  // the MCP router reads both per request, when it builds the tools of a request
+  MCP_READ_ONLY: { key: 'mcpReadOnly', parse: v => v == 1 },
+  MCP_CHAT_FORMS_ONLY: { key: 'mcpChatFormsOnly', parse: v => v == 1 },
   USE_YTT: { key: 'useYtt', parse: v => v == 1 },
   // Job.launch reads it on every launch
   LAUNCH_VALIDATION: { key: 'launchValidation', parse: v => (['log', 'enforce'].includes(String(v || '').trim().toLowerCase()) ? String(v).trim().toLowerCase() : 'off') },

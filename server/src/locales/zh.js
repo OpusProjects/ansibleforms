@@ -8,6 +8,7 @@ export default {
     noDatabaseAccess: "您无权执行数据库操作",
     noScheduleAccess: "您无权管理已调度的作业",
     noChatAccess: "您无权使用聊天助手",
+    noMcpAccess: "您无权使用 MCP 服务器",
     noStoredJobsAccess: "您无权管理保存的作业",
     noDataSent: "未发送任何数据",
     missingDbConfig: "缺少数据库配置",

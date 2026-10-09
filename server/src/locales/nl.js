@@ -8,6 +8,7 @@ export default {
     noDatabaseAccess: "U heeft geen toegang tot database bewerkingen",
     noScheduleAccess: "U heeft geen toestemming om schedules te beheren",
     noChatAccess: "Je hebt geen toestemming om de chat-assistent te gebruiken",
+    noMcpAccess: "Je hebt geen toestemming om de MCP-server te gebruiken",
     noStoredJobsAccess: "U heeft geen toestemming om opgeslagen invoer te beheren",
     noDataSent: "Er zijn geen gegevens verstuurd",
     missingDbConfig: "Database configuratie ontbreekt",
