@@ -144,9 +144,6 @@ function removeUser(index) {
   </div>
   <!-- the public role : no groups or users of its own, it is everyone's -->
   <p v-if="role._public" class="text-muted small mb-4">{{ t('settings.settingsPage.publicEveryone') }}</p>
-  <p v-if="role._public" class="text-muted small mt-1 mb-4">
-    {{ t('settings.settingsPage.publicRoleNote') }}
-  </p>
   <label class="form-label fw-bold">{{ t('settings.settingsPage.options') }}</label>
   <div class="row row-cols-2 row-cols-md-3 g-0 role-options mb-3">
     <div v-for="optKey in optionKeys" :key="optKey" class="col">
