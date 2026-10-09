@@ -736,10 +736,14 @@ export default {
         'Derivee automatiquement de la cle privee. Copiez-la dans le fichier authorized_keys de vos serveurs distants.',
     },
     chat: {
+      tabGeneral: 'Général',
+      tabProvider: 'Fournisseur du modèle',
+      tabLimits: 'Limites',
       label: 'Assistant de chat',
       description:
         "Le fournisseur de modèle IA de l'assistant de chat. Le chat demande aussi ENABLE_CHAT=1, et un formulaire n'y participe qu'avec enableForChat: true.",
       provider: 'Fournisseur',
+      providerHelp: "Le service qui exécute le modèle d'IA ; le choisir remplit son adresse",
       providerNone: 'Aucun - chat désactivé',
       model: 'Modèle',
       modelHelp: 'Tel que le fournisseur le nomme',
@@ -752,6 +756,7 @@ export default {
       maxToolRounds: "Tours d'outils par message",
       maxToolRoundsHelp: 'Avant que le modèle doive répondre',
       timeout: "Délai d'attente (secondes)",
+      timeoutHelp: "Le temps d'attente de la réponse du modèle",
       allowJobStatus: 'Statut des jobs',
       allowJobStatusHelp: 'Le statut seulement, jamais la sortie',
       authType: 'Authentification',

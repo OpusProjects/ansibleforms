@@ -49,7 +49,7 @@ function envGroups() {
 /** The exclusion regex, read from the page rather than restated. */
 function ownedElsewhere() {
   const src = readFileSync(path.join(repoRoot, 'client/src/pages/admin/settings.vue'), 'utf8');
-  const m = /const OWNED_ELSEWHERE = \/(.+?)\/;/.exec(src);
+  const m = /const OWNED_ELSEWHERE =\s*\/(.+?)\/;/.exec(src);
   expect(m, 'OWNED_ELSEWHERE moved').toBeTruthy();
   return new RegExp(m[1]);
 }

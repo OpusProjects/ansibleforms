@@ -724,10 +724,14 @@ export default {
       publicKeyHelp: "Automatically derived from the private key. Copy this to your remote servers' authorized_keys.",
     },
     chat: {
+      tabGeneral: 'General',
+      tabProvider: 'Model provider',
+      tabLimits: 'Limits',
       label: 'Chat assistant',
       description:
         'The AI model provider of the chat assistant. The chat also needs ENABLE_CHAT=1, and a form only takes part with enableForChat: true.',
       provider: 'Provider',
+      providerHelp: 'The service that runs the AI model; choosing one fills in its address',
       providerNone: 'None - chat off',
       model: 'Model',
       modelHelp: 'As the provider names it',
@@ -740,6 +744,7 @@ export default {
       maxToolRounds: 'Tool rounds per message',
       maxToolRoundsHelp: 'Before the model must answer',
       timeout: 'Timeout (seconds)',
+      timeoutHelp: 'How long to wait for the model to answer',
       allowJobStatus: 'Job status',
       allowJobStatusHelp: 'Status only, never output',
       authType: 'Authentication',

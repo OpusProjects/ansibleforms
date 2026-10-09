@@ -691,10 +691,14 @@ export default {
       publicKeyHelp: '自动从私钥派生。请将其复制到远程服务器的 authorized_keys 中。',
     },
     chat: {
+      tabGeneral: '常规',
+      tabProvider: '模型提供商',
+      tabLimits: '限制',
       label: '聊天助手',
       description:
         '聊天助手的 AI 模型提供商。聊天还需要设置 ENABLE_CHAT=1，并且表单只有在 enableForChat: true 时才会参与。',
       provider: '提供商',
+      providerHelp: '运行 AI 模型的服务；选择后会填入其地址',
       providerNone: '无 - 关闭聊天',
       model: '模型',
       modelHelp: '按提供商的命名',
@@ -707,6 +711,7 @@ export default {
       maxToolRounds: '每条消息的工具轮次',
       maxToolRoundsHelp: '模型必须回答之前',
       timeout: '超时（秒）',
+      timeoutHelp: '等待模型回答的时间',
       allowJobStatus: '作业状态',
       allowJobStatusHelp: '仅状态，从不包含输出',
       authType: '身份验证',

@@ -713,10 +713,14 @@ export default {
         "Es deriva automàticament de la clau privada. Copia-la a l'authorized_keys dels teus servidors remots.",
     },
     chat: {
+      tabGeneral: 'General',
+      tabProvider: 'Proveïdor del model',
+      tabLimits: 'Límits',
       label: 'Assistent de xat',
       description:
         "El proveïdor del model d'IA de l'assistent de xat. El xat també necessita ENABLE_CHAT=1, i un formulari només hi participa amb enableForChat: true.",
       provider: 'Proveïdor',
+      providerHelp: "El servei que executa el model d'IA; triar-lo n'omple l'adreça",
       providerNone: 'Cap - xat desactivat',
       model: 'Model',
       modelHelp: "Tal com l'anomena el proveïdor",
@@ -729,6 +733,7 @@ export default {
       maxToolRounds: "Rondes d'eines per missatge",
       maxToolRoundsHelp: 'Abans que el model hagi de respondre',
       timeout: "Temps d'espera (segons)",
+      timeoutHelp: "Quant s'espera la resposta del model",
       allowJobStatus: 'Estat de les tasques',
       allowJobStatusHelp: "Només l'estat, mai la sortida",
       authType: 'Autenticació',

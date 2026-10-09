@@ -729,10 +729,14 @@ export default {
         'Automatisch afgeleid van de privesleutel. Kopieer deze naar het authorized_keys bestand van uw externe servers.',
     },
     chat: {
+      tabGeneral: 'Algemeen',
+      tabProvider: 'Modelaanbieder',
+      tabLimits: 'Limieten',
       label: 'Chat-assistent',
       description:
         'De AI-modelprovider van de chat-assistent. De chat heeft ook ENABLE_CHAT=1 nodig, en een formulier doet enkel mee met enableForChat: true.',
       provider: 'Provider',
+      providerHelp: 'De dienst die het AI-model draait; kiezen vult het adres in',
       providerNone: 'Geen - chat uit',
       model: 'Model',
       modelHelp: 'Zoals de provider het noemt',
@@ -745,6 +749,7 @@ export default {
       maxToolRounds: 'Tool-rondes per bericht',
       maxToolRoundsHelp: 'Voor het model moet antwoorden',
       timeout: 'Timeout (seconden)',
+      timeoutHelp: 'Hoe lang op het antwoord van het model wordt gewacht',
       allowJobStatus: 'Jobstatus',
       allowJobStatusHelp: 'Enkel de status, nooit de output',
       authType: 'Authenticatie',
