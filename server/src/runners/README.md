@@ -199,7 +199,7 @@ In dev the `dev:rte` script uses `dev-rte-token-not-a-secret`; never outside a d
 | `DB_*`, `ENCRYPTION_SECRET` | RTE | the app's own values |
 | `ANSIBLE_PATH`, `PROCESS_MAX_BUFFER`, `REPO_PATH`, `HOME_PATH`, `UPLOAD_PATH` | RTE | where its playbooks, repositories, SSH key and uploads are |
 | `PORT`, `HTTPS`, `HTTPS_CERT`, `HTTPS_KEY` | RTE | as for the app |
-| `AWX_API_PREFIX` | app | the AWX API prefix for the awx runners |
+| `AWX_API_PREFIX` | app | the AWX API prefix, added to an awx runner uri without an `/api/` path (a uri may carry it : `https://aap.example.com/api/controller/v2`) |
 
 All are in `server/help.yaml`. The RTE ones are kept off the app's settings page on purpose:
 they describe the process, not a setting.

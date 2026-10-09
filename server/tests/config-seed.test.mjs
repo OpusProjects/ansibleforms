@@ -167,6 +167,16 @@ describe("the seed schema refuses anything it does not understand", () => {
     ] } }), true);
   });
 
+  test("an awx runner may say which product it is : aap or ascender, nothing else", () => {
+    assert.equal(validateSeed({ runners: { items: [
+      { name: "aap", type: "awx", uri: "https://aap.example.com/api/controller/v2", flavour: "aap" },
+      { name: "asc", type: "awx", uri: "https://asc.example.com/api/v2", flavour: "ascender" },
+    ] } }), true);
+    assert.throws(() => validateSeed({ runners: { items: [
+      { name: "x", type: "awx", uri: "u", flavour: "tower" },
+    ] } }), /validation failed/);
+  });
+
   test("the 7.x awx: section still validates, its items count as runners of type awx", () => {
     // deprecated alias : a default there and one under runners of type awx are two defaults
     assert.throws(

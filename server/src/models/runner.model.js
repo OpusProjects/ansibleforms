@@ -6,6 +6,9 @@ import logger from '../lib/logger.js';
 import mysql from './db.model.js';
 import { RUNNER_TYPES, getRunner } from '../runners/index.js';
 import { stripTrailingSlashes } from '../lib/url.js';
+
+// the flavours of an awx runner (none is AWX) : which product it is (its uri carries its API path)
+export const RUNNER_FLAVOURS = ['aap', 'ascender'];
 import { NODE_DEAD_SECONDS } from '../lib/role.js';
 
 // the secret the api shows instead of a stored token ; sent back it means "unchanged"
@@ -30,6 +33,13 @@ class Runner extends CrudModel {
     if (data.token === SECRET_MASK) delete data.token;
     if (data.password === SECRET_MASK) delete data.password;
     if (typeof data.uri === 'string') data.uri = stripTrailingSlashes(data.uri.trim());
+    // the flavour of an awx runner : 'aap', 'ascender', or none (AWX) - which product it is
+    if (data.flavour !== undefined) {
+      if (data.flavour === '' || data.flavour === null) data.flavour = null;
+      else if (!RUNNER_FLAVOURS.includes(data.flavour)) {
+        throw new Errors.BadRequestError(`Unknown runner flavour '${data.flavour}' - use one of ${RUNNER_FLAVOURS.join(', ')}, or none`);
+      }
+    }
     return data;
   }
 

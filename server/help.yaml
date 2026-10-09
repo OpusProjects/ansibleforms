@@ -1106,6 +1106,8 @@
     default: /api/v2
     description: |
       The prefix of the AWX / AAP API on the runners of type awx, typically `/api/v2`.
+      It is added only to a runner whose uri has no API path of its own : a runner's uri may
+      carry it, as `https://aap.example.com/api/controller/v2` for AAP 2.5 and later.
   - name: NAV_HOME_LABEL
     type: string
     version: 5.1.0

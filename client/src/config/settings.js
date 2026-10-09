@@ -40,11 +40,39 @@ export const CHAT_PROVIDERS = [
 const escapeHtml = (s) =>
   String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-// The runner types (server/src/runners/index.js has the same list)
-export const RUNNER_TYPES = [
-  { value: 'rte', label: 'Runtime environment (RTE)' },
-  { value: 'awx', label: 'AWX / Ansible Automation Platform / Ascender' },
+// The flavours of an awx runner (server/src/models/runner.model.js has the same list) : which
+// product it is (its uri carries its API path)
+export const RUNNER_FLAVOURS = [
+  { value: null, label: 'AWX' },
+  { value: 'aap', label: 'Ansible Automation Platform' },
+  { value: 'ascender', label: 'Ascender' },
 ];
+
+// what a runner is, in the dialog : an RTE, or an awx runner of one of its flavours (none is
+// AWX) - stored as its type and flavour
+export const RUNNER_KINDS = ['rte', 'awx', 'aap', 'ascender'];
+// an example address of each kind : an awx runner's with its API path (AAP 2.5+ behind its
+// gateway)
+const RUNNER_URI_EXAMPLE = {
+  rte: 'https://rte-vmware:8000',
+  awx: 'https://awx.example.com/api/v2',
+  aap: 'https://aap.example.com/api/controller/v2',
+  ascender: 'https://ascender.example.com/api/v2',
+};
+
+/**
+ * A runner's kind, from its type and flavour.
+ *
+ * Args:
+ *   r (object): the runner (type, flavour) ; none for a new one.
+ *
+ * Returns:
+ *   string: rte, awx, aap or ascender.
+ */
+export function runnerKind(r) {
+  if (!r?.type || r.type === 'rte') return 'rte';
+  return ['aap', 'ascender'].includes(r.flavour) ? r.flavour : 'awx';
+}
 
 export const SECRET_STORE_TYPES = [
   { value: 'vault', label: 'HashiCorp Vault' },
@@ -1034,6 +1062,51 @@ export default function getSettings(t) {
       description: t('settings.runners.description'),
       icon: 'rocket',
       selectable: false,
+      // the defaults, chosen in a dialog (Edit defaults) : one for playbook forms (an RTE), one
+      // for template forms (AWX, AAP or Ascender)
+      defaultPicker: {
+        key: 'is_default',
+        groupBy: (r) => (r?.type === 'rte' ? 'playbook' : 'template'),
+        title: t('settings.runners.defaultsTitle'),
+        editLabel: t('settings.runners.editDefaults'),
+        groups: [
+          {
+            key: 'playbook',
+            label: t('settings.runners.default_playbook'),
+            help: t('settings.runners.default_playbookHelp'),
+            icon: 'fac,ansible',
+            describe: (r) => t(`settings.runners.kind_${runnerKind(r)}`),
+          },
+          {
+            key: 'template',
+            label: t('settings.runners.default_template'),
+            help: t('settings.runners.default_templateHelp'),
+            icon: 'rocket',
+            describe: (r) => t(`settings.runners.kind_${runnerKind(r)}`),
+          },
+        ],
+      },
+      // the dialog in steps : what the runner is, its kind, where it is, how the app logs in
+      steps: [
+        { key: 'runner', label: t('settings.runners.stepRunner') },
+        { key: 'type', label: t('settings.runners.stepType') },
+        { key: 'connection', label: t('settings.runners.stepConnection') },
+        { key: 'auth', label: t('settings.runners.stepAuth') },
+      ],
+      // the kind chosen is stored as a type and a flavour : an RTE, or an awx runner that is an
+      // AWX, an AAP or an Ascender. What the api adds or the RTE writes (state, node_id) is
+      // never sent.
+      beforeSave: ({ kind, skip_verify, custom_ca, state: _state, node_id: _nodeId, ...item }) => ({
+        ...item,
+        // what is stored : the certificate checked or not, and a private authority's certificates
+        // only when checked against one
+        ignore_certs: !!skip_verify,
+        ca_bundle: !skip_verify && custom_ca ? item.ca_bundle || '' : '',
+        // an RTE takes its token ; a user and password are an awx runner's choice only
+        ...(kind === 'rte' ? { use_credentials: false } : {}),
+        type: kind === 'rte' ? 'rte' : 'awx',
+        flavour: ['aap', 'ascender'].includes(kind) ? kind : null,
+      }),
       actions: [
         { name: 'edit', title: t('settings.runners.editRunner'), icon: 'pencil', color: 'edit' },
         { name: 'delete', title: t('settings.runners.deleteRunner'), icon: 'trash', color: 'delete' },
@@ -1058,6 +1131,8 @@ export default function getSettings(t) {
           label: t('settings.runners.isDefault'),
           help: t('settings.runners.isDefaultHelp'),
           type: 'checkbox',
+          // chosen in the Edit defaults dialog (defaultPicker), not in the runner's : a column only
+          noInput: true,
         },
         {
           key: 'name',
@@ -1070,7 +1145,8 @@ export default function getSettings(t) {
         },
         // set by the api for a runner its RTE registered itself (rte/register.js) : automatic
         // while the RTE writes its heartbeat, unresponsive once it stopped - the worker removes
-        // it after 10 minutes. render() output goes to v-html : static markup and a locale string only
+        // it after 10 minutes. A column only, never sent (beforeSave). render() output goes to
+        // v-html : static markup and a locale string only
         {
           key: 'state',
           label: t('settings.runners.state'),
@@ -1084,17 +1160,35 @@ export default function getSettings(t) {
                 : '',
         },
         {
-          key: 'type',
-          icon: 'rocket',
-          line: 0,
+          // RTE, AWX, AAP or Ascender : one choice, radio buttons (not stored : the type and the
+          // flavour are, see beforeSave)
+          key: 'kind',
+          step: 'type',
           label: t('settings.runners.type'),
-          required: true,
+          type: 'radio',
+          options: RUNNER_KINDS.map((value) => ({
+            value,
+            label: t(`settings.runners.type_${value}`),
+            hint: t(`settings.runners.type_${value}Hint`),
+          })),
+          initial: runnerKind,
+          noTable: true,
+        },
+        {
+          // the list's Type column : the kind's full name
+          key: 'type',
+          label: t('settings.runners.type'),
+          noInput: true,
           filterable: true,
-          type: 'select',
-          parent: 'runnerTypes',
-          values: RUNNER_TYPES,
-          valueKey: 'value',
-          labelKey: 'label',
+          render: (_, r) => escapeHtml(t(`settings.runners.kind_${runnerKind(r)}`)),
+          sortValue: (r) => runnerKind(r),
+        },
+        {
+          key: 'flavour',
+          label: t('settings.runners.flavour'),
+          noInput: true,
+          hidden: true,
+          render: (v) => escapeHtml(RUNNER_FLAVOURS.find((x) => x.value === (v || null))?.label || ''),
         },
         {
           key: 'description',
@@ -1106,36 +1200,55 @@ export default function getSettings(t) {
         },
         {
           key: 'uri',
+          step: 'connection',
           icon: 'globe',
           line: 1,
           label: t('settings.fields.uri'),
           required: true,
-          placeholder: 'https://rte-vmware:8000',
-          help: t('settings.runners.uriHelp'),
+          // the address of the kind chosen
+          help: (r) => t(`settings.runners.uriHelp_${r.kind || 'rte'}`),
+          placeholder: (r) => RUNNER_URI_EXAMPLE[r.kind] || RUNNER_URI_EXAMPLE.rte,
         },
         {
+          // an AWX, AAP or Ascender : an API token, or a user and password - radio buttons
           key: 'use_credentials',
-          label: t('settings.runners.useCredentials'),
-          type: 'checkbox',
+          step: 'auth',
+          label: t('settings.runners.stepAuth'),
+          type: 'radio',
+          options: [
+            { value: false, label: t('settings.runners.authToken'), hint: t('settings.runners.authTokenHint') },
+            { value: true, label: t('settings.runners.authUser'), hint: t('settings.runners.authUserHint') },
+          ],
+          initial: (r) => !!r?.use_credentials,
+          // an RTE : always its token
+          defaultMap: { rte: false },
+          columnType: 'checkbox',
+          filterType: 'boolean',
           hidden: true,
           password_related: true,
-          dependency: 'type',
-          dependencyValues: ['awx'],
+          dependency: 'kind',
+          dependencyValues: ['awx', 'aap', 'ascender'],
         },
         {
           key: 'token',
+          step: 'auth',
+          // shown when editing too, as ******** : left empty, the stored one stays
+          onEdit: true,
+          keepHelp: t('settings.common.tokenKeep'),
           icon: 'lock',
           line: 1,
           label: t('settings.fields.token'),
           type: 'password',
           required: false,
           hidden: true,
-          help: t('settings.runners.tokenHelp'),
+          // an RTE's RTE_TOKEN, or an AWX's API token
+          help: (r) => t(`settings.runners.tokenHelp_${r.kind === 'rte' || !r.kind ? 'rte' : 'api'}`),
           dependency: 'use_credentials',
           negateDependency: true,
         },
         {
           key: 'username',
+          step: 'auth',
           icon: 'user',
           line: 2,
           label: t('settings.fields.username'),
@@ -1145,6 +1258,8 @@ export default function getSettings(t) {
         },
         {
           key: 'password',
+          step: 'auth',
+          onEdit: true,
           icon: 'lock',
           line: 2,
           label: t('settings.fields.password'),
@@ -1153,16 +1268,50 @@ export default function getSettings(t) {
           hidden: true,
           dependency: 'use_credentials',
         },
-        { key: 'ignore_certs', line: 2, type: 'checkbox', label: t('settings.ldap.ignoreCerts'), hidden: true },
+        {
+          // the certificate not checked at all : off by default (not stored : ignore_certs is)
+          key: 'skip_verify',
+          step: 'connection',
+          line: 2,
+          type: 'checkbox',
+          label: t('settings.runners.skipVerify'),
+          initial: (r) => !!r?.ignore_certs,
+          noTable: true,
+        },
+        {
+          // checked against a private authority : its certificates below (not stored : a CA
+          // bundle is, see beforeSave) ; nothing to check against when not checking
+          key: 'custom_ca',
+          step: 'connection',
+          line: 2,
+          type: 'checkbox',
+          label: t('settings.runners.customCa'),
+          initial: (r) => !!String(r?.ca_bundle || '').trim(),
+          noTable: true,
+          dependency: 'skip_verify',
+          negateDependency: true,
+          // skipping the verification turns it off : its CA bundle goes with it
+          defaultMap: { true: false },
+        },
+        {
+          // a column only : the dialog asks skip_verify
+          key: 'ignore_certs',
+          label: t('settings.ldap.ignoreCerts'),
+          type: 'checkbox',
+          noInput: true,
+          hidden: true,
+        },
         {
           key: 'ca_bundle',
+          step: 'connection',
           icon: 'certificate',
           type: 'textarea',
           line: 3,
           label: t('settings.fields.caBundle'),
           required: false,
-          dependency: 'ignore_certs',
-          negateDependency: true,
+          // a private authority : the certificates the runner's is checked against
+          help: t('settings.runners.caBundleHelp'),
+          dependency: 'custom_ca',
           placeholder: '-----BEGIN CERTIFICATE-----',
           hidden: true,
         },

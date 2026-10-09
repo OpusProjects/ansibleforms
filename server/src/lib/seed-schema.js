@@ -108,6 +108,8 @@ const runnerItem = {
     ignore_certs: bool,
     ca_bundle: str,
     is_default: bool,
+    // an awx runner that is an AAP or an Ascender ; none is AWX
+    flavour: { type: "string", enum: ["aap", "ascender"] },
   },
 };
 

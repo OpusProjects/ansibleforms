@@ -544,7 +544,7 @@ const SCHEMA_MANIFEST = {
                      columns: ['schedule.owner', 'credentials.secret_store', 'credentials.secret_ref', 'settings.vault_env_imported_at', 'jobs.runner',
                                'runners.username', 'runners.password', 'runners.use_credentials', 'runners.node_id', 'jobs.job_log',
                                'jobs.tracker', 'repositories.claim_node', 'repositories.claim_since',
-                               'schedule.claim_node', 'schedule.claim_since'] },
+                               'schedule.claim_node', 'schedule.claim_since', 'runners.flavour'] },
   },
 };
 
@@ -857,6 +857,8 @@ async function patchVersion7(messages, success, failed) {
   await checkPromise(addColumn("runners", "use_credentials", "tinyint(4)", true, "0"), messages, success, failed);
   // the RTE that registered the runner itself (rte/register.js) ; NULL when added by hand or the seed
   await checkPromise(addColumn("runners", "node_id", "varchar(250)", true, "NULL"), messages, success, failed);
+  // an awx runner that is an AAP or an Ascender (empty is AWX) : which product it is
+  await checkPromise(addColumn("runners", "flavour", "varchar(20)", true, "NULL"), messages, success, failed);
   await checkPromise(copyAwxToRunners(), messages, success, failed);
   await checkPromise(addColumn("jobs", "job_log", "longtext", true, "NULL"), messages, success, failed);
 
