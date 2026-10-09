@@ -187,6 +187,10 @@ export default {
       runner_update: 'Runner bijgewerkt',
       runner_delete: 'Runner verwijderd',
       runner_check_create: 'Runner verbinding getest',
+      mailserver_create: 'Mailserver aangemaakt',
+      mailserver_update: 'Mailserver bijgewerkt',
+      mailserver_delete: 'Mailserver verwijderd',
+      mailserver_test_create: 'Testmail verzonden',
       expression_create: 'Expressie geëvalueerd',
       forms_repos_pull_create: 'Formulieren-repository opgehaald',
       forms_repos_sync_create: 'Formulieren-repository gesynchroniseerd',
@@ -783,6 +787,28 @@ export default {
       tokenOnPage_rte: 'Het RTE_TOKEN van de RTE wijzigt u met Token wijzigen, rechtsboven.',
       tokenOnPage_api: 'Het API-token wijzigt u met Token wijzigen, rechtsboven.',
     },
+    mailServers: {
+      label: 'Mailserver',
+      labelPlural: 'Mailservers',
+      description:
+        'De SMTP-servers waarmee de app zijn mail verstuurt (goedkeuringen, jobmeldingen): één ervan is actief.',
+      editServer: 'Mailserver bewerken',
+      deleteServer: 'Mailserver verwijderen',
+      useForMail: 'Gebruiken voor mail',
+      active: 'Actief',
+      activeHelp:
+        'De server waarmee de app zijn mail verstuurt: hier aangezet, uitgezet door een andere actief te maken.',
+      stepServer: 'Server',
+      stepConnection: 'Verbinding',
+      stepSender: 'Afzender',
+      stepTest: 'Test',
+      credential: 'Referentie',
+      helpCredential: 'Een smtp-referentie van Verbindingen > Referenties. Leeg voor een relay zonder aanmelding.',
+      sendTest: 'Testmail versturen',
+      notFound: "Er is geen mailserver met id '{id}'.",
+      fieldsRequired: 'Naam, server en afzenderadres zijn verplicht.',
+      fromSeed: 'De config seed stelt de mail in: de app gebruikt die zolang geen mailserver actief is.',
+    },
     secretStores: {
       label: 'Secret Store',
       description:
@@ -883,6 +909,8 @@ export default {
       notFound: "Er is geen referentie met id '{id}'.",
       fieldsRequired: 'Naam en beschrijving zijn verplicht.',
       loginFromStore: 'Gebruiker en wachtwoord worden uit de secret store gelezen, op het tabblad Opslag.',
+      type_smtp: 'SMTP',
+      type_smtpHint: 'Een gebruiker en wachtwoord voor een mailserver',
     },
     ssh: {
       label: 'SSH Sleutel',

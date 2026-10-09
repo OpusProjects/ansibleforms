@@ -27,7 +27,7 @@ class CredentialModel extends CrudModel {
   // the types a credential can be : what it is for. A cyberark one is how a CyberArk secret
   // store logs in : its AppID (user), and a client certificate and key when the AppID is
   // restricted to one
-  static TYPES = ['ssh', 'git', 'api', 'database', 'cyberark'];
+  static TYPES = ['ssh', 'git', 'api', 'database', 'cyberark', 'smtp'];
 
   /**
    * Keeps a credential's type and its is_database flag in step : the type sets the flag, and

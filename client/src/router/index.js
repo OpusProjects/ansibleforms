@@ -32,6 +32,7 @@ const ldap = () => import('@/pages/admin/ldap.vue');
 const chatSettings = () => import('@/pages/admin/chat.vue');
 const mcpSettings = () => import('@/pages/admin/mcp.vue');
 const mailSettings = () => import('@/pages/admin/mailSettings.vue');
+const mailServer = () => import('@/pages/admin/mail-server.vue');
 const logo = () => import('@/pages/admin/logo.vue');
 const repositories = () => import('@/pages/admin/repositories.vue');
 const repository = () => import('@/pages/admin/repository.vue');
@@ -153,6 +154,12 @@ const routes = [
   { path: '/admin/chat', name: '/admin/chat', component: chatSettings, beforeEnter: checkSettings },
   { path: '/admin/mcp', name: '/admin/mcp', component: mcpSettings, beforeEnter: checkSettings },
   { path: '/admin/mailSettings', name: '/admin/mailSettings', component: mailSettings, beforeEnter: checkSettings },
+  {
+    path: '/admin/mailSettings/:id',
+    name: '/admin/mailSettings/:id',
+    component: mailServer,
+    beforeEnter: checkSettings,
+  },
   { path: '/admin/logo', name: '/admin/logo', component: logo, beforeEnter: checkSettings },
   { path: '/admin/repositories', name: '/admin/repositories', component: repositories, beforeEnter: checkSettings },
   {

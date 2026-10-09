@@ -97,7 +97,7 @@ export function registrationPill(t, state) {
 }
 
 // what a credential is for (its type), in the order the dialog offers them
-export const CREDENTIAL_TYPES = ['ssh', 'git', 'api', 'database', 'cyberark'];
+export const CREDENTIAL_TYPES = ['ssh', 'git', 'api', 'database', 'cyberark', 'smtp'];
 
 // The flavours of an awx runner (server/src/models/runner.model.js has the same list) : which
 // product it is (its uri carries its API path)
@@ -1964,6 +1964,123 @@ export default function getSettings(t) {
           dependency: 'custom_ca',
           placeholder: '-----BEGIN CERTIFICATE-----',
           hidden: true,
+        },
+      ],
+    },
+    mailServers: {
+      // the page title is the menu entry's label (AppSidebar), so the two always match
+      pageTitle: t('sidebar.mail'),
+      type: 'mailserver',
+      label: t('settings.mailServers.label'),
+      labelPlural: t('settings.mailServers.labelPlural'),
+      description: t('settings.mailServers.description'),
+      icon: 'envelope',
+      selectable: false,
+      // a server has its own page (pages/admin/mail-server.vue) : its row and Edit open it, New
+      // the wizard
+      openPage: (item) => `/admin/mailSettings/${item.id}`,
+      // the dialog in steps : the server, how the app reaches it, who the mail is from and the
+      // login
+      steps: [
+        { key: 'server', label: t('settings.mailServers.stepServer') },
+        { key: 'connection', label: t('settings.mailServers.stepConnection') },
+        { key: 'sender', label: t('settings.mailServers.stepSender') },
+      ],
+      // in the row menu : editing, making it the active one, a test mail (on its page), then
+      // Delete last, each apart
+      actions: [
+        { name: 'edit', title: t('settings.mailServers.editServer'), icon: 'pencil', color: 'edit' },
+        {
+          // the one the app sends with : the others stop being it (mailServer.model)
+          name: 'use',
+          title: t('settings.mailServers.useForMail'),
+          icon: 'envelope',
+          color: 'edit',
+          dividerBefore: true,
+          enabledWhen: (m) => !m.is_active,
+          update: () => ({ is_active: 1 }),
+        },
+        {
+          name: 'send_test',
+          title: t('settings.mailServers.sendTest'),
+          icon: 'paper-plane',
+          color: 'test',
+          dividerBefore: true,
+          to: (m) => ({ path: `/admin/mailSettings/${m.id}`, query: { tab: 'test' } }),
+        },
+        { name: 'delete', title: t('settings.mailServers.deleteServer'), icon: 'trash', color: 'delete' },
+      ],
+      fields: [
+        { key: 'id', hidden: true, noInput: true, noTable: true },
+        {
+          // the one the app sends with : a yes / no column, not in the dialog ; the first server
+          // is it, another is chosen with Use for mail
+          key: 'is_active',
+          label: t('settings.mailServers.active'),
+          type: 'checkbox',
+          noInput: true,
+          width: '7rem',
+        },
+        { key: 'name', label: t('settings.fields.name'), required: true, icon: 'heading' },
+        { key: 'description', label: t('settings.fields.description'), icon: 'info-circle', hidden: true },
+        {
+          key: 'server',
+          step: 'connection',
+          label: t('settings.mail.mailServer'),
+          help: t('settings.mail.mailServerHelp'),
+          placeholder: 'smtp.example.com',
+          required: true,
+          icon: 'server',
+        },
+        {
+          key: 'port',
+          step: 'connection',
+          type: 'number',
+          label: t('settings.mail.mailPort'),
+          help: t('settings.mail.mailPortHelp'),
+          initial: (r) => r?.port ?? 587,
+          icon: 'arrows-alt-v',
+          // a number : as wide as its header, in the language shown
+          width: headerWidth(t('settings.mail.mailPort')),
+        },
+        {
+          key: 'secure',
+          step: 'connection',
+          type: 'checkbox',
+          flush: true,
+          label: t('settings.mail.useTls'),
+          help: t('settings.mail.useTlsHelp'),
+          initial: (r) => (r?.id ? !!r.secure : true),
+          // a yes / no column : as wide as its header
+          width: headerWidth(t('settings.mail.useTls')),
+        },
+        {
+          key: 'from_address',
+          step: 'sender',
+          type: 'email',
+          label: t('settings.mail.mailFrom'),
+          help: t('settings.mail.mailFromHelp'),
+          placeholder: 'noreply@example.com',
+          required: true,
+          icon: 'envelope',
+        },
+        {
+          // its login : an smtp credential of Connections > Credentials, or a New one ; none for
+          // a relay that takes mail without a login
+          key: 'credential',
+          step: 'sender',
+          icon: 'key',
+          label: t('settings.mailServers.credential'),
+          help: t('settings.mailServers.helpCredential'),
+          type: 'select',
+          parent: 'credentials',
+          values: 'credential',
+          valueKey: 'name',
+          labelKey: 'name',
+          clearable: true,
+          createWith: 'credentials',
+          createLabel: t('settings.repositories.newCredential'),
+          createDefaults: { credential_type: 'smtp' },
         },
       ],
     },

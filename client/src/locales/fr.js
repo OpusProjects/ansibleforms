@@ -192,6 +192,10 @@ export default {
       runner_update: 'Runner mis à jour',
       runner_delete: 'Runner supprimé',
       runner_check_create: 'Connexion au runner testée',
+      mailserver_create: 'Serveur mail créé',
+      mailserver_update: 'Serveur mail mis à jour',
+      mailserver_delete: 'Serveur mail supprimé',
+      mailserver_test_create: 'Mail de test envoyé',
       expression_create: 'Expression évaluée',
       forms_repos_pull_create: 'Dépôt de formulaires récupéré',
       forms_repos_sync_create: 'Dépôt de formulaires synchronisé',
@@ -790,6 +794,29 @@ export default {
       tokenOnPage_rte: 'Le RTE_TOKEN du RTE se change avec Changer le jeton, en haut à droite.',
       tokenOnPage_api: 'Le jeton API se change avec Changer le jeton, en haut à droite.',
     },
+    mailServers: {
+      label: 'Serveur mail',
+      labelPlural: 'Serveurs mail',
+      description:
+        "Les serveurs SMTP avec lesquels l'application envoie ses mails (approbations, notifications de jobs) : l'un d'eux est actif.",
+      editServer: 'Modifier le serveur mail',
+      deleteServer: 'Supprimer le serveur mail',
+      useForMail: 'Utiliser pour les mails',
+      active: 'Actif',
+      activeHelp:
+        "Le serveur avec lequel l'application envoie ses mails : activé ici, désactivé en en rendant un autre actif.",
+      stepServer: 'Serveur',
+      stepConnection: 'Connexion',
+      stepSender: 'Expéditeur',
+      stepTest: 'Test',
+      credential: 'Identifiant',
+      helpCredential: 'Un identifiant smtp de Connexions > Identifiants. Vide pour un relais sans connexion.',
+      sendTest: 'Envoyer un mail de test',
+      notFound: "Aucun serveur mail avec l'id '{id}'.",
+      fieldsRequired: "Le nom, le serveur et l'adresse d'expéditeur sont obligatoires.",
+      fromSeed:
+        "Le config seed définit les paramètres mail : l'application les utilise tant qu'aucun serveur mail n'est actif.",
+    },
     secretStores: {
       label: 'Coffre de secrets',
       description:
@@ -890,6 +917,8 @@ export default {
       notFound: "Aucun identifiant avec l'id '{id}'.",
       fieldsRequired: 'Le nom et la description sont obligatoires.',
       loginFromStore: "L'utilisateur et le mot de passe sont lus dans le coffre de secrets, onglet Stockage.",
+      type_smtp: 'SMTP',
+      type_smtpHint: 'Un utilisateur et un mot de passe pour un serveur mail',
     },
     ssh: {
       label: 'Cle SSH',
