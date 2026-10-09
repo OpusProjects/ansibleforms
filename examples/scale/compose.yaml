@@ -38,7 +38,8 @@ services:
     <<: *ansibleforms
     environment: { AF_ROLE: worker }
 
-  # runs the playbooks : add it under Connections > Runners (http://rte:8000, RTE_TOKEN)
+  # runs the playbooks : add it under Connections > Runners (http://rte:8000, RTE_TOKEN). ansible-core
+  # and the essentials ; ansibleforms-rte-legacy has what the 6.5 image had (examples/rte)
   rte:
     image: ghcr.io/ansibleforms/ansibleforms-rte:7
     restart: unless-stopped

@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 7 is one step from 6.5. Read the [upgrade guide](https://ansibleforms.com/upgrade-7) and `DEPRECATED.md` before upgrading.
 
-* **Playbooks run on an RTE, not in the AnsibleForms container.** Start an RTE (image `ghcr.io/ansibleforms/ansibleforms-rte`, `AF_ROLE=rte`, `RTE_TOKEN`, the app's `DB_*` and `ENCRYPTION_SECRET`) and add it under Connections > Runners as the default runner, or through the config seed's `runners:` section. The app image is node only : collections, Python libraries and `ansible.cfg` belong in the RTE image (fork `Dockerfile.rte`).
+* **Playbooks run on an RTE, not in the AnsibleForms container.** Start an RTE (image `ghcr.io/ansibleforms/ansibleforms-rte`, `AF_ROLE=rte`, `RTE_TOKEN`, the app's `DB_*` and `ENCRYPTION_SECRET`) and add it under Connections > Runners as the default runner, or through the config seed's `runners:` section. The app image is node only : collections, Python libraries and `ansible.cfg` belong in the RTE. It comes in three layers : `ansibleforms-rte-base` (no python, no ansible : bring your own), `ansibleforms-rte` (ansible-core and the essentials, to build on) and `ansibleforms-rte-legacy` (what the 6.5 image had, so 6.5 playbooks keep working).
 * **AWX / AAP / Ascender connections are runners** of type `awx` : the upgrade moves them, the A.A.P. page is gone, `awx: <name>` on a form still works as an alias of `runner: <name>`.
 * Everything 6.x marked as deprecated is removed :
   * `forms.yaml`, `FORMS_PATH`, `ENABLE_FORMS_YAML_IN_DATABASE` and forms in the base config - every form lives in its own file in the forms folder ;

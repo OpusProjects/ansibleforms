@@ -1,0 +1,24 @@
+# The python packages the AnsibleForms image had before 7, on top of the RTE's own
+# (docker/rte/requirements.txt) : the ansibleforms-rte-legacy image (Dockerfile.rte-legacy).
+# `ansible` is the community package with its collections, at the version the 6.5 image had :
+# 12.3.0, so ansible-core 2.19 - legacy means what 6.5 ran, newer ansible is the rte image's.
+# Dependabot proposes updates, within 12.x (no majors).
+ansible==12.3.0
+beautifulsoup4==4.15.0
+boto==2.49.0
+boto3==1.43.110
+botocore==1.43.110
+colorama==0.4.6
+hvac==2.4.0
+jinja2==3.1.6
+lxml==6.1.3
+netapp-lib==2021.6.25
+netapp-ontap==9.19.1.0
+openpyxl==3.1.5
+pandas==3.0.6
+PyMySQL==1.2.3
+pyVim==3.0.3
+pyvmomi==9.1.1.0
+PyYAML==6.0.3
+six==1.17.0
+solidfire-sdk-python==12.3.0.203
