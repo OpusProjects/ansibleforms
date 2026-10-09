@@ -137,12 +137,13 @@ watch(() => route.path, openActiveSection);
                   <FaIcon :icon="item.icon" :fixedwidth="true" />
                   {{ item.title }}
                 </span>
-                <span
+                <AppMenuBadge
                   v-if="item.badge != null"
-                  class="badge rounded-pill flex-shrink-0 ms-2 af-sidebar-badge"
-                  :class="{ 'is-alert': item.badgeAlert, active: item.active }"
-                  >{{ item.badge }}</span
-                >
+                  class="ms-2"
+                  :count="item.badge"
+                  :active="!!item.active"
+                  :alert="!!item.badgeAlert"
+                />
               </span>
             </a>
             <router-link
@@ -190,20 +191,6 @@ watch(() => route.path, openActiveSection);
 .letter-spacing {
   letter-spacing: 0.05em;
   font-size: 0.9rem;
-}
-/* a count next to an entry, styled like the forms page's category counts */
-.af-sidebar-badge {
-  padding: 0.35em 0.75em;
-  background-color: var(--af-bg-badge);
-  color: var(--af-text-badge);
-}
-.af-sidebar-badge.active {
-  background-color: var(--af-text-badge);
-  color: var(--af-bg-badge);
-}
-.af-sidebar-badge.is-alert:not(.active) {
-  background-color: var(--bs-danger);
-  color: #fff;
 }
 /* a disabled entry (the designer before it is started) : a light grey, clearly not clickable */
 .nav-link.disabled {

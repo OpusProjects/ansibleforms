@@ -92,8 +92,7 @@ onMounted(async () => {
             </span>
             {{ t('forms.allForms') }}</span
           >
-          <span v-if="isAll" class="badge px-3 rounded-pill active">{{ forms.length }}</span>
-          <span v-else class="badge px-3 rounded-pill">{{ forms.length }}</span>
+          <AppMenuBadge :count="forms.length" :active="isAll" />
         </div>
       </li>
       <AppMenuItem
@@ -109,15 +108,3 @@ onMounted(async () => {
     </ul>
   </div>
 </template>
-<style scoped lang="scss">
-/* the forms' counts : the badge colors of the categories (AppMenuItem), All Forms' too */
-.badge {
-  background-color: var(--af-bg-badge) !important;
-  color: var(--af-text-badge) !important;
-
-  &.active {
-    background-color: var(--af-text-badge) !important;
-    color: var(--af-bg-badge) !important;
-  }
-}
-</style>
