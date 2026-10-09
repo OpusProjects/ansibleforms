@@ -1,7 +1,8 @@
 name: Docker
 
-# Builds the images (the app and the three RTE layers) without pushing them, so "does the image still assemble" is answered at
-# review time instead of by hand during publish.sh. Path-filtered because it is the slow
+# Builds the images (the app and the three RTE layers) without publishing them, and runs a
+# playbook on the RTE, so "does the image still assemble and work" is answered at review time
+# instead of by hand during publish.sh. Path-filtered because it is the slow
 # one - it runs npm ci and a vite build inside the image - and for that reason it is not
 # a check worth requiring in branch protection.
 
@@ -10,9 +11,9 @@ on:
     branches: [main, 'release/**']
     paths:
       - 'Dockerfile'
-      - 'Dockerfile.rte-runner'
+      - 'Dockerfile.rte-core'
       - 'Dockerfile.rte-base'
-      - 'Dockerfile.rte-legacy'
+      - 'Dockerfile.rte-full'
       - 'docker/**'
       - 'server/ansible.cfg'
       - 'server/healthcheck.js'
@@ -82,22 +83,64 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
-          file: Dockerfile.rte-runner
+          file: Dockerfile.rte-core
           push: true
-          tags: localhost:5000/ansibleforms-rte-runner:ci
+          tags: localhost:5000/ansibleforms-rte-core:ci
           build-args: |
             BASE_IMAGE=localhost:5000/ansibleforms-rte-base@${{ steps.rte_base.outputs.digest }}
-          cache-from: type=gha,scope=rte-runner
-          cache-to: type=gha,mode=max,scope=rte-runner
+          cache-from: type=gha,scope=rte-core
+          cache-to: type=gha,mode=max,scope=rte-core
 
-      - name: Build the RTE legacy (no publish)
+      - name: Build the RTE full (no publish)
         uses: docker/build-push-action@v7
         with:
           context: .
-          file: Dockerfile.rte-legacy
-          push: false
-          outputs: type=cacheonly
+          file: Dockerfile.rte-full
+          push: true
+          tags: localhost:5000/ansibleforms-rte-full:ci
           build-args: |
-            BASE_IMAGE=localhost:5000/ansibleforms-rte-runner@${{ steps.rte.outputs.digest }}
-          cache-from: type=gha,scope=rte-legacy
-          cache-to: type=gha,mode=max,scope=rte-legacy
+            BASE_IMAGE=localhost:5000/ansibleforms-rte-core@${{ steps.rte.outputs.digest }}
+          cache-from: type=gha,scope=rte-full
+          cache-to: type=gha,mode=max,scope=rte-full
+
+      # An image that builds can still run nothing : a python ansible does not support, a
+      # library without a wheel, a collection that fails to load. Run a playbook on both
+      # runnable layers, and on -full a collection module and the libraries 6.5 playbooks use.
+      - name: Smoke test the RTE images
+        run: |
+          set -euo pipefail
+          mkdir -p smoke
+          cat > smoke/core.yml <<'YAML'
+          - hosts: localhost
+            gather_facts: false
+            tasks:
+              - ansible.builtin.assert:
+                  that: "({'a': 1} | ansible.builtin.dict2items | map(attribute='key') | list) == ['a']"
+          YAML
+          cat > smoke/full.yml <<'YAML'
+          - hosts: localhost
+            gather_facts: false
+            tasks:
+              - community.general.read_csv:
+                  path: /etc/passwd
+                  delimiter: ':'
+                  fieldnames: [user, x, uid]
+                register: rows
+              - ansible.builtin.assert:
+                  that: rows.list | length > 0
+          YAML
+          for layer in core full; do
+            image="localhost:5000/ansibleforms-rte-$layer:ci"
+            docker pull -q "$image"
+            echo "::group::rte-$layer"
+            docker run --rm --entrypoint sh -v "$PWD/smoke:/smoke:ro" "$image" -c \
+              'python --version && ansible --version | head -1 && ansible-playbook /smoke/core.yml'
+            echo "::endgroup::"
+          done
+          docker run --rm --entrypoint sh -v "$PWD/smoke:/smoke:ro" localhost:5000/ansibleforms-rte-full:ci -c '
+            ansible-playbook /smoke/full.yml &&
+            for c in netapp.ontap netapp.elementsw netapp.um_info netapp.storagegrid amazon.aws community.general community.mysql; do
+              ansible-galaxy collection list "$c" >/dev/null 2>&1 || { echo "missing collection $c"; exit 1; }
+            done &&
+            python -c "import pandas, pyVmomi, boto3, netapp_ontap, netapp_lib, solidfire, hvac, lxml, openpyxl, pymysql, bs4, yaml" &&
+            echo "rte-full : playbook, collections and libraries ok"'

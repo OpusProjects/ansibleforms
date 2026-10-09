@@ -124,7 +124,7 @@ jobs:
 
             ```
             docker pull ${{ needs.version.outputs.ghcr }}:${{ needs.version.outputs.rc }}
-            docker pull ${{ needs.version.outputs.ghcr }}-rte-runner:${{ needs.version.outputs.rc }}
+            docker pull ${{ needs.version.outputs.ghcr }}-rte-core:${{ needs.version.outputs.rc }}
             ```
 
             Also tagged `latest-rc`. Built from ${{ needs.version.outputs.sha }}.

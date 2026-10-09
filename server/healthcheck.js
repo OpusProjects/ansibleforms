@@ -1,4 +1,4 @@
-// The images' HEALTHCHECK (Dockerfile, Dockerfile.rte-runner) : healthy when this container answers.
+// The images' HEALTHCHECK (Dockerfile, Dockerfile.rte-base) : healthy when this container answers.
 //   an RTE  : the port takes a connection (its API needs the token for anything else)
 //   HTTPS=0 : /api/v2/version, which needs no login, answers 200 (an app node, a worker)
 //   HTTPS=1 : the port takes a connection. The certificate is usually self-signed and names the

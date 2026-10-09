@@ -19,12 +19,12 @@ the removals below, this is what a 6.5 install changes when it moves to 7.
 
 | What changed | What to do |
 |---|---|
-| playbooks no longer run inside the AnsibleForms container | start an RTE (the `ansibleforms-rte-runner` image, `AF_ROLE=rte`, `RTE_TOKEN`, the app's `DB_*` and `ENCRYPTION_SECRET`), add it under Connections > Runners and mark it as default - or declare it in the config seed's `runners:` section - or name it on the form with `runner:` |
-| the app image is node only: no ansible, python or collections | the RTE comes in three layers ([examples/rte](examples/rte)). Your playbooks use the collections and python libraries the 6.5 image had : run `ansibleforms-rte-legacy` (ansible 12 with ansible-core 2.19, as 6.5 ; python 3.13, so the long-dead `boto` 2 no longer imports - `amazon.aws` uses boto3). Starting clean : `ansibleforms-rte-runner` (ansible-core and the essentials) plus your own, baked into an image built FROM it or mounted (`/etc/ansible/collections`, `/etc/ansible/roles`) |
+| playbooks no longer run inside the AnsibleForms container | start an RTE (the `ansibleforms-rte-full` image, `AF_ROLE=rte`, `RTE_TOKEN`, the app's `DB_*` and `ENCRYPTION_SECRET`), add it under Connections > Runners and mark it as default - or declare it in the config seed's `runners:` section - or name it on the form with `runner:` |
+| the app image is node only: no ansible, python or collections | the RTE comes in three layers ([examples/rte](examples/rte)). Your playbooks use the collections and python libraries the 6.5 image had : run `ansibleforms-rte-full`, which has them on ansible 14 with ansible-core 2.21 (6.5 had ansible 12 with 2.19 : check the [ansible-core porting guides](https://docs.ansible.com/ansible/latest/porting_guides/porting_guides.html) for 2.20 and 2.21 ; python 3.14, and the long-dead `boto` 2 is gone - `amazon.aws` uses boto3). Smaller : `ansibleforms-rte-core` (ansible-core and the essentials) plus your own, baked into an image built FROM it or mounted (`/etc/ansible/collections`, `/etc/ansible/roles`) |
 | `ANSIBLE_PATH`, `PROCESS_MAX_BUFFER` are read by the RTE, not the app | set them in the RTE container's environment |
 | the `awx` table, `/api/v2/awx` and the A.A.P. page are gone | nothing : the upgrade moves every AWX/AAP connection to Runners (type `awx`) ; forms with `awx:` keep working |
 | HashiCorp Vault through `VAULT_*` | nothing : the first start imports them once as the secret store `vault` |
-| images are on `ghcr.io/ansibleforms` only | pull `ghcr.io/ansibleforms/ansibleforms:7` (and `ansibleforms-rte-runner:7` or `ansibleforms-rte-legacy:7`) |
+| images are on `ghcr.io/ansibleforms` only | pull `ghcr.io/ansibleforms/ansibleforms:7` (and `ansibleforms-rte-full:7` or `ansibleforms-rte-core:7`) |
 | optional : several app nodes | `AF_ROLE=app` nodes plus one `AF_ROLE=worker`, sharing the database and the persistent volume - see `examples/scale` |
 
 ## Removed in 7.0.0

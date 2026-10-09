@@ -5,7 +5,7 @@ every job runs on a **runner**, a row of the `runners` table with a type.
 
 | Type | Runs | What it is |
 |---|---|---|
-| `rte` | playbooks (`type: ansible` forms) | a runtime environment container: this server started with `AF_ROLE=rte`, image `ghcr.io/ansibleforms/ansibleforms-rte-runner` |
+| `rte` | playbooks (`type: ansible` forms) | a runtime environment container: this server started with `AF_ROLE=rte`, image `ghcr.io/ansibleforms/ansibleforms-rte-full` (or `-rte-core`, `-rte-base`) |
 | `awx` | templates (`type: awx` forms) | AWX / Ansible Automation Platform / Ascender |
 | later: `semaphore`, `rundeck` | | one adapter file each |
 
@@ -61,7 +61,7 @@ Three choices carry the design:
 | `rte/ansible-core.js` | The one place a playbook runs: `runAnsibleJob`, `buildAnsibleArgs` (no shell), `executeCommand` (process group, abort flag, output limit, job log). |
 | `models/runner.model.js` | The `runners` table: per-type validation, one default per type, masked secrets. |
 | `models/job.model.js` | `Job.launch`, `Job.continue` (approval), multistep, notifications, `Job.lastOrder`. |
-| `/Dockerfile.rte-base`, `/Dockerfile.rte-runner`, `/Dockerfile.rte-legacy`, `/examples/rte` | The RTE images in three layers - the base (no python, no ansible), the RTE (ansible-core and the essentials), legacy (what the v6 image had) - and examples to build your own on them. |
+| `/Dockerfile.rte-base`, `/Dockerfile.rte-core`, `/Dockerfile.rte-full`, `/examples/rte` | The RTE images in three layers - the base (no python, no ansible), core (ansible-core and the essentials), full (the ansible package with collections and what the v6 image had) - and examples to build your own on them. |
 
 ### The runner contract
 
@@ -219,13 +219,13 @@ docker run -d --name rte -p 8010:8000 \
   -e ENCRYPTION_SECRET=<the app's> -e RTE_TOKEN=<token> \
   -v <playbooks or repositories>:/app/dist/persistent/playbooks \
   -v <the app's .ssh>:/root/.ssh:ro \
-  ghcr.io/ansibleforms/ansibleforms-rte-runner:7
+  ghcr.io/ansibleforms/ansibleforms-rte-full:7
 ```
 
 Customers make it their own by building FROM one of the three layers:
 - `ansibleforms-rte-base`, with their own python and ansible ;
-- `ansibleforms-rte-runner`, adding `RUN ansible-galaxy collection install ...` / `pip install ...` ;
-- `ansibleforms-rte-legacy`, which has what the 6.5 image had.
+- `ansibleforms-rte-core`, adding `RUN ansible-galaxy collection install ...` / `pip install ...` ;
+- `ansibleforms-rte-full`, ready to run with the ansible package, its collections and what the 6.5 image had.
 
 See [examples/rte](../../../examples/rte).
 

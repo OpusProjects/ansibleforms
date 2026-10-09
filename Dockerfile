@@ -1,5 +1,5 @@
 # The app runs on plain node: it spawns git, ssh, ssh-keyscan, ssh-keygen, mariadb-dump,
-# mariadb, ytt, ps and sh, never ansible or python (playbooks run on an RTE, Dockerfile.rte-runner).
+# mariadb, ytt, ps and sh, never ansible or python (playbooks run on an RTE, Dockerfile.rte-*).
 # Both node images are pinned by DIGEST, not by tag : a new node build moves the tag, and
 # without the pin that would silently change what every application build starts from - with
 # no commit here to show for it. Dependabot proposes a new pin as a pull request.
@@ -114,7 +114,7 @@ LABEL org.opencontainers.image.source="https://github.com/ansibleforms/ansiblefo
       org.opencontainers.image.url="https://ansibleforms.com" \
       org.opencontainers.image.documentation="https://ansibleforms.com" \
       org.opencontainers.image.title="AnsibleForms" \
-      org.opencontainers.image.description="Self-service forms that run Ansible playbooks on runtime environments (ansibleforms-rte-runner) and AWX/AAP/Ascender templates" \
+      org.opencontainers.image.description="Self-service forms that run Ansible playbooks on runtime environments (ansibleforms-rte-full) and AWX/AAP/Ascender templates" \
       org.opencontainers.image.licenses="GPL-3.0" \
       org.opencontainers.image.version="${VERSION}"
 

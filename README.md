@@ -22,10 +22,15 @@ Everything about installing, configuring and writing forms is documented at [ans
 
 ## Installation
 
-AnsibleForms ships as two container images next to a MySQL database: `ghcr.io/ansibleforms/ansibleforms`, the
-application, and `ghcr.io/ansibleforms/ansibleforms-rte-runner`, the runtime environment that runs its playbooks.
-Build your own RTE on it, with the collections and python packages your playbooks use, or take
-`ansibleforms-rte-legacy`, which has what the 6.5 image had ([examples/rte](examples/rte)).
+Two containers and a MySQL database: the app and an RTE. The images, all on `ghcr.io/ansibleforms`:
+
+| Image | What it is |
+|---|---|
+| `ansibleforms` | The web app: interface, API, schedules and background work |
+| `ansibleforms-rte-full` | The RTE that runs the playbooks: ansible with its collections. **The default** |
+| `ansibleforms-rte-core` | A smaller RTE, ansible-core only, to build your own on ([examples/rte](examples/rte)) |
+| `ansibleforms-rte-base` | The RTE without python or ansible, for your own versions of both |
+
 The [installation guide](https://ansibleforms.com/installation) covers every option; the two ready-made setups are:
 
 | Setup | Repository |
@@ -48,10 +53,9 @@ Coming from 6? Read [Upgrading to 7](https://ansibleforms.com/upgrade-7) before 
 One container is enough: with `AF_ROLE` unset it serves the web app and runs the background work
 (schema, seed, schedules, backups, repository syncs, cleanups). Playbooks run on any number of RTEs.
 
-To scale out or for high availability, split it: several app nodes (`AF_ROLE=app`) behind a load
-balancer and a worker (`AF_ROLE=worker`), all from the same image, on one database and one shared
-persistent volume. One worker works at a time; a second one waits and takes over when the first
-stops. See [examples/scale](examples/scale) for what they need and a compose file.
+To scale out or for high availability, split it: app nodes (`AF_ROLE=app`) behind a load balancer and a
+worker (`AF_ROLE=worker`), all from the same image, on one database and one shared volume. A second worker
+waits and takes over when the first stops; [examples/scale](examples/scale) has a compose file.
 
 ## Contributing
 
