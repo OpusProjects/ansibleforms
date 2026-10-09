@@ -755,6 +755,12 @@ export default {
       stepType: 'Tipo',
       type_vaultHint: 'Segredos lidos do seu motor KV com um token',
       type_cyberark_ccpHint: 'Central Credential Provider, com um ID de aplicação',
+      notFound: "Não existe nenhum cofre de segredos com o id '{id}'.",
+      fieldsRequired: 'O nome e o URI são obrigatórios, e o AppID para um CyberArk.',
+      changeClientKey: 'Alterar chave de cliente',
+      changeLogin: 'Alterar acesso',
+      tokenOnPage: 'O token muda-se com Alterar token, em cima à direita.',
+      clientKeyOnPage: 'A chave de cliente muda-se com Alterar chave de cliente, em cima à direita.',
     },
     storedJobs: {
       label: 'Tarefa Guardada',

@@ -811,6 +811,12 @@ export default {
       stepType: 'Type',
       type_vaultHint: 'Secrets read from its KV engine with a token',
       type_cyberark_ccpHint: 'Central Credential Provider, with an application ID',
+      notFound: "There is no secret store with the id '{id}'.",
+      fieldsRequired: 'Name and URI are required, and the AppID for a CyberArk.',
+      changeClientKey: 'Change client key',
+      changeLogin: 'Change login',
+      tokenOnPage: 'The token is changed with Change token, top right.',
+      clientKeyOnPage: 'The client key is changed with Change client key, top right.',
     },
     storedJobs: {
       label: 'Stored Job',

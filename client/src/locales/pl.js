@@ -753,6 +753,12 @@ export default {
       stepType: 'Typ',
       type_vaultHint: 'Sekrety odczytywane tokenem z jego silnika KV',
       type_cyberark_ccpHint: 'Central Credential Provider, z identyfikatorem aplikacji',
+      notFound: "Nie ma magazynu sekretów o id '{id}'.",
+      fieldsRequired: 'Nazwa i URI są wymagane, a dla CyberArk także AppID.',
+      changeClientKey: 'Zmień klucz klienta',
+      changeLogin: 'Zmień logowanie',
+      tokenOnPage: 'Token zmienia się przyciskiem Zmień token w prawym górnym rogu.',
+      clientKeyOnPage: 'Klucz klienta zmienia się przyciskiem Zmień klucz klienta w prawym górnym rogu.',
     },
     storedJobs: {
       label: 'Zapisane zadanie',

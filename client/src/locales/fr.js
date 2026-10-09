@@ -824,6 +824,12 @@ export default {
       stepType: 'Type',
       type_vaultHint: 'Secrets lus depuis son moteur KV avec un jeton',
       type_cyberark_ccpHint: "Central Credential Provider, avec un ID d'application",
+      notFound: "Aucun coffre de secrets avec l'id '{id}'.",
+      fieldsRequired: "Le nom et l'URI sont obligatoires, et l'AppID pour un CyberArk.",
+      changeClientKey: 'Changer la clé client',
+      changeLogin: 'Changer la connexion',
+      tokenOnPage: 'Le jeton se change avec Changer le jeton, en haut à droite.',
+      clientKeyOnPage: 'La clé client se change avec Changer la clé client, en haut à droite.',
     },
     storedJobs: {
       label: 'Job enregistre',
