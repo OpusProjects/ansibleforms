@@ -807,6 +807,11 @@ export default {
     ldap: {
       label: 'LDAP',
       enableLdap: "Activa l'LDAP",
+      enableLdapHelp: 'Els usuaris inicien la sessió amb el seu compte de LDAP o Active Directory',
+      tabGeneral: 'General',
+      tabServer: 'Servidor',
+      tabUsers: 'Usuaris',
+      tabGroups: 'Grups',
       description:
         "Connecta't a un servidor LDAP o Active Directory per a l'autenticació d'usuaris i l'assignació de grups.",
       enableTls: 'Activa TLS',

@@ -931,9 +931,17 @@ export default function getSettings(t) {
       icon: 'globe',
       actions: [{ name: 'test', title: t('settings.common.testConnection'), icon: 'plug', dependency: 'enable' }],
       fields: [
-        { key: 'enable', label: t('settings.ldap.enableLdap'), type: 'checkbox', isToggle: true },
+        {
+          key: 'enable',
+          tab: 'general',
+          label: t('settings.ldap.enableLdap'),
+          help: t('settings.ldap.enableLdapHelp'),
+          type: 'checkbox',
+          isToggle: true,
+        },
         {
           key: 'server',
+          tab: 'server',
           icon: 'server',
           line: 0,
           label: t('settings.fields.server'),
@@ -942,6 +950,7 @@ export default function getSettings(t) {
         },
         {
           key: 'port',
+          tab: 'server',
           icon: 'arrows-alt-v',
           type: 'number',
           line: 0,
@@ -951,6 +960,7 @@ export default function getSettings(t) {
         },
         {
           key: 'enable_tls',
+          tab: 'server',
           label: t('settings.ldap.enableTls'),
           help: t('settings.ldap.enableTlsDesc'),
           type: 'checkbox',
@@ -962,6 +972,7 @@ export default function getSettings(t) {
         },
         {
           key: 'ignore_certs',
+          tab: 'server',
           hideWhenDisabled: true,
           label: t('settings.ldap.ignoreCerts'),
           help: t('settings.ldap.ignoreCertsDesc'),
@@ -971,6 +982,7 @@ export default function getSettings(t) {
         },
         {
           key: 'cert',
+          tab: 'server',
           hideWhenDisabled: true,
           icon: 'certificate',
           type: 'textarea',
@@ -983,6 +995,7 @@ export default function getSettings(t) {
         },
         {
           key: 'ca_bundle',
+          tab: 'server',
           hideWhenDisabled: true,
           icon: 'certificate',
           type: 'textarea',
@@ -995,6 +1008,7 @@ export default function getSettings(t) {
         },
         {
           key: 'search_base',
+          tab: 'users',
           icon: 'search',
           line: 3,
           label: t('settings.ldap.searchBase'),
@@ -1004,6 +1018,7 @@ export default function getSettings(t) {
         },
         {
           key: 'mail_attribute',
+          tab: 'users',
           icon: 'envelope',
           line: 3,
           label: t('settings.ldap.mailAttribute'),
@@ -1013,6 +1028,7 @@ export default function getSettings(t) {
         },
         {
           key: 'bind_user_dn',
+          tab: 'server',
           icon: 'user',
           line: 4,
           label: t('settings.ldap.bindUserDn'),
@@ -1022,6 +1038,7 @@ export default function getSettings(t) {
         },
         {
           key: 'bind_user_pw',
+          tab: 'server',
           icon: 'lock',
           line: 4,
           label: t('settings.ldap.bindUserPassword'),
@@ -1032,6 +1049,7 @@ export default function getSettings(t) {
         },
         {
           key: 'username_attribute',
+          tab: 'users',
           icon: 'image-portrait',
           line: 5,
           label: t('settings.ldap.usernameAttribute'),
@@ -1041,6 +1059,7 @@ export default function getSettings(t) {
         },
         {
           key: 'groups_attribute',
+          tab: 'groups',
           icon: 'users',
           line: 5,
           label: t('settings.ldap.groupsAttribute'),
@@ -1050,6 +1069,7 @@ export default function getSettings(t) {
         },
         {
           key: 'groups_search_base',
+          tab: 'groups',
           icon: 'users-viewfinder',
           line: 6,
           label: t('settings.ldap.groupsSearchBase'),
@@ -1059,6 +1079,7 @@ export default function getSettings(t) {
         },
         {
           key: 'group_class',
+          tab: 'groups',
           icon: 'users-rectangle',
           line: 6,
           label: t('settings.ldap.groupClass'),
@@ -1068,6 +1089,7 @@ export default function getSettings(t) {
         },
         {
           key: 'group_member_attribute',
+          tab: 'groups',
           icon: 'users-line',
           line: 7,
           label: t('settings.ldap.groupMemberAttribute'),
@@ -1077,6 +1099,7 @@ export default function getSettings(t) {
         },
         {
           key: 'group_member_user_attribute',
+          tab: 'groups',
           icon: 'user-group',
           line: 7,
           label: t('settings.ldap.groupMemberUserAttribute'),
@@ -1086,6 +1109,7 @@ export default function getSettings(t) {
         },
         {
           key: 'groupfilter',
+          tab: 'groups',
           icon: 'filter',
           line: 8,
           label: t('settings.ldap.groupFilter'),

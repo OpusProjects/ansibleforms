@@ -785,6 +785,11 @@ export default {
     ldap: {
       label: 'LDAP',
       enableLdap: '启用 LDAP',
+      enableLdapHelp: '用户使用其 LDAP 或 Active Directory 帐户登录',
+      tabGeneral: '常规',
+      tabServer: '服务器',
+      tabUsers: '用户',
+      tabGroups: '组',
       description: '连接到 LDAP 或 Active Directory 服务器，用于用户身份验证和组映射。',
       enableTls: '启用 TLS',
       enableTlsDesc: '使用 LDAPS（TLS 加密）连接到 LDAP 服务器。',
