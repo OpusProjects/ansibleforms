@@ -102,12 +102,12 @@ const columnDefs = computed(() => [
   },
 ]);
 const hiddenColumns = ref(new Set());
-const columnFilters = ref({});
+// the search on the title line : a job whose shown columns (or a step's id or target) hold it
+const search = ref('');
 const sortKey = ref(null);
 const sortDir = ref(1); // 1 asc, -1 desc
 
 const visibleColumns = computed(() => columnDefs.value.filter((c) => !hiddenColumns.value.has(c.key)));
-const filterableColumns = computed(() => visibleColumns.value.filter((c) => c.filterable));
 
 function cellText(item, col) {
   if (!item) return '';
@@ -240,8 +240,7 @@ const emptyMessage = computed(() => {
     const entry = MENU_STATUSES.find((m) => m.status === statusFilter.value);
     return t('jobs.empty.status', { status: (entry ? entry.label() : statusFilter.value).toLowerCase() });
   }
-  const filtered = Object.values(columnFilters.value).some((v) => v != null && String(v).trim() !== '');
-  return filtered ? t('jobs.empty.filtered') : t('jobs.empty.none');
+  return search.value.trim() ? t('jobs.empty.filtered') : t('jobs.empty.none');
 });
 
 // main jobs
@@ -251,33 +250,25 @@ const parentJobs = computed(() => {
   // the left menu's status filter
   if (statusFilter.value) list = list.filter((x) => x.status === statusFilter.value);
 
-  // Per-column filters (case-insensitive substring on the rendered text).
-  // For the `id` and `form` columns we also match against any of the
-  // parent's children (child rows display `c.id` and `c.target`), so a
-  // user can find a multistep parent by typing a subjob's id/target.
-  const active = Object.entries(columnFilters.value).filter(([, v]) => v != null && String(v).trim() !== '');
-  if (active.length) {
+  // The search (case-insensitive, on the text the columns show), as every table's : a job
+  // whose shown columns hold it, or a multistep job whose steps' id or target does, so a
+  // job is found by one of its steps
+  const needle = search.value.trim().toLowerCase();
+  if (needle) {
     const allJobs = jobs.value || [];
-    list = list.filter((item) =>
-      active.every(([key, val]) => {
-        const col = columnDefs.value.find((c) => c.key === key);
-        if (!col) return true;
-        const needle = String(val).toLowerCase();
-        if (cellText(item, col).toLowerCase().includes(needle)) return true;
-        if (key === 'id' || key === 'form') {
-          const kids = allJobs.filter((x) => x.parent_id === item.id);
-          return kids.some((c) => {
-            if (key === 'id')
-              return String(c.id ?? '')
-                .toLowerCase()
-                .includes(needle);
-            return String(c.target ?? '')
+    list = list.filter(
+      (item) =>
+        visibleColumns.value.some((col) => cellText(item, col).toLowerCase().includes(needle)) ||
+        allJobs.some(
+          (c) =>
+            c.parent_id === item.id &&
+            (String(c.id ?? '')
               .toLowerCase()
-              .includes(needle);
-          });
-        }
-        return false;
-      }),
+              .includes(needle) ||
+              String(c.target ?? '')
+                .toLowerCase()
+                .includes(needle)),
+        ),
     );
   }
 
@@ -444,27 +435,22 @@ function childJobs(id) {
   if (isLoading.value) return [];
   const all = jobs.value.filter((x) => x.parent_id === id);
 
-  // If the user is filtering by id or form, auto-show the children that
-  // match (so a multistep parent doesn't have to be manually expanded
-  // to see the matching subjob).
-  const idF = (columnFilters.value.id || '').toString().trim().toLowerCase();
-  const formF = (columnFilters.value.form || '').toString().trim().toLowerCase();
-  const filterActive = idF !== '' || formF !== '';
+  // a search the steps match (their id or target) : those steps shown, so a multistep job
+  // does not have to be unfolded to see why it is listed
+  const needle = search.value.trim().toLowerCase();
 
   let visible;
   if (collapsed.value[id]) {
     visible = all;
-  } else if (filterActive) {
+  } else if (needle) {
     visible = all.filter(
       (c) =>
-        (idF &&
-          String(c.id ?? '')
-            .toLowerCase()
-            .includes(idF)) ||
-        (formF &&
-          String(c.target ?? '')
-            .toLowerCase()
-            .includes(formF)),
+        String(c.id ?? '')
+          .toLowerCase()
+          .includes(needle) ||
+        String(c.target ?? '')
+          .toLowerCase()
+          .includes(needle),
     );
   } else {
     visible = [];
@@ -964,6 +950,8 @@ onBeforeUnmount(() => {
             <BsButton icon="arrow-left" @click="backToJobs" cssClass="text-nowrap">{{ t('jobs.backToJobs') }}</BsButton>
           </div>
           <div v-else class="d-flex justify-content-end align-items-center">
+            <!-- the search, as every table's on the title line -->
+            <BsSearch v-model="search" class="af-table-search me-2" :placeholder="t('common.filter')" />
             <BsButton icon="refresh" @click="loadJobs" cssClass="me-2 text-nowrap">{{ t('jobs.refresh') }}</BsButton>
             <div class="input-group me-2" style="width: 160px">
               <span class="input-group-text">
@@ -1010,19 +998,6 @@ onBeforeUnmount(() => {
                       <font-awesome-icon icon="sort" class="opacity-25" />
                     </template>
                   </span>
-                </th>
-              </tr>
-              <tr v-if="filterableColumns.length" class="bs-dt-filter-row">
-                <th></th>
-                <th v-for="col in visibleColumns" :key="'f-' + col.key">
-                  <input
-                    v-if="col.filterable"
-                    v-model="columnFilters[col.key]"
-                    type="search"
-                    class="form-control form-control-sm"
-                    :placeholder="col.label"
-                    @click.stop
-                  />
                 </th>
               </tr>
             </thead>

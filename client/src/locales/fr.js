@@ -415,10 +415,6 @@ export default {
     presetDelete: 'Supprimer le préréglage',
     presetNamePlaceholder: 'Nom...',
     export: 'Exporter en CSV',
-    filterAll: 'Tous',
-    filterGt0: 'Au moins 1',
-    filterNumberHint: 'p. ex. >50 ou 10-50',
-    filterNumberHelp: 'Tapez >50, <20, =0 ou une plage comme 10-50',
   },
   errors: {
     noAccess: 'Acces refuse',
@@ -1572,7 +1568,7 @@ export default {
     // the message in the table when no job is shown
     empty: {
       status: 'Aucun job avec le statut {status}.',
-      filtered: 'Aucun job ne correspond aux filtres de colonnes.',
+      filtered: 'Aucun job ne correspond au filtre.',
       none: "Aucun job pour le moment. Ils apparaissent ici dès qu'un formulaire est exécuté.",
     },
     // the line under the page title, per status of the left menu

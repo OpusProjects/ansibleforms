@@ -410,10 +410,6 @@ export default {
     presetDelete: 'Eliminar ajuste',
     presetNamePlaceholder: 'Nombre...',
     export: 'Exportar CSV',
-    filterAll: 'Todos',
-    filterGt0: 'Al menos 1',
-    filterNumberHint: 'p. ej. >50 o 10-50',
-    filterNumberHelp: 'Escribe >50, <20, =0 o un rango como 10-50',
   },
   errors: {
     noAccess: 'Sin acceso',
@@ -1558,7 +1554,7 @@ export default {
     // the message in the table when no job is shown
     empty: {
       status: 'No hay jobs con estado {status}.',
-      filtered: 'Ningún job coincide con los filtros de columna.',
+      filtered: 'Ningún job coincide con el filtro.',
       none: 'Todavía no hay jobs. Aparecen aquí en cuanto se ejecuta un formulario.',
     },
     // the line under the page title, per status of the left menu

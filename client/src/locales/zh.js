@@ -404,10 +404,6 @@ export default {
     presetDelete: '删除预设',
     presetNamePlaceholder: '名称...',
     export: '导出 CSV',
-    filterAll: '全部',
-    filterGt0: '至少有 1 个',
-    filterNumberHint: '例如 >50 或 10-50',
-    filterNumberHelp: '输入 >50、<20、=0 或范围，如 10-50',
   },
   errors: {
     noAccess: '无权访问',
@@ -1513,7 +1509,7 @@ export default {
     // the message in the table when no job is shown
     empty: {
       status: '没有状态为“{status}”的作业。',
-      filtered: '没有符合列筛选条件的作业。',
+      filtered: '没有符合筛选条件的作业。',
       none: '暂无作业。运行表单后，作业会立即显示在这里。',
     },
     // the line under the page title, per status of the left menu

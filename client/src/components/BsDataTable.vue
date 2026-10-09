@@ -193,8 +193,6 @@ onMounted(() => {
 const globalFilter = ref(props.initialFilter || '');
 const columnFilters = ref({});
 
-const filterableColumns = computed(() => visibleColumns.value.filter((c) => c.filterable));
-
 // ─── Sort state ───────────────────────────────────────────────────────────────
 const sortKey = ref(null);
 const sortDir = ref(1); // 1 asc, -1 desc
@@ -613,41 +611,6 @@ function exportCsv() {
             <!-- Row actions header -->
             <th v-if="$slots['row-actions']" style="width: 3.5rem"></th>
           </tr>
-          <!-- Per-column filter row -->
-          <tr v-if="filterableColumns.length" class="bs-dt-filter-row">
-            <th v-if="selectable" class="bs-dt-select"></th>
-            <th v-for="col in visibleColumns" :key="'f-' + col.key" :class="{ 'text-end': col.align === 'end' }">
-              <select
-                v-if="col.filterable && col.filterType === 'boolean'"
-                v-model="columnFilters[col.key]"
-                class="form-select form-select-sm"
-                @click.stop
-              >
-                <option value="">{{ t('dataTable.filterAll') }}</option>
-                <option value="yes">{{ t('common.yes') }}</option>
-                <option value="no">{{ t('common.no') }}</option>
-              </select>
-              <select
-                v-else-if="col.filterable && col.filterType === 'gt0'"
-                v-model="columnFilters[col.key]"
-                class="form-select form-select-sm"
-                @click.stop
-              >
-                <option value="">{{ t('dataTable.filterAll') }}</option>
-                <option value="gt0">{{ t('dataTable.filterGt0') }}</option>
-              </select>
-              <input
-                v-else-if="col.filterable"
-                v-model="columnFilters[col.key]"
-                type="search"
-                class="form-control form-control-sm"
-                :placeholder="col.filterType === 'number' ? t('dataTable.filterNumberHint') : col.label"
-                :title="col.filterType === 'number' ? t('dataTable.filterNumberHelp') : null"
-                @click.stop
-              />
-            </th>
-            <th v-if="$slots['row-actions']"></th>
-          </tr>
         </thead>
         <tbody>
           <tr
@@ -748,14 +711,6 @@ function exportCsv() {
 .af-table td:first-child {
   padding-left: 1.25rem;
 }
-/* (.bs-dt-table too : above the plain table's filter row rule below) */
-.af-table.bs-dt-table thead tr.bs-dt-filter-row th {
-  padding: 0.35rem 0.9rem;
-  background: var(--bs-body-bg);
-}
-.af-table.bs-dt-table thead tr.bs-dt-filter-row th:first-child {
-  padding-left: 1.25rem;
-}
 /* a right-aligned number sits against the next column's left-aligned text : keep them apart,
    on both sides of the gap ; the last column keeps the same room on its right */
 th.text-end:has(+ th:not(.text-end)),
@@ -814,21 +769,6 @@ td.text-end:last-child {
   background: transparent;
   font-weight: 600;
   text-transform: none;
-}
-/* Filter row: tighter, subtle background, no borders — the inputs themselves
-   provide the visual structure. */
-.bs-dt-table thead tr.bs-dt-filter-row th {
-  border-bottom: 1px solid var(--bs-border-color-translucent);
-  background: var(--bs-tertiary-bg);
-  /* Align input visually with body-cell text: shave ~2px off the left/right
-     so the input border sits flush with the column's text gutter. */
-  padding: 0.25rem 0.2rem;
-}
-.bs-dt-table thead tr.bs-dt-filter-row .form-control-sm {
-  font-size: 0.8rem;
-  padding: 0.15rem 0.4rem;
-  background: var(--bs-body-bg);
-  border-color: var(--bs-border-color-translucent);
 }
 /* Body rows: horizontal separators only, no vertical column lines. */
 .bs-dt-table tbody td {

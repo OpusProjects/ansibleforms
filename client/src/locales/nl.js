@@ -410,10 +410,6 @@ export default {
     presetDelete: 'Verwijder preset',
     presetNamePlaceholder: 'Naam...',
     export: 'Exporteer CSV',
-    filterAll: 'Alle',
-    filterGt0: 'Heeft er minstens 1',
-    filterNumberHint: 'bv. >50 of 10-50',
-    filterNumberHelp: 'Typ >50, <20, =0 of een bereik zoals 10-50',
   },
   errors: {
     noAccess: 'Geen toegang',
@@ -1562,7 +1558,7 @@ export default {
     // the message in the table when no job is shown
     empty: {
       status: 'Geen jobs met status {status}.',
-      filtered: 'Geen jobs die overeenkomen met de kolomfilters.',
+      filtered: 'Geen jobs die overeenkomen met het filter.',
       none: 'Nog geen jobs. Ze verschijnen hier zodra een formulier wordt uitgevoerd.',
     },
     // the line under the page title, per status of the left menu
