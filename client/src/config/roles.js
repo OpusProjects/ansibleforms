@@ -21,6 +21,7 @@ export const roleOptionKeys = [
   'allowStoredJobs',
   'allowPlannedJobs',
   'allowChat',
+  'allowMcp',
   'extendedTokenExpiration',
 ];
 
@@ -41,6 +42,7 @@ const trueByDefaultOptions = [
   'allowPlannedJobs',
   'allowLogin',
   'allowChat',
+  'allowMcp',
 ];
 
 // Options whose effective value defaults to the "is this an admin" check.
@@ -107,6 +109,8 @@ export function roleToEditable(r) {
     // a checkbox renders as off). Unknown flags are kept verbatim.
     options[k] = roleOptionKeys.includes(k) ? !!v : v;
   }
+  // allowMcp absent : the server gives it the role's allowChat (user.model.js), so it shows that
+  if (!r.options || r.options.allowMcp === undefined) options.allowMcp = options.allowChat;
   return {
     name: r.name || '',
     groups: (r.groups || []).map(parseProviderEntry),
@@ -164,6 +168,8 @@ export function serializeRole(r) {
   // explicit values needed to preserve exactly what the user saw. The trimmed
   // name is the one being written, so it is the one to branch on.
   const defaults = roleOptionDefaults(name);
+  // allowMcp left out is read as the role's allowChat : it is written whenever it differs
+  defaults.allowMcp = r.options?.allowChat === undefined ? defaults.allowChat : !!r.options.allowChat;
   const explicit = r._explicitOptions || [];
   const options = {};
   for (const k of roleOptionKeys) {

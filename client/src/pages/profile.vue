@@ -139,7 +139,7 @@ const PERMISSION_GROUPS = [
   {
     name: 'other',
     title: () => t('profilePage.groupOther'),
-    keys: ['allowLogin', 'allowBackupOps', 'allowChat', 'extendedTokenExpiration'],
+    keys: ['allowLogin', 'allowBackupOps', 'allowChat', 'allowMcp', 'extendedTokenExpiration'],
   },
 ];
 // what each option lets the user do (spelled out per key, so the i18n key check finds them)
@@ -160,6 +160,7 @@ const OPTION_DESCRIPTIONS = {
   allowLogin: () => t('profilePage.optionDescription.allowLogin'),
   allowBackupOps: () => t('profilePage.optionDescription.allowBackupOps'),
   allowChat: () => t('profilePage.optionDescription.allowChat'),
+  allowMcp: () => t('profilePage.optionDescription.allowMcp'),
   extendedTokenExpiration: () => t('profilePage.optionDescription.extendedTokenExpiration'),
 };
 const permissionGroups = computed(() => {

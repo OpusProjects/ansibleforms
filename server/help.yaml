@@ -577,7 +577,7 @@
       MCP client (a chat backend, an IDE) can list the forms a user may use, resolve their
       fields, launch jobs and follow them. Every request carries an AnsibleForms access token
       and runs as that user, with the same form roles and job visibility as in the browser.
-      Users whose roles turn off `allowChat` ("Allow AI assistants") cannot use it. Takes
+      Users whose roles turn off `allowMcp` ("Allow MCP") cannot use it. Takes
       effect at once, without a restart. See the MCP page of the documentation.
   - name: MCP_READ_ONLY
     version: 7.0.0
@@ -1243,7 +1243,8 @@
       - allowScheduledJobs: The user can create and manage scheduled jobs (recurring cron or one-time). Default for admins only. Grant it only to roles you would trust as admins: every user with this option sees and can change all schedules, not only their own, and a schedule they create runs with admin rights, for any form. (Added in 6.1.5)
       - allowStoredJobs: The user can store and load job data for later use. (Added in 6.1.5)
       - allowPlannedJobs: The user can plan a one-time run of a form they may run ("Run later"). The job runs as that user, not as admin, and they cannot see or change other schedules. (Added in 6.1.5)
-      - allowChat: The user can use the AI assistants, the chat assistant and the MCP server (when they are enabled). Default true. (Added in 6.5.0, the MCP server in 7.0.0)
+      - allowChat: The user can use the chat assistant (when it is enabled). Default true. (Added in 6.5.0)
+      - allowMcp: The user can use the MCP server from an AI agent (when it is enabled). Defaults to the role's allowChat. (Added in 7.0.0)
         
       When options are not set, the admin role will have all options.  
       When options are set on the public role, they will have the lowest precedence and can be used as default options for all roles.  
@@ -1399,7 +1400,8 @@
           - allowScheduledJobs: The user can create and manage scheduled jobs (recurring cron or one-time). Default for admins only. Grant it only to roles you would trust as admins: every user with this option sees and can change all schedules, not only their own, and a schedule they create runs with admin rights, for any form. (Added in 6.1.5)
           - allowStoredJobs: The user can store and load job data for later use. (Added in 6.1.5)
           - allowPlannedJobs: The user can plan a one-time run of a form they may run ("Run later"). The job runs as that user, not as admin, and they cannot see or change other schedules. (Added in 6.1.5)
-          - allowChat: The user can use the AI assistants, the chat assistant and the MCP server (when they are enabled). Default true. (Added in 6.5.0, the MCP server in 7.0.0)
+          - allowChat: The user can use the chat assistant (when it is enabled). Default true. (Added in 6.5.0)
+          - allowMcp: The user can use the MCP server from an AI agent (when it is enabled). Defaults to the role's allowChat. (Added in 7.0.0)
 
           When options are not set, the admin role will have all options.  
           When options are set on the public role, they will have the lowest precedence and can be used as default options for all roles.  

@@ -11,7 +11,7 @@
 //    role's CURRENT name - caching it at load time meant renaming a role to 'admin'
 //    wrote no options at all and granted full admin while the UI showed the switches off.
 import { describe, it, expect } from 'vitest';
-import { serializeRole, roleOptionDefaults, roleOptionKeys } from '@/config/roles';
+import { serializeRole, roleOptionDefaults, roleOptionKeys, roleToEditable } from '@/config/roles';
 
 describe('an untouched role writes no options', () => {
   const loaded = { name: 'operators', groups: ['local/ops'], _uid: 1 };
@@ -72,5 +72,35 @@ describe('the baseline follows the role name', () => {
     const off = { ...roleOptionDefaults('operators'), showSettings: false };
     const out = serializeRole({ name: 'admin', groups: ['local/x'], options: off });
     expect(out.options?.showSettings).toBe(false);
+  });
+});
+
+// 3. allowMcp, left out, is read by the server as the role's allowChat (user.model.js) : a role
+//    that turned the chat off before allowMcp existed keeps the MCP server off too. The editor
+//    must show it that way, and write allowMcp only when it differs from allowChat.
+describe('allowMcp follows allowChat unless it is set', () => {
+  it('a role without allowMcp shows the allowChat it has', () => {
+    expect(roleToEditable({ name: 'ops', options: { allowChat: false } }).options.allowMcp).toBe(false);
+    expect(roleToEditable({ name: 'ops' }).options.allowMcp).toBe(true);
+    expect(roleToEditable({ name: 'ops', options: { allowChat: false, allowMcp: true } }).options.allowMcp).toBe(true);
+  });
+
+  it('allowMcp is written only when it differs from allowChat', () => {
+    const same = serializeRole({
+      name: 'ops',
+      options: { ...roleOptionDefaults('ops'), allowChat: false, allowMcp: false },
+    });
+    expect(same.options).toEqual({ allowChat: false });
+    const mcpOnly = serializeRole({
+      name: 'ops',
+      options: { ...roleOptionDefaults('ops'), allowChat: false, allowMcp: true },
+    });
+    expect(mcpOnly.options).toEqual({ allowChat: false, allowMcp: true });
+    const chatOnly = serializeRole({ name: 'ops', options: { ...roleOptionDefaults('ops'), allowMcp: false } });
+    expect(chatOnly.options).toEqual({ allowMcp: false });
+  });
+
+  it('an untouched role still writes no options', () => {
+    expect(serializeRole(roleToEditable({ name: 'ops', groups: ['local/x'] })).options).toBeUndefined();
   });
 });

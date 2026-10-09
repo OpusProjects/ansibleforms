@@ -222,7 +222,7 @@ const load = async (app) => {
   const featureOn = (key) => (req, res, next) => (appConfig[key] ? next() : res.status(404).json({ error: 'Not found' }));
 
   // MCP server for AI agents (ENABLE_MCP) : every tool runs as the authenticated user, whose
-  // roles must allow the AI assistants (allowChat, as for the chat)
+  // roles must allow the MCP server (allowMcp)
   app.use(`/api/v2/mcp`, featureOn('enableMcp'), cors(), authobj, Middleware.checkMcpMiddleware, mcpRoutes);
   if (appConfig.enableMcp) logger.notice(`MCP endpoint enabled on ${appConfig.baseUrl}/api/v2/mcp`);
 

@@ -112,7 +112,7 @@ function removeUser(index) {
       placeholder="groupname"
       :disabled="readOnly || role._public"
     />
-    <button v-if="!readOnly" class="btn btn-sm btn-outline-danger" @click="removeGroup(gIdx)">
+    <button v-if="!readOnly" class="btn btn-outline-danger align-self-stretch af-remove" @click="removeGroup(gIdx)">
       <FaIcon icon="times" />
     </button>
   </div>
@@ -133,7 +133,7 @@ function removeUser(index) {
       <option v-for="u in localUsers" :key="u" :value="u">{{ u }}</option>
     </select>
     <input v-else class="form-control" v-model="usr.name" placeholder="username" :disabled="readOnly || role._public" />
-    <button v-if="!readOnly" class="btn btn-sm btn-outline-danger" @click="removeUser(uIdx)">
+    <button v-if="!readOnly" class="btn btn-outline-danger align-self-stretch af-remove" @click="removeUser(uIdx)">
       <FaIcon icon="times" />
     </button>
   </div>
@@ -161,6 +161,13 @@ function removeUser(index) {
 .provider-select {
   width: 130px;
   flex-shrink: 0;
+}
+/* the remove button of a group or a user : as tall as the dropdowns beside it, and square */
+.af-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.75rem;
 }
 .role-options {
   margin-top: -0.5rem;
