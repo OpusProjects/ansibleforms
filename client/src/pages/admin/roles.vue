@@ -267,9 +267,7 @@ onMounted(async () => {
                   v-if="!readOnly && !isPublicRole(role)"
                   :class="[role.groups.length > 0 ? 'mt-3' : 'mt-1', 'mb-4']"
                 >
-                  <BsButton icon="plus" colorClass="secondary" @click="addGroup(role)">{{
-                    t('settings.settingsPage.addGroup')
-                  }}</BsButton>
+                  <BsButton icon="plus" @click="addGroup(role)">{{ t('settings.settingsPage.addGroup') }}</BsButton>
                 </div>
                 <label class="form-label fw-bold">{{ t('settings.settingsPage.users') }}</label>
                 <div v-for="(usr, uIdx) in role.users" :key="usr._uid" class="d-flex align-items-center gap-2 mb-2">
@@ -301,9 +299,7 @@ onMounted(async () => {
                   </button>
                 </div>
                 <div v-if="!readOnly && !isPublicRole(role)" :class="[role.users.length > 0 ? 'mt-3' : 'mt-1', 'mb-4']">
-                  <BsButton icon="plus" colorClass="secondary" @click="addUser(role)">{{
-                    t('settings.settingsPage.addUser')
-                  }}</BsButton>
+                  <BsButton icon="plus" @click="addUser(role)">{{ t('settings.settingsPage.addUser') }}</BsButton>
                 </div>
                 <p v-if="isPublicRole(role)" class="text-muted small mt-1 mb-4">
                   {{ t('settings.settingsPage.publicRoleNote') }}
@@ -322,14 +318,12 @@ onMounted(async () => {
                 </div>
               </div>
             </div>
-            <div class="d-flex justify-content-end mt-3">
-              <BsButton icon="plus" colorClass="secondary" :disabled="readOnly" @click="addRole()">{{
-                t('settings.settingsPage.addRole')
-              }}</BsButton>
-            </div>
           </div>
         </template>
         <template #actions>
+          <BsButton icon="plus" :disabled="readOnly" @click="addRole()">{{
+            t('settings.settingsPage.addRole')
+          }}</BsButton>
           <BsButton
             icon="save"
             :colorClass="isRolesDirty ? 'primary' : 'secondary'"

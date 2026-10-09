@@ -295,14 +295,12 @@ onMounted(async () => {
                 </tr>
               </tbody>
             </table>
-            <div class="d-flex justify-content-end mt-3">
-              <BsButton icon="plus" colorClass="secondary" :disabled="readOnly" @click="addCategory()">{{
-                t('settings.settingsPage.addCategory')
-              }}</BsButton>
-            </div>
           </div>
         </template>
         <template #actions>
+          <BsButton icon="plus" :disabled="readOnly" @click="addCategory()">{{
+            t('settings.settingsPage.addCategory')
+          }}</BsButton>
           <BsButton
             icon="save"
             :colorClass="isCategoriesDirty ? 'primary' : 'secondary'"
