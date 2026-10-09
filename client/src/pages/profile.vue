@@ -592,7 +592,7 @@ async function changePassword() {
                     </td>
                     <td :class="o.value ? '' : 'text-body-secondary'">{{ o.description }}</td>
                     <td class="text-end">
-                      <span class="badge rounded-pill af-pill" :class="o.value ? 'af-pill-on' : 'af-pill-off'">
+                      <span class="badge rounded-pill af-pill" :class="o.value ? 'af-pill-green' : 'af-pill-grey'">
                         <FaIcon :icon="o.value ? 'check' : 'xmark'" class="me-1" />{{
                           o.value ? t('profilePage.allowed') : t('profilePage.notAllowed')
                         }}
@@ -885,14 +885,6 @@ form.af-field {
   font-size: 0.78rem;
   font-weight: 600;
   padding: 0.4em 0.75em;
-}
-.af-pill-on {
-  color: var(--bs-success-text-emphasis);
-  background-color: var(--bs-success-bg-subtle);
-}
-.af-pill-off {
-  color: var(--bs-secondary-color);
-  background-color: var(--bs-secondary-bg);
 }
 // the curl example under a new token
 .af-token-example {

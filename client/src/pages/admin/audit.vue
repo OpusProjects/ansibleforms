@@ -243,7 +243,7 @@ onMounted(async () => {
                         <td>{{ actionLabel(r.action) }}</td>
                         <td class="audit-target">{{ r.target }}</td>
                         <td>
-                          <span class="badge rounded-pill border fw-semibold af-pill" :class="badgeClass(r.outcome)"
+                          <span class="badge rounded-pill fw-semibold af-pill" :class="badgeClass(r.outcome)"
                             ><span class="af-pill-label">{{ outcomeText(r.outcome) }}</span></span
                           >
                         </td>

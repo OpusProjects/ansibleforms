@@ -188,6 +188,35 @@
   display: block;
   text-box: trim-both cap alphabetic;
 }
+/* the colours of a pill (lib/tableCells.js PILL) : solid, white text, the same in every
+   theme - the theme turns Bootstrap's bg-* into pale tints, which white text cannot sit on */
+.af-pill-blue,
+.af-pill-amber,
+.af-pill-green,
+.af-pill-red,
+.af-pill-cyan,
+.af-pill-grey {
+  color: #fff !important;
+  border: 0 !important;
+}
+.af-pill-blue {
+  background-color: #0d6efd !important;
+}
+.af-pill-amber {
+  background-color: #b37700 !important;
+}
+.af-pill-green {
+  background-color: #198754 !important;
+}
+.af-pill-red {
+  background-color: #dc3545 !important;
+}
+.af-pill-cyan {
+  background-color: #0b7285 !important;
+}
+.af-pill-grey {
+  background-color: #6c757d !important;
+}
 
 /* the selection column's right padding : after the rules above for every cell and header (the
    class twice to outrank them), so the checkbox and its 0.5rem fit the column */

@@ -74,7 +74,7 @@ export function statusPill(t, value) {
   if (!value) return '–';
   const known = { running: PILL.blue, success: PILL.green, failed: PILL.red };
   const label = known[value] ? t(`jobs.menu.${value}`) : value;
-  return `<span class="badge rounded-pill border fw-semibold af-pill ${known[value] || PILL.grey}"><span class="af-pill-label">${escapeHtml(label)}</span></span>`;
+  return `<span class="badge rounded-pill fw-semibold af-pill ${known[value] || PILL.grey}"><span class="af-pill-label">${escapeHtml(label)}</span></span>`;
 }
 
 /**
@@ -93,7 +93,7 @@ export function registrationPill(t, state) {
   const known = { automatic: PILL.blue, unresponsive: PILL.amber };
   const key = known[state] ? state : 'manual';
   const label = t(`settings.runners.state${key[0].toUpperCase()}${key.slice(1)}`);
-  return `<span class="badge rounded-pill border fw-semibold af-pill ${known[state] || PILL.grey}"><span class="af-pill-label">${escapeHtml(label)}</span></span>`;
+  return `<span class="badge rounded-pill fw-semibold af-pill ${known[state] || PILL.grey}"><span class="af-pill-label">${escapeHtml(label)}</span></span>`;
 }
 
 // what a credential is for (its type), in the order the dialog offers them

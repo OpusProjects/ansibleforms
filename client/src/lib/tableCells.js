@@ -6,14 +6,15 @@
 /*                                                                */
 /******************************************************************/
 
-// the colours of a pill : Bootstrap's subtle ones
+// the colours of a pill : solid, white text and no border (styles/tables.scss) - the theme
+// turns Bootstrap's bg-* into pale tints, so the pills have their own
 export const PILL = {
-  blue: 'bg-primary-subtle text-primary-emphasis border-primary-subtle',
-  amber: 'bg-warning-subtle text-warning-emphasis border-warning-subtle',
-  green: 'bg-success-subtle text-success-emphasis border-success-subtle',
-  red: 'bg-danger-subtle text-danger-emphasis border-danger-subtle',
-  cyan: 'bg-info-subtle text-info-emphasis border-info-subtle',
-  grey: 'bg-secondary-subtle text-secondary-emphasis border-secondary-subtle',
+  blue: 'af-pill-blue',
+  amber: 'af-pill-amber',
+  green: 'af-pill-green',
+  red: 'af-pill-red',
+  cyan: 'af-pill-cyan',
+  grey: 'af-pill-grey',
   light: 'text-bg-light fw-normal',
 };
 
