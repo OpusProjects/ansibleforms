@@ -1024,6 +1024,7 @@ export default {
         'Te ścieżki kategorii już nie istnieją: {paths}. Formularze, które się do nich odwołują, nie pojawią się w żadnej kategorii, dopóki nie zostaną zaktualizowane.',
       addSubconstant: 'Dodaj podklucz',
       addRole: 'Dodaj rolę',
+      newRole: 'Nowa rola',
       addConstant: 'Dodaj stałą',
       addSubkey: 'Dodaj podklucz',
       subkeyCount: '{n} podklucz | {n} podklucze | {n} podkluczy',

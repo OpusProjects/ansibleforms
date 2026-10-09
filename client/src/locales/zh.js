@@ -990,6 +990,7 @@ export default {
       categoryPathsChanged: '以下类别路径已不存在：{paths}。引用它们的表单在更新之前不会显示在任何类别下。',
       addSubconstant: '添加子键',
       addRole: '添加角色',
+      newRole: '新建角色',
       addConstant: '添加常量',
       addSubkey: '添加子键',
       subkeyCount: '{n} 个子键',

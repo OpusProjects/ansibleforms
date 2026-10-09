@@ -1013,6 +1013,7 @@ export default {
         'These category paths no longer exist: {paths}. Forms that reference them will not appear under a category until they are updated.',
       addSubconstant: 'Add subkey',
       addRole: 'Add Role',
+      newRole: 'New role',
       addConstant: 'Add Constant',
       addSubkey: 'Add Subkey',
       subkeyCount: '{n} subkey | {n} subkeys',

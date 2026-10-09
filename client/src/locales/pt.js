@@ -1029,6 +1029,7 @@ export default {
         'Estes caminhos de categoria já não existem: {paths}. Os formulários que os referenciam não vão aparecer numa categoria até serem atualizados.',
       addSubconstant: 'Adicionar subchave',
       addRole: 'Adicionar Função',
+      newRole: 'Nova função',
       addConstant: 'Adicionar Constante',
       addSubkey: 'Adicionar Subchave',
       subkeyCount: '{n} subchave | {n} subchaves',

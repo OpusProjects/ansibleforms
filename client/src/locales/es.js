@@ -1022,6 +1022,7 @@ export default {
         'Estas rutas de categoría ya no existen: {paths}. Los formularios que las referencian no aparecerán bajo ninguna categoría hasta que se actualicen.',
       addSubconstant: 'Añadir subclave',
       addRole: 'Agregar rol',
+      newRole: 'Nuevo rol',
       addConstant: 'Agregar constante',
       addSubkey: 'Agregar subclave',
       subkeyCount: '{n} subclave | {n} subclaves',
