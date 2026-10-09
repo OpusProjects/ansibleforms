@@ -1688,7 +1688,11 @@ onBeforeUnmount(() => {
     <main class="d-flex flex-nowrap af-settings-layout" :class="{ 'd-none': hideForm }">
       <!-- the forms menu of the Forms page : the category browsed before opening the form
            highlighted ; a category goes back to the Forms page on it -->
-      <AppFormsMenu class="d-none d-md-block" :currentCategory="menuCategory" @select="openCategory" />
+      <AppFormsMenu
+        class="d-none d-md-block"
+        :currentCategory="currentForm ? menuCategory : null"
+        @select="openCategory"
+      />
       <div v-if="authenticated && currentForm" class="section container-fluid w-100 mt-3">
         <!-- BREADCRUMBS (only when editing a subform) -->
         <nav v-if="activeEntry" aria-label="breadcrumb">
@@ -2032,7 +2036,7 @@ onBeforeUnmount(() => {
           </div>
         </div>
       </div>
-      <div v-else-if="!formNotFound" class="loader mx-auto">
+      <div v-else-if="!formNotFound" class="loader">
         <div class="spinner-border" role="status">
           <span class="visually-hidden">{{ t('form.loading') }}</span>
         </div>
@@ -2280,11 +2284,14 @@ onBeforeUnmount(() => {
 .af-form-buttons {
   gap: 0.5rem;
 }
-*:has(.loader) {
-  display: flex-columns;
+/* the spinner while the form loads : centred in the space beside the forms menu. It used to
+   centre every element holding it (*:has(.loader)), the page's main row included - so the menu
+   showed in the middle of the page until the form came */
+.loader {
+  flex: 1 1 auto;
+  display: flex;
   justify-content: center;
-  align-items: center;
-  margin: auto;
+  padding-top: 3rem;
 }
 
 .badge.status {

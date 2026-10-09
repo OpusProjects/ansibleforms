@@ -12,7 +12,8 @@
 /*      formConfig: Object - the categories and forms (Form.list) */
 /*                  ; none, the menu loads them itself            */
 /*      currentCategory: String - the category highlighted, as    */
-/*                  Infra/Linux ; empty for All Forms             */
+/*                  Infra/Linux ; empty for All Forms ; null while*/
+/*                  the page does not know it yet (an empty menu) */
 /*                                                                */
 /*  @emits:                                                       */
 /*      select: String - a category was clicked ('' : All Forms)  */
@@ -42,6 +43,9 @@ const config = computed(() => props.formConfig || ownConfig.value || {});
 const forms = computed(() => config.value?.forms || []);
 const roles = computed(() => TokenStorage.getPayload()?.user?.roles || []);
 const isAll = computed(() => !props.currentCategory);
+// the categories loaded and the one to highlight known : the menu shows, not before (no All
+// Forms with 0 forms, highlighted, then another category)
+const ready = computed(() => !!config.value?.forms && props.currentCategory !== null);
 
 onMounted(async () => {
   if (props.formConfig) return;
@@ -62,7 +66,7 @@ onMounted(async () => {
     class="col-md-auto af-forms-sidebar bg-body-tertiary px-3 border-top-0"
     :style="{ paddingTop: isAll ? '16px' : '8px' }"
   >
-    <ul class="list-unstyled mb-3">
+    <ul v-if="ready" class="list-unstyled mb-3">
       <li role="button">
         <div
           class="d-flex justify-content-between align-items-center menu-item p-2 my-1"
