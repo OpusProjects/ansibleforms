@@ -987,6 +987,7 @@ export default {
       key: '键',
       value: '值',
       addCategory: '添加类别',
+      newCategory: '新建分类',
       addSubcategory: '添加子类别',
       moveUp: '上移',
       moveDown: '下移',

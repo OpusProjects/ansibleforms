@@ -110,8 +110,31 @@ function findDuplicateCategory(cats) {
   return null;
 }
 
+// ─── the New category dialog ──────────────────────────────────────────────────
+// A new category is filled in a dialog, not as an empty row at the end of the table : it joins
+// the tree, and the config is saved, only when the dialog is saved.
+const newCategory = ref(null);
+
+/**
+ * Opens the New category dialog on an empty category with the default icon.
+ */
 function addCategory() {
-  categories.value.push({ _uid: nextUid(), name: '', icon: DEFAULT_CATEGORY_ICON });
+  newCategory.value = { _uid: nextUid(), name: '', icon: DEFAULT_CATEGORY_ICON };
+}
+
+/**
+ * Adds the category of the dialog at the end of the tree and saves the config. The dialog
+ * stays open, and the category leaves the tree again, when the save is refused (a name too
+ * short or long, with a slash or taken, the config locked).
+ */
+async function createCategory() {
+  const category = newCategory.value;
+  categories.value.push(category);
+  if (await saveCategories()) {
+    newCategory.value = null;
+  } else {
+    removeCategory(category);
+  }
 }
 
 function addSubcategory(parentCat) {
@@ -136,16 +159,18 @@ async function saveCategories() {
   const invalid = findInvalidCategory();
   if (invalid) {
     toast.warning(t('settings.settingsPage.invalidCategoryName', invalid));
-    return;
+    return false;
   }
   const duplicate = findDuplicateCategory(categories.value);
   if (duplicate) {
     toast.warning(t('settings.settingsPage.duplicateCategoryName', { name: duplicate }));
-    return;
+    return false;
   }
   // save() reloads on success, so the baseline has to follow or the moved-paths
   // notice would keep describing a tree that is now the stored one
-  if (await save(t('settings.settingsPage.categories'))) rememberLoaded();
+  if (!(await save(t('settings.settingsPage.categories')))) return false;
+  rememberLoaded();
+  return true;
 }
 
 onMounted(async () => {
@@ -156,6 +181,23 @@ onMounted(async () => {
 });
 </script>
 <template>
+  <BsModal v-if="newCategory" size="lg" @close="newCategory = null">
+    <template #title> <FaIcon icon="th-list" class="me-2" />{{ t('settings.settingsPage.newCategory') }} </template>
+    <template #default>
+      <BsInput :isFloating="false" v-model="newCategory.name" :label="t('settings.settingsPage.name')" />
+      <label class="form-label fw-bold">{{ t('settings.settingsPage.icon') }}</label>
+      <!-- the icon picker of the table, the icon chosen in its box as the other fields have theirs -->
+      <div class="input-group">
+        <span class="input-group-text"><FaIcon :icon="newCategory.icon || 'question'" class="fa-fw" /></span>
+        <select class="form-select" v-model="newCategory.icon">
+          <option v-for="ic in availableIcons" :key="ic" :value="ic">{{ ic }}</option>
+        </select>
+      </div>
+    </template>
+    <template #footer>
+      <BsButton icon="save" @click="createCategory()">{{ t('settings.common.save') }}</BsButton>
+    </template>
+  </BsModal>
   <AppNav />
   <div class="flex-shrink-0">
     <main class="d-flex flex-nowrap af-settings-layout">

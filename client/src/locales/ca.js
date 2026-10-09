@@ -1026,6 +1026,7 @@ export default {
       key: 'Clau',
       value: 'Valor',
       addCategory: 'Afegeix una categoria',
+      newCategory: 'Categoria nova',
       addSubcategory: 'Afegeix una subcategoria',
       moveUp: 'Mou amunt',
       moveDown: 'Mou avall',

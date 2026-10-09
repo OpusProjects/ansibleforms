@@ -1020,6 +1020,7 @@ export default {
       key: 'Sleutel',
       value: 'Waarde',
       addCategory: 'Categorie toevoegen',
+      newCategory: 'Nieuwe categorie',
       addSubcategory: 'Subcategorie toevoegen',
       moveUp: 'Omhoog',
       moveDown: 'Omlaag',

@@ -1028,6 +1028,7 @@ export default {
       key: 'Cle',
       value: 'Valeur',
       addCategory: 'Ajouter une categorie',
+      newCategory: 'Nouvelle catégorie',
       addSubcategory: 'Ajouter une sous-categorie',
       moveUp: 'Monter',
       moveDown: 'Descendre',
