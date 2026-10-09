@@ -2,6 +2,8 @@
 // Accepts a t() function from vue-i18n for translations
 import { editorStyle } from './editorStyle';
 import Helpers from '@/lib/Helpers';
+import i18n from '@/plugins/i18n';
+import { describeCron } from '@/config/cronDescribe';
 import { cronValidationMessage } from './cron';
 import { headerWidth } from '@/lib/tableCells';
 
@@ -39,6 +41,23 @@ export const CHAT_PROVIDERS = [
 // for render() output, which goes to v-html : nothing reaches it unescaped, a locale string included
 const escapeHtml = (s) =>
   String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/**
+ * A cron in a table cell, with what it means in words in a popover (describeCron), in the
+ * app's language : hovering '0 6 * * 0' says 'At 06:00 AM, only on Sunday'.
+ *
+ * Args:
+ *   value (string): the cron expression.
+ *
+ * Returns:
+ *   string: the cell's HTML, escaped.
+ */
+function cronCell(value) {
+  const words = describeCron(value, i18n.global.locale.value);
+  if (!words) return escapeHtml(value ?? '');
+  // the popover AppAdminMulti opens on hover (data-af-popover), the look of the info popovers
+  return `<span class="af-has-popover" data-af-popover="${escapeHtml(words)}">${escapeHtml(value ?? '')}</span>`;
+}
 
 // what a credential is for (its type), in the order the dialog offers them
 export const CREDENTIAL_TYPES = ['ssh', 'git', 'api', 'database'];
@@ -620,11 +639,14 @@ export default function getSettings(t) {
         { name: 'trigger', icon: 'play', title: t('settings.schedules.runSchedule'), color: 'refresh' },
         { name: 'preview', icon: 'info-circle', title: t('settings.common.showOutput'), color: 'preview' },
       ],
+      // the table's columns share its width (the widths below) : a date with its time and zone
+      // gets room around it at any screen width, the one word columns (status, state) less
       fields: [
         { key: 'id', hidden: true, noInput: true },
         { key: 'output', hidden: true, noInput: true },
         {
           key: 'name',
+          width: '18%',
           icon: 'heading',
           label: t('settings.fields.name'),
           placeholder: t('settings.schedules.placeholderName'),
@@ -643,12 +665,15 @@ export default function getSettings(t) {
         },
         {
           key: 'cron',
+          width: '14%',
           step: 'when',
           icon: 'stopwatch',
           label: t('settings.fields.cronSchedule'),
           type: 'cron',
           // a recurring schedule needs its cron ; hidden (one time run), it is not checked
           required: true,
+          // in the table : hovering the cron says it in words, in the app's language
+          render: cronCell,
           validator: cronValidator(t),
           negateDependency: true,
           dependency: 'one_time_run',
@@ -664,7 +689,7 @@ export default function getSettings(t) {
           // in the table, Next run says it (and a cron schedule's next run too) : this column is
           // there to pick in Columns
           hidden: true,
-          render: (v) => Helpers.formatServerDate(v),
+          render: (v) => (v ? Helpers.formatServerDate(v) : '–'),
           // a one time run needs its time ; hidden (a cron schedule), it is not checked
           required: true,
           dependency: 'one_time_run',
@@ -686,23 +711,35 @@ export default function getSettings(t) {
         // server computes it, schedule.model.js)
         {
           key: 'next_run',
-          // wide enough for a date, its time and its zone's name, never cut
-          width: '14rem',
+          width: '21%',
           label: t('settings.schedules.nextRun'),
           type: 'datetime',
           noInput: true,
-          render: (v) => Helpers.formatServerDate(v),
+          render: (v) => (v ? Helpers.formatServerDate(v) : '–'),
         },
-        { key: 'status', label: t('settings.fields.status'), noInput: true },
-        { key: 'state', label: t('settings.fields.state'), noInput: true },
+        // none yet (a schedule that never ran) : an en dash rather than an empty cell
+        {
+          key: 'status',
+          width: '10%',
+          label: t('settings.fields.status'),
+          noInput: true,
+          render: (v) => (v ? escapeHtml(v) : '–'),
+        },
+        // none yet (a schedule that never ran) : an en dash rather than an empty cell
+        {
+          key: 'state',
+          width: '9%',
+          label: t('settings.fields.state'),
+          noInput: true,
+          render: (v) => (v ? escapeHtml(v) : '–'),
+        },
         {
           key: 'last_run',
-          // wide enough for a date, its time and its zone's name, never cut
-          width: '14rem',
+          width: '20%',
           label: t('settings.fields.lastRun'),
           type: 'datetime',
           noInput: true,
-          render: (v) => Helpers.formatServerDate(v),
+          render: (v) => (v ? Helpers.formatServerDate(v) : '–'),
         },
         {
           key: 'extra_vars',
