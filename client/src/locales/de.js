@@ -888,8 +888,9 @@ export default {
       maxToolRoundsHelp: 'Bevor das Modell antworten muss',
       timeout: 'Zeitlimit (Sekunden)',
       timeoutHelp: 'Wie lange auf die Antwort des Modells gewartet wird',
-      allowJobStatus: 'Jobstatus',
-      allowJobStatusHelp: 'Nur der Status, nie die Ausgabe',
+      allowJobStatus: 'Den Assistenten seine Jobs verfolgen lassen',
+      allowJobStatusHelp:
+        'Er sieht, ob die gestarteten Jobs laufen, erfolgreich waren oder fehlschlugen, nie ihre Ausgabe',
       authType: 'Authentifizierung',
       authTypeHelp: 'Wie der Schlüssel gesendet wird',
       authDefault: 'Standard des Anbieters',

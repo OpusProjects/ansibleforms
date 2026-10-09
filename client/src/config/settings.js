@@ -1528,14 +1528,14 @@ export default function getSettings(t) {
           help: t('settings.chat.ignoreCertsHelp'),
           dependency: 'provider',
         },
+        // a switch with its title and help, as the chat's own switch above it
         {
           key: 'allow_job_status',
           tab: 'general',
-          line: 5,
           type: 'checkbox',
+          isToggle: true,
           label: t('settings.chat.allowJobStatus'),
           help: t('settings.chat.allowJobStatusHelp'),
-          dependency: 'provider',
         },
       ],
     },
