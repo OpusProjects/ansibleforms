@@ -195,3 +195,18 @@
 .af-table.af-table td.bs-dt-select {
   padding-right: 0.5rem;
 }
+
+/* a row's 3-dot menu (BsDataTable's row-actions, the role page's members) : muted, the text's
+   colour when hovered, the row's own when the row is selected (dark background, light icon) */
+.bs-dt-row-menu {
+  color: var(--bs-secondary-color);
+  text-decoration: none;
+  cursor: pointer;
+}
+.bs-dt-row-menu:hover {
+  color: var(--bs-body-color);
+}
+.bs-dt-selected .bs-dt-row-menu,
+.bs-dt-selected .bs-dt-row-menu:hover {
+  color: inherit;
+}
