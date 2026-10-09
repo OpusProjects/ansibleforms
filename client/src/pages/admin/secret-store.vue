@@ -8,11 +8,12 @@
 /*    Type        HashiCorp Vault or CyberArk CCP, and whether a  */
 /*                Vault is a Vault Enterprise                     */
 /*    Connection  its address and how its certificate is checked  */
-/*    Login       a Vault's token ; a CyberArk's AppID and client */
-/*                certificate                                     */
+/*    Credentials its credential, or a new one : a Vault's        */
+/*                password is its token, a CyberArk's is a        */
+/*                cyberark one (AppID, client certificate, key)   */
 /*    Options     namespace, KV version, mount, cache, extra      */
-/*  Test connection, Change token (or client key) and Delete top  */
-/*  right, beside Save. A store of the config seed is read only.  */
+/*  Test connection and Delete top right, beside Save. A store of */
+/*  the config seed is read only.                                 */
 /*                                                                */
 /******************************************************************/
 import { ref, computed, onMounted } from 'vue';
@@ -23,7 +24,7 @@ import { useI18n } from 'vue-i18n';
 import Profile from '@/lib/Profile';
 import TokenStorage from '@/lib/TokenStorage';
 import Helpers from '@/lib/Helpers';
-import { SECRET_STORE_TYPES } from '@/config/settings';
+import getSettings, { SECRET_STORE_TYPES } from '@/config/settings';
 import { useUnsavedGuard } from '@/composables/useUnsavedGuard';
 import { useRouteTab } from '@/composables/useRouteTab';
 
@@ -37,8 +38,9 @@ const loaded = ref(false);
 const storeId = computed(() => String(route.params.id || ''));
 const store = ref(null); // as saved
 const edit = ref(null); // as edited
-// what this page edits : the token and the client key have their own dialog
+// what this page edits : how it logs in is its credential's
 const EDITED = [
+  'credential',
   'name',
   'description',
   'type',
@@ -47,8 +49,6 @@ const EDITED = [
   'skip_verify',
   'custom_ca',
   'ca_bundle',
-  'app_id',
-  'client_cert',
   'namespace',
   'kv_version',
   'default_mount',
@@ -71,14 +71,13 @@ function editable(record) {
   return {
     name: record.name ?? '',
     description: record.description ?? '',
+    credential: record.credential ?? '',
     type: record.type || 'vault',
     vault_enterprise: !!String(record.namespace || '').trim(),
     url: record.url ?? '',
     skip_verify: !!record.ignore_certs,
     custom_ca: !!String(record.ca_bundle || '').trim(),
     ca_bundle: record.ca_bundle ?? '',
-    app_id: record.app_id ?? '',
-    client_cert: record.client_cert ?? '',
     namespace: record.namespace ?? '',
     kv_version: Number(record.kv_version) || 2,
     default_mount: record.default_mount ?? '',
@@ -110,7 +109,42 @@ async function load() {
   } catch {
     store.value = null;
   }
+  await loadCredentials();
   loaded.value = true;
+}
+
+// the credentials it can log in with : a CyberArk's cyberark ones, a Vault's the others that
+// keep their own password (one read from a secret store would make the store read a store to
+// find its token)
+const allCredentials = ref([]);
+const credentials = computed(() => [
+  { name: '' },
+  ...allCredentials.value
+    .filter((c) => !c.secret_store && (c.credential_type === 'cyberark') === !isVault.value)
+    .map((c) => ({ name: c.name })),
+]);
+
+/**
+ * Loads the credentials the Credential dropdown chooses from.
+ */
+async function loadCredentials() {
+  const res = await axios.get('/api/v2/credential/', TokenStorage.getAuthentication()).catch(() => null);
+  allCredentials.value = res?.data?.records || [];
+}
+
+// Add credential : the credentials' own dialog, over this page ; what it creates is chosen
+const credentialsSettings = computed(() => getSettings(t).credentials);
+const creator = ref(null);
+
+/**
+ * Chooses the credential just created in the credentials' dialog.
+ *
+ * Args:
+ *   name (string): the new credential's name.
+ */
+async function onCredentialCreated(name) {
+  await loadCredentials();
+  edit.value.credential = name;
 }
 
 /**
@@ -133,7 +167,7 @@ async function update(data) {
 }
 
 // ─── tabs ─────────────────────────────────────────────────────────────────────
-// the dialog's steps : Store, Type, Connection, Login, Options
+// the dialog's steps : Store, Type, Connection, Credentials, Options
 const tabs = computed(() => [
   { key: 'store', label: t('settings.secretStores.stepStore'), icon: 'vault' },
   { key: 'type', label: t('settings.secretStores.stepType'), icon: 'shapes' },
@@ -156,7 +190,7 @@ const crumbs = computed(() => [
  */
 async function save() {
   const e = edit.value;
-  if (!e.name.trim() || !e.url.trim() || (!isVault.value && !e.app_id.trim())) {
+  if (!e.name.trim() || !e.url.trim()) {
     toast.warning(t('settings.secretStores.fieldsRequired'));
     return;
   }
@@ -171,11 +205,8 @@ async function save() {
     cache_ttl_seconds: e.cache_ttl_seconds,
     extra: typeof e.extra === 'string' ? e.extra.trim() : e.extra,
   };
-  if (isVault.value) {
-    Object.assign(data, { kv_version: e.kv_version, default_mount: e.default_mount.trim() });
-  } else {
-    Object.assign(data, { app_id: e.app_id.trim(), client_cert: e.client_cert });
-  }
+  data.credential = e.credential;
+  if (isVault.value) Object.assign(data, { kv_version: e.kv_version, default_mount: e.default_mount.trim() });
   if (await update(data)) {
     toast.success(`${data.name} ${t('settings.common.isUpdated')}`);
     await load();
@@ -201,24 +232,6 @@ async function testConnection() {
     toast.error(Helpers.parseAxiosResponseError(err, t('admin.connectionFailed')));
   } finally {
     testing.value = false;
-  }
-}
-
-// Change token (a Vault) or Change client key (a CyberArk) : pasted once, in a dialog
-const changingSecret = ref(false);
-const secretKey = computed(() => (isVault.value ? 'token' : 'client_key'));
-
-/**
- * Saves the new token or client key.
- *
- * Args:
- *   secret (string): the token or the PEM private key.
- */
-async function saveSecret(secret) {
-  if (await update({ [secretKey.value]: secret })) {
-    changingSecret.value = false;
-    toast.success(`${store.value.name} ${t('settings.common.isUpdated')}`);
-    await load();
   }
 }
 
@@ -258,16 +271,16 @@ onMounted(async () => {
       <BsButton icon="trash" @click="deleteStore()">{{ t('common.delete') }}</BsButton>
     </template>
   </BsModal>
-  <!-- a token or a private key : pasted once -->
-  <AppChangePasswordDialog
-    v-if="changingSecret"
-    icon="vault"
-    :title="isVault ? t('settings.runners.changeToken') : t('settings.secretStores.changeClientKey')"
-    :label="isVault ? t('settings.fields.token') : t('settings.secretStores.clientKey')"
-    :repeat="false"
-    @save="saveSecret"
-    @close="changingSecret = false"
-  />
+  <!-- Add credential : the credentials' dialog only, an api or cyberark credential preset -->
+  <div class="af-nested-dialogs">
+    <AppAdminMulti
+      ref="creator"
+      dialogOnly
+      :apiVersion="2"
+      :settings="credentialsSettings"
+      @created="onCredentialCreated"
+    />
+  </div>
   <AppNav />
   <div class="flex-shrink-0">
     <main class="d-flex flex-nowrap af-settings-layout">
@@ -400,33 +413,32 @@ onMounted(async () => {
                   :label="t('settings.fields.caBundle')"
                 />
               </template>
-              <!-- Login : a Vault's token (its dialog) ; a CyberArk's AppID and certificate -->
+              <!-- Credentials : its credential, or a new one of its kind -->
               <template v-else-if="activeTab === 'auth'">
-                <template v-if="isVault">
-                  <p class="form-text mb-0">{{ t('settings.secretStores.tokenOnPage') }}</p>
-                </template>
-                <template v-else>
-                  <BsInput
-                    class="af-store-field"
-                    v-model="edit.app_id"
-                    icon="id-badge"
-                    :isFloating="false"
-                    :required="true"
-                    :help="t('settings.secretStores.appIdHelp')"
-                    :label="t('settings.secretStores.appId')"
-                  />
-                  <BsInput
-                    class="af-store-field"
-                    v-model="edit.client_cert"
-                    type="textarea"
-                    icon="certificate"
-                    placeholder="-----BEGIN CERTIFICATE-----"
-                    :isFloating="false"
-                    :help="t('settings.secretStores.clientCertHelp')"
-                    :label="t('settings.secretStores.clientCert')"
-                  />
-                  <p class="form-text mb-0">{{ t('settings.secretStores.clientKeyOnPage') }}</p>
-                </template>
+                <BsInput
+                  class="af-store-field"
+                  v-model="edit.credential"
+                  type="select"
+                  icon="key"
+                  :isFloating="false"
+                  :values="credentials"
+                  valueKey="name"
+                  labelKey="name"
+                  :help="
+                    t(isVault ? 'settings.secretStores.helpCredential' : 'settings.secretStores.helpCredentialCyberark')
+                  "
+                  :label="t('settings.secretStores.credential')"
+                />
+                <BsButton
+                  v-if="!managed"
+                  icon="plus"
+                  @click="creator?.newItem({ credential_type: isVault ? 'api' : 'cyberark' })"
+                  >{{ t('settings.repositories.newCredential') }}</BsButton
+                >
+                <!-- a store from before credentials : its own token or AppID, until one is chosen -->
+                <p v-if="(isVault ? store.token : store.app_id) && !edit.credential" class="form-text mt-3 mb-0">
+                  {{ t(isVault ? 'settings.secretStores.ownToken' : 'settings.secretStores.ownLogin') }}
+                </p>
               </template>
               <!-- Options : a Vault's namespace, KV version and mount ; the cache and extra of both -->
               <template v-else>
@@ -502,9 +514,6 @@ onMounted(async () => {
             t('settings.common.testConnection')
           }}</BsButton>
           <template v-if="!managed">
-            <BsButton icon="lock" cssClass="text-nowrap" @click="changingSecret = true">{{
-              isVault ? t('settings.runners.changeToken') : t('settings.secretStores.changeClientKey')
-            }}</BsButton>
             <BsButton icon="trash" @click="confirmDelete = true">{{ t('common.delete') }}</BsButton>
             <BsButton icon="save" :colorClass="dirty ? 'primary' : 'secondary'" :disabled="!dirty" @click="save()">{{
               t('settings.common.save')

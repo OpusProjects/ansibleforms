@@ -817,7 +817,7 @@ export default {
       enterpriseHelp: 'Seine Namespaces, eine Funktion von Vault Enterprise und HCP Vault.',
       kv1Hint: 'Die KV-Engine ohne Versionen',
       kv2Hint: 'Die versionierte KV-Engine, Standard seit Vault 0.10',
-      stepAuth: 'Anmeldung',
+      stepAuth: 'Anmeldedaten',
       stepConnection: 'Verbindung',
       stepOptions: 'Optionen',
       stepStore: 'Speicher',
@@ -826,10 +826,13 @@ export default {
       type_cyberark_ccpHint: 'Central Credential Provider, mit einer Anwendungs-ID',
       notFound: "Es gibt keinen Secret Store mit der ID '{id}'.",
       fieldsRequired: 'Name und URI sind erforderlich, bei CyberArk auch die AppID.',
-      changeClientKey: 'Client-Schlüssel ändern',
-      changeLogin: 'Anmeldung ändern',
-      tokenOnPage: 'Das Token ändern Sie mit Token ändern, oben rechts.',
-      clientKeyOnPage: 'Den Client-Schlüssel ändern Sie mit Client-Schlüssel ändern, oben rechts.',
+      credential: 'Anmeldeinformation',
+      helpCredential:
+        'Eine Anmeldeinformation aus Verbindungen > Anmeldeinformationen: ihr Passwort ist das Vault-Token.',
+      ownToken: 'Es hat noch ein eigenes Token: wählen Sie eine Anmeldeinformation, um es zu ersetzen.',
+      helpCredentialCyberark:
+        'Eine CyberArk-Anmeldeinformation aus Verbindungen > Anmeldeinformationen: AppID, Client-Zertifikat und Schlüssel.',
+      ownLogin: 'Es hat noch eine eigene AppID: wählen Sie eine Anmeldeinformation, um sie zu ersetzen.',
     },
     storedJobs: {
       label: 'Gespeicherter Job',
@@ -880,6 +883,9 @@ export default {
       secretStoreHelp: 'Der Store, aus dem Benutzer und Passwort gelesen werden.',
       secretRefHelp: 'Vault-Pfad (secret/myapp/prod) oder CyberArk-Konto (Safe=Linux;Object=srv01).',
       secretRef: 'Referenz',
+      type_cyberark: 'CyberArk',
+      type_cyberarkHint: 'AppID, Client-Zertifikat und Schlüssel, mit denen sich ein CyberArk Secret Store anmeldet',
+      clientKeyKeep: 'Leer gelassen bleibt der gespeicherte Client-Schlüssel.',
     },
     ssh: {
       label: 'SSH-Schluessel',

@@ -303,3 +303,53 @@ describe("saving a store", () => {
     assert.equal((await Registry.readSecret("vault", "secret/app")).password, "two");
   });
 });
+
+describe("a store's token from a credential", () => {
+  test("a read logs in with the credential's password, not the store's own token", async () => {
+    storeRows.vault = vaultRow({ token: null, credential: "vault-token" });
+    storeRows["vault-token"] = { name: "vault-token", password: "hvs.from-credential", secret_store: null };
+    secrets["secret/data/app"] = { data: { data: { password: "p" } } };
+    await Registry.readSecret("vault", "secret/app");
+    assert.equal(requests[0].token, "hvs.from-credential");
+  });
+
+  test("Test connection logs in with the credential's password too", async () => {
+    storeRows["vault-token"] = { name: "vault-token", password: "hvs.from-credential", secret_store: null };
+    await Registry.checkStore(vaultRow({ token: null, credential: "vault-token" }));
+    assert.equal(requests[0].token, "hvs.from-credential");
+  });
+
+  test("a credential that is gone says so", async () => {
+    await assert.rejects(Registry.checkStore(vaultRow({ credential: "gone" })), /'gone', which is not found/);
+  });
+
+  test("saving : the credential must exist and keep its own password", async () => {
+    await assert.rejects(SecretStore.update({ credential: "gone" }, 1), /No credential named 'gone'/);
+    storeRows["from-store"] = { name: "from-store", password: "", secret_store: "vault" };
+    await assert.rejects(SecretStore.update({ credential: "from-store" }, 1), /reads its password from a secret store/);
+    storeRows["vault-token"] = { name: "vault-token", password: "t", secret_store: null };
+    assert.equal((await SecretStore.update({ credential: "vault-token" }, 1)).credential, "vault-token");
+  });
+
+  test("a CyberArk logs in with a cyberark credential's AppID and client certificate and key", async () => {
+    storeRows.ccp = { name: "ccp", type: "cyberark_ccp", credential: "ccp-login" };
+    storeRows["ccp-login"] = { name: "ccp-login", credential_type: "cyberark", user: "AnsibleForms", client_cert: "CERT", client_key: "KEY", secret_store: null };
+    const store = await SecretStore.withCredential(storeRows.ccp);
+    assert.equal(store.app_id, "AnsibleForms");
+    assert.equal(store.client_cert, "CERT");
+    assert.equal(store.client_key, "KEY");
+  });
+
+  test("saving : a store's credential must match its type", async () => {
+    storeRows["ccp-login"] = { name: "ccp-login", credential_type: "cyberark", secret_store: null };
+    storeRows["vault-token"] = { name: "vault-token", credential_type: "api", secret_store: null };
+    await assert.rejects(SecretStore.create({ name: "c", type: "cyberark_ccp", url: "u", credential: "vault-token" }), /needs a cyberark credential/);
+    await assert.rejects(SecretStore.create({ name: "v", type: "vault", url: "u", credential: "ccp-login" }), /cannot give a token/);
+    assert.equal((await SecretStore.create({ name: "c", type: "cyberark_ccp", url: "u", credential: "ccp-login" })).credential, "ccp-login");
+  });
+
+  test("saving : an empty credential is none, and the config seed is not checked", async () => {
+    assert.equal((await SecretStore.update({ credential: "" }, 1)).credential, null);
+    assert.equal((await SecretStore.create({ name: "s", type: "vault", url: "u", credential: "later" }, { fromSeed: true })).credential, "later");
+  });
+});

@@ -21,7 +21,8 @@ const DEFAULT_CACHE_TTL_SECONDS = 60;
 /** A store by name, its secrets decrypted. */
 export async function getStore(name) {
   const row = name ? await SecretStore.findByName(name) : null;
-  if (row) return row;
+  // the token of its credential, when it names one
+  if (row) return SecretStore.withCredential(row);
   throw new Errors.NotFoundError(`No secret store named '${name}'`);
 }
 
@@ -59,10 +60,13 @@ export async function readSecret(storeName, ref) {
 
 /** Proves the store is reachable and accepts us, without returning a secret. */
 export async function checkStore(store, opts) {
+  // a store loaded by id (the admin page's Test) : the token of its credential too
+  store = await SecretStore.withCredential(store);
   return providerFor(store).check(store, opts);
 }
 
 export async function listMounts(store) {
+  store = await SecretStore.withCredential(store);
   const provider = providerFor(store);
   if (!provider.mounts) throw new Errors.BadRequestError(`A ${store.type} secret store has no mounts to list`);
   return provider.mounts(store);

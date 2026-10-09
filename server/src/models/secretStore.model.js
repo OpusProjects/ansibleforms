@@ -55,14 +55,82 @@ class SecretStore extends CrudModel {
     return data;
   }
 
+  /**
+   * Checks the credential a store is given : it exists, and it keeps its password itself. A
+   * credential that reads its password from a secret store would make this store read a store
+   * to find its own token (itself, in the worst case).
+   *
+   * Args:
+   *   data (object): the fields being saved ; an empty credential means none.
+   *   id (number): the store updated ; none on a create.
+   *
+   * Raises:
+   *   BadRequestError: the credential does not exist, or reads from a secret store.
+   */
+  static async assertCredentialUsable(data, id) {
+    if (data.credential === undefined) return;
+    if (data.credential === '' || data.credential === null) {
+      data.credential = null;
+      return;
+    }
+    const cred = await CrudModel.findByName('credential', data.credential);
+    if (!cred) throw new Errors.BadRequestError(`No credential named '${data.credential}'`);
+    // a CyberArk logs in with a cyberark credential (its AppID), a Vault with any other (its
+    // password the token) ; the store's type is the one sent, else the one saved
+    const type = data.type || (id !== undefined ? (await this.findById(id))?.type : undefined);
+    if (type && (type === 'cyberark_ccp') !== (cred.credential_type === 'cyberark')) {
+      throw new Errors.BadRequestError(
+        type === 'cyberark_ccp'
+          ? `A CyberArk secret store needs a cyberark credential : '${data.credential}' is not one`
+          : `A cyberark credential is for a CyberArk secret store : '${data.credential}' cannot give a token`,
+      );
+    }
+    if (cred.secret_store) {
+      throw new Errors.BadRequestError(
+        `The credential '${data.credential}' reads its password from a secret store : a secret store needs one that keeps its own`,
+      );
+    }
+  }
+
+  /**
+   * The store with what it logs in with, from its credential when it names one : a Vault's
+   * token (the credential's password), a CyberArk's AppID and client certificate and key.
+   * Else its own. Where the store is used only - never for the API.
+   *
+   * Args:
+   *   store (object): the store record, its secrets decrypted.
+   *
+   * Returns:
+   *   Promise<object>: a copy with its login set from its credential, or the record.
+   *
+   * Raises:
+   *   Error: the credential it names does not exist, or reads from a secret store.
+   */
+  static async withCredential(store) {
+    if (!store?.credential) return store;
+    const cred = await CrudModel.findByName('credential', store.credential);
+    if (!cred) throw new Error(`Secret store '${store.name}' uses the credential '${store.credential}', which is not found`);
+    if (cred.secret_store) {
+      throw new Error(`Secret store '${store.name}' uses the credential '${store.credential}', which reads from a secret store itself`);
+    }
+    // a CyberArk : its AppID and client certificate and key ; a Vault : its token
+    if (store.type === 'cyberark_ccp') {
+      return { ...store, app_id: cred.user, client_cert: cred.client_cert, client_key: cred.client_key };
+    }
+    return { ...store, token: cred.password };
+  }
+
   // opts carries { fromSeed:true } for the declarative config seed only
   static async create(data, opts = {}) {
+    // the config seed may create its stores before the credentials they name : checked on use
+    if (!opts.fromSeed) await this.assertCredentialUsable(data);
     const res = await super.create(this.modelName, this.normalize(data, { creating: true }), opts);
     clearSecretCache();
     return res;
   }
 
   static async update(data, id, opts = {}) {
+    if (!opts.fromSeed) await this.assertCredentialUsable(data, id);
     const res = await super.update(this.modelName, this.normalize(data, { creating: false }), id, opts);
     clearSecretCache();
     return res;
