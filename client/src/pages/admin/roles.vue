@@ -240,8 +240,12 @@ onMounted(async () => {
                   </tr>
                 </thead>
                 <tbody>
-                  <template v-for="{ role, rIdx } in sortedRoles" :key="role._uid">
-                    <tr class="role-header" @click="toggleRole(role._uid)">
+                  <template v-for="({ role, rIdx }, i) in sortedRoles" :key="role._uid">
+                    <tr
+                      class="role-header"
+                      :class="{ 'role-last-closed': i === sortedRoles.length - 1 && !expandedRoles[role._uid] }"
+                      @click="toggleRole(role._uid)"
+                    >
                       <td>
                         <div class="d-flex align-items-center gap-2">
                           <FaIcon
@@ -309,6 +313,11 @@ onMounted(async () => {
    button's (a btn-sm, 31px) */
 .role-header > td {
   height: calc(31px + 24px);
+}
+/* the last role, closed : the card's border closes it. The table drops the line under its last
+   row, but that is the hidden editor row here, so the role's own line would double the border */
+.roles-table tbody tr.role-last-closed > td {
+  border-bottom: 0;
 }
 /* an opened role : its editor under the row, on the page's background, no hover */
 .roles-table tbody tr.role-body:hover > td {
