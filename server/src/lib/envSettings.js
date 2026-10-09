@@ -171,6 +171,16 @@ const LIVE_CUSTOM = {
   // request, so setting it again on the running app is enough. Reads process.env, which
   // applyLive has already updated. Returns false for a value it refused.
   TRUST_PROXY: () => applyTrustProxy(),
+  // the scheduler registered the seed reload with its interval at startup : it is registered
+  // again with the new one (cron.service, scheduleConfigSeedReload). Imported when used, so this
+  // module does not load the scheduler and every model behind it.
+  CONFIG_SEED_RELOAD_SECONDS: (v) => {
+    const seconds = parseInt(v, 10);
+    appConfig.configSeedReloadSeconds = Number.isNaN(seconds) ? 60 : seconds;
+    import('../services/cron.service.js')
+      .then(({ default: cronService }) => cronService.scheduleConfigSeedReload(appConfig))
+      .catch((err) => logger.error(`Could not reschedule the config seed reload : ${err.message || err}`));
+  },
   // mysql2 fixes connectionLimit at creation, so a new size means a new pool. Safe because a
   // transaction holds its own connection - see MySql.resizePool.
   DB_POOL_SIZE: (v) => mysql.resizePool(v),

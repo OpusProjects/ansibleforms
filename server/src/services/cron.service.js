@@ -48,6 +48,9 @@ class CronService {
       schedules: new Map(),
     };
     this.active = false;
+    // the system tasks (initializeSystemTasks) run on this node : what scheduleConfigSeedReload
+    // checks before rescheduling
+    this.systemTasksStarted = false;
     this.lastResync = null;
     this.safetyTimer = null;
     this.timezone = logConfig.tz;
@@ -554,13 +557,38 @@ class CronService {
     logger.info('Initialized stored jobs cleanup (daily at 4:00 AM)');
 
     // 5. Config seed reload - re-applies CONFIG_SEED_PATH when its content changes
-    //
-    // Registered here rather than as a watcher of its own so it stops with everything
-    // else, and so the seed is refreshed by the same machinery that already refreshes
-    // the repositories. `interval` is croner's own throttle : the pattern fires every
-    // second and the option holds each run back until the interval has passed, which is
-    // how an arbitrary number of seconds is expressed - a `*/n` pattern silently breaks
-    // for anything above 59.
+    this.systemTasksStarted = true;
+    this.scheduleConfigSeedReload(appConfig);
+
+    logger.info('System maintenance tasks initialization complete');
+  }
+
+  /**
+   * (Re)registers the config seed reload : re-applies CONFIG_SEED_PATH when its content changes,
+   * every CONFIG_SEED_RELOAD_SECONDS. Called at startup with the other system tasks, and again
+   * when the interval is changed in the settings, so a new interval needs no restart. A node
+   * that runs no scheduler (its system tasks never started) has nothing to reschedule.
+   *
+   * Registered here rather than as a watcher of its own so it stops with everything else, and
+   * so the seed is refreshed by the same machinery that already refreshes the repositories.
+   * `interval` is croner's own throttle : the pattern fires every second and the option holds
+   * each run back until the interval has passed, which is how an arbitrary number of seconds
+   * is expressed - a step pattern (every n seconds) silently breaks for anything above 59.
+   *
+   * Args:
+   *   appConfig (object): the app config (configSeedPath, configSeedReloadSeconds).
+   *
+   * Returns:
+   *   boolean: whether the scheduler runs here (the task is then as configured).
+   */
+  scheduleConfigSeedReload(appConfig) {
+    if (!this.systemTasksStarted) return false;
+    // the task in place goes first : one left running keeps firing next to its successor
+    const previous = this.jobs.system.get('configSeedReload');
+    if (previous) {
+      previous.stop();
+      this.jobs.system.delete('configSeedReload');
+    }
     const seedReloadSeconds = appConfig.configSeedReloadSeconds;
     if (appConfig.configSeedPath && seedReloadSeconds > 0) {
       const configSeedTask = new Cron('* * * * * *', {
@@ -580,8 +608,7 @@ class CronService {
     } else if (appConfig.configSeedPath) {
       logger.info('Config seed reload is off (CONFIG_SEED_RELOAD_SECONDS=0), the seed applies at startup only');
     }
-
-    logger.info('System maintenance tasks initialization complete');
+    return true;
   }
 
   /**

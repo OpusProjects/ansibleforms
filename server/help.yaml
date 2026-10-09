@@ -258,6 +258,7 @@
       change is picked up from there. A reload that fails is never fatal, unlike the one at
       startup: the configuration already in force is kept and the Status page reports it.
       Set it to 0 to check only at startup, leaving POST /api/v2/config-seed/apply and SIGHUP.
+      Takes effect at once, without a restart.
       Ignored when CONFIG_SEED_PATH is empty.
   - name: ALLOW_ENV_EDIT
     version: 6.3.0
