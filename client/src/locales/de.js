@@ -414,10 +414,6 @@ export default {
     presetDelete: 'Vorlage löschen',
     presetNamePlaceholder: 'Name...',
     export: 'CSV exportieren',
-    filterAll: 'Alle',
-    filterGt0: 'Mindestens 1',
-    filterNumberHint: 'z.B. >50 oder 10-50',
-    filterNumberHelp: 'Geben Sie >50, <20, =0 oder einen Bereich wie 10-50 ein',
   },
   errors: {
     noAccess: 'Kein Zugriff',
@@ -1581,7 +1577,7 @@ export default {
     // the message in the table when no job is shown
     empty: {
       status: 'Keine Jobs mit Status {status}.',
-      filtered: 'Keine Jobs entsprechen den Spaltenfiltern.',
+      filtered: 'Keine Jobs entsprechen dem Filter.',
       none: 'Noch keine Jobs. Sie erscheinen hier, sobald ein Formular ausgeführt wird.',
     },
     // the line under the page title, per status of the left menu

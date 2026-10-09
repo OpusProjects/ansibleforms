@@ -412,10 +412,6 @@ export default {
     presetDelete: 'Eliminar predefinição',
     presetNamePlaceholder: 'Nome...',
     export: 'Exportar CSV',
-    filterAll: 'Todos',
-    filterGt0: 'Tem pelo menos 1',
-    filterNumberHint: 'ex. >50 ou 10-50',
-    filterNumberHelp: 'Escreva >50, <20, =0 ou um intervalo como 10-50',
   },
   errors: {
     noAccess: 'Sem acesso',
@@ -1566,7 +1562,7 @@ export default {
     // the message in the table when no job is shown
     empty: {
       status: 'Não há tarefas com o estado "{status}".',
-      filtered: 'Nenhuma tarefa corresponde aos filtros das colunas.',
+      filtered: 'Nenhuma tarefa corresponde ao filtro.',
       none: 'Ainda não há tarefas. Aparecem aqui assim que um formulário é executado.',
     },
     // the line under the page title, per status of the left menu

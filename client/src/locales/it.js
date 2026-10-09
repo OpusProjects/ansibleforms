@@ -413,10 +413,6 @@ export default {
     presetDelete: 'Elimina preimpostazione',
     presetNamePlaceholder: 'Nome...',
     export: 'Esporta CSV',
-    filterAll: 'Tutti',
-    filterGt0: 'Almeno 1',
-    filterNumberHint: 'es. >50 o 10-50',
-    filterNumberHelp: 'Digita >50, <20, =0 o un intervallo come 10-50',
   },
   errors: {
     noAccess: 'Accesso negato',
@@ -1559,7 +1555,7 @@ export default {
     // the message in the table when no job is shown
     empty: {
       status: 'Nessun job con stato {status}.',
-      filtered: 'Nessun job corrisponde ai filtri delle colonne.',
+      filtered: 'Nessun job corrisponde al filtro.',
       none: 'Ancora nessun job. Compaiono qui non appena viene eseguito un form.',
     },
     // the line under the page title, per status of the left menu

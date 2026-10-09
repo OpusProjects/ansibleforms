@@ -410,10 +410,6 @@ export default {
     presetDelete: 'Usuń ustawienie wstępne',
     presetNamePlaceholder: 'Nazwa...',
     export: 'Eksportuj CSV',
-    filterAll: 'Wszystkie',
-    filterGt0: 'Co najmniej 1',
-    filterNumberHint: 'np. >50 lub 10-50',
-    filterNumberHelp: 'Wpisz >50, <20, =0 lub zakres, np. 10-50',
   },
   errors: {
     noAccess: 'Brak dostępu',
@@ -1558,7 +1554,7 @@ export default {
     // the message in the table when no job is shown
     empty: {
       status: 'Brak zadań o stanie „{status}”.',
-      filtered: 'Żadne zadanie nie pasuje do filtrów kolumn.',
+      filtered: 'Żadne zadanie nie pasuje do filtra.',
       none: 'Brak zadań. Pojawią się tutaj, gdy tylko zostanie uruchomiony formularz.',
     },
     // the line under the page title, per status of the left menu

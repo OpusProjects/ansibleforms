@@ -409,10 +409,6 @@ export default {
     presetDelete: 'Delete preset',
     presetNamePlaceholder: 'Name...',
     export: 'Export CSV',
-    filterAll: 'All',
-    filterGt0: 'Has at least 1',
-    filterNumberHint: 'e.g. >50 or 10-50',
-    filterNumberHelp: 'Type >50, <20, =0 or a range like 10-50',
   },
   errors: {
     noAccess: 'No access',
@@ -1546,7 +1542,7 @@ export default {
     // the message in the table when no job is shown
     empty: {
       status: 'No jobs with status "{status}".',
-      filtered: 'No jobs match the column filters.',
+      filtered: 'No jobs match the filter.',
       none: 'No jobs yet. They appear here as soon as a form is run.',
     },
     // the line under the page title, per status of the left menu

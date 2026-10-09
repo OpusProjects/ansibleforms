@@ -412,10 +412,6 @@ export default {
     presetDelete: 'Suprimeix la predefinició',
     presetNamePlaceholder: 'Nom...',
     export: 'Exporta a CSV',
-    filterAll: 'Tots',
-    filterGt0: 'En té almenys 1',
-    filterNumberHint: 'p. ex. >50 o 10-50',
-    filterNumberHelp: 'Escriu >50, <20, =0 o un interval com ara 10-50',
   },
   errors: {
     noAccess: 'No hi tens accés',
@@ -1566,7 +1562,7 @@ export default {
     // the message in the table when no job is shown
     empty: {
       status: 'No hi ha tasques amb l\'estat "{status}".',
-      filtered: 'Cap tasca no coincideix amb els filtres de les columnes.',
+      filtered: 'Cap tasca no coincideix amb el filtre.',
       none: "Encara no hi ha tasques. Apareixen aquí tan bon punt s'executa un formulari.",
     },
     // the line under the page title, per status of the left menu

@@ -409,10 +409,6 @@ export default {
     presetDelete: 'プリセットを削除',
     presetNamePlaceholder: '名前...',
     export: 'CSV をエクスポート',
-    filterAll: 'すべて',
-    filterGt0: '1 以上',
-    filterNumberHint: '例: >50 または 10-50',
-    filterNumberHelp: '>50、<20、=0、または 10-50 のような範囲を入力してください',
   },
   errors: {
     noAccess: 'アクセス権がありません',
@@ -1542,7 +1538,7 @@ export default {
     // the message in the table when no job is shown
     empty: {
       status: 'ステータスが「{status}」のジョブはありません。',
-      filtered: '列のフィルターに一致するジョブはありません。',
+      filtered: 'フィルターに一致するジョブはありません。',
       none: 'ジョブはまだありません。フォームを実行するとすぐにここに表示されます。',
     },
     // the line under the page title, per status of the left menu
