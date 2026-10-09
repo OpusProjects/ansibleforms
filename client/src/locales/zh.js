@@ -575,6 +575,7 @@ export default {
       description: '将本地用户组织到本地组中以管理权限。',
       showGroup: '显示组',
       deleteGroup: '删除组',
+      editGroup: '编辑组',
     },
     repositories: {
       label: '仓库',

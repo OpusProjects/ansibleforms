@@ -583,6 +583,7 @@ export default {
       description: 'Organize local users into local groups to manage permissions.',
       showGroup: 'Show Group',
       deleteGroup: 'Delete Group',
+      editGroup: 'Edit Group',
     },
     repositories: {
       label: 'Repository',

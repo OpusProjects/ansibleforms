@@ -586,6 +586,7 @@ export default {
       description: 'Organiseer lokale gebruikers in lokale groepen om rechten te beheren.',
       showGroup: 'Groep tonen',
       deleteGroup: 'Groep verwijderen',
+      editGroup: 'Groep bewerken',
     },
     repositories: {
       label: 'Repository',
