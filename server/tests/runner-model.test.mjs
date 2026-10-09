@@ -38,7 +38,7 @@ vi.mock("../src/models/db.model.js", () => ({
         return { changedRows: 1 };
       }
       if (/FROM AnsibleForms.`nodes` WHERE id IN/.test(sql)) return params[0].filter((id) => aliveNodes.has(id)).map((id) => ({ id }));
-      if (/^DELETE r FROM AnsibleForms.`runners`/.test(sql)) {
+      if (/^DELETE FROM AnsibleForms.`runners`/.test(sql)) {
         deletes.push({ sql, params });
         return { affectedRows: 2 };
       }
@@ -159,9 +159,11 @@ describe("runners an RTE registered itself", () => {
   test("the sweep removes only registered, unmanaged runners whose RTE is long gone", async () => {
     assert.equal(await Runner.removeUnresponsive(), 2);
     const { sql, params } = deletes[0];
-    assert.match(sql, /r.node_id IS NOT NULL/);
-    assert.match(sql, /COALESCE\(r.managed, 0\) = 0/);
-    assert.match(sql, /JOIN AnsibleForms.`nodes` n ON n.id = r.node_id/);
+    assert.match(sql, /node_id IS NOT NULL/);
+    assert.match(sql, /COALESCE\(managed, 0\) = 0/);
+    assert.match(sql, /node_id IN \(SELECT id FROM AnsibleForms.`nodes` WHERE last_seen </);
+    // no alias to resolve : the connection has no default database
+    assert.doesNotMatch(sql, /DELETE \w+ FROM/);
     assert.deepEqual(params, [600]);
   });
 });
