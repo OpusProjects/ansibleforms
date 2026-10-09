@@ -42,7 +42,7 @@ function envGroups() {
   const marks = [...block[1].matchAll(/key:\s*'([^']+)'/g)];
   return marks.map((m, i) => {
     const chunk = block[1].slice(m.index, i + 1 < marks.length ? marks[i + 1].index : undefined);
-    return { key: m[1], exact: list(chunk, 'exact'), prefix: list(chunk, 'prefix') };
+    return { key: m[1], exact: list(chunk, 'exact'), prefix: list(chunk, 'prefix'), except: list(chunk, 'except') };
   });
 }
 
@@ -54,8 +54,11 @@ function ownedElsewhere() {
   return new RegExp(m[1]);
 }
 
+// as envInGroup : a name a prefix group leaves to another (except) is not that group's
 const groupsOf = (groups, name) =>
-  groups.filter((g) => g.exact.includes(name) || g.prefix.some((p) => name.startsWith(p))).map((g) => g.key);
+  groups
+    .filter((g) => !g.except.includes(name) && (g.exact.includes(name) || g.prefix.some((p) => name.startsWith(p))))
+    .map((g) => g.key);
 
 describe('the environment settings tabs', () => {
   const variables = documentedVariables();
@@ -78,8 +81,7 @@ describe('the environment settings tabs', () => {
     const orphans = variables.filter((n) => !owned.test(n) && groupsOf(groups, n).length === 0);
     expect(
       orphans,
-      'these match no tab, so they are not rendered anywhere and cannot be edited from the UI: ' +
-        orphans.join(', ')
+      'these match no tab, so they are not rendered anywhere and cannot be edited from the UI: ' + orphans.join(', '),
     ).toEqual([]);
   });
 
@@ -92,7 +94,7 @@ describe('the environment settings tabs', () => {
       .filter((x) => x.keys.length > 1);
     expect(
       doubled,
-      'claimed by more than one tab: ' + doubled.map((x) => `${x.n} (${x.keys.join(', ')})`).join('; ')
+      'claimed by more than one tab: ' + doubled.map((x) => `${x.n} (${x.keys.join(', ')})`).join('; '),
     ).toEqual([]);
   });
 

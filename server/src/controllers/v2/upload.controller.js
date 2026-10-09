@@ -14,15 +14,16 @@ const storage = multer.diskStorage({
   }
 })
 
-// File size cap. Default 10 GB (configurable via UPLOAD_MAX_GB).
-// Set UPLOAD_MAX_GB=0 to disable the cap.
-const _uploadMaxGb = appConfig.uploadMaxGb;
-const _multerLimits = (_uploadMaxGb && _uploadMaxGb > 0)
-  ? { fileSize: _uploadMaxGb * 1024 * 1024 * 1024 }
-  : undefined;
-const uploadMulter = multer({ storage: storage, limits: _multerLimits });
+// File size cap. Default 10 GB (configurable via UPLOAD_MAX_GB), 0 disables it. Read on each
+// upload, not at import : a new UPLOAD_MAX_GB applies without a restart (envSettings LIVE).
+// multer is cheap to build ; it holds no state between requests.
+function uploadMulter() {
+  const gb = appConfig.uploadMaxGb;
+  const limits = gb && gb > 0 ? { fileSize: gb * 1024 * 1024 * 1024 } : undefined;
+  return multer({ storage: storage, limits });
+}
 const upload = function(req, res, _next) {
-  const result = uploadMulter.single('file')
+  const result = uploadMulter().single('file')
 
   result(req, res, function (err) {
       if(err) {

@@ -842,6 +842,17 @@
     description: | 
       Ansible Forms logs to logfile called Ansible Forms.log.  
       It does so in multiple levels.  
+  - name: LOG_RETENTION_DAYS
+    version: 7.0.0
+    type: number
+    allowed: a whole number where 0 keeps the log files for ever
+    short: Log file retention in days
+    hint: How many days of server log files are kept (0 keeps them all)
+    default: "30"
+    description: |
+      How many days of server log files are kept: the main log and the errors log, one file a
+      day, zipped once the day is over. Older files are deleted. 0 keeps every file. Takes
+      effect at once, without a restart.
   - name: LOG_PATH
     type: string
     allowed: a valid folder path

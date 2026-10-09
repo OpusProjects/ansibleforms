@@ -11,7 +11,7 @@ import { applySecureContext } from './httpsContext.js';
 import { rebuildBodyParsers } from './bodyParsers.js';
 import { applyTrustProxy, compileTrustProxy } from './trustProxy.js';
 import authConfig from '../../config/auth.config.js';
-import logConfig from '../../config/log.config.js';
+import logConfig, { parseRetentionDays } from '../../config/log.config.js';
 
 // Editing environment variables from the settings page.
 //
@@ -58,15 +58,17 @@ export const ENV_EDIT_DISABLED_REASON =
 // here is saved but needs a restart - that is the safe default, not a limitation to work
 // around: a value captured at import cannot be changed under the running process.
 // NOT in this table, deliberately, even though each maps to a real appConfig field:
-//   OLD_BACKUP_DAYS    - form.model.js captures it as `const oldBackupDays` at import
 //   FORMS_BACKUP_PATH  - form.model.js captures it as `const backupPath` at import
-//   UPLOAD_MAX_GB      - upload.controller.js bakes it into the multer limits at import
 // Writing appConfig for those changed nothing while the page reported "applied now", which
 // is the ANSIBLE_PATH bug again. They are 'restart' until their consumer reads at call time.
 const LIVE = {
   JOB_RETENTION_DAYS: { key: 'jobRetentionDays', parse: v => parseInt(v, 10) || 0 },
   AUDIT_RETENTION_DAYS: { key: 'auditRetentionDays', parse: v => parseInt(v, 10) || 0 },
   NIGHTLY_BACKUP_RETENTION: { key: 'nightlyBackupRetention', parse: v => parseInt(v, 10) || 0 },
+  // upload.controller builds its multer limits on each upload ; the same fallback as app.config
+  UPLOAD_MAX_GB: { key: 'uploadMaxGb', parse: v => (Number.isNaN(parseInt(v, 10)) ? 10 : parseInt(v, 10)) },
+  // form.model reads it each time it removes old restore points ; the same fallback as app.config
+  OLD_BACKUP_DAYS: { key: 'oldBackupDays', parse: v => (Number.isNaN(parseInt(v, 10)) ? 60 : parseInt(v, 10)) },
   MYSQLDUMP_COMMAND: { key: 'mysqldumpCommand', parse: v => v },
   MYSQL_COMMAND: { key: 'mysqlCommand', parse: v => v },
   // backup.model passes it to every dump and restore it runs ; the same fallback as app.config
@@ -161,6 +163,9 @@ const LIVE_CUSTOM = {
   // the rotating filenames are built at construction, so both file transports are rebuilt.
   // Like the other paths, existing log files stay where they are (RELOCATES says so).
   LOG_PATH: (v) => { logConfig.path = v; return rebuildFileTransports(); },
+  // the rotating files are told how long to keep their files when built : rebuilt, with the
+  // new value (0 keeps them all)
+  LOG_RETENTION_DAYS: (v) => { logConfig.retentionDays = parseRetentionDays(v); return rebuildFileTransports(); },
   // node's setSecureContext replaces the TLS context for new connections, so a renewed
   // certificate needs no restart. Returns false in http mode - there is no context to swap -
   // and false if the files cannot be read, keeping the working certificate in place.

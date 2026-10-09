@@ -31,6 +31,11 @@ const formatNoColor = winston.format.printf(
   }
 );
 
+// how long the log files are kept (LOG_RETENTION_DAYS, Settings > Retention) : '<n>d' for the
+// rotating transports, none (every file kept) for 0 ; read when a transport is built, so a new
+// value applies when rebuildFileTransports rebuilds them
+const keptFor = () => (loggerConfig.retentionDays > 0 ? `${loggerConfig.retentionDays}d` : undefined);
+
 const transportConsole = new winston.transports.Console({
   stderrLevels: ["error"],
   level:loggerConfig.consolelevel,
@@ -40,7 +45,7 @@ const transportConsole = new winston.transports.Console({
 const transportDailyRotateFileErrors = new winston.transports.DailyRotateFile({
   filename: loggerConfig.path + "/ansibleforms.errors.%DATE%.log",
   datePattern: 'YYYY-MM-DD',
-  maxFiles: '30d',
+  maxFiles: keptFor(),
   zippedArchive: true,
   level: 'error',
   format:formatNoColor
@@ -51,7 +56,7 @@ const transportDailyRotateFile = new winston.transports.DailyRotateFile({
   filename: loggerConfig.path + "/ansibleforms.%DATE%.log",
   datePattern: 'YYYY-MM-DD',
   zippedArchive: true,
-  maxFiles: '30d',    
+  maxFiles: keptFor(),
   format:formatColor
 });
 
@@ -143,7 +148,7 @@ export function rebuildFileTransports() {
     filename: loggerConfig.path + suffix,
     datePattern: 'YYYY-MM-DD',
     zippedArchive: true,
-    maxFiles: '30d',
+    maxFiles: keptFor(),
     format,
   });
   let errorsT, mainT;
