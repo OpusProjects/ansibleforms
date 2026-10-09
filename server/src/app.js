@@ -228,10 +228,8 @@ const load = async (app) => {
 
   // The chat assistant (ENABLE_CHAT) : the same form service as the MCP server, in
   // process, as the authenticated user ; the allowChat role option may switch it off
-  if (appConfig.enableChat) {
-    app.use('/api/v2/chat', cors(), authobj, Middleware.checkChatMiddleware, chatRoutes);
-    logger.notice("Chat assistant enabled on /api/v2/chat");
-  }
+  app.use('/api/v2/chat', featureOn('enableChat'), cors(), authobj, Middleware.checkChatMiddleware, chatRoutes);
+  if (appConfig.enableChat) logger.notice("Chat assistant enabled on /api/v2/chat");
 
 }
 

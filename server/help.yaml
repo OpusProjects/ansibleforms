@@ -618,8 +618,8 @@
       It also needs a model provider on the **Chat assistant** settings page (or in the
       config seed), forms with `enableForChat: true`, and users whose roles allow `allowChat`
       (the default). Form definitions and the values being filled in are sent to that
-      provider ; passwords, credentials and job output never are. Changing it needs a
-      restart. See the Chat assistant page of the documentation.
+      provider ; passwords, credentials and job output never are. Takes effect at once,
+      without a restart. See the Chat assistant page of the documentation.
   - name: LAUNCH_VALIDATION
     version: 6.4.0
     type: string

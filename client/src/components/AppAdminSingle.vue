@@ -6,11 +6,21 @@
 /*                                                                */
 /*  @props:                                                       */
 /*      settings: Object                                          */
+/*      tabs: Array of { key, label, icon } - the form in tabs :  */
+/*            each field names its tab (field.tab, the first tab  */
+/*            when it names none) ; a slot tab-top-<key> above a  */
+/*            tab's fields. The tab is kept in the url (?tab=)    */
+/*      locked: Boolean - every field read only (the feature the  */
+/*            form configures is switched off)                    */
+/*      extraDirty: Boolean - more to save with the form (the     */
+/*            page's own fields, in a tab-top slot) : Save emits  */
+/*            saveExtra as well                                   */
 /*                                                                */
 /*  @emits:                                                       */
 /*      test: Function                                            */
 /*      import: Function                                          */
 /*      saved: Function (after a successful update)               */
+/*      saveExtra: Save was pressed with extraDirty               */
 /*                                                                */
 /******************************************************************/
 
@@ -22,6 +32,7 @@ import TokenStorage from '@/lib/TokenStorage';
 import { useVuelidate } from '@vuelidate/core';
 import { required, helpers, email, sameAs } from '@vuelidate/validators';
 import { useI18n } from 'vue-i18n';
+import { useRouteTab } from '@/composables/useRouteTab';
 
 const { t } = useI18n();
 
@@ -31,9 +42,32 @@ const props = defineProps({
     type: [String, Number],
     default: 2,
   },
+  tabs: {
+    type: Array,
+    default: () => [],
+  },
+  locked: {
+    type: Boolean,
+    default: false,
+  },
+  extraDirty: {
+    type: Boolean,
+    default: false,
+  },
 });
 
-const emit = defineEmits(['test', 'import', 'saved']);
+const emit = defineEmits(['test', 'import', 'saved', 'saveExtra']);
+
+// the tab shown, kept in the url (?tab=) ; without tabs the url's ?tab is the page's
+const firstTab = computed(() => props.tabs[0]?.key || '');
+const { activeTab } = props.tabs.length
+  ? useRouteTab(
+      () => firstTab.value,
+      (key) => props.tabs.some((x) => x.key === key),
+    )
+  : { activeTab: ref('') };
+// the tab a field is in : the one it names, or the first
+const tabOf = (field) => field.tab || firstTab.value;
 
 const objectLabel = computed(() => props.settings?.label || '');
 const objectIcon = computed(() => props.settings?.icon || '');
@@ -177,14 +211,16 @@ const isManaged = computed(() => !!item.value?.managed);
 const disabledFields = computed(() => {
   const disabledFields = {};
   for (const field of fields.value) {
-    disabledFields[field.key] = isManaged.value || isDisabled(field);
+    disabledFields[field.key] = props.locked || isManaged.value || isDisabled(field);
   }
   return disabledFields;
 });
 
-const rows = computed(() => {
+// the rows of a tab (or of the whole form, without tabs)
+function rowsOf(tab) {
   const rows = [];
   for (const field of fields.value) {
+    if (tab && tabOf(field) !== tab) continue;
     // toggles render above the rows, so they are not part of the grid.
     // 'isAction' was also skipped here : that flag is gone, since the only
     // fields that carried it are on AppAdminMulti pages which never read it
@@ -198,7 +234,14 @@ const rows = computed(() => {
     rows[line].push(field);
   }
   return rows;
-});
+}
+const rows = computed(() => rowsOf(''));
+
+// Save : the form when it changed, and what the page adds to it (extraDirty) - one press
+async function saveAll() {
+  if (props.extraDirty) emit('saveExtra');
+  if (isDirty.value && !isManaged.value) await updateItem();
+}
 
 for (const field of fields.value) {
   if (field.onChange) {
@@ -221,6 +264,16 @@ defineExpose({
 </script>
 <template>
   <AppSettings :icon="objectIcon" :title="settings.pageTitle || objectLabel" :description="objectDescription">
+    <template v-if="tabs.length" #tabs>
+      <ul class="nav nav-tabs mb-0">
+        <li v-for="tab in tabs" :key="tab.key" class="nav-item">
+          <a class="nav-link" :class="{ active: activeTab === tab.key }" href="#" @click.prevent="activeTab = tab.key">
+            <FaIcon :icon="tab.icon" class="me-1" />
+            {{ tab.label }}
+          </a>
+        </li>
+      </ul>
+    </template>
     <template #actions>
       <!-- the action bar holds buttons only : the 'isAction' checkbox row that
                  used to render here reached nothing, because the only fields carrying
@@ -238,13 +291,62 @@ defineExpose({
       <BsButton
         cssClass="ms-3"
         icon="save"
-        :colorClass="isDirty && !isManaged ? 'primary' : 'secondary'"
-        :disabled="!isDirty || isManaged"
-        @click="updateItem()"
+        :colorClass="(isDirty && !isManaged) || extraDirty ? 'primary' : 'secondary'"
+        :disabled="(!isDirty || isManaged) && !extraDirty"
+        @click="saveAll()"
         >{{ t('settings.common.save') }}</BsButton
       >
     </template>
-    <template #default>
+    <!-- in tabs : each tab its slot, then its toggles and its rows -->
+    <template v-if="tabs.length" #default>
+      <div v-for="tab in tabs" v-show="activeTab === tab.key" :key="tab.key">
+        <div v-if="isManaged" class="alert alert-secondary py-2">
+          <FaIcon icon="lock" class="me-2" />
+          {{ t('settings.common.seedManagedNotice') }}
+        </div>
+        <slot :name="'tab-top-' + tab.key"></slot>
+        <BsInput
+          v-for="field in toggleFields.filter((f) => tabOf(f) === tab.key)"
+          :key="field.key"
+          type="checkbox"
+          :isSwitch="true"
+          :disabled="isManaged || locked"
+          v-model="item[field.key]"
+          :label="field.label"
+          :help="field.help"
+          class="mb-1"
+        />
+        <template v-for="(cols, rIdx) in rowsOf(tab.key)" :key="rIdx">
+          <div v-if="cols && cols.some((f) => isVisible(f))" class="row">
+            <div
+              :class="field.type === 'checkbox' ? 'col-auto' : 'col'"
+              v-for="field in cols"
+              :key="field.key"
+              v-show="isVisible(field)"
+            >
+              <BsInput
+                :isFloating="false"
+                :placeholder="field.placeholder"
+                :description="field.description"
+                :style="field.style"
+                :icon="field.icon"
+                :help="field.help"
+                :type="field.type"
+                :values="field.values"
+                :liveSync="field.type === 'editor'"
+                v-model="$v.item[field.key].$model"
+                :disabled="disabledFields[field.key]"
+                :label="field.label"
+                :required="field.required"
+                :hasError="$v.item[field.key].$invalid && $v.item[field.key].$dirty && !disabledFields[field.key]"
+                :errors="$v.item[field.key].$errors"
+              />
+            </div>
+          </div>
+        </template>
+      </div>
+    </template>
+    <template v-else #default>
       <div v-if="isManaged" class="alert alert-secondary py-2">
         <FaIcon icon="lock" class="me-2" />
         {{ t('settings.common.seedManagedNotice') }}
@@ -254,7 +356,7 @@ defineExpose({
         :key="field.key"
         type="checkbox"
         :isSwitch="true"
-        :disabled="isManaged"
+        :disabled="isManaged || locked"
         v-model="item[field.key]"
         :label="field.label"
         :help="field.help"
@@ -305,7 +407,9 @@ defineExpose({
 /* the last row's fields end the card : no margin of their own under them, a switch's column
    (col-auto) as well as a field's */
 :deep(.card-body > .row:last-child > .col > .mb-3),
-:deep(.card-body > .row:last-child > .col-auto > .mb-3) {
+:deep(.card-body > .row:last-child > .col-auto > .mb-3),
+:deep(.card-body > div > .row:last-child > .col > .mb-3),
+:deep(.card-body > div > .row:last-child > .col-auto > .mb-3) {
   margin-bottom: 0 !important;
 }
 :deep(.card-body .mb-3:has(.form-check) > .form-label) {

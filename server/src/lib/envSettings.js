@@ -82,6 +82,8 @@ const LIVE = {
   SHOW_DESIGNER: { key: 'showDesigner', parse: v => v == 1 },
   // app.js mounts the MCP server always, behind a gate reading this per request
   ENABLE_MCP: { key: 'enableMcp', parse: v => v == 1 },
+  // the chat route's gate, the chat button and the chat service read it per request
+  ENABLE_CHAT: { key: 'enableChat', parse: v => v == 1 },
   // the MCP router reads both per request, when it builds the tools of a request
   MCP_READ_ONLY: { key: 'mcpReadOnly', parse: v => v == 1 },
   MCP_CHAT_FORMS_ONLY: { key: 'mcpChatFormsOnly', parse: v => v == 1 },

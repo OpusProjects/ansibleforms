@@ -736,10 +736,14 @@ export default {
         'Automatisch vom privaten Schluessel abgeleitet. Kopieren Sie diesen in die authorized_keys Ihrer Remote-Server.',
     },
     chat: {
+      tabGeneral: 'Allgemein',
+      tabProvider: 'Modellanbieter',
+      tabLimits: 'Grenzen',
       label: 'Chat-Assistent',
       description:
         'Der KI-Modellanbieter des Chat-Assistenten. Der Chat braucht außerdem ENABLE_CHAT=1, und ein Formular nimmt nur mit enableForChat: true teil.',
       provider: 'Anbieter',
+      providerHelp: 'Der Dienst, der das KI-Modell ausführt; die Auswahl trägt seine Adresse ein',
       providerNone: 'Keiner - Chat aus',
       model: 'Modell',
       modelHelp: 'Wie der Anbieter es nennt',
@@ -752,6 +756,7 @@ export default {
       maxToolRounds: 'Tool-Runden pro Nachricht',
       maxToolRoundsHelp: 'Bevor das Modell antworten muss',
       timeout: 'Zeitlimit (Sekunden)',
+      timeoutHelp: 'Wie lange auf die Antwort des Modells gewartet wird',
       allowJobStatus: 'Jobstatus',
       allowJobStatusHelp: 'Nur der Status, nie die Ausgabe',
       authType: 'Authentifizierung',

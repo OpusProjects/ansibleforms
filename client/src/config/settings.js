@@ -891,10 +891,12 @@ export default function getSettings(t) {
       fields: [
         {
           key: 'provider',
+          tab: 'provider',
           icon: 'robot',
           line: 0,
           type: 'select',
           label: t('settings.chat.provider'),
+          help: t('settings.chat.providerHelp'),
           values: [
             { value: '', label: t('settings.chat.providerNone') },
             ...CHAT_PROVIDERS.map((p) => ({ value: p.value, label: p.label || t('settings.chat.providerCustom') })),
@@ -909,6 +911,7 @@ export default function getSettings(t) {
         },
         {
           key: 'model',
+          tab: 'provider',
           icon: 'microchip',
           line: 0,
           label: t('settings.chat.model'),
@@ -919,6 +922,7 @@ export default function getSettings(t) {
         },
         {
           key: 'base_url',
+          tab: 'provider',
           icon: 'link',
           line: 1,
           label: t('settings.chat.baseUrl'),
@@ -928,6 +932,7 @@ export default function getSettings(t) {
         },
         {
           key: 'api_key',
+          tab: 'provider',
           icon: 'key',
           line: 1,
           type: 'password',
@@ -937,6 +942,7 @@ export default function getSettings(t) {
         },
         {
           key: 'auth_type',
+          tab: 'provider',
           icon: 'id-card',
           line: 2,
           type: 'select',
@@ -953,6 +959,7 @@ export default function getSettings(t) {
         },
         {
           key: 'api_version',
+          tab: 'provider',
           icon: 'code-branch',
           line: 2,
           label: t('settings.chat.apiVersion'),
@@ -962,6 +969,7 @@ export default function getSettings(t) {
         },
         {
           key: 'request_user',
+          tab: 'provider',
           icon: 'user',
           line: 2,
           label: t('settings.chat.user'),
@@ -970,6 +978,7 @@ export default function getSettings(t) {
         },
         {
           key: 'extra_headers',
+          tab: 'provider',
           icon: 'list',
           line: 3,
           type: 'textarea',
@@ -980,6 +989,7 @@ export default function getSettings(t) {
         },
         {
           key: 'max_turns',
+          tab: 'limits',
           icon: 'comments',
           line: 4,
           type: 'number',
@@ -989,6 +999,7 @@ export default function getSettings(t) {
         },
         {
           key: 'max_tool_rounds',
+          tab: 'limits',
           icon: 'arrows-rotate',
           line: 4,
           type: 'number',
@@ -998,14 +1009,17 @@ export default function getSettings(t) {
         },
         {
           key: 'timeout_seconds',
+          tab: 'limits',
           icon: 'clock',
           line: 4,
           type: 'number',
           label: t('settings.chat.timeout'),
+          help: t('settings.chat.timeoutHelp'),
           dependency: 'provider',
         },
         {
           key: 'ignore_certs',
+          tab: 'provider',
           line: 5,
           type: 'checkbox',
           label: t('settings.chat.ignoreCerts'),
@@ -1014,6 +1028,7 @@ export default function getSettings(t) {
         },
         {
           key: 'allow_job_status',
+          tab: 'general',
           line: 5,
           type: 'checkbox',
           label: t('settings.chat.allowJobStatus'),

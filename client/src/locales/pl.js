@@ -712,10 +712,14 @@ export default {
         'Automatycznie wyprowadzany z klucza prywatnego. Skopiuj go do authorized_keys na zdalnych serwerach.',
     },
     chat: {
+      tabGeneral: 'Ogólne',
+      tabProvider: 'Dostawca modelu',
+      tabLimits: 'Limity',
       label: 'Asystent czatu',
       description:
         'Dostawca modelu AI asystenta czatu. Czat wymaga też ENABLE_CHAT=1, a formularz bierze w nim udział tylko z enableForChat: true.',
       provider: 'Dostawca',
+      providerHelp: 'Usługa, która uruchamia model AI; wybranie jej wpisuje jej adres',
       providerNone: 'Brak - czat wyłączony',
       model: 'Model',
       modelHelp: 'Tak, jak nazywa go dostawca',
@@ -728,6 +732,7 @@ export default {
       maxToolRounds: 'Rundy narzędzi na wiadomość',
       maxToolRoundsHelp: 'Zanim model musi odpowiedzieć',
       timeout: 'Limit czasu (sekundy)',
+      timeoutHelp: 'Jak długo czekać na odpowiedź modelu',
       allowJobStatus: 'Stan zadania',
       allowJobStatusHelp: 'Tylko stan, nigdy wynik',
       authType: 'Uwierzytelnianie',

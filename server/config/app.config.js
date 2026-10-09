@@ -55,7 +55,7 @@ var app_config = {
   mcpChatFormsOnly: (process.env.MCP_CHAT_FORMS_ONLY ?? 0) == 1,
   // The chat assistant in the browser (a model provider on the Chat assistant admin page
   // is needed too). Off by default : it sends form definitions and values to a model
-  // provider, which an operator decides. Changing it needs a restart (routes are mounted).
+  // provider, which an operator decides. It applies without a restart (envSettings.js).
   enableChat: (process.env.ENABLE_CHAT ?? 0) == 1,
   // Validate the field values of every launch from the browser or the REST API against the
   // form's rules (the same engine as the MCP server). off (default) = no check at all, so an

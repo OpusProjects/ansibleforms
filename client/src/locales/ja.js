@@ -706,10 +706,14 @@ export default {
       publicKeyHelp: '秘密鍵から自動的に生成されます。これをリモートサーバーの authorized_keys にコピーしてください。',
     },
     chat: {
+      tabGeneral: '一般',
+      tabProvider: 'モデルプロバイダー',
+      tabLimits: '制限',
       label: 'チャットアシスタント',
       description:
         'チャットアシスタントの AI モデルプロバイダーです。チャットには ENABLE_CHAT=1 も必要で、フォームは enableForChat: true の場合にのみ対象になります。',
       provider: 'プロバイダー',
+      providerHelp: 'AI モデルを実行するサービスです。選ぶとアドレスが入力されます',
       providerNone: 'なし - チャット無効',
       model: 'モデル',
       modelHelp: 'プロバイダーでの名前',
@@ -722,6 +726,7 @@ export default {
       maxToolRounds: 'メッセージあたりのツールラウンド数',
       maxToolRoundsHelp: 'モデルが回答するまで',
       timeout: 'タイムアウト (秒)',
+      timeoutHelp: 'モデルの応答を待つ時間',
       allowJobStatus: 'ジョブステータス',
       allowJobStatusHelp: 'ステータスのみ、出力は含めません',
       authType: '認証',
