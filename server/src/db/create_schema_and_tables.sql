@@ -9,6 +9,7 @@ DROP TABLE IF EXISTS `groups`;
 CREATE TABLE `groups`(
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
+  `description` varchar(250) DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_AnsibleForms_groups_natural_key` (`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
@@ -19,6 +20,7 @@ CREATE TABLE `users`(
   `username` varchar(255) NOT NULL,
   `password` varchar(255) NOT NULL,
   `email` varchar(255) NOT NULL,
+  `description` varchar(250) DEFAULT NULL,
   `group_id` int(11) NOT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_AnsibleForms_users_natural_key` (`username`),

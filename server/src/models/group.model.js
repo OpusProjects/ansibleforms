@@ -9,10 +9,10 @@ class Group extends CrudModel {
         return super.create(this.modelName, data);
     }
     static async update(data, id) {
-        // Prevent modification of admins group - check by name, not ID
+        // The admins group keeps its name - check by name, not ID. Its description may change.
         const group = await super.findById(this.modelName, id);
-        if (group && group.name === 'admins') {
-            throw new Error("You cannot modify group 'admins'");
+        if (group && group.name === 'admins' && data.name !== undefined && data.name !== 'admins') {
+            throw new Error("You cannot rename group 'admins'");
         }
         return super.update(this.modelName, data, id);
     }

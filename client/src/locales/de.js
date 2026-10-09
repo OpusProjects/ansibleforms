@@ -592,6 +592,7 @@ export default {
       description: 'Lokale Benutzer in lokale Gruppen organisieren, um Berechtigungen zu verwalten.',
       showGroup: 'Gruppe anzeigen',
       deleteGroup: 'Gruppe loeschen',
+      editGroup: 'Gruppe bearbeiten',
     },
     repositories: {
       label: 'Repository',

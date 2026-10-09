@@ -584,6 +584,7 @@ export default {
       description: '権限を管理するために、ローカルユーザーをローカルグループにまとめます。',
       showGroup: 'グループを表示',
       deleteGroup: 'グループを削除',
+      editGroup: 'グループを編集',
     },
     repositories: {
       label: 'リポジトリ',

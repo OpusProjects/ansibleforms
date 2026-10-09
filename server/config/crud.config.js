@@ -103,7 +103,9 @@ const crudConfigs = {
     table: 'AnsibleForms.groups',
     fields: [
       { name: 'id', isKey: true },
-      { name: 'name', isNaturalKey: true, required: true }
+      { name: 'name', isNaturalKey: true, required: true },
+      // what the group is for, or who owns it
+      { name: 'description' }
     ],
     allowCache: true,
     cacheTTL: 3600
@@ -115,6 +117,8 @@ const crudConfigs = {
       { name: 'username', isNaturalKey: true, required: true },
       { name: 'password', required: true }, // Special handling needed - async hashing
       { name: 'email', setDefault: true }, // Default to empty string
+      // who the user is or what the account is for (a service account)
+      { name: 'description' },
       { name: 'group_id', required: true }
     ],
     allowCache: false

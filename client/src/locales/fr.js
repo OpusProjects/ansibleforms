@@ -591,6 +591,7 @@ export default {
       description: 'Organiser les utilisateurs locaux en groupes locaux pour gérer les permissions.',
       showGroup: 'Afficher le groupe',
       deleteGroup: 'Supprimer le groupe',
+      editGroup: 'Modifier le groupe',
     },
     repositories: {
       label: 'Depot',

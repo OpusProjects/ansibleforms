@@ -115,6 +115,15 @@ export default function getSettings(t) {
           filterable: true,
           icon: 'user',
         },
+        // who the user is, or what the account is for (a service account)
+        {
+          key: 'description',
+          label: t('settings.fields.description'),
+          sortable: true,
+          required: false,
+          filterable: true,
+          icon: 'info-circle',
+        },
         {
           key: 'password',
           label: t('settings.fields.password'),
@@ -131,8 +140,8 @@ export default function getSettings(t) {
           type: 'email',
           sortable: false,
           required: false,
-          filterable: false,
-          icon: 'lock',
+          filterable: true,
+          icon: 'envelope',
         },
         {
           key: 'group_id',
@@ -164,7 +173,10 @@ export default function getSettings(t) {
           key: 'group_id',
         },
       ],
-      actions: [{ name: 'delete', title: t('settings.groups.deleteGroup'), icon: 'trash', color: 'delete' }],
+      actions: [
+        { name: 'edit', title: t('settings.groups.editGroup'), icon: 'pencil', color: 'edit' },
+        { name: 'delete', title: t('settings.groups.deleteGroup'), icon: 'trash', color: 'delete' },
+      ],
       fields: [
         {
           key: 'id',
@@ -183,6 +195,15 @@ export default function getSettings(t) {
           required: true,
           filterable: true,
           icon: 'users',
+        },
+        // what the group is for, or who owns it
+        {
+          key: 'description',
+          label: t('settings.fields.description'),
+          sortable: true,
+          required: false,
+          filterable: true,
+          icon: 'info-circle',
         },
       ],
       childFields: {

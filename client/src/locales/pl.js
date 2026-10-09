@@ -585,6 +585,7 @@ export default {
       description: 'Organizuj lokalnych użytkowników w lokalne grupy, aby zarządzać uprawnieniami.',
       showGroup: 'Pokaż grupę',
       deleteGroup: 'Usuń grupę',
+      editGroup: 'Edytuj grupę',
     },
     repositories: {
       label: 'Repozytorium',
