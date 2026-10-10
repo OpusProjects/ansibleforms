@@ -419,7 +419,7 @@ function wizardSubmit() {
     files: {},
     extravars: Helpers.deepClone(wizardMergedOutput.value) || {},
     formName: currentForm.value.name,
-    rawFormData: Helpers.deepClone(wizardMergedOutput.value) || {},
+    rawFormData: getWizardRawFormData(),
     credentials: {},
   };
   if (enableVerbose.value) {
@@ -579,23 +579,7 @@ function buildMainStoreCtx() {
       // round-trippable into the wizard UI without trying to split a
       // flattened tree back into step buckets.
       if (wizardActive.value) {
-        const drafts = {};
-        for (const step of wizardSteps.value) {
-          if (step.isSummary || !step.subform?.fields) continue;
-          const src = wizardDrafts[step.name] || {};
-          const clean = {};
-          step.subform.fields.forEach((f) => {
-            if (f.type === 'password' || f.type === 'constant') return;
-            if (f.name in src) clean[f.name] = src[f.name];
-          });
-          drafts[step.name] = clean;
-        }
-        return {
-          __wizard__: true,
-          drafts,
-          skipped: { ...wizardSkipped },
-          completed: { ...wizardCompleted },
-        };
+        return { ...getWizardRawFormData(), completed: { ...wizardCompleted } };
       }
       return getFilteredRawFormData();
     },
@@ -1030,29 +1014,32 @@ function wizardStepChanged(stepName, formObjectData) {
   wizardVisibility[stepName] = formObjectData.visibility || {};
 }
 
+/**
+ * A wizard's raw form data : every step's draft, without its password and constant fields,
+ * and the steps the user skipped. The server checks each shown step against its subform
+ * from these (launch validation), and a stored wizard is restored from them.
+ *
+ * Returns:
+ *   object: { __wizard__: true, drafts: { step: values }, skipped: { step: true } }.
+ */
+function getWizardRawFormData() {
+  const drafts = {};
+  for (const step of wizardSteps.value) {
+    if (step.isSummary || !step.subform?.fields) continue;
+    const src = wizardDrafts[step.name] || {};
+    const clean = {};
+    step.subform.fields.forEach((f) => {
+      if (f.type === 'password' || f.type === 'constant') return;
+      if (f.name in src) clean[f.name] = Helpers.deepClone(src[f.name]);
+    });
+    drafts[step.name] = clean;
+  }
+  return { __wizard__: true, drafts, skipped: { ...wizardSkipped } };
+}
+
 // Get filtered raw form data (excludes constants, passwords, system fields)
 function getFilteredRawFormData() {
-  if (wizardActive.value) {
-    // Wizard rawFormData is the merged extravars (without passwords - we
-    // rebuild from drafts so password fields don't leak into stored jobs).
-    const result = {};
-    for (const step of wizardSteps.value) {
-      if (step.isSummary || !step.subform?.fields) continue;
-      if (!isWizardStepVisible(step)) continue;
-      const draftClone = { ...(wizardDrafts[step.name] || {}) };
-      step.subform.fields.forEach((f) => {
-        if (f.type === 'password' || f.type === 'constant') delete draftClone[f.name];
-      });
-      const stepOutput = Helpers.buildWizardStepOutput(
-        step.subform.fields.filter((f) => f.type !== 'password' && f.type !== 'constant'),
-        draftClone,
-        step.defaultModel || '',
-        { subforms: currentForm.value?.subforms || [] },
-      );
-      Object.assign(result, Helpers.deepMerge(result, stepOutput));
-    }
-    return result;
-  }
+  if (wizardActive.value) return getWizardRawFormData();
   const rawFormData = {};
   (currentForm.value.fields || []).forEach((field) => {
     const fieldName = field.name;

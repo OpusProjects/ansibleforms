@@ -2991,7 +2991,7 @@ function applyFormSettings() {
     if (formTypeAllows('check')) setDocValue(doc, 'check', s.check ? true : undefined);
     if (formTypeAllows('diff')) setDocValue(doc, 'diff', s.diff ? true : undefined);
     if (formTypeAllows('allowRelaunch')) setDocValue(doc, 'allowRelaunch', s.allowRelaunch ? true : undefined);
-    if (formTypeAllows('launchValidation') && !s.hasWizard)
+    if (formTypeAllows('launchValidation'))
       setDocValue(doc, 'launchValidation', s.launchValidation || undefined);
     if (formTypeAllows('enableForChat') && !s.hasWizard)
       setDocValue(doc, 'enableForChat', s.enableForChat ? true : undefined);
@@ -5899,7 +5899,7 @@ onBeforeUnmount(() => {
                 type="number"
               />
             </div>
-            <div class="col-md-4" v-if="formTypeAllows('launchValidation') && !formSettings.hasWizard">
+            <div class="col-md-4" v-if="formTypeAllows('launchValidation')">
               <BsInput
                 :isFloating="false"
                 type="select"
