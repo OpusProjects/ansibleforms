@@ -5276,6 +5276,9 @@
 
         // output : a credential object with all properties (username, password, host, port)
         // the exact name is tried first, then the name as a regex, then the fallback
+        // server expressions are evaluated from the form definition : a user reaches only
+        // the credentials the form's expressions ask for (a raw expression over the api
+        // needs settings or designer access)
     - name: copy a value
       code: |
         fn.fnCopy($(other_field))

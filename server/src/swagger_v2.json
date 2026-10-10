@@ -1077,8 +1077,8 @@
     "/expression": {
       "post": {
         "tags": ["expression"],
-        "summary": "Execute a JavaScript expression",
-        "description": "Evaluates a JavaScript expression in a sandboxed environment. Supports custom functions and transformations.",
+        "summary": "Evaluate a form field's server expression",
+        "description": "Evaluates the expression of a form field. Send formName and fieldName (plus subformName for a field in a subform): the expression text is taken from the form definition, loaded with the caller's roles, and only the placeholder values come from the request. A raw `expression` is accepted only from a user with settings or designer access.",
         "security": [ { "bearerAuth": [] } ],
         "parameters": [
           { "name": "noLog", "in": "query", "required": false, "schema": { "type": "boolean" }, "description": "Suppress expression logging" }
@@ -1089,12 +1089,16 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["expression"],
                 "properties": {
-                  "expression": { 
-                    "type": "string", 
-                    "description": "JavaScript expression to evaluate. Can include jq filtering as part of the expression.", 
-                    "example": "fn.fnReadYamlFile('/path/to/file.yml')" 
+                  "formName": { "type": "string", "description": "The root form holding the field" },
+                  "subformName": { "type": "string", "description": "The subform holding the field, when it is not on the root form" },
+                  "fieldName": { "type": "string", "description": "The field whose expression is evaluated" },
+                  "values": { "type": "object", "additionalProperties": true, "description": "What each placeholder resolved to, keyed by the text between $( and )" },
+                  "literals": { "type": "array", "items": { "type": "string" }, "description": "The keys of values that are spliced in as JSON (objects, arrays, records)" },
+                  "expression": {
+                    "type": "string",
+                    "description": "A raw JavaScript expression - settings or designer access only",
+                    "example": "fn.fnReadYamlFile('/path/to/file.yml')"
                   }
                 }
               }
@@ -1113,6 +1117,8 @@
             }
           },
           "400": { "description": "Bad request - no expression provided" },
+          "403": { "description": "A raw expression without settings or designer access, or a form the caller may not use" },
+          "404": { "description": "The form, subform or field does not exist or has no server expression" },
           "500": { 
             "description": "Expression evaluation error",
             "content": {

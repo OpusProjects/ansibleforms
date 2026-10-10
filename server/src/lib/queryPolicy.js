@@ -138,7 +138,7 @@ function rootOf(name) {
  * discarded. Constants win over a same-named field, matching the client, where the
  * constants block is applied after the fields.
  */
-function authoritativeValues(template, clientValues, formConfig, formObj) {
+export function authoritativeValues(template, clientValues, formConfig, formObj) {
   const values = { ...(clientValues && typeof clientValues === 'object' ? clientValues : {}) };
   const fixed = { ...(formConfig?.constants || {}), ...(formObj?.vars || {}) };
   if (Object.keys(fixed).length === 0) return values;
@@ -166,7 +166,7 @@ function authoritativeValues(template, clientValues, formConfig, formObj) {
  * already documents for inlining subforms: they are only reachable through a form's own
  * field tree.
  */
-function findFieldOwner(formConfig, formObj, subformName) {
+export function findFieldOwner(formConfig, formObj, subformName) {
   if (!subformName) return formObj;
   // Form.load inlines every referenced subform (recursively, so nested ones are in here
   // too) when a single form is requested
