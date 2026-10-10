@@ -88,6 +88,12 @@ const scheduleController = {
 
   async launch(req, res) {
     try {
+      // Run now : queued first, as the cron trigger does - launch() only takes a schedule
+      // that is queued (its claim), so an idle one called straight away launched nothing and
+      // still answered "launched". One already queued or running is left to that run.
+      const schedule = await Schedule.findById(req.params.id);
+      if (!schedule) throw new Errors.NotFoundError(`No schedule with id ${req.params.id}`);
+      if (!['queued', 'running'].includes(schedule.state)) await Schedule.queue(req.params.id);
       await Schedule.launch(req.params.id);
       return res.json(RestResult.single(i18n.t(req, 'resources.scheduleLaunched'), req.params.id));
     } catch (err) {
