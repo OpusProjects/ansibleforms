@@ -128,13 +128,16 @@
     /* The vars above colour the `tag is-*` BACKGROUNDS (light label on top), so they
        must stay saturated. success/warning are ALSO used as TEXT on the pane
        background by `has-text-*`, where the saturated hue fails WCAG AA, so text
-       gets its own darkened/lightened variant per theme. Two deliberate omissions:
-       danger needs no variant (`tag is-danger` is never emitted, so its var is
-       already text-tuned), and info needs none either (`has-text-info` is styled
-       nowhere, so it inherits the readable body colour - giving it a colour here
-       would make it worse, not better). */
+       gets its own darkened/lightened variant per theme. danger needs no variant
+       (`tag is-danger` is never emitted, so its var is already text-tuned). info
+       (`has-text-info`, a skipping line) gets a blue of its own, not the cyan of the
+       timestamps : as ansible prints it, and readable as text. */
     --af-ansible-output-text-success: #146c43; /* 6.3:1 */
     --af-ansible-output-text-warning: #a35200; /* 5.4:1 */
+    --af-ansible-output-text-info: #0a58ca; /* 6.4:1 */
+    /* a warning's purple (ansible's), as text and as a tag's background */
+    --af-ansible-output-text-purple: #6f2dbd; /* 7.6:1 */
+    --af-ansible-output-purple: #6f42c1;
     --af-ansible-output-bg-timestamp: var(--bs-light);
     --af-ansible-output-timestamp: var(--bs-info);
 
@@ -250,6 +253,9 @@
     /* text variants, lightened for the dark pane background (see the light block) */
     --af-ansible-output-text-success: #75b798; /* 4.9:1 */
     --af-ansible-output-text-warning: #ffb366; /* 6.5:1 */
+    --af-ansible-output-text-info: #6ea8fe; /* 4.9:1 */
+    --af-ansible-output-text-purple: #c29ffa; /* 6.0:1 */
+    --af-ansible-output-purple: #6f42c1;
     --af-ansible-output-bg-timestamp: var(--bs-dark);
     --af-ansible-output-timestamp: var(--bs-info);
 
@@ -364,6 +370,10 @@
     /* text variants ; the color theme's pane background is light (see the light block) */
     --af-ansible-output-text-success: #146c43; /* 6.3:1 */
     --af-ansible-output-text-warning: #a35200; /* 5.4:1 */
+    --af-ansible-output-text-info: #0a58ca; /* 6.4:1 */
+    /* a warning's purple (ansible's), as text and as a tag's background */
+    --af-ansible-output-text-purple: #6f2dbd; /* 7.6:1 */
+    --af-ansible-output-purple: #6f42c1;
     --af-ansible-output-bg-timestamp: var(--bs-info-bg-subtle);
     --af-ansible-output-timestamp: var(--bs-info);
 

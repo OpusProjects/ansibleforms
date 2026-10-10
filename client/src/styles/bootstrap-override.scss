@@ -105,6 +105,17 @@
   --af-field-border: #b6bec6;
 }
 
+// A job's output : the page's subtle grey, and its line numbers' column a shade darker ; in
+// the dark theme a terminal's black, its line numbers' column a near black
+:root {
+  --af-output-bg: var(--af-bg-light-subtle-color);
+  --af-output-gutter-bg: var(--bs-secondary-bg);
+}
+[data-bs-theme='dark'] {
+  --af-output-bg: #000;
+  --af-output-gutter-bg: #16191c;
+}
+
 // The pager under every table : its page boxes in the same grey, as the page size beside them
 .pagination {
   --bs-pagination-border-color: var(--af-field-border);
