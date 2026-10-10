@@ -2236,7 +2236,7 @@ onBeforeUnmount(() => {
             >
               <FaIcon icon="stop"></FaIcon><span class="ms-3">{{ t('form.abort') }}</span>
             </button>
-            <BsButton v-if="!formStatus.disabled" icon="rotate-right" cssClass="text-nowrap" @click="resetResult()">{{
+            <BsButton v-if="!formStatus.disabled" icon="arrow-up" cssClass="text-nowrap" @click="resetResult()">{{
               t('form.closeOutput')
             }}</BsButton>
           </div>
