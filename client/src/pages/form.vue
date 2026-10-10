@@ -12,6 +12,7 @@ import State from '@/lib/State';
 import Navigate from '@/lib/Navigate';
 import TokenStorage from '@/lib/TokenStorage';
 import YAML from 'yaml';
+import { useFollowOutput } from '@/composables/useFollowOutput';
 import Time from '@/lib/Time';
 
 // use
@@ -705,6 +706,46 @@ const filteredJobOutput = computed(() => {
   );
 });
 
+// ─── the output panel (as the job's page) ─────────────────────────────────────
+// the outputs (the job's, and a multistep's current step) : the toolbar folds them all
+const mainOutput = ref(null);
+const subOutput = ref(null);
+
+/**
+ * Folds every section of the output, or unfolds them all when all are folded.
+ */
+function toggleFoldAll() {
+  const expand = mainOutput.value?.allFolded;
+  for (const out of [mainOutput.value, subOutput.value]) {
+    if (out) expand ? out.expandAll() : out.collapseAll();
+  }
+}
+
+// the output's lines, beside its title
+const outputLines = computed(() => {
+  const text = filteredJobOutput.value || '';
+  return text
+    ? text
+        .replace(/<br\s*\/?>/gi, '\n')
+        .trimEnd()
+        .split('\n').length
+    : 0;
+});
+
+// the job's own section's title : the AWX job template, else the playbook, else the form
+const outputTitle = computed(() =>
+  job.value?.job_type == 'awx' ? job.value.target : job.value?.extravars?.__playbook__ || job.value?.form || '',
+);
+
+/**
+ * Copies the output as it reads on screen (the filter applied or not), as its plain text.
+ */
+function copyOutput() {
+  const html = filteredJobOutput.value.replace(/<br\s*\/?>/gi, '\n');
+  const text = new DOMParser().parseFromString(html, 'text/html').body.textContent || '';
+  clip(text, true);
+}
+
 // filter subjob output
 const filteredSubJobOutput = computed(() => {
   if (!filterOutput.value) return subjob.value.output?.replace(/\r\n/g, '<br>') || '';
@@ -715,6 +756,14 @@ const filteredSubJobOutput = computed(() => {
       .replace(/(<br>\s*){3,}/gi, '<br><br>') || ''
   );
 });
+
+// a running job's output followed down as it comes in, while the reader is at its end
+const outputPanel = ref(null);
+useFollowOutput(
+  outputPanel,
+  () => (filteredJobOutput.value?.length || 0) + (filteredSubJobOutput.value?.length || 0),
+  () => status.value === 'running',
+);
 
 const formStatus = computed(() => {
   if (status.value == 'running') {
@@ -1710,7 +1759,7 @@ onBeforeUnmount(() => {
 <template>
   <AppNav />
   <div class="flex-shrink-0">
-    <main class="d-flex flex-nowrap af-settings-layout" :class="{ 'd-none': hideForm }">
+    <main class="d-flex flex-nowrap af-settings-layout">
       <!-- the forms menu of the Forms page : the category browsed before opening the form
            highlighted ; a category goes back to the Forms page on it -->
       <AppFormsMenu
@@ -1719,344 +1768,477 @@ onBeforeUnmount(() => {
         @select="openCategory"
       />
       <div v-if="authenticated && currentForm" class="section container-fluid w-100 mt-3">
-        <!-- BREADCRUMBS (only when editing a subform) -->
-        <nav v-if="activeEntry" aria-label="breadcrumb">
-          <ol class="breadcrumb mb-2">
-            <li class="breadcrumb-item">{{ currentForm.name }}</li>
-            <li v-for="e in editStack.slice(0, -1)" :key="'crumb-' + e.id" class="breadcrumb-item">{{ e.title }}</li>
-            <li class="breadcrumb-item active fw-bold" aria-current="page">{{ activeEntry.title }}</li>
-          </ol>
-        </nav>
+        <div v-show="!hideForm">
+          <!-- BREADCRUMBS (only when editing a subform) -->
+          <nav v-if="activeEntry" aria-label="breadcrumb">
+            <ol class="breadcrumb mb-2">
+              <li class="breadcrumb-item">{{ currentForm.name }}</li>
+              <li v-for="e in editStack.slice(0, -1)" :key="'crumb-' + e.id" class="breadcrumb-item">{{ e.title }}</li>
+              <li class="breadcrumb-item active fw-bold" aria-current="page">{{ activeEntry.title }}</li>
+            </ol>
+          </nav>
 
-        <!-- TITLE : the form's (a subform's while editing one), its help in the info popover,
-             its buttons at the right ; the divider under it, as on the other pages -->
-        <div class="d-flex flex-wrap align-items-center border-bottom mb-3 pb-2 af-page-head">
-          <h3 class="mb-0 me-3">
-            {{ activeEntry ? activeEntry.subtitle || activeEntry.title : currentForm.name }}
-            <AppInfoPopover
-              v-if="activeEntry ? activeEntry.subform?.help : currentForm.help"
-              :key="activeEntry ? 'help-' + activeEntry.id : 'help-form'"
-              :text="activeEntry ? activeEntry.subform.help : currentForm.help"
-              markdown
-              placement="bottom"
-              :label="t('form.showHelp')"
-            />
-          </h3>
-          <div class="d-flex flex-wrap align-items-center justify-content-end ms-auto af-form-buttons">
-            <!-- a subform being edited : back to the form, load its values, its output -->
-            <template v-if="activeEntry">
-              <BsButton cssClass="text-nowrap" icon="arrow-left" @click="popEdit(activeEntry.id)">
-                {{ t('form.back') }}
-              </BsButton>
-              <BsButton
-                v-if="store.profile.options?.allowStoredJobs"
-                cssClass="text-nowrap"
-                icon="file-import"
-                @click="handleSubformAction(activeEntry, { action: 'load', value: activeEntry.draft })"
-              >
-                {{ t('form.loadFromStore') }}
-              </BsButton>
-              <BsButton
-                v-if="store.profile.options?.showExtraVars"
-                cssClass="text-nowrap"
-                cssClassToggle="text-nowrap"
-                icon="eye"
-                iconToggle="eye-slash"
-                :toggle="showExtraVars"
-                @click="toggleShowExtraVars()"
-              >
-                {{ t('form.showOutput') }}<template #toggle>{{ t('form.hideOutput') }}</template>
-              </BsButton>
-            </template>
-            <!-- the form (or its wizard) : verbose, its extravars, reload, load its values -->
-            <template v-else>
-              <BsInputCheckboxRaw
-                v-if="store.profile.options?.allowVerboseMode"
-                v-model="enableVerbose"
-                :label="'verbose'"
-                cssClass="d-inline-block me-1"
+          <!-- TITLE : the form's (a subform's while editing one), its help in the info popover,
+               its buttons at the right ; the divider under it, as on the other pages -->
+          <div class="d-flex flex-wrap align-items-center border-bottom mb-3 pb-2 af-page-head">
+            <h3 class="mb-0 me-3">
+              {{ activeEntry ? activeEntry.subtitle || activeEntry.title : currentForm.name }}
+              <AppInfoPopover
+                v-if="activeEntry ? activeEntry.subform?.help : currentForm.help"
+                :key="activeEntry ? 'help-' + activeEntry.id : 'help-form'"
+                :text="activeEntry ? activeEntry.subform.help : currentForm.help"
+                markdown
+                placement="bottom"
+                :label="t('form.showHelp')"
               />
-              <BsButton
-                v-if="store.profile.options?.showExtraVars"
-                cssClass="text-nowrap"
-                cssClassToggle="text-nowrap"
-                icon="eye"
-                iconToggle="eye-slash"
-                :toggle="showExtraVars"
-                @click="toggleShowExtraVars()"
-                >{{ t('form.showExtravars') }}<template #toggle>{{ t('form.hideExtravars') }}</template>
-              </BsButton>
-              <BsButton cssClass="text-nowrap" icon="redo" @click="reloadForm">
-                {{ t('form.reloadForm') }}
-              </BsButton>
-              <BsButton
-                v-if="store.profile.options?.allowStoredJobs"
-                cssClass="text-nowrap"
-                icon="file-import"
-                @click="
-                  storeCtx = buildMainStoreCtx();
-                  openLoadOffcanvas();
-                "
+            </h3>
+            <div class="d-flex flex-wrap align-items-center justify-content-end ms-auto af-form-buttons">
+              <!-- a subform being edited : back to the form, load its values, its output -->
+              <template v-if="activeEntry">
+                <BsButton cssClass="text-nowrap" icon="arrow-left" @click="popEdit(activeEntry.id)">
+                  {{ t('form.back') }}
+                </BsButton>
+                <BsButton
+                  v-if="store.profile.options?.allowStoredJobs"
+                  cssClass="text-nowrap"
+                  icon="file-import"
+                  @click="handleSubformAction(activeEntry, { action: 'load', value: activeEntry.draft })"
+                >
+                  {{ t('form.loadFromStore') }}
+                </BsButton>
+                <BsButton
+                  v-if="store.profile.options?.showExtraVars"
+                  cssClass="text-nowrap"
+                  cssClassToggle="text-nowrap"
+                  icon="eye"
+                  iconToggle="eye-slash"
+                  :toggle="showExtraVars"
+                  @click="toggleShowExtraVars()"
+                >
+                  {{ t('form.showOutput') }}<template #toggle>{{ t('form.hideOutput') }}</template>
+                </BsButton>
+              </template>
+              <!-- the form (or its wizard) : its extravars, reload, load its values (verbose : on the
+                   form's toolbar row, under the divider) -->
+              <template v-else>
+                <BsButton
+                  v-if="store.profile.options?.showExtraVars"
+                  cssClass="text-nowrap"
+                  cssClassToggle="text-nowrap"
+                  icon="eye"
+                  iconToggle="eye-slash"
+                  :toggle="showExtraVars"
+                  @click="toggleShowExtraVars()"
+                  >{{ t('form.showExtravars') }}<template #toggle>{{ t('form.hideExtravars') }}</template>
+                </BsButton>
+                <BsButton cssClass="text-nowrap" icon="redo" @click="reloadForm">
+                  {{ t('form.reloadForm') }}
+                </BsButton>
+                <BsButton
+                  v-if="store.profile.options?.allowStoredJobs"
+                  cssClass="text-nowrap"
+                  icon="file-import"
+                  @click="
+                    storeCtx = buildMainStoreCtx();
+                    openLoadOffcanvas();
+                  "
+                >
+                  {{ t('form.loadFromStore') }}
+                </BsButton>
+              </template>
+            </div>
+          </div>
+          <!-- the extravars the form makes (a subform's or a wizard step's while on one) : a card
+               under the divider, over the form's toolbar row - JSON or YAML, copy, close -->
+          <div v-if="showExtraVars" class="af-output-panel af-form-extravars">
+            <div class="af-data-head">
+              <span class="af-data-title">
+                <FaIcon icon="eye" />
+                {{ displayedOutputTitle }}
+              </span>
+              <div class="af-data-tools">
+                <div class="af-segmented" role="group">
+                  <button
+                    type="button"
+                    class="af-tool-btn"
+                    :class="{ active: !viewAsYaml }"
+                    @click="viewAsYaml = false"
+                  >
+                    JSON
+                  </button>
+                  <button type="button" class="af-tool-btn" :class="{ active: viewAsYaml }" @click="viewAsYaml = true">
+                    YAML
+                  </button>
+                </div>
+                <button type="button" class="af-tool-btn" @click="clip(displayedOutput, false, viewAsYaml)">
+                  <FaIcon icon="copy" />{{ t('jobs.copy') }}
+                </button>
+                <button
+                  type="button"
+                  class="af-tool-btn af-tool-icon"
+                  :aria-label="t('common.close')"
+                  @click="toggleShowExtraVars()"
+                >
+                  <FaIcon icon="xmark" />
+                </button>
+              </div>
+            </div>
+            <div class="af-data-body">
+              <VueJsonPretty v-if="!viewAsYaml" :data="displayedOutput" />
+              <pre
+                v-else
+                v-highlightjs
+              ><code language="yaml" style="border:none;padding:0;background:none">{{ displayedOutputYaml }}</code></pre>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col">
+              <!-- WIZARD: stepper + per-step AppForm. Mounted instead of the
+                   main form when currentForm.wizard is present. -->
+              <div v-if="wizardActive && !activeEntry" class="mb-3">
+                <!-- Per-step AppForm (or summary view) -->
+                <template v-for="(step, idx) in wizardSteps" :key="step.name + ':' + key">
+                  <div v-show="idx === wizardIndex">
+                    <!-- Step help -->
+                    <div v-if="step.help && step.showHelp" class="alert alert-light" role="alert">
+                      <vue-showdown :markdown="step.help" flavor="github" :options="{ ghCodeBlocks: true }" />
+                    </div>
+
+                    <!-- Regular subform step: stepper is injected into the
+                         AppForm's #toolbarbuttons slot so it lands on the
+                         same row as the show-hidden-fields / spinner icons. -->
+                    <AppForm
+                      v-if="!step.isSummary && step.subform"
+                      mode="wizard"
+                      :ref="(el) => setWizardRef(step.name, el)"
+                      :currentForm="step.subform"
+                      :constants="constants"
+                      :subforms="currentForm?.subforms || []"
+                      :rootFormName="currentForm?.name || ''"
+                      :parentData="wizardParentData"
+                      :showExtraVars="showExtraVars"
+                      :initialData="wizardDrafts[step.name] || {}"
+                      v-model="wizardDrafts[step.name]"
+                      @change="(d) => wizardStepChanged(step.name, d)"
+                    >
+                      <template #toolbarbuttons>
+                        <ol class="ansibleforms-wizard-stepper d-flex flex-wrap align-items-center list-unstyled mb-0">
+                          <template v-for="(s, i) in wizardSteps" :key="'sb-' + s.name">
+                            <li
+                              v-if="isWizardStepVisible(s) || wizardSkipped[s.name]"
+                              class="wizard-step d-flex align-items-center"
+                              :class="{ active: i === wizardIndex }"
+                            >
+                              <button
+                                type="button"
+                                class="wizard-step-btn"
+                                :title="s.title"
+                                :class="[
+                                  i === wizardIndex
+                                    ? 'is-current'
+                                    : wizardSkipped[s.name]
+                                      ? 'is-skipped'
+                                      : wizardCompleted[s.name]
+                                        ? 'is-done'
+                                        : 'is-pending',
+                                ]"
+                                @click="wizardGoTo(i)"
+                              >
+                                <i v-if="wizardSkipped[s.name]" class="fa fa-forward"></i>
+                                <i v-else-if="s.isSummary" class="fa fa-list-check"></i>
+                                <i v-else-if="wizardCompleted[s.name]" class="fa fa-check"></i>
+                                <span v-else>{{ i + 1 }}</span>
+                              </button>
+                              <span class="wizard-step-label ms-2 small">{{ s.title }}</span>
+                              <span v-if="i < wizardSteps.length - 1" class="wizard-step-connector"></span>
+                            </li>
+                          </template>
+                        </ol>
+                        <BsInputCheckboxRaw
+                          v-if="store.profile.options?.allowVerboseMode"
+                          v-model="enableVerbose"
+                          :label="'verbose'"
+                          cssClass="d-inline-block mb-0 ms-3"
+                        />
+                      </template>
+                    </AppForm>
+
+                    <!-- Missing subform reference -->
+                    <div v-else-if="!step.isSummary && !step.subform" class="alert alert-danger">
+                      {{ t('form.wizardMissingSubform') || 'Wizard step references unknown subform' }}:
+                      <strong>{{ step.subformName }}</strong>
+                    </div>
+
+                    <!-- Summary step: synthetic toolbar row (so the stepper
+                         still appears in the same place as it does for
+                         regular steps) + per-step status overview body. -->
+                    <div v-else-if="step.isSummary">
+                      <div class="d-flex justify-content-between align-items-center mb-3">
+                        <ol class="ansibleforms-wizard-stepper d-flex flex-wrap align-items-center list-unstyled mb-0">
+                          <template v-for="(s, i) in wizardSteps" :key="'sm-' + s.name">
+                            <li
+                              v-if="isWizardStepVisible(s) || wizardSkipped[s.name]"
+                              class="wizard-step d-flex align-items-center"
+                              :class="{ active: i === wizardIndex }"
+                            >
+                              <button
+                                type="button"
+                                class="wizard-step-btn"
+                                :title="s.title"
+                                :class="[
+                                  i === wizardIndex
+                                    ? 'is-current'
+                                    : wizardSkipped[s.name]
+                                      ? 'is-skipped'
+                                      : wizardCompleted[s.name]
+                                        ? 'is-done'
+                                        : 'is-pending',
+                                ]"
+                                @click="wizardGoTo(i)"
+                              >
+                                <i v-if="wizardSkipped[s.name]" class="fa fa-forward"></i>
+                                <i v-else-if="s.isSummary" class="fa fa-list-check"></i>
+                                <i v-else-if="wizardCompleted[s.name]" class="fa fa-check"></i>
+                                <span v-else>{{ i + 1 }}</span>
+                              </button>
+                              <span class="wizard-step-label ms-2 small">{{ s.title }}</span>
+                              <span v-if="i < wizardSteps.length - 1" class="wizard-step-connector"></span>
+                            </li>
+                          </template>
+                        </ol>
+                        <div></div>
+                      </div>
+                      <p class="text-muted">{{ t('form.wizardSummaryDescription') }}</p>
+                      <ul class="list-group">
+                        <li
+                          v-for="s in wizardSummaryRows"
+                          :key="'sum-' + s.name"
+                          class="list-group-item d-flex justify-content-between align-items-center"
+                          :class="{ 'list-group-item-action': s.status !== 'hidden' }"
+                          :role="s.status !== 'hidden' ? 'button' : null"
+                          @click="s.status !== 'hidden' && wizardGoTo(s.index)"
+                        >
+                          <span>
+                            <i
+                              class="fa me-2"
+                              :class="{
+                                'fa-check text-success': s.status === 'ok',
+                                'fa-forward text-warning': s.status === 'skipped',
+                                'fa-eye-slash text-muted': s.status === 'hidden',
+                                'fa-circle-exclamation text-danger': s.status === 'pending',
+                              }"
+                            ></i>
+                            <strong>{{ s.title }}</strong>
+                            <small class="text-muted ms-2">{{ s.statusLabel }}</small>
+                          </span>
+                          <i v-if="s.status !== 'hidden'" class="fa fa-pen text-muted"></i>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </template>
+
+                <!-- Navigation footer : hidden while a run's result shows (its own bar under it) -->
+                <div v-if="status === ''" class="d-flex justify-content-between align-items-center mt-3">
+                  <div>
+                    <BsButton v-if="wizardIndex > 0" icon="arrow-left" colorClass="secondary" @click="wizardBack">
+                      {{ t('form.back') || 'Back' }}
+                    </BsButton>
+                  </div>
+                  <div class="d-flex gap-2">
+                    <BsButton
+                      v-if="activeWizardStep?.optional && !activeWizardStep?.isSummary"
+                      icon="forward"
+                      colorClass="warning"
+                      @click="wizardSkipCurrent"
+                    >
+                      {{ t('form.skip') || 'Skip' }}
+                    </BsButton>
+                    <BsButton
+                      v-if="wizardIndex < wizardLastInputIndex || (wizardHasSummary && !activeWizardStep?.isSummary)"
+                      icon="arrow-right"
+                      colorClass="primary"
+                      @click="wizardNext"
+                    >
+                      {{ t('form.next') || 'Next' }}
+                    </BsButton>
+                    <BsDropdownButton
+                      v-else
+                      :icon="status === 'initializing' || status === 'submitting' ? 'spinner' : 'circle-play'"
+                      :label="t('form.submit')"
+                      colorClass="primary"
+                      :actions="wizardSubmitActions"
+                      :disabled="status !== ''"
+                      @click="handleWizardSubmitAction('submit')"
+                      @action="handleWizardSubmitAction"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- MAIN FORM: mounted always, hidden while editing a subform or running a wizard -->
+              <AppForm
+                v-if="!wizardActive"
+                ref="mainForm"
+                v-show="!activeEntry"
+                :key="key"
+                @change="formChanged"
+                :currentForm="currentForm"
+                :constants="constants"
+                :showExtraVars="showExtraVars"
+                :fileProgress="fileProgress"
+                :initialData="initialFormData"
+                v-model="form"
+                :subforms="currentForm?.subforms || []"
+                v-model:status="status"
+                @submit-action="handleSubmitAction"
               >
-                {{ t('form.loadFromStore') }}
-              </BsButton>
-            </template>
+                <!-- verbose : on the toolbar row's left, the show-hidden-fields icon at its right -->
+                <template #toolbarbuttons>
+                  <BsInputCheckboxRaw
+                    v-if="store.profile.options?.allowVerboseMode"
+                    v-model="enableVerbose"
+                    :label="'verbose'"
+                    cssClass="d-inline-block mb-0"
+                  />
+                </template>
+              </AppForm>
+
+              <!-- SUBFORMS: one AppForm per stacked edit, only the deepest is visible. -->
+              <!-- Kept mounted (v-show) so draft state survives when going deeper and back. -->
+              <template v-for="(entry, i) in editStack" :key="entry.id + ':' + (entry.reloadKey || 0)">
+                <AppForm
+                  v-show="i === editStack.length - 1"
+                  mode="subform"
+                  :currentForm="entry.subform"
+                  :constants="constants"
+                  :subforms="currentForm?.subforms || []"
+                  :rootFormName="currentForm?.name || ''"
+                  :initialData="entry.snapshot"
+                  :parentData="entry.parentData"
+                  v-model="entry.draft"
+                  @save="(val) => saveEdit(entry.id, val)"
+                  @cancel="popEdit(entry.id)"
+                  @submit-action="(e) => handleSubformAction(entry, e)"
+                >
+                </AppForm>
+              </template>
+            </div>
           </div>
         </div>
-        <div class="row">
-          <div class="col">
-            <!-- WIZARD: stepper + per-step AppForm. Mounted instead of the
-                 main form when currentForm.wizard is present. -->
-            <div v-if="wizardActive && !activeEntry" class="mb-3">
-              <!-- Per-step AppForm (or summary view) -->
-              <template v-for="(step, idx) in wizardSteps" :key="step.name + ':' + key">
-                <div v-show="idx === wizardIndex">
-                  <!-- Step help -->
-                  <div v-if="step.help && step.showHelp" class="alert alert-light" role="alert">
-                    <vue-showdown :markdown="step.help" flavor="github" :options="{ ghCodeBlocks: true }" />
-                  </div>
-
-                  <!-- Regular subform step: stepper is injected into the
-                       AppForm's #toolbarbuttons slot so it lands on the
-                       same row as the show-hidden-fields / spinner icons. -->
-                  <AppForm
-                    v-if="!step.isSummary && step.subform"
-                    mode="wizard"
-                    :ref="(el) => setWizardRef(step.name, el)"
-                    :currentForm="step.subform"
-                    :constants="constants"
-                    :subforms="currentForm?.subforms || []"
-                    :rootFormName="currentForm?.name || ''"
-                    :parentData="wizardParentData"
-                    :showExtraVars="showExtraVars"
-                    :initialData="wizardDrafts[step.name] || {}"
-                    v-model="wizardDrafts[step.name]"
-                    @change="(d) => wizardStepChanged(step.name, d)"
-                  >
-                    <template #toolbarbuttons>
-                      <ol class="ansibleforms-wizard-stepper d-flex flex-wrap align-items-center list-unstyled mb-0">
-                        <template v-for="(s, i) in wizardSteps" :key="'sb-' + s.name">
-                          <li
-                            v-if="isWizardStepVisible(s) || wizardSkipped[s.name]"
-                            class="wizard-step d-flex align-items-center"
-                            :class="{ active: i === wizardIndex }"
-                          >
-                            <button
-                              type="button"
-                              class="wizard-step-btn"
-                              :title="s.title"
-                              :class="[
-                                i === wizardIndex
-                                  ? 'is-current'
-                                  : wizardSkipped[s.name]
-                                    ? 'is-skipped'
-                                    : wizardCompleted[s.name]
-                                      ? 'is-done'
-                                      : 'is-pending',
-                              ]"
-                              @click="wizardGoTo(i)"
-                            >
-                              <i v-if="wizardSkipped[s.name]" class="fa fa-forward"></i>
-                              <i v-else-if="s.isSummary" class="fa fa-list-check"></i>
-                              <i v-else-if="wizardCompleted[s.name]" class="fa fa-check"></i>
-                              <span v-else>{{ i + 1 }}</span>
-                            </button>
-                            <span class="wizard-step-label ms-2 small">{{ s.title }}</span>
-                            <span v-if="i < wizardSteps.length - 1" class="wizard-step-connector"></span>
-                          </li>
-                        </template>
-                      </ol>
-                    </template>
-                  </AppForm>
-
-                  <!-- Missing subform reference -->
-                  <div v-else-if="!step.isSummary && !step.subform" class="alert alert-danger">
-                    {{ t('form.wizardMissingSubform') || 'Wizard step references unknown subform' }}:
-                    <strong>{{ step.subformName }}</strong>
-                  </div>
-
-                  <!-- Summary step: synthetic toolbar row (so the stepper
-                       still appears in the same place as it does for
-                       regular steps) + per-step status overview body. -->
-                  <div v-else-if="step.isSummary">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                      <ol class="ansibleforms-wizard-stepper d-flex flex-wrap align-items-center list-unstyled mb-0">
-                        <template v-for="(s, i) in wizardSteps" :key="'sm-' + s.name">
-                          <li
-                            v-if="isWizardStepVisible(s) || wizardSkipped[s.name]"
-                            class="wizard-step d-flex align-items-center"
-                            :class="{ active: i === wizardIndex }"
-                          >
-                            <button
-                              type="button"
-                              class="wizard-step-btn"
-                              :title="s.title"
-                              :class="[
-                                i === wizardIndex
-                                  ? 'is-current'
-                                  : wizardSkipped[s.name]
-                                    ? 'is-skipped'
-                                    : wizardCompleted[s.name]
-                                      ? 'is-done'
-                                      : 'is-pending',
-                              ]"
-                              @click="wizardGoTo(i)"
-                            >
-                              <i v-if="wizardSkipped[s.name]" class="fa fa-forward"></i>
-                              <i v-else-if="s.isSummary" class="fa fa-list-check"></i>
-                              <i v-else-if="wizardCompleted[s.name]" class="fa fa-check"></i>
-                              <span v-else>{{ i + 1 }}</span>
-                            </button>
-                            <span class="wizard-step-label ms-2 small">{{ s.title }}</span>
-                            <span v-if="i < wizardSteps.length - 1" class="wizard-step-connector"></span>
-                          </li>
-                        </template>
-                      </ol>
-                      <div></div>
-                    </div>
-                    <p class="text-muted">{{ t('form.wizardSummaryDescription') }}</p>
-                    <ul class="list-group">
-                      <li
-                        v-for="s in wizardSummaryRows"
-                        :key="'sum-' + s.name"
-                        class="list-group-item d-flex justify-content-between align-items-center"
-                        :class="{ 'list-group-item-action': s.status !== 'hidden' }"
-                        :role="s.status !== 'hidden' ? 'button' : null"
-                        @click="s.status !== 'hidden' && wizardGoTo(s.index)"
-                      >
-                        <span>
-                          <i
-                            class="fa me-2"
-                            :class="{
-                              'fa-check text-success': s.status === 'ok',
-                              'fa-forward text-warning': s.status === 'skipped',
-                              'fa-eye-slash text-muted': s.status === 'hidden',
-                              'fa-circle-exclamation text-danger': s.status === 'pending',
-                            }"
-                          ></i>
-                          <strong>{{ s.title }}</strong>
-                          <small class="text-muted ms-2">{{ s.statusLabel }}</small>
-                        </span>
-                        <i v-if="s.status !== 'hidden'" class="fa fa-pen text-muted"></i>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              </template>
-
-              <!-- Navigation footer -->
-              <div class="d-flex justify-content-between align-items-center mt-3">
-                <div>
-                  <BsButton v-if="wizardIndex > 0" icon="arrow-left" colorClass="secondary" @click="wizardBack">
-                    {{ t('form.back') || 'Back' }}
-                  </BsButton>
-                </div>
-                <div class="d-flex gap-2">
-                  <BsButton
-                    v-if="activeWizardStep?.optional && !activeWizardStep?.isSummary"
-                    icon="forward"
-                    colorClass="warning"
-                    @click="wizardSkipCurrent"
-                  >
-                    {{ t('form.skip') || 'Skip' }}
-                  </BsButton>
-                  <BsButton
-                    v-if="wizardIndex < wizardLastInputIndex || (wizardHasSummary && !activeWizardStep?.isSummary)"
-                    icon="arrow-right"
-                    colorClass="primary"
-                    @click="wizardNext"
-                  >
-                    {{ t('form.next') || 'Next' }}
-                  </BsButton>
-                  <BsDropdownButton
-                    v-else
-                    :icon="status === 'initializing' || status === 'submitting' ? 'spinner' : 'circle-play'"
-                    :label="t('form.submit')"
-                    colorClass="primary"
-                    :actions="wizardSubmitActions"
-                    :disabled="status !== ''"
-                    @click="handleWizardSubmitAction('submit')"
-                    @action="handleWizardSubmitAction"
-                  />
-                </div>
-              </div>
+        <!-- the job run from the form : its status and its output, under the form, in the form's
+             column (the menu beside it) ; the form itself hidden when it asks (hideForm) -->
+        <div v-if="status != ''" ref="outputPanel" class="af-form-result">
+          <!-- awx workflow graph (only for awx workflow jobs) -->
+          <div class="row" v-if="job.awx_workflow?.nodes?.length">
+            <div class="col">
+              <AppAwxWorkflow :workflow="job.awx_workflow" />
             </div>
-
-            <!-- MAIN FORM: mounted always, hidden while editing a subform or running a wizard -->
-            <AppForm
-              v-if="!wizardActive"
-              ref="mainForm"
-              v-show="!activeEntry"
-              :key="key"
-              @change="formChanged"
-              :currentForm="currentForm"
-              :constants="constants"
-              :showExtraVars="showExtraVars"
-              :fileProgress="fileProgress"
-              :initialData="initialFormData"
-              v-model="form"
-              :subforms="currentForm?.subforms || []"
-              v-model:status="status"
-              @submit-action="handleSubmitAction"
-            >
-            </AppForm>
-
-            <!-- SUBFORMS: one AppForm per stacked edit, only the deepest is visible. -->
-            <!-- Kept mounted (v-show) so draft state survives when going deeper and back. -->
-            <template v-for="(entry, i) in editStack" :key="entry.id + ':' + (entry.reloadKey || 0)">
-              <AppForm
-                v-show="i === editStack.length - 1"
-                mode="subform"
-                :currentForm="entry.subform"
-                :constants="constants"
-                :subforms="currentForm?.subforms || []"
-                :rootFormName="currentForm?.name || ''"
-                :initialData="entry.snapshot"
-                :parentData="entry.parentData"
-                v-model="entry.draft"
-                @save="(val) => saveEdit(entry.id, val)"
-                @cancel="popEdit(entry.id)"
-                @submit-action="(e) => handleSubformAction(entry, e)"
-              >
-              </AppForm>
-            </template>
           </div>
-          <div class="col-4" v-if="showExtraVars">
-            <div class="d-flex justify-content-between">
-              <div>
-                <small v-if="activeEntry" class="text-muted fst-italic me-2">
-                  {{ displayedOutputTitle }}
-                </small>
-                <BsButton
-                  cssClass="btn-sm"
-                  cssClassToggle="btn-sm"
-                  :toggle="viewAsYaml"
-                  @click="viewAsYaml = !viewAsYaml"
+          <!-- the job's output, as its page shows it : a panel, its toolbar on top - fold all and the
+               line count at the left, the filter and what to do with it at the right -->
+          <div class="af-output-panel">
+            <div class="af-output-toolbar">
+              <div class="af-output-label">
+                <button
+                  v-if="mainOutput"
+                  type="button"
+                  class="af-tool-btn af-tool-icon"
+                  :title="mainOutput.allFolded ? t('jobs.expandAll') : t('jobs.collapseAll')"
+                  :aria-label="mainOutput.allFolded ? t('jobs.expandAll') : t('jobs.collapseAll')"
+                  @click="toggleFoldAll"
                 >
-                  <template #default>{{ t('form.viewAsYaml') }}</template>
-                  <template #toggle>{{ t('form.viewAsJson') }}</template>
-                </BsButton>
+                  <FaIcon :icon="mainOutput.allFolded ? 'angles-down' : 'angles-up'" />
+                </button>
+                <FaIcon icon="terminal" />
+                <span>{{ t('jobs.output') }}</span>
+                <span class="af-output-count">{{ t('jobs.lines', { count: outputLines }) }}</span>
               </div>
-              <!-- TOOLBAR ICONS-->
-              <div>
-                <span
-                  class="ms-2"
-                  role="button"
-                  :title="t('form.copyExtravars')"
-                  @click="clip(displayedOutput, false, viewAsYaml)"
+              <div class="af-output-actions">
+                <button
+                  type="button"
+                  class="af-tool-btn"
+                  :class="{ active: filterOutput }"
+                  @click="filterOutput = !filterOutput"
                 >
-                  <font-awesome-icon icon="copy" class="text-primary" />
-                </span>
+                  <FaIcon :icon="filterOutput ? 'filter-circle-xmark' : 'filter'" />
+                  {{ filterOutput ? t('jobs.removeFilter') : t('jobs.applyFilter') }}
+                </button>
+                <span class="af-tool-sep" />
+                <button type="button" class="af-tool-btn" @click="copyOutput">
+                  <FaIcon icon="copy" />{{ t('jobs.copyOutput') }}
+                </button>
+                <button type="button" class="af-tool-btn" :disabled="!jobId" @click="download(jobId)">
+                  <FaIcon icon="download" />{{ t('jobs.downloadOutput') }}
+                </button>
+                <router-link v-if="jobId" class="af-tool-btn text-decoration-none" :to="`/jobs/${jobId}`">
+                  <FaIcon icon="arrow-up-right-from-square" />{{ t('jobs.openJob') }}
+                </router-link>
               </div>
             </div>
-            <div class="mt-4 p-3 card" v-if="!viewAsYaml">
-              <VueJsonPretty :data="displayedOutput" />
+            <div class="row g-0 af-output-body">
+              <div class="col">
+                <AppAnsibleOutput
+                  ref="mainOutput"
+                  :output="filteredJobOutput"
+                  :jobLog="job.job_log"
+                  :workflow="job.awx_workflow"
+                  :title="outputTitle"
+                  :copyLabel="t('jobs.copy')"
+                  numbered
+                  @copy="(text) => clip(text, true)"
+                >
+                  <template #title>
+                    <h3 v-if="job.job_type == 'multistep' && subjob?.output" class="af-job-title">
+                      {{ t('form.mainJob') }} (jobid {{ job.id }})
+                      <AppStatusPill :status="job.status" />
+                    </h3>
+                  </template>
+                </AppAnsibleOutput>
+              </div>
+              <div class="col" v-if="subjob.output">
+                <AppAnsibleOutput
+                  ref="subOutput"
+                  :output="filteredSubJobOutput"
+                  :jobLog="subjob.job_log"
+                  :copyLabel="t('jobs.copy')"
+                  numbered
+                  @copy="(text) => clip(text, true)"
+                >
+                  <template #title>
+                    <h3 class="af-job-title">
+                      {{ t('form.currentStep') }} (jobid {{ subjob.id }})
+                      <AppStatusPill :status="subjob.status" />
+                    </h3>
+                  </template>
+                </AppAnsibleOutput>
+              </div>
             </div>
-            <div class="mt-4 p-3 card" v-else>
-              <pre
-                v-highlightjs
-              ><code language="yaml" style="border:none;padding:0">{{ displayedOutputYaml }}</code></pre>
-            </div>
+          </div>
+
+          <!-- the run's status and its actions : under the output, held at the window's bottom while
+               the output scrolls under it - Abort while it runs, Close output once it ended -->
+          <div class="af-form-actions">
+            <button
+              type="button"
+              class="btn text-white flex-fill"
+              :class="'btn-' + formStatus.color"
+              @click="resetResult()"
+              :disabled="formStatus.disabled"
+            >
+              <FaIcon :icon="formStatus.icon"></FaIcon><span class="ms-3">{{ formStatus.label }}</span>
+            </button>
+            <button
+              v-if="formStatus.abort && jobId && !abortTriggered && (currentForm.abortable || true)"
+              type="button"
+              class="btn btn-danger text-white flex-fill"
+              @click="abortJob(jobId)"
+            >
+              <FaIcon icon="stop"></FaIcon><span class="ms-3">{{ t('form.abort') }}</span>
+            </button>
+            <BsButton v-if="!formStatus.disabled" icon="rotate-right" cssClass="text-nowrap" @click="resetResult()">{{
+              t('form.closeOutput')
+            }}</BsButton>
           </div>
         </div>
       </div>
@@ -2070,82 +2252,6 @@ onBeforeUnmount(() => {
         <p>
           {{ loadError || t('form.formNotFoundMsg') }}
         </p>
-      </div>
-    </main>
-  </div>
-
-  <div class="flex-shrink-0" v-if="status != ''">
-    <main class="d-flex container-xxl">
-      <div class="container-fluid py-3">
-        <div class="row my-3">
-          <div class="col">
-            <div class="d-grid">
-              <button
-                type="button"
-                class="btn text-white"
-                :class="'btn-' + formStatus.color"
-                @click="resetResult()"
-                :disabled="formStatus.disabled"
-              >
-                <FaIcon :icon="formStatus.icon"></FaIcon><span class="ms-3">{{ formStatus.label }}</span>
-              </button>
-            </div>
-          </div>
-          <div class="col" v-if="formStatus.abort && jobId && !abortTriggered && (currentForm.abortable || true)">
-            <div class="d-grid">
-              <button type="button" class="btn btn-danger text-white" @click="abortJob(jobId)">
-                <FaIcon icon="stop"></FaIcon><span class="ms-3">{{ t('form.abort') }}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-        <BsButton
-          v-if="status != ''"
-          icon="filter"
-          cssClass="btn-sm mb-3"
-          cssClassToggle="btn-sm mb-3"
-          iconToggle="filter-circle-xmark"
-          :toggle="filterOutput"
-          @click="filterOutput = !filterOutput"
-        >
-          <template #default>{{ t('form.applyFilter') }}</template>
-          <template #toggle>{{ t('form.removeFilter') }}</template>
-        </BsButton>
-        <!-- awx workflow graph (only for awx workflow jobs) -->
-        <div class="row" v-if="job.awx_workflow?.nodes?.length">
-          <div class="col">
-            <AppAwxWorkflow :workflow="job.awx_workflow" />
-          </div>
-        </div>
-        <div class="row">
-          <div class="col">
-            <AppAnsibleOutput :output="filteredJobOutput" :jobLog="job.job_log">
-              <template #title>
-                <h3 v-if="job.job_type == 'multistep' && subjob?.output">
-                  {{ t('form.mainJob') }} (jobid {{ job.id }})
-                  <sup><AppStatusPill :status="job.status" /></sup>
-                </h3>
-              </template>
-            </AppAnsibleOutput>
-          </div>
-          <div class="col" v-if="subjob.output">
-            <AppAnsibleOutput :output="filteredSubJobOutput" :jobLog="subjob.job_log">
-              <template #title>
-                <h3>
-                  {{ t('form.currentStep') }} (jobid {{ subjob.id }})
-                  <sup><AppStatusPill :status="subjob.status" /></sup>
-                </h3>
-              </template>
-            </AppAnsibleOutput>
-          </div>
-        </div>
-
-        <BsButton v-if="status != 'executing'" icon="rotate-right" @click="resetResult()">{{
-          t('form.closeOutput')
-        }}</BsButton>
-        <BsButton v-if="status != 'executing'" cssClass="ms-3" icon="download" @click="download(jobId)"
-          >{{ t('form.downloadOutput') }}
-        </BsButton>
       </div>
     </main>
   </div>
@@ -2252,8 +2358,9 @@ onBeforeUnmount(() => {
     </template>
   </BsOffCanvas>
 
-  <!-- LOAD OFF-CANVAS -->
+  <!-- LOAD OFF-CANVAS : a short list (or its empty message), at the medium width -->
   <BsOffCanvas
+    size="md"
     :show="showLoadOffcanvas"
     :title="storeCtx ? `${t('form.loadFromStore')} - ${storeCtx.title}` : t('form.loadSavedForm')"
     icon="file-import"
@@ -2294,6 +2401,26 @@ onBeforeUnmount(() => {
   </BsOffCanvas>
 </template>
 <style scoped lang="scss">
+/* the form's extravars : a card under the divider, as far over the toolbar row as the
+   divider is over it */
+.af-form-extravars {
+  margin-bottom: 1rem;
+}
+/* the job run from the form : under the form, its output then its bar */
+.af-form-result {
+  margin-top: 1rem;
+}
+/* the run's status and actions : held at the bottom of the window while the output scrolls,
+   on the page's background so the output passes under it */
+.af-form-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  gap: 1rem;
+  padding: 1rem 0 1.5rem;
+  background: var(--bs-body-bg);
+}
 /* the form's buttons on its title line : the gap of the other pages' buttons */
 .af-form-buttons {
   gap: 0.5rem;
