@@ -249,10 +249,10 @@ describe('formatOutput preserves correct HTML structure', () => {
     expect(result).toContain("<span class='has-text-weight-bold'>");
   });
 
-  it('adds timestamp span', () => {
+  it('adds no timestamp : the output as ansible printed it', () => {
     const result = Helpers.formatOutput(makeRecord('hello'));
-    expect(result).toContain("2024-01-01 12:00:00");
-    expect(result).toContain("class='tag is-info is-light'");
+    expect(result).not.toContain("2024-01-01 12:00:00");
+    expect(result).not.toContain("is-light");
   });
 
   it('renders summary line with tag spans for ok/changed/failed counts', () => {
