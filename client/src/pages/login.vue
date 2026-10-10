@@ -202,12 +202,50 @@ onMounted(() => {
           :errors="$v.user.password.$errors"
         />
         <button class="btn btn-primary w-100 py-2 login-submit" @click="login()">Sign in</button>
-        <div role="button" class="m-2 azure d-inline-block" v-if="azureAdEnabled">
-          <FaIcon icon="fac,azure" size="3x" @click="authAzureAd()" />
-        </div>
-        <div role="button" class="m-2 openid d-inline-block" v-if="oidcEnabled">
-          <FaIcon icon="fac,openid" size="3x" @click="authOidc()" />
-        </div>
+        <!-- single sign-on : under a divider, its providers in a centred row of equal buttons -->
+        <template v-if="azureAdEnabled || oidcEnabled">
+          <div class="login-divider"><span>or</span></div>
+          <div class="login-sso">
+            <button
+              v-if="azureAdEnabled"
+              type="button"
+              class="login-sso-btn"
+              title="Sign in with Microsoft"
+              aria-label="Sign in with Microsoft"
+              @click="authAzureAd()"
+            >
+              <!-- the Microsoft logo, as Microsoft's sign-in buttons carry it (its branding
+                   guidelines) : four squares, its four colours -->
+              <svg class="login-ms-logo" viewBox="0 0 21 21" aria-hidden="true">
+                <rect x="1" y="1" width="9" height="9" fill="#f25022" />
+                <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
+                <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
+                <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
+              </svg>
+            </button>
+            <button
+              v-if="oidcEnabled"
+              type="button"
+              class="login-sso-btn"
+              title="Sign in with OpenID Connect"
+              aria-label="Sign in with OpenID Connect"
+              @click="authOidc()"
+            >
+              <!-- the OpenID mark in its colours : the orange I, the grey swoosh and arrow -->
+              <svg class="login-oidc-logo" viewBox="0 0 512 512" aria-hidden="true">
+                <path fill="#f7931e" d="M310.2 18.9L232.7 56.7V493l77.4-36.5z" />
+                <path
+                  fill="#9a9a9a"
+                  d="M232.7 444.4C144.2 433.3 77.7 385.1 77.7 327c0-55 59.7-101.3 141.4-115.4V162.3C94.3 177.5 0 245.3 0 327c0 84.5 101.1 154.5 232.7 166z"
+                />
+                <path
+                  fill="#9a9a9a"
+                  d="M323.8 162.3v49.3c30.5 5.3 57.8 14.9 80.2 27.9l-42 23.7 150 32.6L501.3 184.7l-39.9 22.6c-37.1-22.6-84.5-38.6-137.6-45z"
+                />
+              </svg>
+            </button>
+          </div>
+        </template>
       </div>
     </div>
   </div>
@@ -260,12 +298,56 @@ onMounted(() => {
   }
 }
 
-.azure {
-  color: #0072c6;
+/* or : a line each side of the word, between the sign in and the single sign-on */
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.25rem 0 1rem;
+  color: var(--bs-secondary-color);
+  font-size: 0.875rem;
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    border-top: 1px solid var(--af-field-border);
+  }
 }
 
-.openid {
-  color: #d07c1a;
+/* the providers : a centred row of equal buttons, framed as the fields, their own colours */
+.login-sso {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+}
+.login-sso-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 4.5rem;
+  height: 3rem;
+  border: 1px solid var(--af-field-border);
+  border-radius: 0.375rem;
+  background: var(--bs-body-bg);
+  font-size: 1.75rem;
+  &:hover {
+    background: var(--bs-tertiary-bg);
+  }
+  &:focus-visible {
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem var(--bs-focus-ring-color);
+  }
+}
+
+/* the providers' logos : the same visual weight - the OpenID mark, narrower than the
+   Microsoft squares, a little larger */
+.login-ms-logo {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+.login-oidc-logo {
+  width: 1.75rem;
+  height: 1.75rem;
 }
 
 /* the menu's text label is meant for the collapsed header : the login page has none, so
