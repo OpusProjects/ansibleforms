@@ -424,6 +424,28 @@ Job.update = async function (record, id) {
     logger.error("Failed to update job", error);
   }
 };
+/**
+ * Moves a job to another status only from the ones given : one statement, so of two writers
+ * racing for the same job (the RTE's own end, a sweep that gave it up, the app failing it) only
+ * the first one wins.
+ *
+ * Args:
+ *   id (number): the job.
+ *   from (string[]): the statuses it may move from.
+ *   fields (object): what to write, the new status included.
+ *
+ * Returns:
+ *   Promise<boolean>: true when this call moved it.
+ */
+Job.transitionStatus = async function (id, from, fields) {
+  const res = await mysql.do("UPDATE AnsibleForms.`jobs` SET ? WHERE id=? AND status IN (?)", [fields, id, from]);
+  return (res?.affectedRows || 0) > 0;
+};
+
+// the statuses a job ends from : running, and abandoned - a job the app gave up on (its node
+// stopped answering) that its runner finished after all ends with what really happened
+const ENDS_FROM = ["running", "abandoned"];
+
 Job.endJobStatus = async (
   jobid,
   counter,
@@ -432,27 +454,27 @@ Job.endJobStatus = async (
   message,
   awx_artifacts = {}
 ) => {
-  // logger.error("------------------------------+++++++++++++++++++++++++++++++----------------------")
-  // logger.error(`jobid = ${jobid} ; counter = ${counter} ; status = ${status} ; message = ${message}`)
-  // logger.error("------------------------------+++++++++++++++++++++++++++++++----------------------")
   try {
+    // the end is written once : a second writer (a late RTE, a sweep, the app failing it) finds
+    // the job ended and leaves it - no second last line, no second mail
+    const moved = await Job.transitionStatus(jobid, ENDS_FROM, {
+      status: status,
+      end: getTimestamp(),
+      awx_artifacts: JSON.stringify(awx_artifacts),
+    });
+    if (!moved) {
+      logger.debug(`Job ${jobid} has ended already : not ending it again as ${status}`);
+      return;
+    }
     await Job.createOutput({
       output: message,
       output_type: stream,
       job_id: jobid,
       order: counter,
     });
-    await Job.update(
-      {
-        status: status,
-        end: getTimestamp(),
-        awx_artifacts: JSON.stringify(awx_artifacts),
-      },
-      jobid
-    );
     return await Job.sendStatusNotification(jobid);
   } catch (error) {
-    logger.error("Failed to create joboutput.", error);
+    logger.error("Failed to end the job.", error);
   }
 };
 Job.printJobOutput = async (data, type, jobid, counter, incrementIssue) => {
@@ -1881,7 +1903,9 @@ Job.reject = async function (user, id) {
       id,
       counter + 1
     );
-    const result = await Job.update({ status: "rejected", end: getTimestamp() }, id);
+    // only from approve : an approval racing the rejection wins or loses as a whole
+    const result = await Job.transitionStatus(id, ["approve"], { status: "rejected", end: getTimestamp() });
+    if (!result) throw new Errors.ConflictError(`Job ${id} is no longer awaiting approval`);
     // Send reject notification
     await Job.sendEventNotification(id, 'reject', user);
     return result;
