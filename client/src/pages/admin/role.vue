@@ -1,7 +1,7 @@
 <script setup>
 /******************************************************************/
 /*                                                                */
-/*  A role's page (/admin/roles/<name>), opened from the roles    */
+/*  A role's page (/settings/roles/<name>), opened from the roles    */
 /*  list : its General tab (name and options), its Users and its  */
 /*  Groups, the tab kept in the url (?tab=users). Saving writes   */
 /*  the forms config, as the list does ; a renamed role's page    */
@@ -71,12 +71,12 @@ const { activeTab } = useRouteTab('general', (key) => tabs.value.some((x) => x.k
 
 // the title : Roles › <name>, each step a link : Roles back to the list, the name to this page
 const crumbs = computed(() => [
-  { title: t('settings.settingsPage.roles'), icon: 'user-shield', to: '/admin/roles' },
+  { title: t('settings.settingsPage.roles'), icon: 'user-shield', to: '/settings/roles' },
   // the role : a link to its own page too, its plain address (the first tab)
   {
     title: role.value?.name || roleName.value,
     icon: 'user-shield',
-    to: `/admin/roles/${encodeURIComponent(roleName.value)}`,
+    to: `/settings/roles/${encodeURIComponent(roleName.value)}`,
   },
 ]);
 
@@ -90,7 +90,7 @@ async function saveRole() {
   if (!(await saveRoles())) return;
   const name = roles.value[index]?._sortName;
   if (name && name !== roleName.value) {
-    router.replace({ path: `/admin/roles/${encodeURIComponent(name)}`, query: route.query });
+    router.replace({ path: `/settings/roles/${encodeURIComponent(name)}`, query: route.query });
   }
 }
 
@@ -174,7 +174,7 @@ async function deleteRole() {
   if (roleIndex.value < 0) return;
   const removed = roles.value.splice(roleIndex.value, 1)[0];
   if (await saveRoles()) {
-    router.push('/admin/roles');
+    router.push('/settings/roles');
   } else {
     // refused (the config locked) : the role stays
     roles.value.splice(roleIndex.value < 0 ? roles.value.length : roleIndex.value, 0, removed);

@@ -1,7 +1,7 @@
 <script setup>
 /******************************************************************/
 /*                                                                */
-/*  A repository's page (/admin/repositories/<name>), opened from */
+/*  A repository's page (/settings/repositories/<name>), opened from */
 /*  the repositories' list : the steps of its dialog as tabs, the */
 /*  tab kept in the url -                                         */
 /*    Repository   its name, branch, uri, description, and where  */
@@ -193,11 +193,11 @@ const { activeTab } = useRouteTab('repository', (key) => tabs.value.some((x) => 
 
 // the title : Repositories › <name>, each step a link
 const crumbs = computed(() => [
-  { title: t('settings.repositories.labelPlural'), icon: 'fab,git', to: '/admin/repositories' },
+  { title: t('settings.repositories.labelPlural'), icon: 'fab,git', to: '/settings/repositories' },
   {
     title: repo.value?.name || repoName.value,
     icon: 'fab,git',
-    to: `/admin/repositories/${encodeURIComponent(repoName.value)}`,
+    to: `/settings/repositories/${encodeURIComponent(repoName.value)}`,
   },
 ]);
 
@@ -232,7 +232,7 @@ async function save() {
       // the saved values first, so the unsaved guard lets the page go
       edit.value = null;
       repo.value = null;
-      await router.replace({ path: `/admin/repositories/${encodeURIComponent(data.name)}`, query: route.query });
+      await router.replace({ path: `/settings/repositories/${encodeURIComponent(data.name)}`, query: route.query });
     }
     await load();
   } catch (err) {
@@ -297,7 +297,7 @@ async function deleteRepo() {
     await axios.delete(`/api/v2/repository/${encodeURIComponent(repoName.value)}`, TokenStorage.getAuthentication());
     edit.value = null;
     repo.value = null;
-    router.push('/admin/repositories');
+    router.push('/settings/repositories');
   } catch (err) {
     fail(err);
   }

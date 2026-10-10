@@ -1,7 +1,7 @@
 <script setup>
 /******************************************************************/
 /*                                                                */
-/*  A secret store's page (/admin/secretStores/<id>), opened from */
+/*  A secret store's page (/settings/secretStores/<id>), opened from */
 /*  the secret stores' list : the steps of its dialog as tabs,    */
 /*  the tab kept in the url -                                     */
 /*    Store       its name and description                        */
@@ -179,8 +179,8 @@ const { activeTab } = useRouteTab('store', (key) => tabs.value.some((x) => x.key
 
 // the title : Secret stores › <name>, each step a link
 const crumbs = computed(() => [
-  { title: t('sidebar.secretStores'), icon: 'vault', to: '/admin/secretStores' },
-  { title: store.value?.name || storeId.value, icon: 'vault', to: `/admin/secretStores/${storeId.value}` },
+  { title: t('sidebar.secretStores'), icon: 'vault', to: '/settings/secretStores' },
+  { title: store.value?.name || storeId.value, icon: 'vault', to: `/settings/secretStores/${storeId.value}` },
 ]);
 
 // ─── actions ──────────────────────────────────────────────────────────────────
@@ -246,7 +246,7 @@ async function deleteStore() {
   try {
     await axios.delete(`/api/v2/secretstore/${encodeURIComponent(storeId.value)}`, TokenStorage.getAuthentication());
     store.value = null;
-    router.push('/admin/secretStores');
+    router.push('/settings/secretStores');
   } catch (err) {
     toast.error(err.response?.data?.message || err.response?.data?.error || err.message);
   }

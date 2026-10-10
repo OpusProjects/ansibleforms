@@ -1,7 +1,7 @@
 <script setup>
 /******************************************************************/
 /*                                                                */
-/*  A local group's page (/admin/groups/<id>), opened from the    */
+/*  A local group's page (/settings/groups/<id>), opened from the    */
 /*  groups list : its Details tab (name, description) and its     */
 /*  Users tab (the users in it : Add user, and a row's menu or    */
 /*  the checkboxes remove one, never from its only group), the    */
@@ -88,8 +88,8 @@ const { activeTab } = useRouteTab('details', (key) => tabs.value.some((x) => x.k
 
 // the title : Groups › <name>, each step a link : Groups back to the list, the name to this page
 const crumbs = computed(() => [
-  { title: t('sidebar.groups'), icon: 'users', to: '/admin/groups' },
-  { title: group.value?.name || groupId.value, icon: 'users', to: `/admin/groups/${groupId.value}` },
+  { title: t('sidebar.groups'), icon: 'users', to: '/settings/groups' },
+  { title: group.value?.name || groupId.value, icon: 'users', to: `/settings/groups/${groupId.value}` },
 ]);
 
 // ─── Details ──────────────────────────────────────────────────────────────────
@@ -182,7 +182,7 @@ async function deleteGroup() {
   confirmDelete.value = false;
   try {
     await axios.delete(`/api/v2/group/${encodeURIComponent(groupId.value)}`, TokenStorage.getAuthentication());
-    router.push('/admin/groups');
+    router.push('/settings/groups');
   } catch (err) {
     toastError(err);
   }
@@ -318,7 +318,7 @@ onMounted(async () => {
                       />
                     </td>
                     <td>
-                      <router-link :to="`/admin/users/${u.id}`" class="af-group-user-link">{{
+                      <router-link :to="`/settings/users/${u.id}`" class="af-group-user-link">{{
                         u.username
                       }}</router-link>
                     </td>

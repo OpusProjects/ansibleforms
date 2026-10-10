@@ -1,7 +1,7 @@
 <script setup>
 /******************************************************************/
 /*                                                                */
-/*  An SSO provider's page (/admin/sso/<id>), opened from the     */
+/*  An SSO provider's page (/settings/sso/<id>), opened from the     */
 /*  providers' list : the steps of its dialog as tabs, the tab    */
 /*  kept in the url -                                             */
 /*    Details  its type (fixed), name and description             */
@@ -98,11 +98,11 @@ const notes = computed(() => {
 
 // the title : SSO › <name>, each step a link : SSO back to the providers, the name to this page
 const crumbs = computed(() => [
-  { title: t('sidebar.oauth2'), icon: 'right-to-bracket', to: { path: '/admin/sso', query: { tab: 'providers' } } },
+  { title: t('sidebar.oauth2'), icon: 'right-to-bracket', to: { path: '/settings/sso', query: { tab: 'providers' } } },
   {
     title: provider.value?.name || providerId.value,
     icon: 'right-to-bracket',
-    to: `/admin/sso/${providerId.value}`,
+    to: `/settings/sso/${providerId.value}`,
   },
 ]);
 
@@ -162,7 +162,7 @@ async function deleteProvider() {
   confirmDelete.value = false;
   try {
     await axios.delete(`/api/v2/oauth2/${encodeURIComponent(providerId.value)}`, TokenStorage.getAuthentication());
-    router.push({ path: '/admin/sso', query: { tab: 'providers' } });
+    router.push({ path: '/settings/sso', query: { tab: 'providers' } });
   } catch (err) {
     toast.error(err.response?.data?.message || err.response?.data?.error || err.message);
   }

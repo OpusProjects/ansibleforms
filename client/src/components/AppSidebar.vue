@@ -39,11 +39,11 @@ const sections = computed(() =>
       // broken" is what an admin opens this menu for most often.
       title: t('sidebar.sections.system'),
       items: [
-        { title: t('sidebar.ansibleForms'), icon: 'toolbox', link: '/admin/settings', permission: 'showSettings' },
-        { title: t('sidebar.logo'), icon: 'image', link: '/admin/logo', permission: 'showSettings' },
-        { title: t('sidebar.status'), icon: 'heart-pulse', link: '/admin/status', permission: 'showSettings' },
+        { title: t('sidebar.ansibleForms'), icon: 'toolbox', link: '/settings/general', permission: 'showSettings' },
+        { title: t('sidebar.logo'), icon: 'image', link: '/settings/logo', permission: 'showSettings' },
+        { title: t('sidebar.status'), icon: 'heart-pulse', link: '/settings/status', permission: 'showSettings' },
         // the database backups : the instance's own data, so with the instance
-        { title: t('sidebar.backups'), icon: 'database', link: '/admin/backups', permission: 'allowBackupOps' },
+        { title: t('sidebar.backups'), icon: 'database', link: '/settings/backups', permission: 'allowBackupOps' },
       ],
     },
     {
@@ -52,13 +52,13 @@ const sections = computed(() =>
       // to group them, and permissions belong next to users and groups.
       title: t('sidebar.sections.access'),
       items: [
-        { title: t('sidebar.users'), icon: 'user', link: '/admin/users', permission: 'showSettings' },
-        { title: t('sidebar.groups'), icon: 'users', link: '/admin/groups', permission: 'showSettings' },
+        { title: t('sidebar.users'), icon: 'user', link: '/settings/users', permission: 'showSettings' },
+        { title: t('sidebar.groups'), icon: 'users', link: '/settings/groups', permission: 'showSettings' },
         // 'user-shield' not 'users' : groups already own the people icon, and
         // roles are about what a member may do, not who the members are
-        { title: t('sidebar.roles'), icon: 'user-shield', link: '/admin/roles', permission: 'showSettings' },
-        { title: t('sidebar.ldap'), icon: 'address-book', link: '/admin/ldap', permission: 'showSettings' },
-        { title: t('sidebar.oauth2'), icon: 'right-to-bracket', link: '/admin/sso', permission: 'showSettings' },
+        { title: t('sidebar.roles'), icon: 'user-shield', link: '/settings/roles', permission: 'showSettings' },
+        { title: t('sidebar.ldap'), icon: 'address-book', link: '/settings/ldap', permission: 'showSettings' },
+        { title: t('sidebar.oauth2'), icon: 'right-to-bracket', link: '/settings/sso', permission: 'showSettings' },
       ],
     },
     {
@@ -68,15 +68,20 @@ const sections = computed(() =>
       // repositories, and it has the same 'test the connection' action.
       title: t('sidebar.sections.connections'),
       items: [
-        { title: t('sidebar.mail'), icon: 'envelope', link: '/admin/mailSettings', permission: 'showSettings' },
-        { title: t('sidebar.credentials'), icon: 'lock', link: '/admin/credentials', permission: 'showSettings' },
-        { title: t('sidebar.secretStores'), icon: 'vault', link: '/admin/secretStores', permission: 'showSettings' },
-        { title: t('sidebar.ssh'), icon: 'key', link: '/admin/ssh', permission: 'showSettings' },
-        { title: t('sidebar.knownHosts'), icon: 'server', link: '/admin/knownHosts', permission: 'showSettings' },
-        { title: t('sidebar.runners'), icon: 'rocket', link: '/admin/runners', permission: 'showSettings' },
-        { title: t('sidebar.repositories'), icon: 'fab,git', link: '/admin/repositories', permission: 'showSettings' },
-        { title: t('sidebar.chat'), icon: 'comments', link: '/admin/chat', permission: 'showSettings' },
-        { title: t('sidebar.mcp'), icon: 'robot', link: '/admin/mcp', permission: 'showSettings' },
+        { title: t('sidebar.mail'), icon: 'envelope', link: '/settings/mailSettings', permission: 'showSettings' },
+        { title: t('sidebar.credentials'), icon: 'lock', link: '/settings/credentials', permission: 'showSettings' },
+        { title: t('sidebar.secretStores'), icon: 'vault', link: '/settings/secretStores', permission: 'showSettings' },
+        { title: t('sidebar.ssh'), icon: 'key', link: '/settings/ssh', permission: 'showSettings' },
+        { title: t('sidebar.knownHosts'), icon: 'server', link: '/settings/knownHosts', permission: 'showSettings' },
+        { title: t('sidebar.runners'), icon: 'rocket', link: '/settings/runners', permission: 'showSettings' },
+        {
+          title: t('sidebar.repositories'),
+          icon: 'fab,git',
+          link: '/settings/repositories',
+          permission: 'showSettings',
+        },
+        { title: t('sidebar.chat'), icon: 'comments', link: '/settings/chat', permission: 'showSettings' },
+        { title: t('sidebar.mcp'), icon: 'robot', link: '/settings/mcp', permission: 'showSettings' },
       ],
     },
     {
@@ -85,8 +90,8 @@ const sections = computed(() =>
       // sections above are what you set up, these are read afterwards.
       title: t('sidebar.sections.logs'),
       items: [
-        { title: t('sidebar.audit'), icon: 'clipboard-list', link: '/admin/audit', permission: 'showSettings' },
-        { title: t('sidebar.logs'), icon: 'file-lines', link: '/admin/logs', permission: 'showLogs' },
+        { title: t('sidebar.audit'), icon: 'clipboard-list', link: '/settings/audit', permission: 'showSettings' },
+        { title: t('sidebar.logs'), icon: 'file-lines', link: '/settings/logs', permission: 'showLogs' },
       ],
     },
   ]

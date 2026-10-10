@@ -30,8 +30,8 @@ const { activeTab } = useRouteTab('general', (key) => ['general', 'providers'].i
 const crumbs = computed(() => {
   const tab = pageTabs.value.find((x) => x.key === activeTab.value);
   return [
-    { title: t('sidebar.oauth2'), icon: 'right-to-bracket', to: '/admin/sso' },
-    { title: tab.label, icon: tab.icon, to: { path: '/admin/sso', query: { tab: tab.key } } },
+    { title: t('sidebar.oauth2'), icon: 'right-to-bracket', to: '/settings/sso' },
+    { title: tab.label, icon: tab.icon, to: { path: '/settings/sso', query: { tab: tab.key } } },
   ];
 });
 

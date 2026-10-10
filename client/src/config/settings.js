@@ -180,7 +180,7 @@ export default function getSettings(t) {
       icon: 'user',
       selectable: false,
       // a user has its own page (pages/admin/user.vue) : its row and Edit open it, New the wizard
-      openPage: (item) => `/admin/users/${item.id}`,
+      openPage: (item) => `/settings/users/${item.id}`,
       // the dialog in steps : who the user is, the password (editing : left empty, it stays), the
       // group that gives the roles
       steps: [
@@ -198,7 +198,7 @@ export default function getSettings(t) {
           icon: 'users',
           color: 'edit',
           dividerBefore: true,
-          to: (u) => ({ path: `/admin/users/${u.id}`, query: { tab: 'groups', add: '1' } }),
+          to: (u) => ({ path: `/settings/users/${u.id}`, query: { tab: 'groups', add: '1' } }),
         },
         {
           name: 'change_password',
@@ -314,7 +314,7 @@ export default function getSettings(t) {
         },
       ],
       // a group has its own page (pages/admin/group.vue) : its row and Edit open it, New the dialog
-      openPage: (item) => `/admin/groups/${item.id}`,
+      openPage: (item) => `/settings/groups/${item.id}`,
       // in the row menu : editing, its users, then Delete last, each apart
       actions: [
         { name: 'edit', title: t('settings.groups.editGroup'), icon: 'pencil', color: 'edit' },
@@ -325,7 +325,7 @@ export default function getSettings(t) {
           icon: 'user',
           color: 'edit',
           dividerBefore: true,
-          to: (g) => ({ path: `/admin/groups/${g.id}`, query: { tab: 'users', add: '1' } }),
+          to: (g) => ({ path: `/settings/groups/${g.id}`, query: { tab: 'users', add: '1' } }),
         },
         {
           name: 'delete',
@@ -396,7 +396,7 @@ export default function getSettings(t) {
       idKey: 'name',
       selectable: false,
       // a row opens the repository's page
-      openPage: (item) => `/admin/repositories/${encodeURIComponent(item.name)}`,
+      openPage: (item) => `/settings/repositories/${encodeURIComponent(item.name)}`,
       // Scheduled pull off : no schedule ; the switch itself is not stored
       beforeSave: ({ pull_scheduled, ...item }) => (pull_scheduled ? item : { ...item, cron: '' }),
       // the dialog in steps : what the repository is, the credentials to reach it, what it is used
@@ -434,7 +434,7 @@ export default function getSettings(t) {
           title: t('settings.repositories.changeCredentials'),
           color: 'change',
           dividerBefore: true,
-          to: (r) => ({ path: `/admin/repositories/${encodeURIComponent(r.name)}`, query: { tab: 'access' } }),
+          to: (r) => ({ path: `/settings/repositories/${encodeURIComponent(r.name)}`, query: { tab: 'access' } }),
         },
         {
           // what git said the last time : its page's Last Output tab
@@ -443,7 +443,7 @@ export default function getSettings(t) {
           title: t('settings.common.showOutput'),
           color: 'preview',
           dividerBefore: true,
-          to: (r) => ({ path: `/admin/repositories/${encodeURIComponent(r.name)}`, query: { tab: 'output' } }),
+          to: (r) => ({ path: `/settings/repositories/${encodeURIComponent(r.name)}`, query: { tab: 'output' } }),
         },
         { name: 'delete', icon: 'trash', title: t('settings.repositories.deleteRepository'), color: 'delete' },
       ],
@@ -653,7 +653,7 @@ export default function getSettings(t) {
       icon: 'right-to-bracket',
       selectable: false,
       // a provider has its own page (pages/admin/sso-provider.vue) : its row and Edit open it, Add the wizard
-      openPage: (item) => `/admin/sso/${item.id}`,
+      openPage: (item) => `/settings/sso/${item.id}`,
       // the dialog in steps : the provider, how the app signs in with it, its groups. The help a
       // provider needs (the permissions of an Entra ID app, what Open ID was tested with) is in
       // the step it is for
@@ -1178,7 +1178,7 @@ export default function getSettings(t) {
       },
       // a credential has its own page (pages/admin/credential.vue) : its row and Edit open it, New
       // the wizard
-      openPage: (item) => `/admin/credentials/${item.id}`,
+      openPage: (item) => `/settings/credentials/${item.id}`,
       // in the row menu, as the runners' : editing, the test (a database's), the password, then
       // Delete last, each apart
       actions: [
@@ -1889,7 +1889,7 @@ export default function getSettings(t) {
         flavour: ['aap', 'ascender'].includes(kind) ? kind : null,
       }),
       // a runner has its own page (pages/admin/runner.vue) : its row and Edit open it, New the wizard
-      openPage: (item) => `/admin/runners/${item.id}`,
+      openPage: (item) => `/settings/runners/${item.id}`,
       // in the row menu : editing, the test, its token or password (on its page), then Delete
       // last, each apart
       actions: [
@@ -1908,7 +1908,7 @@ export default function getSettings(t) {
           icon: 'key',
           color: 'change',
           dividerBefore: true,
-          to: (r) => ({ path: `/admin/runners/${r.id}`, query: { tab: 'auth' } }),
+          to: (r) => ({ path: `/settings/runners/${r.id}`, query: { tab: 'auth' } }),
         },
         { name: 'delete', title: t('settings.runners.deleteRunner'), icon: 'trash', color: 'delete' },
       ],
@@ -2122,7 +2122,7 @@ export default function getSettings(t) {
       selectable: false,
       // a server has its own page (pages/admin/mail-server.vue) : its row and Edit open it, New
       // the wizard
-      openPage: (item) => `/admin/mailSettings/${item.id}`,
+      openPage: (item) => `/settings/mailSettings/${item.id}`,
       // the dialog in steps : the server, how the app reaches it, who the mail is from and the
       // login
       steps: [
@@ -2150,7 +2150,7 @@ export default function getSettings(t) {
           icon: 'paper-plane',
           color: 'test',
           dividerBefore: true,
-          to: (m) => ({ path: `/admin/mailSettings/${m.id}`, query: { tab: 'test' } }),
+          to: (m) => ({ path: `/settings/mailSettings/${m.id}`, query: { tab: 'test' } }),
         },
         { name: 'delete', title: t('settings.mailServers.deleteServer'), icon: 'trash', color: 'delete' },
       ],
@@ -2255,7 +2255,7 @@ export default function getSettings(t) {
       }),
       // a store has its own page (pages/admin/secret-store.vue) : its row and Edit open it, New the
       // wizard
-      openPage: (item) => `/admin/secretStores/${item.id}`,
+      openPage: (item) => `/settings/secretStores/${item.id}`,
       // in the row menu, as the runners' : editing, the test, its credentials (on its page), then
       // Delete last, each apart
       actions: [
@@ -2274,7 +2274,7 @@ export default function getSettings(t) {
           icon: 'key',
           color: 'change',
           dividerBefore: true,
-          to: (r) => ({ path: `/admin/secretStores/${r.id}`, query: { tab: 'auth' } }),
+          to: (r) => ({ path: `/settings/secretStores/${r.id}`, query: { tab: 'auth' } }),
         },
         { name: 'delete', title: t('settings.secretStores.deleteStore'), icon: 'trash', color: 'delete' },
       ],
