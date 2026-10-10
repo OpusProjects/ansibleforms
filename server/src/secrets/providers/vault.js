@@ -39,9 +39,24 @@ export function isDynamicPath(ref) {
   return /^\/*[^/]+\/creds\/[^/]+/.test(String(ref || ""));
 }
 
+// A ref is a path below /v1/ and nothing else. The URL parser resolves dot segments, so
+// `x/creds/y/../../../auth/token/lookup-self` used to reach the token's own endpoint and
+// hand back the store's token ; `?` and `#` would rewrite the request the same way.
+export function assertSafeRef(ref) {
+  const text = String(ref ?? "");
+  let decoded = text;
+  try { decoded = decodeURIComponent(text); } catch { /* malformed escapes : judged as written */ }
+  for (const candidate of [text, decoded]) {
+    if (/[?#\\]/.test(candidate) || candidate.split("/").some((seg) => seg === "." || seg === "..")) {
+      throw new Error(`Vault path '${text}' is not allowed`);
+    }
+  }
+}
+
 /** the secret's key/value pairs */
 async function read(store, ref) {
   assertConfigured(store);
+  assertSafeRef(ref);
   if (isDynamicPath(ref)) return readDynamic(store, stripLeadingSlashes(ref));
   const version = kvVersion(store);
   const apiPath = buildApiPath(ref, version, store.default_mount);
@@ -64,6 +79,7 @@ async function read(store, ref) {
 // { data: { username, password }, lease_duration } : the credentials are valid for the
 // lease, which the registry's cache honours - reading again would create another account
 async function readDynamic(store, apiPath) {
+  assertSafeRef(apiPath);
   let res;
   try {
     res = await axios.get(`${baseUrl(store)}/v1/${apiPath}`, { headers: headers(store), ...agentsFor(store), timeout: 10000 });

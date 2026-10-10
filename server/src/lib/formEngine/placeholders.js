@@ -94,22 +94,43 @@ export function quoteContextAt(expression, index) {
 }
 
 /**
+ * A JS literal's text with a template literal's two active sequences - a backtick, which
+ * closes it, and `${`, which runs code - written as unicode escapes (\u0060, \u0024{).
+ *
+ * A unicode escape needs no backslash of its own to be undone : it reads as the same
+ * character in a '...', "..." or `...` literal whatever precedes it, so it is safe on text that
+ * already carries escapes (the JSON literals spliced here) - where escaping with a backslash
+ * (\`) would have to escape the backslashes first, and those are already escaped by JSON.
+ *
+ * @param {string} text  a JS literal's source (a JSON literal, or a string literal's body)
+ * @returns {string} the same literal, inert inside a template literal
+ */
+export function templateInert(text) {
+  return text.split('`').join('\\u0060').split('${').join('\\u0024{');
+}
+
+/**
  * Splice a resolved value into an expression at the first occurrence of its placeholder,
  * as a JS literal - see the long comment on the client version for the three cases.
  */
-export function substituteExpressionPlaceholder(expression, placeholder, value, isSource = false) {
+export function substituteExpressionPlaceholder(expression, placeholder, value, isSource = false, hardened = false) {
   if (expression == null) return expression;
   const at = expression.indexOf(placeholder);
   if (at < 0) return expression;
   const end = at + placeholder.length;
   const quote = quoteContextAt(expression, at);
+  // quoteContextAt does not track template literals, so a value landing inside one could
+  // close it with a backtick or run code with ${...}. Both are written as unicode escapes
+  // (templateInert) : inert in a template literal, the same characters in any other JS string
+  // literal, and a JSON literal only ever carries them inside its strings.
+  const safe = (s) => (hardened ? templateInert(String(s)) : s);
   if (!quote) {
     const literal = isSource ? value : JSON.stringify(value);
-    return expression.slice(0, at) + literal + expression.slice(end);
+    return expression.slice(0, at) + safe(literal) + expression.slice(end);
   }
   if (expression[at - 1] === quote && expression[end] === quote) {
     const literal = isSource ? value : JSON.stringify(value);
-    return expression.slice(0, at - 1) + literal + expression.slice(end + 1);
+    return expression.slice(0, at - 1) + safe(literal) + expression.slice(end + 1);
   }
   let raw = value;
   if (isSource) {
@@ -120,7 +141,52 @@ export function substituteExpressionPlaceholder(expression, placeholder, value, 
   }
   const body = JSON.stringify(String(raw)).slice(1, -1);
   const text = quote === "'" ? body.replace(/'/g, "\\'") : body;
-  return expression.slice(0, at) + text + expression.slice(end);
+  return expression.slice(0, at) + safe(text) + expression.slice(end);
+}
+
+/**
+ * Splice placeholder VALUES the browser resolved into an expression taken from the form
+ * definition - the server half of a form-bound POST /api/v2/expression.
+ *
+ * The browser resolves `$(...)` with its live form state (it understands `$(a.b)`,
+ * placeholderColumn, list rows) and sends what each placeholder became, keyed by the raw
+ * text between the brackets. Only that data comes from the caller ; the expression text
+ * never does. Every value is spliced as a JS literal, so it cannot become code :
+ *
+ *  - a key listed in `literals` is a value the browser splices as JSON source (an object,
+ *    an array, a record path) - it is re-serialised here from the parsed body, so it is
+ *    pure JSON data, never the caller's text
+ *  - anything else goes through substituteExpressionPlaceholder as a value, like the browser
+ *  - missing, null and the __undefined__/__null__ sentinels become undefined/null, as the
+ *    browser's ignoreIncomplete handling does
+ *
+ * @param {string} expression  the field's expression, from the form definition
+ * @param {object} values      raw placeholder text -> value
+ * @param {string[]} literals  the keys to splice as JSON source
+ */
+export function spliceExpressionValues(expression, values, literals = []) {
+  if (typeof expression !== 'string') return expression;
+  const vals = values && typeof values === 'object' ? values : {};
+  const asSource = new Set(Array.isArray(literals) ? literals : []);
+  let value = expression.replace(/\n+/g, '');
+  for (const match of [...value.matchAll(PLACEHOLDER)]) {
+    const key = match[1];
+    const v = Object.prototype.hasOwnProperty.call(vals, key) ? vals[key] : undefined;
+    if (v === undefined || v === '__undefined__') {
+      value = value.replace(match[0], () => '__undefined__');
+    } else if (v === null || v === '__null__') {
+      value = value.replace(match[0], () => '__null__');
+    } else if (asSource.has(key)) {
+      value = substituteExpressionPlaceholder(value, match[0], JSON.stringify(v), true, true);
+    } else {
+      value = substituteExpressionPlaceholder(value, match[0], v, false, true);
+    }
+  }
+  value = value.replaceAll("'__undefined__'", "undefined");
+  value = value.replaceAll("__undefined__", "undefined");
+  value = value.replaceAll("'__null__'", "null");
+  value = value.replaceAll("__null__", "null");
+  return value;
 }
 
 function stringifyValue(fieldvalue) {
@@ -144,17 +210,20 @@ function stringifyValue(fieldvalue) {
  *                                   expression), 'raw' pastes text (queries, escaped later)
  * @returns {{hasPlaceholders: boolean, value: string|undefined, resolved: object, missing: string[]}}
  *   `value` is undefined when a placeholder could not be resolved ; `missing` names the
- *   fields responsible, `resolved` maps each raw placeholder text to what it became (raw mode)
+ *   fields responsible, `resolved` maps each raw placeholder text to what it became (raw
+ *   mode) or to the value spliced in (expression mode), `literals` lists the keys an
+ *   expression took as JSON source - what POST /api/v2/expression sends
  */
 export function replacePlaceholderInString(value, ctx, ignoreIncomplete = false, mode = 'raw') {
   const values = ctx?.values || {};
   const fieldOptions = ctx?.fieldOptions || {};
   const isReady = ctx?.isReady || (() => true);
   const resolved = {};
+  const literals = [];
   const missing = [];
   let hasPlaceholders = false;
   if (typeof value !== "string") {
-    return { hasPlaceholders: false, value, resolved, missing };
+    return { hasPlaceholders: false, value, resolved, literals, missing };
   }
   value = value.replace(/\n+/g, '');
   const matches = [...value.matchAll(PLACEHOLDER)];
@@ -197,6 +266,8 @@ export function replacePlaceholderInString(value, ctx, ignoreIncomplete = false,
       if (fieldvalue === null) fieldvalue = "__null__";
       if (mode === 'expression' && fieldvalue !== "__undefined__" && fieldvalue !== "__null__") {
         value = substituteExpressionPlaceholder(value, foundmatch, fieldvalue, isObjectLiteral);
+        resolved[match[1]] = isObjectLiteral ? JSON.parse(fieldvalue) : fieldvalue;
+        if (isObjectLiteral && !literals.includes(match[1])) literals.push(match[1]);
       } else {
         fieldvalue = stringifyValue(fieldvalue);
         resolved[match[1]] = fieldvalue;
@@ -217,7 +288,7 @@ export function replacePlaceholderInString(value, ctx, ignoreIncomplete = false,
     value = value.replaceAll("'__null__'", "null");
     value = value.replaceAll("__null__", "null");
   }
-  return { hasPlaceholders, value, resolved, missing };
+  return { hasPlaceholders, value, resolved, literals, missing };
 }
 
 /** The field a placeholder or dependency name is rooted at : `a.b` -> `a`, `x[0]` -> `x`. */
@@ -350,6 +421,7 @@ export default {
   readPlaceholderPath,
   quoteContextAt,
   substituteExpressionPlaceholder,
+  spliceExpressionValues,
   replacePlaceholderInString,
   rootFieldName,
   scanDependencies,

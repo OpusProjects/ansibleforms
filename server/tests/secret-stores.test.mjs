@@ -133,6 +133,35 @@ describe("reading a secret", () => {
   });
 });
 
+describe("a vault ref cannot leave its path", () => {
+  // the URL parser resolves dot segments : this reached auth/token/lookup-self and handed
+  // back the store's own token
+  const escapes = [
+    "x/creds/y/../../../auth/token/lookup-self",
+    "secret/../auth/token/lookup-self",
+    "secret/./app",
+    "secret/%2e%2e/auth/token/lookup-self",
+    "secret/app?list=true",
+    "secret/app#frag",
+    "secret\\..\\auth",
+  ];
+  for (const ref of escapes) {
+    test(`refused, and Vault never asked : ${ref}`, async () => {
+      storeRows.vault = vaultRow();
+      await assert.rejects(() => Registry.readSecret("vault", ref), /is not allowed/);
+      assert.equal(requests.length, 0);
+    });
+  }
+
+  test("ordinary KV and dynamic paths are unaffected", async () => {
+    storeRows.vault = vaultRow({ cache_ttl_seconds: 0 });
+    secrets["secret/data/team.a/app-1"] = { data: { data: { password: "p" } } };
+    secrets["database/creds/ro"] = { lease_duration: 60, data: { username: "u", password: "p" } };
+    assert.equal((await Registry.readSecret("vault", "secret/team.a/app-1")).password, "p");
+    assert.equal((await Registry.readSecret("vault", "database/creds/ro")).username, "u");
+  });
+});
+
 describe("vault dynamic credentials", () => {
   test("<mount>/creds/<role> is a dynamic path, KV paths are not", () => {
     assert.equal(isDynamicPath("database/creds/readonly"), true);

@@ -1223,8 +1223,10 @@ function replacePlaceholderInString(value, ignoreIncomplete = false, mode = 'raw
   // all three wrong - the dotted forms were left in the SQL verbatim and
   // placeholderColumn pasted the whole record instead of the column.
   var resolved = {};
+  // the keys of `resolved` that are spliced into an expression as JSON source
+  var literals = [];
   if (typeof value !== 'string') {
-    return { hasPlaceholders: false, value: value, resolved: resolved };
+    return { hasPlaceholders: false, value: value, resolved: resolved, literals: literals };
   }
   value = value?.replace(/\n+/g, ''); // put everything in 1 line.
   matches = [...value.matchAll(testRegex)]; // force match array
@@ -1306,6 +1308,10 @@ function replacePlaceholderInString(value, ignoreIncomplete = false, mode = 'raw
         // isObjectLiteral : fieldvalue is already valid JS/JSON source (array/object) -
         // stringifying it again would wrap it as a quoted string instead of splicing it in
         value = Helpers.substituteExpressionPlaceholder(value, foundmatch, fieldvalue, isObjectLiteral);
+        // the server evaluates the form's own expression text and splices these values
+        // in itself (see expressionPolicy.js) : the data, never the finished source
+        resolved[match[1]] = isObjectLiteral ? JSON.parse(fieldvalue) : fieldvalue;
+        if (isObjectLiteral && !literals.includes(match[1])) literals.push(match[1]);
       } else {
         fieldvalue = stringifyValue(fieldvalue);
         // exactly what was substituted here, so the server substituting the same
@@ -1329,7 +1335,7 @@ function replacePlaceholderInString(value, ignoreIncomplete = false, mode = 'raw
     value = value.replaceAll("'__null__'", 'null'); // replace undefined values
     value = value.replaceAll('__null__', 'null');
   }
-  return { hasPlaceholders: hasPlaceholders, value: value, resolved: resolved }; // return the result
+  return { hasPlaceholders: hasPlaceholders, value: value, resolved: resolved, literals: literals }; // return the result
 }
 
 // replace placeholders
@@ -1900,7 +1906,19 @@ async function startDynamicFieldsLoop() {
               }
             } else {
               try {
-                const body = { expression: placeholderCheck.value };
+                // Send the form and field, NOT the expression text - like the query
+                // call below. The server takes the expression from the definition
+                // with the caller's own roles and splices these values in itself : a
+                // raw expression could call any fn.* helper, fnCredentials included.
+                const body = {
+                  formName: props.rootFormName || props.currentForm.name,
+                  fieldName: item.name,
+                  values: placeholderCheck.resolved || {},
+                  literals: placeholderCheck.literals || [],
+                  // kept so a settings or designer user's raw call still works
+                  expression: placeholderCheck.value,
+                };
+                if (props.rootFormName) body.subformName = props.currentForm.name;
                 if (item.jq) body.jq = item.jq;
                 const gen = fieldGeneration.value[item.name] || 0;
                 const result = await axios.post(
