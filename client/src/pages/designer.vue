@@ -7528,7 +7528,8 @@ onBeforeUnmount(() => {
 .designer-page > main > .section > .container-fluid > .card > .card-body,
 .designer-page > main > .section > .container-fluid > .card > .card-body > div,
 .designer-page .designer-editor,
-.designer-page .designer-editor div:has(.ace_editor) {
+.designer-page .designer-editor div:has(.ace_editor),
+.designer-page .designer-editor div:has(.designer-preview) {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
@@ -7622,8 +7623,10 @@ onBeforeUnmount(() => {
   margin-top: 0.5rem;
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-height: 60vh;
+  /* the card's height, as the YAML editor (the full-height rules above), never less than a
+     usable height on a short window */
+  flex: 1 1 auto;
+  min-height: 20rem;
   border: 1px solid var(--af-field-border);
   border-radius: 0.375rem;
   overflow: hidden;
