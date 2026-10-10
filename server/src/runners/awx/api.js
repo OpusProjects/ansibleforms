@@ -397,7 +397,8 @@ Awx.launchTemplate = async function (
       // log launch
       await Job.update({ awx_id: job.id }, jobid);
       await Job.printJobOutput(
-        `Launched template ${template.name} with jobid ${job.id}`,
+        // as the RTE's own lines (ok: [Running on RTE ...]) : AnsibleForms' word, not AWX's
+        `ok: [Launched template ${template.name} with jobid ${job.id}]`,
         "stdout",
         jobid,
         ++counter
@@ -568,7 +569,7 @@ Awx.trackJob = async function (
                 ++counter,
                 "stdout",
                 "success",
-                `Successfully completed template ${j.name}`,
+                `ok: [Successfully completed template ${j.name}]`,
                 j.artifacts
               );
               return true;
@@ -581,12 +582,13 @@ Awx.trackJob = async function (
                 message = `Template ${j.name} was aborted`;
                 await Job.resetAbortRequested(jobid);
               }
+              // the line written : a failure as the RTE's ([ERROR]: ...), an abort as it is
               await Job.endJobStatus(
                 jobid,
                 ++counter,
                 "stderr",
                 status,
-                message,
+                status == "failed" ? `[ERROR]: ${message}` : message,
                 j.artifacts
               );
               return message;
@@ -801,7 +803,7 @@ Awx.trackWorkflowJob = async function (
             ++counter,
             "stdout",
             "success",
-            `Successfully completed workflow ${j.name}`
+            `ok: [Successfully completed workflow ${j.name}]`
           );
           return true;
         } else {
@@ -813,7 +815,14 @@ Awx.trackWorkflowJob = async function (
             message = `Workflow ${j.name} was aborted`;
             await Job.resetAbortRequested(jobid);
           }
-          await Job.endJobStatus(jobid, ++counter, "stderr", status, message);
+          // the line written : a failure as the RTE's ([ERROR]: ...), an abort as it is
+          await Job.endJobStatus(
+            jobid,
+            ++counter,
+            "stderr",
+            status,
+            status == "failed" ? `[ERROR]: ${message}` : message
+          );
           return message;
         }
       }
