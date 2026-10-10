@@ -18,6 +18,7 @@ import { timingSafeEqual } from "crypto";
 import { execFile } from "child_process";
 import logger from "../lib/logger.js";
 import mysql from "../models/db.model.js";
+import { publish } from "../lib/liveEvents.js";
 import httpsConfig from "../../config/https.config.js";
 import appConfig from "../../config/app.config.js";
 import { runAnsibleJob, runnerIdentity } from "./ansible-core.js";
@@ -69,7 +70,11 @@ async function abandonOwnJobs() {
     "UPDATE AnsibleForms.`jobs` SET status='abandoned', abort_requested=0 WHERE status='running' AND host=?",
     [runnerIdentity()]
   );
-  if (res?.changedRows) logger.warning(`RTE : abandoned ${res.changedRows} job(s) left running by a previous start`);
+  if (res?.changedRows) {
+    logger.warning(`RTE : abandoned ${res.changedRows} job(s) left running by a previous start`);
+    // the browsers see them stop
+    publish("jobs");
+  }
 }
 
 async function acceptJob(req, res) {
@@ -160,7 +165,9 @@ export async function startRte() {
       "UPDATE AnsibleForms.`jobs` SET status='abandoned', abort_requested=0 WHERE status='running' AND host=? AND start < (NOW() - INTERVAL 1 DAY)" +
         (running.length ? " AND id NOT IN (?)" : ""),
       running.length ? [runnerIdentity(), running] : [runnerIdentity()]
-    ).catch((e) => logger.error(`RTE : hourly cleanup failed : ${e.message}`));
+    ).then((r) => {
+      if (r?.changedRows) publish("jobs");
+    }).catch((e) => logger.error(`RTE : hourly cleanup failed : ${e.message}`));
   }, 3600 * 1000).unref();
 
   const app = express();

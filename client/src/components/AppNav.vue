@@ -31,6 +31,7 @@ const navHomeIcon = ref('rectangle-list');
 
 import axios from 'axios';
 import Time from '@/lib/Time';
+import { useLiveEvent } from '@/composables/useLiveEvent';
 
 onMounted(async () => {
   try {
@@ -66,22 +67,23 @@ const userMeta = computed(() =>
 );
 
 // the approvals bell : the count is loaded when the header appears (also right after a
-// login, which used to leave it at 0 until a reload) and refreshed once a minute, so a
-// new request shows up while a page stays open
-let approvalsTimer = null;
+// login, which used to leave it at 0 until a reload), and again whenever the jobs change
+// (lib/liveEvents.js) - a request for approval shows up as it is made
 function refreshApprovals() {
   State.refreshApprovals().catch(() => {
     // not logged in (any more) or the server is down : the next page load tells
   });
-  // the designer lock on the Designer link, on the same minute (the designer page itself
-  // refreshes it every few seconds while it is open)
-  State.refreshDesignerLock();
 }
+useLiveEvent('jobs', refreshApprovals);
+// the designer lock on the Designer link, once a minute (the designer page itself refreshes
+// it every few seconds while it is open)
+let lockTimer = null;
 onMounted(() => {
   refreshApprovals();
-  approvalsTimer = setInterval(refreshApprovals, 60000);
+  State.refreshDesignerLock();
+  lockTimer = setInterval(() => State.refreshDesignerLock(), 60000);
 });
-onBeforeUnmount(() => clearInterval(approvalsTimer));
+onBeforeUnmount(() => clearInterval(lockTimer));
 
 // DATA
 
