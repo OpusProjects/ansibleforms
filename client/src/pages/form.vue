@@ -1848,6 +1848,49 @@ onBeforeUnmount(() => {
               </template>
             </div>
           </div>
+          <!-- the extravars the form makes (a subform's or a wizard step's while on one) : a card
+               under the divider, over the form's toolbar row - JSON or YAML, copy, close -->
+          <div v-if="showExtraVars" class="af-output-panel af-form-extravars">
+            <div class="af-data-head">
+              <span class="af-data-title">
+                <FaIcon icon="eye" />
+                {{ displayedOutputTitle }}
+              </span>
+              <div class="af-data-tools">
+                <div class="af-segmented" role="group">
+                  <button
+                    type="button"
+                    class="af-tool-btn"
+                    :class="{ active: !viewAsYaml }"
+                    @click="viewAsYaml = false"
+                  >
+                    JSON
+                  </button>
+                  <button type="button" class="af-tool-btn" :class="{ active: viewAsYaml }" @click="viewAsYaml = true">
+                    YAML
+                  </button>
+                </div>
+                <button type="button" class="af-tool-btn" @click="clip(displayedOutput, false, viewAsYaml)">
+                  <FaIcon icon="copy" />{{ t('jobs.copy') }}
+                </button>
+                <button
+                  type="button"
+                  class="af-tool-btn af-tool-icon"
+                  :aria-label="t('common.close')"
+                  @click="toggleShowExtraVars()"
+                >
+                  <FaIcon icon="xmark" />
+                </button>
+              </div>
+            </div>
+            <div class="af-data-body">
+              <VueJsonPretty v-if="!viewAsYaml" :data="displayedOutput" />
+              <pre
+                v-else
+                v-highlightjs
+              ><code language="yaml" style="border:none;padding:0;background:none">{{ displayedOutputYaml }}</code></pre>
+            </div>
+          </div>
           <div class="row">
             <div class="col">
               <!-- WIZARD: stepper + per-step AppForm. Mounted instead of the
@@ -2080,43 +2123,6 @@ onBeforeUnmount(() => {
                 >
                 </AppForm>
               </template>
-            </div>
-            <div class="col-4" v-if="showExtraVars">
-              <div class="d-flex justify-content-between">
-                <div>
-                  <small v-if="activeEntry" class="text-muted fst-italic me-2">
-                    {{ displayedOutputTitle }}
-                  </small>
-                  <BsButton
-                    cssClass="btn-sm"
-                    cssClassToggle="btn-sm"
-                    :toggle="viewAsYaml"
-                    @click="viewAsYaml = !viewAsYaml"
-                  >
-                    <template #default>{{ t('form.viewAsYaml') }}</template>
-                    <template #toggle>{{ t('form.viewAsJson') }}</template>
-                  </BsButton>
-                </div>
-                <!-- TOOLBAR ICONS-->
-                <div>
-                  <span
-                    class="ms-2"
-                    role="button"
-                    :title="t('form.copyExtravars')"
-                    @click="clip(displayedOutput, false, viewAsYaml)"
-                  >
-                    <font-awesome-icon icon="copy" class="text-primary" />
-                  </span>
-                </div>
-              </div>
-              <div class="mt-4 p-3 card" v-if="!viewAsYaml">
-                <VueJsonPretty :data="displayedOutput" />
-              </div>
-              <div class="mt-4 p-3 card" v-else>
-                <pre
-                  v-highlightjs
-                ><code language="yaml" style="border:none;padding:0">{{ displayedOutputYaml }}</code></pre>
-              </div>
             </div>
           </div>
         </div>
@@ -2394,6 +2400,11 @@ onBeforeUnmount(() => {
   </BsOffCanvas>
 </template>
 <style scoped lang="scss">
+/* the form's extravars : a card under the divider, as far over the toolbar row as the
+   divider is over it */
+.af-form-extravars {
+  margin-bottom: 1rem;
+}
 /* the job run from the form : under the form, its output then its bar */
 .af-form-result {
   margin-top: 1rem;

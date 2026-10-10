@@ -95,6 +95,8 @@
   padding: 0.375rem 0.5rem 0.375rem 1rem;
   /* the darker grey of the frame under the data, as the output's toolbar */
   border-bottom: 1px solid var(--af-field-border);
+  /* the toolbar's grey : not the output's background (a terminal's black in the dark theme) */
+  background: var(--bs-tertiary-bg);
 }
 .af-data-title {
   display: inline-flex;
