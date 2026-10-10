@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 /******************************************************************/
@@ -26,6 +26,31 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
+
+// the graph at its size (scrolled sideways when wider than the panel), or shrunk to its width
+const fit = ref(false);
+
+// the sideways scrollbar's height, when it shows : taken off the space under the graph, so
+// that the space above and under it look the same
+const scroller = ref(null);
+const scrollbar = ref(0);
+let observer = null;
+/**
+ * Measures the scrollbar under the graph (0 when the graph fits, or the scrollbar overlays).
+ */
+function measure() {
+  const el = scroller.value;
+  scrollbar.value = el ? el.offsetHeight - el.clientHeight : 0;
+}
+onMounted(() => {
+  measure();
+  if (typeof ResizeObserver !== 'undefined' && scroller.value) {
+    observer = new ResizeObserver(measure);
+    observer.observe(scroller.value);
+    if (scroller.value.firstElementChild) observer.observe(scroller.value.firstElementChild);
+  }
+});
+onBeforeUnmount(() => observer?.disconnect());
 
 // layout constants
 const NODE_W = 170;
@@ -143,28 +168,45 @@ const graph = computed(() => {
 });
 </script>
 <template>
-  <div class="awx-workflow card p-3 mb-3">
-    <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
-      <h5 class="mb-0">
-        {{ workflow.name }}
-        <sup><AppStatusPill :status="workflow.status" /></sup>
-      </h5>
-      <div class="awx-workflow-legend small text-body-secondary">
-        <span class="me-3"
+  <!-- a panel as the job's output : its toolbar on top - what it is at the left, the legend and
+       the fit at the right - and the graph under it, scrolled sideways when it is wider -->
+  <div class="awx-workflow">
+    <div class="awx-workflow-toolbar">
+      <div class="awx-workflow-label">
+        <FaIcon icon="diagram-project" />
+        <span>{{ t('workflow.title') }}</span>
+        <span class="awx-workflow-count">{{ t('workflow.nodes', { count: workflow.nodes?.length || 0 }) }}</span>
+      </div>
+      <div class="awx-workflow-tools">
+        <span class="awx-workflow-legend"
           ><span class="legend-line" :style="{ background: edgeColors.success }"></span
           >{{ t('workflow.onSuccess') }}</span
         >
-        <span class="me-3"
+        <span class="awx-workflow-legend"
           ><span class="legend-line" :style="{ background: edgeColors.failure }"></span
           >{{ t('workflow.onFailure') }}</span
         >
-        <span
+        <span class="awx-workflow-legend"
           ><span class="legend-line" :style="{ background: edgeColors.always }"></span>{{ t('workflow.always') }}</span
         >
+        <span class="awx-tool-sep" />
+        <button type="button" class="awx-tool-btn" :class="{ active: fit }" :aria-pressed="fit" @click="fit = !fit">
+          <FaIcon icon="maximize" />{{ t('workflow.fit') }}
+        </button>
       </div>
     </div>
-    <div class="awx-workflow-scroll">
-      <svg :width="graph.width" :height="graph.height" :viewBox="`0 0 ${graph.width} ${graph.height}`">
+    <div
+      ref="scroller"
+      class="awx-workflow-scroll"
+      :class="{ 'awx-fit': fit }"
+      :style="{ paddingBottom: `max(0px, calc(1rem - ${scrollbar}px))` }"
+    >
+      <svg
+        :width="fit ? '100%' : graph.width"
+        :height="fit ? null : graph.height"
+        :viewBox="`0 0 ${graph.width} ${graph.height}`"
+        preserveAspectRatio="xMinYMid meet"
+      >
         <!-- links -->
         <path
           v-for="(l, i) in graph.links"
@@ -226,10 +268,83 @@ const graph = computed(() => {
 </template>
 <style lang="scss" scoped>
 .awx-workflow {
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--af-field-border);
+  border-radius: 0.5rem;
+  overflow: hidden;
   background-color: var(--af-bg-light-subtle-color, var(--bs-body-bg));
 
+  /* the toolbar : as the job output's */
+  .awx-workflow-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.375rem 0.5rem 0.375rem 1rem;
+    border-bottom: 1px solid var(--af-field-border);
+    background: var(--bs-tertiary-bg);
+  }
+  .awx-workflow-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+  .awx-workflow-count {
+    font-weight: 400;
+    font-size: 0.8rem;
+    color: var(--bs-secondary-color);
+  }
+  .awx-workflow-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--bs-secondary-color);
+  }
+  .awx-tool-sep {
+    width: 1px;
+    height: 1.25rem;
+    background: var(--af-field-border);
+  }
+  .awx-tool-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.3rem 0.6rem;
+    border: 1px solid transparent;
+    border-radius: 0.375rem;
+    background: transparent;
+    color: var(--bs-body-color);
+    &:hover {
+      background: var(--bs-secondary-bg);
+    }
+    &.active {
+      border-color: var(--bs-primary-border-subtle);
+      background: var(--bs-primary-bg-subtle);
+      color: var(--bs-primary-text-emphasis);
+    }
+  }
+
+  /* the graph : scrolled sideways, a soft shade at an edge with more of it beyond (the shades
+     ride on the content's edges : they show only where it is cut) */
   .awx-workflow-scroll {
     overflow-x: auto;
+    padding: 1rem;
+    background:
+      linear-gradient(to right, var(--af-bg-light-subtle-color), transparent) left / 2.5rem 100% no-repeat local,
+      linear-gradient(to left, var(--af-bg-light-subtle-color), transparent) right / 2.5rem 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, rgba(0, 0, 0, 0.14), transparent) left / 0.75rem 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, 0.14), transparent) right / 0.75rem 100% no-repeat scroll;
+    svg {
+      display: block;
+    }
+    &.awx-fit {
+      overflow-x: hidden;
+    }
   }
 
   .legend-line {
