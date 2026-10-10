@@ -1424,6 +1424,51 @@
         version: 4.0.10
         description: |
           A list of local or ldap users.  They must be in the format of `local/username` or `ldap/username` or `azuread/username`     
+      - name: credentials
+        type: array
+        allowed: regular expressions, matching a whole credential name
+        short: The credentials this role may use
+        version: 7.0.0
+        description: |
+          Limits the credentials a user of this role may use : those a job passes to a playbook or
+          a template (the form's `credentials`, `ansibleCredentials`, `vaultCredentials`, a
+          credential field), and those a form query or `fnCredentials` reads while the user fills
+          in a form. Each entry is a regular expression that must match the whole name ;
+          `__self__` is AnsibleForms' own database.
+
+          A user none of whose roles lists credentials may use every credential, as before. Once
+          one of their roles lists them, they may use what any of the roles that list them
+          allows. The `admin` role is never limited. A launch that needs a credential the roles do
+          not allow is refused before the job is created.
+        examples:
+          - name: Operators use the vCenter and the CMDB credentials only
+            code: |
+              roles:
+                - name: operators
+                  groups:
+                    - ldap/operators
+                  credentials:
+                    - vcenter
+                    - cmdb-.*
+      - name: secretStores
+        type: array
+        allowed: secret store names
+        short: The secret stores this role may read inline
+        version: 7.0.0
+        description: |
+          Limits the secret stores a user of this role may read through an inline reference
+          (`vault:<path>`, `secret:<store>:<ref>`) in a credential map or a query. When a role
+          limits the credentials and none limits the stores, an inline reference must match a
+          credential pattern itself : it is no way around them. Combined across roles as
+          `credentials`.
+      - name: runners
+        type: array
+        allowed: runner names
+        short: The runners this role may run jobs on
+        version: 7.0.0
+        description: |
+          Limits the runners a job of a user of this role may run on : the form's `runner`, or the
+          default runner when it names none. Combined across roles as `credentials`.
       - name: options
         type: object
         allowed: Key value pairs

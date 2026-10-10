@@ -163,8 +163,8 @@ const load = async (app) => {
   // ========== V2 API Routes (CURRENT) ==========
   
   // api routes for querying
-  app.use(`/api/v2/query`, cors(), authobj, queryRoutesv2);
-  app.use(`/api/v2/expression`, cors(), authobj, expressionRoutesv2);
+  app.use(`/api/v2/query`, cors(), authobj, Middleware.resourceScope, queryRoutesv2);
+  app.use(`/api/v2/expression`, cors(), authobj, Middleware.resourceScope, expressionRoutesv2);
 
   // api route for version (no auth)
   app.use(`/api/v2/version`, cors(), versionRoutes);
@@ -187,7 +187,7 @@ const load = async (app) => {
   app.use(`/api/v2/app`, cors(), appRoutes);
 
   // api routes for admin management
-  app.use(`/api/v2/job`, cors(), authobj, jobRoutesv2);
+  app.use(`/api/v2/job`, cors(), authobj, Middleware.resourceScope, jobRoutesv2);
   // what changes, as it changes (lib/liveEvents.js) : every signed-in user, names only
   app.use(`/api/v2/events`, cors(), authobj, eventsRoutesv2);
   app.use(`/api/v2/user`, cors(), authobj, Middleware.checkSettingsMiddleware, userRoutesv2);
@@ -207,7 +207,7 @@ const load = async (app) => {
   app.use(`/api/v2/mailserver`, cors(), authobj, Middleware.checkSettingsMiddleware, mailServerRoutesv2);
   app.use(`/api/v2/knownhosts`, cors(), authobj, Middleware.checkSettingsMiddleware, knownhostsRoutes);
   // allowScheduledJobs for everything ; allowPlannedJobs only for creating a one-time run
-  app.use(`/api/v2/schedule`, cors(), authobj, Middleware.checkScheduleOrPlannedJobsMiddleware, scheduleRoutes);
+  app.use(`/api/v2/schedule`, cors(), authobj, Middleware.checkScheduleOrPlannedJobsMiddleware, Middleware.resourceScope, scheduleRoutes);
   app.use(`/api/v2/stored-jobs`, cors(), authobj, Middleware.checkStoredJobsMiddleware, storedJobsRoutes);
 
   // backup/restore/list routes
@@ -228,12 +228,12 @@ const load = async (app) => {
 
   // MCP server for AI agents (ENABLE_MCP) : every tool runs as the authenticated user, whose
   // roles must allow the MCP server (allowMcp)
-  app.use(`/api/v2/mcp`, featureOn('enableMcp'), cors(), authobj, Middleware.checkMcpMiddleware, mcpRoutes);
+  app.use(`/api/v2/mcp`, featureOn('enableMcp'), cors(), authobj, Middleware.checkMcpMiddleware, Middleware.resourceScope, mcpRoutes);
   if (appConfig.enableMcp) logger.notice(`MCP endpoint enabled on ${appConfig.baseUrl}/api/v2/mcp`);
 
   // The chat assistant (ENABLE_CHAT) : the same form service as the MCP server, in
   // process, as the authenticated user ; the allowChat role option may switch it off
-  app.use('/api/v2/chat', featureOn('enableChat'), cors(), authobj, Middleware.checkChatMiddleware, chatRoutes);
+  app.use('/api/v2/chat', featureOn('enableChat'), cors(), authobj, Middleware.checkChatMiddleware, Middleware.resourceScope, chatRoutes);
   if (appConfig.enableChat) logger.notice("Chat assistant enabled on /api/v2/chat");
 
 }

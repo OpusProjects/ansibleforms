@@ -131,7 +131,22 @@
               "default": "",
               "pattern": "(\\blocal\\b|\\bldap\\b|\\bazuread\\b|\\boidc\\b)\\/.+"
             }            
-          }                    
+          },
+          "credentials": {
+            "type": "array",
+            "description": "The credentials this role may use, as regexes matching the whole name (__self__ is the app's own database). A user is limited once one of their roles lists them, and may use what any of those roles allows.",
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "secretStores": {
+            "type": "array",
+            "description": "The secret stores this role may read inline (vault:<path>, secret:<store>:<ref>), by name.",
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "runners": {
+            "type": "array",
+            "description": "The runners this role may run jobs on, by name.",
+            "items": { "type": "string", "minLength": 1 }
+          }
         },
         "additionalProperties": false
       }
