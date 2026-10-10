@@ -1712,6 +1712,13 @@ async function loadForm() {
       });
     }
 
+    // Relaunched with prefill (?prefillJobId=<id>) : a wizard job stored its step drafts,
+    // restored into the steps as a stored wizard is
+    if (wizardActive.value && initialFormData.value?.__wizard__ === true) {
+      buildMainStoreCtx().onLoad(initialFormData.value);
+      initialFormData.value = {};
+    }
+
     // Opened from a stored job's page (?storedJob=<id>) : its values filled in, as the form's
     // own Load button does - a wizard's per-step drafts too
     if (route.query.storedJob) {

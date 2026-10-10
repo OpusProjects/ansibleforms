@@ -12,7 +12,7 @@ process.env.DB_USER ||= "test";
 process.env.DB_PASSWORD ||= "test";
 vi.mock("../src/models/db.model.js", () => ({ default: { do: async () => [] } }));
 
-const { guardLaunch, launchValidationMode } = await import("../src/models/job.model.js");
+const { guardLaunch, launchValidationMode, filterRawFormDataOf } = await import("../src/models/job.model.js");
 const Form = (await import("../src/models/form.model.js")).default;
 const appConfig = (await import("./__mocks__/app.config.js")).default;
 const logger = (await import("./__mocks__/logger.js")).default;
@@ -243,6 +243,25 @@ describe("wizard forms", () => {
     appConfig.launchValidation = "log";
     await guardLaunch({ ...args(wizardRaw({ basics: { name: "prod-web", large: false } }), { vm: { name: "other", large: false } }), formObj: wizardForm });
     expect(warned.join("\n")).toMatch(/differ.*vm/);
+  });
+});
+
+describe("the raw form data a wizard job keeps", () => {
+  test("its step drafts, each filtered by its subform : no passwords, no unknown keys", () => {
+    const kept = filterRawFormDataOf(wizardForm, wizardRaw({
+      basics: { name: "prod-web", large: true, secret: "s3cr3t", injected: 1 },
+      disk: { size: 50 },
+      ghost: { x: 1 },
+    }));
+    expect(kept).toEqual({ __wizard__: true, drafts: { basics: { name: "prod-web", large: true }, disk: { size: 50 } }, skipped: { extra: true } });
+  });
+
+  test("a wizard launch without drafts keeps nothing", () => {
+    expect(filterRawFormDataOf(wizardForm, { name: "prod-web" })).toEqual({});
+  });
+
+  test("a form keeps its fields' values, as before", () => {
+    expect(filterRawFormDataOf(formObj, { host: "prod-1", pw: "x", other: 1 })).toEqual({ host: "prod-1" });
   });
 });
 
