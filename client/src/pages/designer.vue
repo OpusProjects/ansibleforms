@@ -91,7 +91,14 @@ const tabs = [
 // the views in the menu, alphabetically by their (translated) label
 const sortedTabs = computed(() => [...tabs].sort((a, b) => a.label().localeCompare(b.label(), locale.value)));
 // the designer opens on the first view of the menu ; a link to a form (?form=) opens that form
-const currentTab = ref(useRoute().query.form ? 'Forms' : sortedTabs.value[0].name);
+// a link from the old settings pages (?view=Categories) opens that view
+const currentTab = ref(
+  useRoute().query.form
+    ? 'Forms'
+    : tabs.some((x) => x.name === useRoute().query.view)
+      ? useRoute().query.view
+      : sortedTabs.value[0].name,
+);
 const showWarnings = ref(false);
 const action = ref(null);
 const lock = ref(false);
@@ -2552,7 +2559,9 @@ function previewForm() {
 
 // ─── the card's tabs : the item's YAML, and a form's preview ──────────────────
 // which tab shows : 'yaml' (the editor and its toolbar), or 'preview' (the form, rendered)
-const editorView = ref('yaml');
+// the visual tab's table, for the toolbar's + button
+const visualEditor = ref(null);
+const editorView = ref(useRoute().query.tab === 'visual' ? 'visual' : 'yaml');
 // the preview's address, and its key : a new key reloads it with the YAML as it is now
 const previewUrl = ref('');
 const previewKey = ref(0);
@@ -6317,14 +6326,26 @@ onBeforeUnmount(() => {
       <!-- titled after the open view, like the jobs and profile pages ; until the designer is
            started (nothing can be opened yet) after the lock it needs -->
       <AppSettings v-if="authenticated" :title="pageTitle.title" :description="tabDescription" :icon="pageTitle.icon">
-        <!-- the item's views, on top of its card, once the designer runs : its YAML, and a form's
-             preview -->
+        <!-- the item's views, on top of its card, once the designer runs : its YAML ; the categories
+             and constants as tables (Visual) ; a form's preview -->
         <template v-if="lock && !lock.free && loaded" #tabs>
           <ul class="nav nav-tabs mb-0">
             <li class="nav-item">
               <a class="nav-link" :class="{ active: editorView === 'yaml' }" href="#" @click.prevent="showView('yaml')">
                 <FaIcon icon="code" class="me-1" />
                 YAML
+              </a>
+            </li>
+            <!-- the categories and constants as tables, on the same YAML -->
+            <li v-if="currentTab == 'Categories' || currentTab == 'Constants'" class="nav-item">
+              <a
+                class="nav-link"
+                :class="{ active: editorView === 'visual' }"
+                href="#"
+                @click.prevent="showView('visual')"
+              >
+                <FaIcon icon="table-list" class="me-1" />
+                {{ t('designer.visual') }}
               </a>
             </li>
             <!-- a form's preview : the form rendered from its YAML as it is now -->
@@ -6433,7 +6454,7 @@ onBeforeUnmount(() => {
                 class="d-inline-flex px-2 py-1 fw-semibold text-warning-emphasis bg-warning-subtle border border-warning-subtle rounded-2"
                 >{{ t('settings.settingsPage.configTemplated') }}</small
               >
-              <template v-if="lock && lock.match && editorView === 'yaml'">
+              <template v-if="lock && lock.match && editorView !== 'preview'">
                 <div class="d-flex gap-1 flex-wrap designer-toolbar">
                   <template v-if="dbOnlyMode && isConfigTab">
                     <BsButton
@@ -6527,62 +6548,65 @@ onBeforeUnmount(() => {
                       :title="t('designer.restore')"
                     />
                   </template>
-                  <BsButton
-                    :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
-                    icon="rotate-left"
-                    :isIconButton="true"
-                    @click="editorUndo"
-                    :disabled="busy || !editorTarget"
-                    :title="t('designer.undo')"
-                  />
-                  <BsButton
-                    :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
-                    icon="rotate-right"
-                    :isIconButton="true"
-                    @click="editorRedo"
-                    :disabled="busy || !editorTarget"
-                    :title="t('designer.redo')"
-                  />
-                  <BsButton
-                    :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
-                    icon="scissors"
-                    :isIconButton="true"
-                    @click="editorCut"
-                    :disabled="busy || !editorTarget"
-                    :title="t('designer.cut')"
-                  />
-                  <BsButton
-                    :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
-                    icon="copy"
-                    :isIconButton="true"
-                    @click="editorCopy"
-                    :disabled="busy || !editorTarget"
-                    :title="t('designer.copy')"
-                  />
-                  <BsButton
-                    :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
-                    icon="paste"
-                    :isIconButton="true"
-                    @click="editorPaste"
-                    :disabled="busy || !editorTarget"
-                    :title="t('designer.paste')"
-                  />
-                  <BsButton
-                    :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
-                    icon="indent"
-                    :isIconButton="true"
-                    @click="editorFormat"
-                    :disabled="busy || !editorTarget"
-                    :title="t('designer.format')"
-                  />
-                  <BsButton
-                    :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
-                    icon="magnifying-glass"
-                    :isIconButton="true"
-                    @click="editorFind"
-                    :disabled="busy || !editorTarget"
-                    :title="t('designer.findReplace')"
-                  />
+                  <!-- the text editor's own : undo, redo, cut, copy, paste, format, find -->
+                  <template v-if="editorView === 'yaml'">
+                    <BsButton
+                      :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
+                      icon="rotate-left"
+                      :isIconButton="true"
+                      @click="editorUndo"
+                      :disabled="busy || !editorTarget"
+                      :title="t('designer.undo')"
+                    />
+                    <BsButton
+                      :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
+                      icon="rotate-right"
+                      :isIconButton="true"
+                      @click="editorRedo"
+                      :disabled="busy || !editorTarget"
+                      :title="t('designer.redo')"
+                    />
+                    <BsButton
+                      :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
+                      icon="scissors"
+                      :isIconButton="true"
+                      @click="editorCut"
+                      :disabled="busy || !editorTarget"
+                      :title="t('designer.cut')"
+                    />
+                    <BsButton
+                      :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
+                      icon="copy"
+                      :isIconButton="true"
+                      @click="editorCopy"
+                      :disabled="busy || !editorTarget"
+                      :title="t('designer.copy')"
+                    />
+                    <BsButton
+                      :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
+                      icon="paste"
+                      :isIconButton="true"
+                      @click="editorPaste"
+                      :disabled="busy || !editorTarget"
+                      :title="t('designer.paste')"
+                    />
+                    <BsButton
+                      :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
+                      icon="indent"
+                      :isIconButton="true"
+                      @click="editorFormat"
+                      :disabled="busy || !editorTarget"
+                      :title="t('designer.format')"
+                    />
+                    <BsButton
+                      :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
+                      icon="magnifying-glass"
+                      :isIconButton="true"
+                      @click="editorFind"
+                      :disabled="busy || !editorTarget"
+                      :title="t('designer.findReplace')"
+                    />
+                  </template>
                   <BsButton
                     :colorClass="busy || !isDirty || !editorTarget ? 'secondary' : 'primary'"
                     icon="right-left"
@@ -6591,7 +6615,17 @@ onBeforeUnmount(() => {
                     :disabled="busy || !isDirty || !editorTarget"
                     :title="t('designer.diff')"
                   />
-                  <template v-if="currentTab === 'Categories'">
+                  <!-- the visual tab : a row added to its table (the categories' or constants') -->
+                  <BsButton
+                    v-if="editorView === 'visual' && (currentTab === 'Categories' || currentTab === 'Constants')"
+                    :colorClass="busyOrTemplated ? 'secondary' : 'primary'"
+                    icon="plus"
+                    :isIconButton="true"
+                    @click="visualEditor?.add()"
+                    :disabled="busyOrTemplated"
+                    :title="currentTab === 'Categories' ? t('designer.addCategory') : t('designer.addConstant')"
+                  />
+                  <template v-if="currentTab === 'Categories' && editorView === 'yaml'">
                     <BsButton
                       :colorClass="busyOrTemplated || !canAddCategories ? 'secondary' : 'primary'"
                       icon="plus"
@@ -6627,7 +6661,7 @@ onBeforeUnmount(() => {
                       :title="t('designer.editRoles')"
                     />
                   </template>
-                  <template v-if="currentTab === 'Constants'">
+                  <template v-if="currentTab === 'Constants' && editorView === 'yaml'">
                     <BsButton
                       :colorClass="busyOrTemplated || !canAddConstants ? 'secondary' : 'primary'"
                       icon="plus"
@@ -6748,7 +6782,15 @@ onBeforeUnmount(() => {
               :style="currentTab == 'Forms' ? { gridTemplateColumns: `1fr 1rem ${treeWidthPct}%` } : undefined"
             >
               <div class="designer-editor">
-                <div v-if="loaded && currentTab == 'Categories'">
+                <!-- Visual : the categories as a table, on the same YAML (saved with Save) -->
+                <div v-if="loaded && currentTab == 'Categories' && editorView === 'visual'" class="designer-visual">
+                  <AppCategoriesEditor
+                    ref="visualEditor"
+                    v-model="categories"
+                    :readOnly="!(lock && lock.match) || configTemplated"
+                  />
+                </div>
+                <div v-else-if="loaded && currentTab == 'Categories'">
                   <BsInput
                     type="editor"
                     :isFloating="false"
@@ -6774,7 +6816,15 @@ onBeforeUnmount(() => {
                     :style="editorStyle('100%')"
                   />
                 </div>
-                <div v-if="loaded && currentTab == 'Constants'">
+                <!-- Visual : the constants as a table, on the same YAML (saved with Save) -->
+                <div v-if="loaded && currentTab == 'Constants' && editorView === 'visual'" class="designer-visual">
+                  <AppConstantsEditor
+                    ref="visualEditor"
+                    v-model="constants"
+                    :readOnly="!(lock && lock.match) || configTemplated"
+                  />
+                </div>
+                <div v-else-if="loaded && currentTab == 'Constants'">
                   <BsInput
                     type="editor"
                     :isFloating="false"
@@ -7442,6 +7492,10 @@ onBeforeUnmount(() => {
   cursor: not-allowed;
 }
 
+/* the visual editors (categories, constants) : as far down as the YAML editor */
+.designer-visual {
+  margin-top: 0.5rem;
+}
 /* a form's preview : a bar (what it is, refresh, a new window) over the form page in a frame,
    the editor's height ; as far down as the editor and the file explorer beside it */
 .designer-preview {

@@ -70,19 +70,21 @@ export function searchPages(t, options) {
       link: '/admin/backups',
       permission: 'allowBackupOps',
     },
+    // edited in the designer (its Visual tab), no longer a settings page
     {
       title: t('sidebar.categories'),
-      section: settings,
+      section: t('nav.designer'),
       icon: 'sitemap',
-      link: '/admin/categories',
-      permission: 'showSettings',
+      link: '/designer?view=Categories&tab=visual',
+      permission: 'showDesigner',
     },
+    // edited in the designer (its Visual tab), no longer a settings page
     {
       title: t('sidebar.constants'),
-      section: settings,
+      section: t('nav.designer'),
       icon: 'sliders-h',
-      link: '/admin/constants',
-      permission: 'showSettings',
+      link: '/designer?view=Constants&tab=visual',
+      permission: 'showDesigner',
     },
     { title: t('sidebar.users'), section: settings, icon: 'user', link: '/admin/users', permission: 'showSettings' },
     { title: t('sidebar.groups'), section: settings, icon: 'users', link: '/admin/groups', permission: 'showSettings' },

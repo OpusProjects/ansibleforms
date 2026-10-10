@@ -1,4 +1,4 @@
-// The icon catalogue offered by the category picker (admin/categories.vue) and the
+// The icon catalogue offered by the category picker (AppCategoriesEditor.vue) and the
 // designer's icon pickers.
 //
 // Every name must resolve through the FontAwesome library built in plugins/index.js

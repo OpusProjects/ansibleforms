@@ -87,11 +87,13 @@ describe('searchPages', () => {
     expect(all.length).toBeGreaterThan(20);
     const wrong = [];
     for (const page of all) {
-      if (!(page.link in routes)) {
+      // a link may open a page on a part of it (?view=...) : the route is its path
+      const path = page.link.split('?')[0];
+      if (!(path in routes)) {
         wrong.push(`${page.link}: no such route`);
         continue;
       }
-      const guard = routes[page.link];
+      const guard = routes[path];
       const expected = guard ? guards[guard]?.[0] : null;
       if ((page.permission || null) !== (expected || null)) {
         wrong.push(`${page.link}: search says '${page.permission}', the route checks '${expected}'`);

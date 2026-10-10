@@ -25,13 +25,13 @@ const yttDirectiveRegex = /^\s*#@/m;
 // focus and the IME composition state) on a row whose identity moved, so
 // deleting a row above a focused input types into the wrong record.
 let uidCounter = 0;
-function nextUid() {
+export function nextUid() {
   return ++uidCounter;
 }
 
 // Stamp a missing _uid on every row of a tree. Internal keys (leading _) are
 // stripped from the dirty snapshot and never serialized back to yaml.
-function stampUids(rows, childKeys = []) {
+export function stampUids(rows, childKeys = []) {
   for (const row of rows || []) {
     if (!row || typeof row !== 'object') continue;
     if (!row._uid) row._uid = nextUid();
@@ -63,7 +63,7 @@ export const DEFAULT_CATEGORY_ICON = 'bars';
 // and icon at every depth, so a subcategory that has no icon in the yaml must
 // get one here too, otherwise saving fails validation on a field the user
 // never touched.
-function normalizeCategories(cats) {
+export function normalizeCategories(cats) {
   return (cats || []).map((c) => {
     const cat = { name: c.name || '', icon: c.icon || DEFAULT_CATEGORY_ICON };
     if (c.items) cat.items = normalizeCategories(c.items);
@@ -77,7 +77,7 @@ function normalizeCategories(cats) {
 // addressed by their slash-joined path (a form's `categories: [Parent/Child]`,
 // AppMenuItem.inCategory), which compares the names literally, so a stray space
 // would leave the entry unreachable.
-function buildCategories(cats) {
+export function buildCategories(cats) {
   return cats.map((c) => {
     const cat = { name: (c.name || '').trim(), icon: c.icon || DEFAULT_CATEGORY_ICON };
     if (c.items && c.items.length > 0) cat.items = buildCategories(c.items);
