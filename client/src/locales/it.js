@@ -1169,6 +1169,7 @@ export default {
       outdentCategory: 'Sposta fuori dalla categoria padre',
       categoryPathsChanged:
         'Questi percorsi di categoria non esistono più: {paths}. I formulari che li referenziano non appariranno sotto alcuna categoria finché non vengono aggiornati.',
+      addKey: 'Aggiungi chiave',
       addSubconstant: 'Aggiungi sottochiave',
       addRole: 'Aggiungi ruolo',
       newRole: 'Nuovo ruolo',

@@ -1182,6 +1182,7 @@ export default {
       outdentCategory: 'Sortir de sa catégorie parente',
       categoryPathsChanged:
         "Ces chemins de catégorie n'existent plus : {paths}. Les formulaires qui les référencent n'apparaîtront sous aucune catégorie tant qu'ils ne sont pas mis à jour.",
+      addKey: 'Ajouter une clé',
       addSubconstant: 'Ajouter une sous-cle',
       addRole: 'Ajouter un role',
       newRole: 'Nouveau rôle',

@@ -1154,6 +1154,7 @@ export default {
       outdentCategory: '親カテゴリから出す',
       categoryPathsChanged:
         '次のカテゴリパスは存在しなくなりました: {paths}。これらを参照するフォームは、更新されるまでカテゴリの下に表示されません。',
+      addKey: 'キーを追加',
       addSubconstant: 'サブキーを追加',
       addRole: 'ロールを追加',
       newRole: '新しいロール',

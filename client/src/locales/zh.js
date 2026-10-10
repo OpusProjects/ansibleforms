@@ -1133,6 +1133,7 @@ export default {
       indentCategory: '嵌套到上方类别下',
       outdentCategory: '移出其父类别',
       categoryPathsChanged: '以下类别路径已不存在：{paths}。引用它们的表单在更新之前不会显示在任何类别下。',
+      addKey: '添加键',
       addSubconstant: '添加子键',
       addRole: '添加角色',
       newRole: '新建角色',

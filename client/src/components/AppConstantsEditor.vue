@@ -104,21 +104,53 @@ const invalidValue = computed(() => findInvalidValue(constants.value));
 // ─── editing ──────────────────────────────────────────────────────────────────
 const newConstant = ref(null);
 
+// where the dialog's key goes : after a row (its menu's Add key), else at the end of the table
+const insertAfter = ref(null);
+
 /**
  * Opens the New constant dialog on an empty constant.
+ *
+ * Args:
+ *   after (object): the row it goes after, at that row's level (its menu's Add key) ; none,
+ *     the end of the table (the toolbar's +).
  */
-function addConstant() {
+function addConstant(after = null) {
   // the table cannot be edited (read only, or its YAML cannot be read) : nothing added
   if (locked.value) return;
+  insertAfter.value = after && after.row ? after : null;
   newConstant.value = { _uid: nextUid(), key: '', value: '', children: [] };
 }
 
 /**
- * Adds the dialog's constant to the table (saved with the designer's Save).
+ * The list a row is in : the table's, or a parent row's children.
+ *
+ * Args:
+ *   target (object): the row.
+ *   list (object[]): the list to look in, the whole table by default.
+ *
+ * Returns:
+ *   object[]|null: its list, or null when it is not in the table.
+ */
+function listOf(target, list = constants.value) {
+  if (list.includes(target)) return list;
+  for (const item of list) {
+    const found = item.children && listOf(target, item.children);
+    if (found) return found;
+  }
+  return null;
+}
+
+/**
+ * Adds the dialog's constant (saved with the designer's Save) : right after the row its menu
+ * was opened on, or at the end of the table.
  */
 function createConstant() {
-  constants.value.push(newConstant.value);
+  const after = insertAfter.value?.row;
+  const list = after ? listOf(after) : null;
+  if (list) list.splice(list.indexOf(after) + 1, 0, newConstant.value);
+  else constants.value.push(newConstant.value);
   newConstant.value = null;
+  insertAfter.value = null;
 }
 
 /**
@@ -228,7 +260,7 @@ defineExpose({ add: addConstant, locked });
               }}</span>
             </td>
             <td class="bs-dt-row-actions">
-              <!-- the row's menu, as every table's : add a subkey, then delete, last -->
+              <!-- the row's menu, as every table's : add a key after it, add a subkey, then delete, last -->
               <div v-if="!locked" class="dropdown">
                 <a
                   role="button"
@@ -241,8 +273,16 @@ defineExpose({ add: addConstant, locked });
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end">
                   <li>
+                    <a class="dropdown-item" href="#" @click.prevent="addConstant({ row: entry.row })">
+                      <FaIcon icon="plus" class="me-2" />{{ t('settings.settingsPage.addKey') }}
+                    </a>
+                  </li>
+                  <li><hr class="dropdown-divider" /></li>
+                  <li>
                     <a class="dropdown-item" href="#" @click.prevent="addSubconstant(entry.row)">
-                      <FaIcon icon="plus" class="me-2" />{{ t('settings.settingsPage.addSubconstant') }}
+                      <FaIcon icon="level-up-alt" class="me-2 fa-rotate-90" />{{
+                        t('settings.settingsPage.addSubconstant')
+                      }}
                     </a>
                   </li>
                   <li><hr class="dropdown-divider" /></li>

@@ -1190,6 +1190,7 @@ export default {
       outdentCategory: 'Aus der übergeordneten Kategorie herausnehmen',
       categoryPathsChanged:
         'Diese Kategoriepfade existieren nicht mehr: {paths}. Formulare, die sie referenzieren, erscheinen unter keiner Kategorie, bis sie angepasst werden.',
+      addKey: 'Schlüssel hinzufügen',
       addSubconstant: 'Unterschlüssel hinzufügen',
       addRole: 'Rolle hinzufuegen',
       newRole: 'Neue Rolle',

@@ -1158,6 +1158,7 @@ export default {
       outdentCategory: 'Move out of its parent',
       categoryPathsChanged:
         'These category paths no longer exist: {paths}. Forms that reference them will not appear under a category until they are updated.',
+      addKey: 'Add key',
       addSubconstant: 'Add subkey',
       addRole: 'Add Role',
       newRole: 'New role',

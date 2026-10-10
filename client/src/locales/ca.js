@@ -1177,6 +1177,7 @@ export default {
       outdentCategory: 'Treu-la de la categoria pare',
       categoryPathsChanged:
         "Aquestes rutes de categoria ja no existeixen: {paths}. Els formularis que hi fan referència no apareixeran sota cap categoria fins que s'actualitzin.",
+      addKey: 'Afegeix una clau',
       addSubconstant: 'Afegeix una subclau',
       addRole: 'Afegeix un rol',
       newRole: 'Rol nou',

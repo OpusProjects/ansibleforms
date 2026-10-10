@@ -1170,6 +1170,7 @@ export default {
       outdentCategory: 'Sacar de su categoría padre',
       categoryPathsChanged:
         'Estas rutas de categoría ya no existen: {paths}. Los formularios que las referencian no aparecerán bajo ninguna categoría hasta que se actualicen.',
+      addKey: 'Añadir clave',
       addSubconstant: 'Añadir subclave',
       addRole: 'Agregar rol',
       newRole: 'Nuevo rol',

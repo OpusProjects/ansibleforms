@@ -1169,6 +1169,7 @@ export default {
       outdentCategory: 'Przenieś poza kategorię nadrzędną',
       categoryPathsChanged:
         'Te ścieżki kategorii już nie istnieją: {paths}. Formularze, które się do nich odwołują, nie pojawią się w żadnej kategorii, dopóki nie zostaną zaktualizowane.',
+      addKey: 'Dodaj klucz',
       addSubconstant: 'Dodaj podklucz',
       addRole: 'Dodaj rolę',
       newRole: 'Nowa rola',

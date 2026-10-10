@@ -1176,6 +1176,7 @@ export default {
       outdentCategory: 'Retirar da categoria-mãe',
       categoryPathsChanged:
         'Estes caminhos de categoria já não existem: {paths}. Os formulários que os referenciam não vão aparecer numa categoria até serem atualizados.',
+      addKey: 'Adicionar chave',
       addSubconstant: 'Adicionar subchave',
       addRole: 'Adicionar Função',
       newRole: 'Nova função',

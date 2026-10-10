@@ -1172,6 +1172,7 @@ export default {
       outdentCategory: 'Uit de bovenliggende categorie halen',
       categoryPathsChanged:
         'Deze categoriepaden bestaan niet meer: {paths}. Formulieren die ernaar verwijzen verschijnen onder geen enkele categorie totdat ze zijn bijgewerkt.',
+      addKey: 'Sleutel toevoegen',
       addSubconstant: 'Subsleutel toevoegen',
       addRole: 'Rol toevoegen',
       newRole: 'Nieuwe rol',
