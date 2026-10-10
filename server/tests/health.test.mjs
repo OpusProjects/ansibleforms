@@ -341,8 +341,8 @@ describe("health reports problems, not just ok", () => {
     };
     const r = await Health.check();
     assert.equal(statusOf(r, "database"), "error");
-    // every other check still reported (17 : runners and nodes joined in 7)
-    assert.equal(r.checks.length, 17);
+    // every other check still reported (18 : runners and nodes joined in 7, then the database user)
+    assert.equal(r.checks.length, 18);
   });
 
   // Since 7 jobs run on runners : none at all means no form can run a job
@@ -549,12 +549,35 @@ describe("health reports problems, not just ok", () => {
     // showSettings it could never read anything but 'provisioned'), and configSource /
     // runtime moved to `info` because they have no failing value.
     assert.deepEqual(keys, [
-      "backupTooling", "configSeed", "database", "designerLock", "disk", "expressions",
+      "backupTooling", "configSeed", "database", "databaseUser", "designerLock", "disk", "expressions",
       "jobs", "lastBackup", "ldap", "nodes", "repositories", "runners", "scheduler", "schema", "secretStores", "storage", "writable",
     ]);
     // and every info entry is status-free by construction
     assert.ok(r.info.length > 0);
     assert.equal(r.info.some((i) => i.status !== undefined), false);
+  });
+});
+
+describe("the database user", () => {
+  test("rights on every database are a warning that names them", async () => {
+    dbHandler = async (sql) => {
+      if (/CURRENT_USER\(\) AS u/.test(sql)) return [{ u: "root@%" }];
+      if (/SHOW GRANTS/.test(sql)) return [{ g: "GRANT ALL PRIVILEGES ON *.* TO `root`@`%` WITH GRANT OPTION" }];
+      return [];
+    };
+    const r = await Health.check();
+    assert.equal(statusOf(r, "databaseUser"), "warning");
+    assert.deepEqual(checkOf(r, "databaseUser").detail.serverWidePrivileges, ["ALL PRIVILEGES"]);
+  });
+
+  test("a user limited to the AnsibleForms schema is ok", async () => {
+    dbHandler = async (sql) => {
+      if (/CURRENT_USER\(\) AS u/.test(sql)) return [{ u: "ansibleforms@%" }];
+      if (/SHOW GRANTS/.test(sql)) return [{ g: "GRANT USAGE ON *.* TO `ansibleforms`@`%`" }, { g: "GRANT ALL PRIVILEGES ON `AnsibleForms`.* TO `ansibleforms`@`%`" }];
+      return [];
+    };
+    const r = await Health.check();
+    assert.equal(statusOf(r, "databaseUser"), "ok");
   });
 });
 

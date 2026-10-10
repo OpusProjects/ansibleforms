@@ -41,7 +41,17 @@
     hint: User name Ansible Forms connects to the database with.
     required: true
     description: |
-      Ansible Forms requires a MySQL database connection to store the configuration of the application. 
+      Ansible Forms requires a MySQL database connection to store the configuration of the application.
+
+      Give it a user of its own with rights on its schema only - not root :
+
+          CREATE USER 'ansibleforms'@'%' IDENTIFIED BY '<password>';
+          GRANT ALL PRIVILEGES ON `AnsibleForms`.* TO 'ansibleforms'@'%';
+
+      That is all the application needs : it creates and patches its schema, makes its backups,
+      and ends a dead worker's session (its own sessions, which needs no further right). A user
+      with rights on every database turns any hole in the application into a hole in the whole
+      database server ; the Status page and the log say so when the user has them.
   - name: DB_PASSWORD
     type: string
     allowed: a valid mysql password

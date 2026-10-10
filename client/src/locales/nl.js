@@ -314,6 +314,7 @@ export default {
     statusWarning: 'Vereist aandacht',
     statusError: 'Probleem',
     checkDatabase: 'Databaseverbinding',
+    checkDatabaseUser: 'Databasegebruiker',
     checkSchema: 'Databaseschema',
     sectionChecks: 'Controles',
     sectionInfo: 'Informatie',

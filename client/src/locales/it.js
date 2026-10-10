@@ -317,6 +317,7 @@ export default {
     statusWarning: 'Richiede attenzione',
     statusError: 'Problema',
     checkDatabase: 'Connessione al database',
+    checkDatabaseUser: 'Utente del database',
     checkSchema: 'Schema del database',
     sectionChecks: 'Controlli',
     sectionInfo: 'Informazioni',

@@ -19,7 +19,11 @@ services:
     image: mariadb:11
     restart: unless-stopped
     environment:
-      MARIADB_ROOT_PASSWORD: ${DB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      # the user AnsibleForms connects with : all rights on its own schema, none elsewhere
+      MARIADB_DATABASE: AnsibleForms
+      MARIADB_USER: ${DB_USER}
+      MARIADB_PASSWORD: ${DB_PASSWORD}
     volumes:
       - mysql:/var/lib/mysql
 

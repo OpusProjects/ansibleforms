@@ -34,6 +34,7 @@ import http from 'http';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { databaseUserPrivileges } from './lib/dbPrivileges.js';
 
 const __filename = fileURLToPath(import.meta.url);
 // the server folder : the built client lives in ./views next to index.js
@@ -128,6 +129,15 @@ export async function startApp(){
   if (appConfig.encryptionSecretIsDefault) {
     logger.warning('[SECURITY] ENCRYPTION_SECRET is not set. Stored passwords are encrypted with the default key, which is public in the source code. Set ENCRYPTION_SECRET before you store credentials : changing it later makes the existing ones unreadable.');
   }
+
+  // the database user : rights beyond the AnsibleForms schema are a risk worth saying once
+  databaseUserPrivileges()
+    .then(({ user, privileges }) => {
+      if (privileges.length) {
+        logger.warning(`[SECURITY] The database user ${user} has rights on every database (${privileges.slice(0, 6).join(', ')}${privileges.length > 6 ? ', ...' : ''}). AnsibleForms needs only ALL PRIVILEGES ON AnsibleForms.* : connect with such a user (see DB_USER).`);
+      }
+    })
+    .catch((err) => logger.debug(`Could not read the database user's privileges : ${err.message || err}`));
 
   if (authConfig.secretIsGenerated) {
     logger.warning('[SECURITY] JWT signing secret was auto-generated. All tokens will be invalidated on restart. Set the ACCESS_TOKEN_SECRET environment variable for persistent token signing.');

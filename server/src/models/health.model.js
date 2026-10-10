@@ -27,6 +27,7 @@ import os from 'os';
 import { readFileSync } from 'fs';
 import * as fsSync from 'fs';
 import { fileURLToPath } from 'url';
+import { databaseUserPrivileges } from "../lib/dbPrivileges.js";
 
 // System health.
 //
@@ -99,6 +100,20 @@ async function databaseCheck() {
   return check('database', OK, 'reachable', {
     provisioned: db.provisioned,
   });
+}
+
+// The database user : rights on every database (root, as many setups use) are a warning. The
+// app needs ALL PRIVILEGES ON AnsibleForms.* and nothing more (lib/dbPrivileges.js).
+async function databaseUserCheck() {
+  const { user, privileges } = await databaseUserPrivileges();
+  if (privileges.length) {
+    return check('databaseUser', WARNING, 'rights on every database', {
+      user,
+      serverWidePrivileges: privileges,
+      note: "Connect with a user that has only ALL PRIVILEGES ON AnsibleForms.* (see DB_USER in the help)",
+    });
+  }
+  return check('databaseUser', OK, 'AnsibleForms only', { user });
 }
 
 // Disk. Everything operational this app does writes under persistent/ - backups, logs,
@@ -785,6 +800,7 @@ async function seedManagedFacts() {
 Health.check = async function () {
   const checks = await Promise.all([
     safely('database', databaseCheck),
+    safely('databaseUser', databaseUserCheck),
     safely('schema', schemaCheck),
     safely('scheduler', schedulerCheck),
     safely('nodes', nodesCheck),

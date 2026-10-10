@@ -19,7 +19,10 @@ import { bump } from '../lib/epochs.js';
 // back gone nodes, an old designer lock or old change counters - so they are not dumped, and a
 // restore leaves the live ones as they are.
 const RUNTIME_TABLES = ['nodes', 'cache_epochs', 'designer_lock']
-  .map((t) => `--ignore-table=AnsibleForms.${t}`).join(' ');
+  .map((t) => `--ignore-table=AnsibleForms.${t}`).join(' ')
+  // tablespaces are the server's, not the schema's : dumping them needs the PROCESS right, which
+  // a user limited to the AnsibleForms schema does not have (mysqldump and mariadb-dump)
+  + ' --no-tablespaces';
 
 /**
  * Wrap a value for a POSIX shell as a single-quoted string.
