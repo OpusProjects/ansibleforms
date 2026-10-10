@@ -2609,19 +2609,32 @@ const previewCategory = ref('');
  */
 function menuCategories(list) {
   if (!Array.isArray(list)) return [];
-  return list
-    .filter((c) => c && typeof c === 'object' && !Array.isArray(c))
-    .map((c) => {
-      const cat = { name: String(c.name ?? '').trim(), icon: typeof c.icon === 'string' && c.icon ? c.icon : 'bars' };
-      const items = menuCategories(c.items);
-      if (items.length) cat.items = items;
-      return cat;
-    })
-    .filter((c) => c.name);
+  return (
+    list
+      .filter((c) => c && typeof c === 'object' && !Array.isArray(c))
+      .map((c) => {
+        const cat = { name: String(c.name ?? '').trim(), icon: typeof c.icon === 'string' && c.icon ? c.icon : 'bars' };
+        const items = menuCategories(c.items);
+        if (items.length) cat.items = items;
+        return cat;
+      })
+      .filter((c) => c.name)
+      // one entry per name at a level : the menu keys them by name, and two would be one path
+      .filter((c, i, all) => all.findIndex((x) => x.name === c.name) === i)
+  );
 }
 const menuPreview = computed(() => ({
   categories: menuCategories(categoriesObj.value),
-  forms: formsObj.value.filter((f) => f && f.name && f.type !== 'subform'),
+  // the forms as the menu reads them : their categories paths only (a half-typed '- ' parses to
+  // null, a number is no path - the menu would throw on them) ; none at all stays none, which
+  // the menu counts as Default
+  forms: formsObj.value
+    .filter((f) => f && typeof f === 'object' && f.name && f.type !== 'subform')
+    .map((f) =>
+      f.categories === undefined
+        ? f
+        : { ...f, categories: Array.isArray(f.categories) ? f.categories.filter((c) => typeof c === 'string') : [] },
+    ),
 }));
 
 // a link to a view (the search's ?view=...&tab=...) : applied when the designer opens (above)

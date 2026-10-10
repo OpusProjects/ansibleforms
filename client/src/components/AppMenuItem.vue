@@ -28,6 +28,9 @@ const props = defineProps({
   menu: { type: Object },
   forms: { type: Array },
   roles: { type: Array },
+  // the designer's preview : a click on a sub category is handed up (it highlights it there),
+  // never a navigation to the Forms page
+  preview: { type: Boolean, default: false },
 });
 
 // COMPUTED
@@ -145,7 +148,8 @@ function onClick() {
         v-if="isOpen && menu && menu.items && menu.items.length > 0"
       >
         <AppMenuItem
-          @click="goto(path + '/' + item.name)"
+          @click="(sub) => (preview ? emit('click', sub) : goto(path + '/' + item.name))"
+          :preview="preview"
           v-for="item in menu.items"
           :key="path + '/' + item.name"
           :currentPath="currentPath"

@@ -6,7 +6,7 @@
 // keeps its FA5 names as ALIASES of the FA6/7 ones - `cog` is an alias of `gear`, and both
 // resolve, so listing both put six pairs of identical-looking icons in the picker with
 // nothing to tell them apart. Only the canonical name is listed; an alias still renders
-// fine, so a category that already stores `icon: cog` keeps working and categories.vue
+// fine, so a category that already stores `icon: cog` keeps working and AppCategoriesEditor.vue
 // renders an extra <option> for a value outside this list.
 //
 // Pinned by client/tests/icon-catalog.test.js, which compares the FULL rendered SVG path

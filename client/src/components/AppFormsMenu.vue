@@ -116,6 +116,7 @@ onMounted(async () => {
         :menu="item"
         :forms="forms"
         :roles="roles"
+        :preview="preview"
       />
     </ul>
   </div>

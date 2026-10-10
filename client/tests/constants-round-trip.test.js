@@ -75,6 +75,17 @@ describe('editing', () => {
     expect(arrayToConstants(rows)).toEqual({ A: '1' });
   });
 
+  it('keeps an empty map an empty map', () => {
+    const rows = constantsToArray({ EMPTY: {}, A: '1' });
+    expect(arrayToConstants(rows)).toEqual({ EMPTY: {}, A: '1' });
+  });
+
+  it('emptying a parent leaves an empty map', () => {
+    const rows = constantsToArray({ GROUP: { A: '1' } });
+    rows[0].children = [];
+    expect(arrayToConstants(rows)).toEqual({ GROUP: {} });
+  });
+
   it('emptying a parent does not resurrect its children', () => {
     const rows = constantsToArray({ GROUP: { A: '1', B: '2' } });
     // the user deleted every child row
