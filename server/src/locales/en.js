@@ -22,6 +22,7 @@ export default {
   auth: {
     authFailed: "Authentication failed",
     invalidCredentials: "Invalid credentials",
+    tooManyFailures: "Too many failed logins : try again in {minutes} minute(s)",
     loginDisabled: "Not authenticated, login is not enabled for this user.",
     azureFailed: "Azure AD authentication failed",
     oidcFailed: "OIDC authentication failed",

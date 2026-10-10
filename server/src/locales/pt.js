@@ -22,6 +22,7 @@ export default {
   auth: {
     authFailed: "A autenticação falhou",
     invalidCredentials: "Credenciais inválidas",
+    tooManyFailures: "Demasiados inícios de sessão falhados : tente novamente dentro de {minutes} minuto(s)",
     loginDisabled: "Não autenticado, o início de sessão não está ativado para este utilizador.",
     azureFailed: "A autenticação com o Azure AD falhou",
     oidcFailed: "A autenticação com OIDC falhou",

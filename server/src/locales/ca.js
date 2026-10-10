@@ -22,6 +22,7 @@ export default {
   auth: {
     authFailed: "L'autenticació ha fallat",
     invalidCredentials: "Les credencials no són vàlides",
+    tooManyFailures: "Massa inicis de sessió fallits : torneu-ho a provar d'aquí a {minutes} minut(s)",
     loginDisabled: "No autenticat, l'inici de sessió no està habilitat per a aquest usuari.",
     azureFailed: "L'autenticació amb Azure AD ha fallat",
     oidcFailed: "L'autenticació OIDC ha fallat",

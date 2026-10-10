@@ -93,6 +93,10 @@ const LIVE = {
   MCP_READ_ONLY: { key: 'mcpReadOnly', parse: v => v == 1 },
   MCP_CHAT_FORMS_ONLY: { key: 'mcpChatFormsOnly', parse: v => v == 1 },
   USE_YTT: { key: 'useYtt', parse: v => v == 1 },
+  // lib/loginThrottle.js reads them on every login
+  LOGIN_MAX_FAILURES: { key: 'loginMaxFailures', parse: v => Math.max(0, parseInt(v, 10) || 0) },
+  LOGIN_MAX_FAILURES_PER_IP: { key: 'loginMaxFailuresPerIp', parse: v => Math.max(0, parseInt(v, 10) || 0) },
+  LOGIN_LOCKOUT_MINUTES: { key: 'loginLockoutMinutes', parse: v => Math.max(0, parseInt(v, 10) || 0) },
   // Job.launch reads it on every launch
   LAUNCH_VALIDATION: { key: 'launchValidation', parse: v => (['off', 'log', 'enforce'].includes(String(v || '').trim().toLowerCase()) ? String(v).trim().toLowerCase() : 'enforce') },
   // db.model.js checks this inside mysql.do, so it is evaluated per query - exactly the

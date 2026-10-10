@@ -22,6 +22,7 @@ export default {
   auth: {
     authFailed: "Authenticatie mislukt",
     invalidCredentials: "Ongeldige inloggegevens",
+    tooManyFailures: "Te veel mislukte aanmeldingen : probeer het over {minutes} minuut/minuten opnieuw",
     loginDisabled: "Niet geauthenticeerd, inloggen is niet ingeschakeld voor deze gebruiker.",
     azureFailed: "Azure AD authenticatie mislukt",
     oidcFailed: "OIDC authenticatie mislukt",

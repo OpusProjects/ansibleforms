@@ -643,6 +643,42 @@
       (the default). Form definitions and the values being filled in are sent to that
       provider ; passwords, credentials and job output never are. Takes effect at once,
       without a restart. See the Chat assistant page of the documentation.
+  - name: LOGIN_MAX_FAILURES
+    version: 7.0.0
+    type: number
+    allowed: 0 or a positive integer
+    default: 5
+    short: Failed logins before an account locks
+    hint: 0 turns the account lockout off
+    description: |
+      After this many failed logins in a row, an account (local or LDAP) is locked for
+      LOGIN_LOCKOUT_MINUTES : every attempt is refused with status 429 before any password is
+      checked, whether the account exists or not. A successful login clears the count, and so
+      does an admin setting the user's password. Counted in the database, so every app node
+      sees the same attempts. 0 turns the lockout off. Applied without a restart.
+  - name: LOGIN_MAX_FAILURES_PER_IP
+    version: 7.0.0
+    type: number
+    allowed: 0 or a positive integer
+    default: 30
+    short: Failed logins from one address before it is held back
+    hint: 0 turns the per-address limit off
+    description: |
+      One address trying many accounts : after this many failed logins within
+      LOGIN_LOCKOUT_MINUTES, every login from it is refused with status 429 until that window
+      ends. Behind a reverse proxy, set TRUST_PROXY so the address is the client's and not the
+      proxy's. 0 turns it off. Applied without a restart.
+  - name: LOGIN_LOCKOUT_MINUTES
+    version: 7.0.0
+    type: number
+    allowed: 0 or a positive integer
+    default: 15
+    short: How long a locked account stays locked
+    hint: Also the window the failures are counted in ; 0 turns both limits off
+    description: |
+      How long an account stays locked after LOGIN_MAX_FAILURES failed logins, and the window
+      in which the failures of an account and of an address are counted. 0 turns the lockout and
+      the per-address limit off. Applied without a restart.
   - name: LAUNCH_VALIDATION
     version: 6.4.0
     type: string

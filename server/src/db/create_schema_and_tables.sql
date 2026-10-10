@@ -395,5 +395,16 @@ CREATE TABLE `designer_lock` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+-- failed logins, by account (user:<name>) and by address (ip:<address>) : lib/loginThrottle.js
+-- (keep in sync with src/db/create_login_failures_table.sql, the patch for existing installs)
+DROP TABLE IF EXISTS `login_failures`;
+CREATE TABLE `login_failures` (
+  `key` varchar(300) NOT NULL,
+  `failures` int NOT NULL DEFAULT 0,
+  `first_at` datetime NOT NULL,
+  `locked_until` datetime DEFAULT NULL,
+  PRIMARY KEY (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- enable foreign key checks
 SET FOREIGN_KEY_CHECKS=1;

@@ -22,6 +22,7 @@ export default {
   auth: {
     authFailed: "認証に失敗しました",
     invalidCredentials: "認証情報が無効です",
+    tooManyFailures: "ログインの失敗が多すぎます : {minutes} 分後にもう一度お試しください",
     loginDisabled: "認証されていません。このユーザーはログインが有効になっていません。",
     azureFailed: "Azure AD 認証に失敗しました",
     oidcFailed: "OIDC 認証に失敗しました",

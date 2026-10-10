@@ -22,6 +22,7 @@ export default {
   auth: {
     authFailed: "身份验证失败",
     invalidCredentials: "凭据无效",
+    tooManyFailures: "登录失败次数过多 : 请在 {minutes} 分钟后重试",
     loginDisabled: "未通过身份验证，此用户未启用登录。",
     azureFailed: "Azure AD 身份验证失败",
     oidcFailed: "OIDC 身份验证失败",
