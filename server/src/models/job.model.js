@@ -209,6 +209,38 @@ function stripUndeclaredCredentials(credentials, formObj = null) {
 }
 
 /**
+ * The raw form data a job keeps, for a relaunch : the user's input only, filtered by the
+ * form's fields (filterRawFormData). A wizard has no fields of its own ; its raw form data
+ * is its step drafts (`{ __wizard__: true, drafts, skipped }`), each draft filtered by its
+ * step's subform, so that a relaunch can check the steps again.
+ *
+ * Args:
+ *   formObj (object): the form, its subforms inlined.
+ *   rawFormData (object): the raw form data the launch sent.
+ *
+ * Returns:
+ *   object: the filtered raw form data.
+ */
+function filterRawFormDataOf(formObj, rawFormData) {
+  const subforms = formObj?.subforms || [];
+  const steps = Array.isArray(formObj?.wizard) ? formObj.wizard.filter((step) => step && !step.summary) : [];
+  if (!steps.length) return filterRawFormData(formObj?.fields || [], rawFormData, subforms);
+  if (rawFormData?.__wizard__ !== true || !rawFormData.drafts || typeof rawFormData.drafts !== "object") return {};
+  const drafts = {};
+  const skipped = {};
+  for (const step of steps) {
+    const name = step.name || step.subform;
+    const sub = subforms.find((s) => s?.name === step.subform);
+    const draft = rawFormData.drafts[name];
+    if (sub && draft && typeof draft === "object" && !Array.isArray(draft)) {
+      drafts[name] = filterRawFormData(sub.fields || [], draft, subforms);
+    }
+    if (rawFormData.skipped?.[name] === true) skipped[name] = true;
+  }
+  return { __wizard__: true, drafts, skipped };
+}
+
+/**
  * Put the launching user into the extravars as `ansibleforms_user`, trimmed to whatever the
  * instance and the form asked for (see Helpers.userForExtravars).
  *
@@ -1021,7 +1053,7 @@ Job.launch = async function ({
       
       // Only the user's input : no constants, no passwords (list rows included), no
       // system fields - the same filter the browser applies before it sends them
-      Object.assign(filteredRawFormData, filterRawFormData(formObj.fields || [], rawFormData, formObj.subforms || []));
+      Object.assign(filteredRawFormData, filterRawFormDataOf(formObj, rawFormData));
 
       // Store in database
       const rawFormDataJson = JSON.stringify(filteredRawFormData);
@@ -2116,4 +2148,4 @@ for (const fn of CHANGES_A_JOB) {
 // Ansible stuff
 export default Job;
 // named export for the tests
-export { Multistep, stripReservedExtravars, stripUndeclaredCredentials, setUserExtravars, guardLaunch, launchValidationMode, pushForminfoToExtravars };
+export { Multistep, stripReservedExtravars, stripUndeclaredCredentials, filterRawFormDataOf, setUserExtravars, guardLaunch, launchValidationMode, pushForminfoToExtravars };
