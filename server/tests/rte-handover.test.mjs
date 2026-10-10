@@ -1,6 +1,6 @@
 // The app's side of an RTE job (server/src/runners/rte.js) : the hand-over, and what the job
 // says when it does not go as planned. The RTE's answers and the jobs row are faked.
-import { test, describe, beforeEach, vi } from "vitest";
+import { test, describe, beforeEach, vi, expect } from "vitest";
 import assert from "node:assert/strict";
 
 process.env.LOG_PATH = process.env.LOG_PATH || "/tmp/ansibleforms-test-logs";
