@@ -194,7 +194,8 @@
   border: 0 !important;
 }
 .af-pill-blue {
-  background-color: #0d6efd !important;
+  /* a pure blue : Bootstrap's #0d6efd leans to violet */
+  background-color: #0078d4 !important;
 }
 .af-pill-amber {
   background-color: #b37700 !important;
