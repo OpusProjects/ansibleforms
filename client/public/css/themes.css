@@ -135,6 +135,9 @@
     --af-ansible-output-text-success: #146c43; /* 6.3:1 */
     --af-ansible-output-text-warning: #a35200; /* 5.4:1 */
     --af-ansible-output-text-info: #0a58ca; /* 6.4:1 */
+    /* a warning's purple (ansible's), as text and as a tag's background */
+    --af-ansible-output-text-purple: #6f2dbd; /* 7.6:1 */
+    --af-ansible-output-purple: #6f42c1;
     --af-ansible-output-bg-timestamp: var(--bs-light);
     --af-ansible-output-timestamp: var(--bs-info);
 
@@ -251,6 +254,8 @@
     --af-ansible-output-text-success: #75b798; /* 4.9:1 */
     --af-ansible-output-text-warning: #ffb366; /* 6.5:1 */
     --af-ansible-output-text-info: #6ea8fe; /* 4.9:1 */
+    --af-ansible-output-text-purple: #c29ffa; /* 6.0:1 */
+    --af-ansible-output-purple: #6f42c1;
     --af-ansible-output-bg-timestamp: var(--bs-dark);
     --af-ansible-output-timestamp: var(--bs-info);
 
@@ -366,6 +371,9 @@
     --af-ansible-output-text-success: #146c43; /* 6.3:1 */
     --af-ansible-output-text-warning: #a35200; /* 5.4:1 */
     --af-ansible-output-text-info: #0a58ca; /* 6.4:1 */
+    /* a warning's purple (ansible's), as text and as a tag's background */
+    --af-ansible-output-text-purple: #6f2dbd; /* 7.6:1 */
+    --af-ansible-output-purple: #6f42c1;
     --af-ansible-output-bg-timestamp: var(--bs-info-bg-subtle);
     --af-ansible-output-timestamp: var(--bs-info);
 

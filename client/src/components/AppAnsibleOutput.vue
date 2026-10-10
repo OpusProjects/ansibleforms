@@ -412,6 +412,10 @@ const jobLogHtml = computed(() => ansiToHtml(props.jobLog));
         background-color: var(--af-ansible-output-danger) !important;
         color: var(--bs-light) !important;
       }
+      &.is-purple {
+        background-color: var(--af-ansible-output-purple) !important;
+        color: var(--bs-light) !important;
+      }
       &.is-success {
         background-color: var(--af-ansible-output-success) !important;
         color: var(--bs-light) !important;
@@ -433,9 +437,19 @@ const jobLogHtml = computed(() => ansiToHtml(props.jobLog));
     color: var(--af-ansible-output-text-warning) !important;
   }
 
-  /* a skipping line : blue, as ansible prints it */
+  /* a skipping, included or ignoring line : blue, as ansible prints it (its cyan) */
   .has-text-info {
     color: var(--af-ansible-output-text-info) !important;
+  }
+
+  /* a warning or deprecation : ansible's purple */
+  .has-text-purple {
+    color: var(--af-ansible-output-text-purple) !important;
+  }
+
+  /* a retry : ansible's grey */
+  .has-text-muted {
+    color: var(--bs-secondary-color) !important;
   }
 }
 .af-ansible-lines.ansible {

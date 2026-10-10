@@ -33,11 +33,13 @@ test("classic ansible output coloring is unchanged", () => {
   assert.match(out, /has-text-success'>ok: \[host1\]/);
   assert.match(out, /has-text-warning'>changed: \[host2\]/);
   assert.match(out, /has-text-info'>skipping: \[host3\]/);
-  assert.match(out, /has-text-warning'>\[WARNING\]: something odd/);
+  assert.match(out, /has-text-purple'>\[WARNING\]: something odd/);
   assert.match(out, /has-text-danger'>\[ERROR\]: something bad/);
   assert.match(out, /has-text-danger'>fatal: \[host3\]/);
   assert.match(out, /tag is-success'>ok=2/);
-  assert.match(out, /tag is-warning'>failed=1/);
+  assert.match(out, /tag is-danger'>failed=1/);
+  // the host red : it failed
+  assert.match(out, /has-text-danger'>localhost<\/span> :/);
 });
 
 test("workflow node status lines are colored by status", () => {

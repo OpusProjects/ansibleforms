@@ -231,10 +231,11 @@ Helpers.formatOutput = (records,asText)=>{
       escapedLine = Helpers.htmlEscape(line)
       if(el.output_type=="stderr"){ // if it was in the error stream
         // mark errors
-        if(line.match(/^\[WARNING\].*/g) || previousformat=="warning"){ // warnings
-          previousformat="warning"
+        // warnings (and deprecations) in ansible's purple, not the amber of a changed line
+        if(line.match(/^\[(DEPRECATION )?WARNING\].*/g) || previousformat=="purple"){ // warnings
+          previousformat="purple"
           matchfound=true
-          line = "<span class='has-text-warning'>"+escapedLine+"</span>"
+          line = "<span class='has-text-purple'>"+escapedLine+"</span>"
         }else{  // errors
           previousformat="danger"
           matchfound=true
@@ -257,10 +258,10 @@ Helpers.formatOutput = (records,asText)=>{
           // and the tokens live in localStorage. The status match above deliberately
           // still tests the unescaped `line`; only the concatenation was wrong.
           line = `<span class='has-text-weight-bold${statusclass}'>`+escapedLine+"</span>"
-        }else if(line.match(/^\[WARNING\].*/g)){ // warnings
-          previousformat="warning"
+        }else if(line.match(/^\[(DEPRECATION )?WARNING\].*/g)){ // warnings, in ansible's purple
+          previousformat="purple"
           matchfound=true
-          line = "<span class='has-text-warning'>"+escapedLine+"</span>"
+          line = "<span class='has-text-purple'>"+escapedLine+"</span>"
         }else if(line.match(/^\[ERROR\].*/g)){ // errors
           previousformat="danger"
           matchfound=true
@@ -284,6 +285,18 @@ Helpers.formatOutput = (records,asText)=>{
           }else{
             filterOutput=false
           }
+        }else if(line.match(/^(fatal|failed): \[([^\]]*)\].*/g)){ // a host that failed : red, as ansible
+          previousformat="danger"
+          matchfound=true
+          line = "<span class='has-text-danger'>" + escapedLine + "</span>"
+        }else if(line.match(/^FAILED - RETRYING: /)){ // a retry : ansible's grey
+          previousformat=""
+          matchfound=true
+          line = "<span class='has-text-muted'>" + escapedLine + "</span>"
+        }else if(line.match(/^(included: |\.\.\.ignoring)/)){ // an include, an ignored error : ansible's cyan
+          previousformat=""
+          matchfound=true
+          line = "<span class='has-text-info'>" + escapedLine + "</span>"
         }else if(line.match(/^(ok): \[([^\]]*)\].*/g)){ // mark succes lines
           matchfound=true
           previousformat="success"
@@ -307,12 +320,19 @@ Helpers.formatOutput = (records,asText)=>{
         if(escapedLine.match('ok=.*failed.*')){
           matchfound=true
           previousformat=""
-          line=escapedLine.replace(/(ok=[1-9]+[0-9]*)/g, "<span class='tag is-success'>$1</span>")
+          // the counts in ansible's colours : ok and rescued green, changed amber, failed and
+          // unreachable red, skipped cyan, ignored purple ; the host red when it failed or was
+          // unreachable, amber when it changed, else green
+          var hostclass = escapedLine.match(/(failed|unreachable)=[1-9]/) ? "has-text-danger"
+            : escapedLine.match(/changed=[1-9]/) ? "has-text-warning" : "has-text-success"
+          line=escapedLine.replace(/^(\s*)(\S+)(\s*:)/, `$1<span class='${hostclass}'>$2</span>$3`)
+                      .replace(/(ok=[1-9]+[0-9]*)/g, "<span class='tag is-success'>$1</span>")
                       .replace(/(changed=[1-9]+[0-9]*)/g, "<span class='tag is-warning'>$1</span>")
-                      .replace(/(failed=[1-9]+[0-9]*)/g, "<span class='tag is-warning'>$1</span>")
-                      .replace(/(unreachable=[1-9]+[0-9]*)/g, "<span class='tag is-warning'>$1</span>")
+                      .replace(/(failed=[1-9]+[0-9]*)/g, "<span class='tag is-danger'>$1</span>")
+                      .replace(/(unreachable=[1-9]+[0-9]*)/g, "<span class='tag is-danger'>$1</span>")
                       .replace(/(skipped=[1-9]+[0-9]*)/g, "<span class='tag is-info'>$1</span>")
-                      .replace(/(rescued=[1-9]+[0-9]*)/g, "<span class='tag is-warning'>$1</span>")
+                      .replace(/(rescued=[1-9]+[0-9]*)/g, "<span class='tag is-success'>$1</span>")
+                      .replace(/(ignored=[1-9]+[0-9]*)/g, "<span class='tag is-purple'>$1</span>")
         }
         if(filterOutput){
           line=line.replace(/class='/g,"class='low ")

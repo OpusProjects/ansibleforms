@@ -102,14 +102,14 @@ describe('formatOutput XSS prevention', () => {
   it('escapes XSS in warning lines (stdout)', () => {
     const result = Helpers.formatOutput(makeRecord('[WARNING] <script>alert(1)</script>'));
     expect(result).not.toContain('<script>');
-    expect(result).toContain("class='has-text-warning'");
+    expect(result).toContain("class='has-text-purple'");
     expect(result).toContain('&lt;script&gt;');
   });
 
   it('escapes XSS in warning lines (stderr)', () => {
     const result = Helpers.formatOutput(makeRecord('[WARNING] <img onerror=alert(1)>', 'stderr'));
     expect(result).not.toContain('<img');
-    expect(result).toContain("class='has-text-warning'");
+    expect(result).toContain("class='has-text-purple'");
   });
 
   it('escapes XSS in error lines', () => {
@@ -208,14 +208,20 @@ describe('formatOutput preserves correct HTML structure', () => {
     expect(result).toContain('</span>');
   });
 
-  it('wraps stderr warnings in has-text-warning spans', () => {
+  it('wraps stderr warnings in has-text-purple spans', () => {
     const result = Helpers.formatOutput(makeRecord('[WARNING] something', 'stderr'));
-    expect(result).toContain("<span class='has-text-warning'>");
+    expect(result).toContain("<span class='has-text-purple'>");
   });
 
-  it('wraps stdout warnings in has-text-warning spans', () => {
+  it('wraps stdout warnings in has-text-purple spans', () => {
     const result = Helpers.formatOutput(makeRecord('[WARNING] test'));
-    expect(result).toContain("<span class='has-text-warning'>");
+    expect(result).toContain("<span class='has-text-purple'>");
+  });
+
+  it('escapes XSS in a recap line host', () => {
+    const result = Helpers.formatOutput(makeRecord('<img/src=x/onerror=alert(1)> : ok=1 changed=0 unreachable=0 failed=0'));
+    expect(result).not.toContain('<img');
+    expect(result).toContain("class='has-text-success'");
   });
 
   it('wraps stdout errors in has-text-danger spans', () => {
