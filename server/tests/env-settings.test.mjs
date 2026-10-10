@@ -121,6 +121,20 @@ describe("editing environment variables", () => {
     assert.equal(Env.validate("JOB_RETENTION_DAYS", "0", { type: "number" }), null);
   });
 
+  test("LAUNCH_VALIDATION is enforce unless off or log is set : a typo does not switch it off", () => {
+    const saved = process.env.LAUNCH_VALIDATION;
+    try {
+      for (const [value, expected] of [["off", "off"], ["LOG", "log"], ["enforce", "enforce"], ["0", "enforce"], ["of", "enforce"]]) {
+        Env.applyLive("LAUNCH_VALIDATION", value);
+        assert.equal(appConfig.launchValidation, expected, `'${value}'`);
+      }
+    } finally {
+      if (saved === undefined) delete process.env.LAUNCH_VALIDATION;
+      else process.env.LAUNCH_VALIDATION = saved;
+      delete appConfig.launchValidation;
+    }
+  });
+
   test("writing keeps the previous file as .env.bak, and the file is not world readable", async () => {
     await Env.writeManaged(new Map([["JOB_RETENTION_DAYS", "10"]]));
     await Env.writeManaged(new Map([["JOB_RETENTION_DAYS", "20"]]));
