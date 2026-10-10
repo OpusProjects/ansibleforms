@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed, nextTick } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed, nextTick, watch } from 'vue';
 import Form from '@/lib/Form';
 import Lock from '@/lib/Lock';
 import { useAppStore } from '@/stores/app';
@@ -2507,10 +2507,18 @@ function resolveSubforms(form) {
   return { subforms, missing };
 }
 
-function previewForm() {
-  if (!currentFormName.value || !currentForm.value) return;
+/**
+ * Hands the form being edited to the form page for a preview, unsaved edits included : its
+ * YAML, the subforms it uses and the constants, in the session (the form page reads them once).
+ *
+ * Returns:
+ *   string|null: the preview's address, or null when there is nothing to preview (a toast says
+ *   why).
+ */
+function preparePreview() {
+  if (!currentFormName.value || !currentForm.value) return null;
   const yaml = forms.value[currentForm.value];
-  if (!yaml) return;
+  if (!yaml) return null;
   let parsed;
   try {
     parsed = YAML.parse(yaml);
@@ -2520,7 +2528,7 @@ function previewForm() {
   // a comment-only / '---' buffer parses to null : there is nothing to preview
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     toast.error(t('designer.badYamlUpdate'));
-    return;
+    return null;
   }
   const { subforms, missing } = resolveSubforms(parsed);
   if (missing.length > 0) {
@@ -2531,8 +2539,52 @@ function previewForm() {
     JSON.stringify({ form: yaml, subforms, constants: constantsObj.value || {} }),
   );
   // the app can be hosted under a subpath (BASE_URL), like the router does
-  window.open(`${BaseUrl}/form?form=${encodeURIComponent(currentFormName.value)}&preview=1`, '_blank');
+  return `${BaseUrl}/form?form=${encodeURIComponent(currentFormName.value)}&preview=1`;
 }
+
+/**
+ * Opens the preview in a new window (beside the designer, on another screen).
+ */
+function previewForm() {
+  const url = preparePreview();
+  if (url) window.open(url, '_blank');
+}
+
+// ─── the card's tabs : the item's YAML, and a form's preview ──────────────────
+// which tab shows : 'yaml' (the editor and its toolbar), or 'preview' (the form, rendered)
+const editorView = ref('yaml');
+// the preview's address, and its key : a new key reloads it with the YAML as it is now
+const previewUrl = ref('');
+const previewKey = ref(0);
+
+/**
+ * Renders the form being edited in the Preview tab, as it is now (unsaved edits included).
+ */
+function refreshPreview() {
+  const url = preparePreview();
+  if (!url) return;
+  previewUrl.value = `${url}&embed=1`;
+  previewKey.value++;
+}
+
+/**
+ * Shows a tab of the card : the preview renders the form afresh each time it opens.
+ *
+ * Args:
+ *   view (string): 'yaml' or 'preview'.
+ */
+function showView(view) {
+  editorView.value = view;
+  if (view === 'preview') refreshPreview();
+}
+
+// the preview is a form's : another view, or no form, goes back to the YAML ; another form
+// is previewed in its place
+watch(currentTab, () => (editorView.value = 'yaml'));
+watch(currentForm, (form) => {
+  if (!form) editorView.value = 'yaml';
+  else if (editorView.value === 'preview') refreshPreview();
+});
 
 function openFieldEditor() {
   const src = fieldEditorSource.value;
@@ -6265,6 +6317,30 @@ onBeforeUnmount(() => {
       <!-- titled after the open view, like the jobs and profile pages ; until the designer is
            started (nothing can be opened yet) after the lock it needs -->
       <AppSettings v-if="authenticated" :title="pageTitle.title" :description="tabDescription" :icon="pageTitle.icon">
+        <!-- the item's views, on top of its card, once the designer runs : its YAML, and a form's
+             preview -->
+        <template v-if="lock && !lock.free && loaded" #tabs>
+          <ul class="nav nav-tabs mb-0">
+            <li class="nav-item">
+              <a class="nav-link" :class="{ active: editorView === 'yaml' }" href="#" @click.prevent="showView('yaml')">
+                <FaIcon icon="code" class="me-1" />
+                YAML
+              </a>
+            </li>
+            <!-- a form's preview : the form rendered from its YAML as it is now -->
+            <li v-if="currentTab == 'Forms' && currentForm" class="nav-item">
+              <a
+                class="nav-link"
+                :class="{ active: editorView === 'preview' }"
+                href="#"
+                @click.prevent="showView('preview')"
+              >
+                <FaIcon icon="eye" class="me-1" />
+                {{ t('designer.preview') }}
+              </a>
+            </li>
+          </ul>
+        </template>
         <template #feedback>
           <Transition appear>
             <div v-if="warnings.length > 0" class="ms-2">
@@ -6357,7 +6433,7 @@ onBeforeUnmount(() => {
                 class="d-inline-flex px-2 py-1 fw-semibold text-warning-emphasis bg-warning-subtle border border-warning-subtle rounded-2"
                 >{{ t('settings.settingsPage.configTemplated') }}</small
               >
-              <template v-if="lock && lock.match">
+              <template v-if="lock && lock.match && editorView === 'yaml'">
                 <div class="d-flex gap-1 flex-wrap designer-toolbar">
                   <template v-if="dbOnlyMode && isConfigTab">
                     <BsButton
@@ -6642,14 +6718,6 @@ onBeforeUnmount(() => {
                       :disabled="busyOrTemplated || !currentFormHasFields"
                       :title="t('designer.fieldProperties')"
                     />
-                    <BsButton
-                      :colorClass="busy || !currentForm ? 'secondary' : 'primary'"
-                      icon="eye"
-                      :isIconButton="true"
-                      @click="previewForm"
-                      :disabled="busy || !currentForm"
-                      :title="t('designer.previewForm')"
-                    />
                   </template>
                   <BsButton
                     :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
@@ -6741,7 +6809,37 @@ onBeforeUnmount(() => {
                        focus. Keying on currentForm keeps the editor alive while the yaml
                        is broken, and still gives each form its own instance - and its own
                        undo stack - when you switch forms. -->
-                    <div v-if="editorTarget" :key="'formeditor-' + currentForm">
+                    <!-- the Preview tab : the form page in a frame, its own menu and header left out
+                         (embed) ; refreshed with the YAML as it is now, or opened in a new window -->
+                    <div v-if="editorTarget && editorView === 'preview'" class="designer-preview">
+                      <div class="designer-preview-bar">
+                        <span class="text-body-secondary small">
+                          <FaIcon icon="circle-info" class="me-1" />{{ t('designer.previewHint') }}
+                        </span>
+                        <span class="d-flex gap-1">
+                          <BsButton
+                            icon="rotate-right"
+                            :isIconButton="true"
+                            :title="t('designer.previewRefresh')"
+                            @click="refreshPreview"
+                          />
+                          <BsButton
+                            icon="arrow-up-right-from-square"
+                            :isIconButton="true"
+                            :title="t('designer.previewForm')"
+                            @click="previewForm"
+                          />
+                        </span>
+                      </div>
+                      <iframe
+                        v-if="previewUrl"
+                        :key="previewKey"
+                        :src="previewUrl"
+                        class="designer-preview-frame"
+                        :title="t('designer.preview')"
+                      ></iframe>
+                    </div>
+                    <div v-else-if="editorTarget" :key="'formeditor-' + currentForm">
                       <BsInput
                         type="editor"
                         :isFloating="false"
@@ -7342,6 +7440,34 @@ onBeforeUnmount(() => {
 .designer-toolbar > .btn.disabled {
   pointer-events: auto;
   cursor: not-allowed;
+}
+
+/* a form's preview : a bar (what it is, refresh, a new window) over the form page in a frame,
+   the editor's height ; as far down as the editor and the file explorer beside it */
+.designer-preview {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 60vh;
+  border: 1px solid var(--af-field-border);
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+.designer-preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.375rem 0.5rem 0.375rem 0.75rem;
+  border-bottom: 1px solid var(--af-field-border);
+  background: var(--bs-tertiary-bg);
+}
+.designer-preview-frame {
+  flex: 1 1 auto;
+  width: 100%;
+  border: 0;
+  background: var(--bs-body-bg);
 }
 </style>
 <route lang="yaml">
