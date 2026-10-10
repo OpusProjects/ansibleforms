@@ -655,6 +655,19 @@
       an access token that lives n days, for scripts and integrations. It lives this many days at
       most : a longer request is cut to it. Like every token, it ends sooner when its user
       changes their password (or an admin sets it), or when its session logs out.
+  - name: CONTENT_SECURITY_POLICY
+    version: 7.0.0
+    type: number
+    allowed: 0, 1
+    default: 1
+    short: Send the Content-Security-Policy header
+    hint: 0 turns it off ; needs a restart
+    description: |
+      The web app is served with a Content-Security-Policy : scripts from the app itself only, so
+      a script injected into a page does not run, and no other site may frame it. It allows what
+      the app needs : local form expressions (evaluated in the browser), inline styles, images
+      from any url (form and category images), and the code editor's workers. Set 0 only for a
+      setup that cannot work with it - a reverse proxy that injects its own script, for example.
   - name: AUTH_RATE_LIMIT
     version: 7.0.0
     type: number

@@ -90,6 +90,8 @@ var app_config = {
   loginMaxFailures: Math.max(0, parseInt(process.env.LOGIN_MAX_FAILURES ?? 5, 10) || 0),
   loginMaxFailuresPerIp: Math.max(0, parseInt(process.env.LOGIN_MAX_FAILURES_PER_IP ?? 30, 10) || 0),
   loginLockoutMinutes: Math.max(0, parseInt(process.env.LOGIN_LOCKOUT_MINUTES ?? 15, 10) || 0),
+  // the Content-Security-Policy of the web app (lib/csp.js) ; 0 turns it off. At startup.
+  contentSecurityPolicy: (process.env.CONTENT_SECURITY_POLICY ?? 1) != 0,
   // requests a minute from one address on the authentication routes (lib/authRateLimit.js)
   authRateLimit: Math.max(0, parseInt(process.env.AUTH_RATE_LIMIT ?? 120, 10) || 0),
   useYtt: (process.env.USE_YTT ?? 0) == 1,
