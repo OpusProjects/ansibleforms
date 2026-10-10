@@ -33,6 +33,11 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  // the sections' copy button's tooltip (numbered)
+  copyLabel: {
+    type: String,
+    default: 'Copy',
+  },
   // the job's own card's title (numbered) : the playbook, or the AWX job template
   title: {
     type: String,
@@ -194,6 +199,26 @@ function shortDuration(seconds) {
   return s >= 60 ? `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, '0')}s` : `${s}s`;
 }
 
+// a section's lines copied : handed to the page, which copies them as its Copy Output does
+const emit = defineEmits(['copy']);
+
+/**
+ * Hands a section's lines to the page as plain text : no colours, no line numbers.
+ *
+ * Args:
+ *   node (object): the section's header - its first line's index (-1 : the job's own card,
+ *     from its start) and its end.
+ */
+function copySection(node) {
+  const from = node.index < 0 ? run.value.start : node.index + 1;
+  const html = lines.value
+    .slice(from, node.end)
+    .map((l) => l.html)
+    .join('<br>');
+  const text = new DOMParser().parseFromString(html.replace(/<br>/g, '\n'), 'text/html').body.textContent || '';
+  emit('copy', text);
+}
+
 // every foldable head : the sections with lines under them, and the job's own card (-1)
 const foldable = computed(() => {
   const heads = lines.value.flatMap((l, i) => (l.level && l.end > i + 1 ? [i] : []));
@@ -351,12 +376,16 @@ const jobLogHtml = computed(() => ansiToHtml(props.jobLog));
       :key="group.node ? group.node.index : 'lines' + group.lines[0].index"
       :class="{ 'af-node-card': group.node }"
     >
-      <button
+      <!-- a section's header : folds it (click, Enter, Space) ; its copy button copies its lines -->
+      <div
         v-if="group.node"
-        type="button"
         class="af-node-head"
+        role="button"
+        tabindex="0"
         :aria-expanded="!folded.has(group.node.index)"
         @click="toggle(group.node.index)"
+        @keydown.enter.self.prevent="toggle(group.node.index)"
+        @keydown.space.self.prevent="toggle(group.node.index)"
       >
         <FaIcon :icon="folded.has(group.node.index) ? 'chevron-right' : 'chevron-down'" class="af-node-chevron" />
         <FaIcon v-if="group.node.kind == 'summary'" icon="flag-checkered" class="af-node-flag" />
@@ -366,8 +395,17 @@ const jobLogHtml = computed(() => ansiToHtml(props.jobLog));
         <span class="af-node-meta">
           <span v-if="group.node.elapsed"><FaIcon icon="stopwatch" />{{ shortDuration(group.node.elapsed) }}</span>
           <span><FaIcon icon="list-ol" />{{ group.node.count }}</span>
+          <button
+            type="button"
+            class="af-node-copy"
+            :title="copyLabel"
+            :aria-label="copyLabel"
+            @click.stop="copySection(group.node)"
+          >
+            <FaIcon icon="copy" />
+          </button>
         </span>
-      </button>
+      </div>
       <div v-if="group.lines.length" class="ansible af-ansible-lines">
         <div
           v-for="line in group.lines"
@@ -576,6 +614,33 @@ const jobLogHtml = computed(() => ansiToHtml(props.jobLog));
   &:focus-visible {
     outline: 0;
     box-shadow: inset 0 0 0 0.2rem var(--bs-focus-ring-color);
+  }
+}
+.af-node-head {
+  cursor: pointer;
+  user-select: none;
+}
+/* a section's copy : quiet, its colour the meta's, a soft background on hover */
+.af-node-copy {
+  /* closer to the line count than the meta's own gap */
+  margin-left: -0.5rem;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.4rem;
+  border: 0;
+  border-radius: 0.25rem;
+  background: none;
+  color: inherit;
+  svg {
+    margin: 0 !important;
+  }
+  &:hover {
+    background: var(--bs-secondary-bg);
+    color: var(--bs-body-color);
+  }
+  &:focus-visible {
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem var(--bs-focus-ring-color);
   }
 }
 .af-node-chevron {

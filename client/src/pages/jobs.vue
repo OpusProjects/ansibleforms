@@ -1554,6 +1554,8 @@ onMounted(async () => {
                 <div class="col">
                   <AppAnsibleOutput
                     ref="mainOutput"
+                    :copyLabel="t('jobs.copy')"
+                    @copy="(text) => clip(text, true)"
                     :output="filteredJobOutput"
                     :jobLog="job?.job_log"
                     :workflow="job?.awx_workflow"
