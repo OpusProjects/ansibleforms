@@ -939,7 +939,10 @@ function parsedOrNull(raw) {
 // the Add modals can only append to a parsable section (empty is fine) ;
 // bad yaml disables Add so the modal can never wipe hand-edited content
 const canAddCategories = computed(() => parseSeqYaml(categories.value) !== null);
-const canAddRoles = computed(() => parseSeqYaml(roles.value) !== null);
+// the roles decide who is an admin : only an admin changes them (the server refuses a save of a
+// designer without the admin role whose roles differ from the active ones)
+const rolesReadOnly = computed(() => !store.isAdmin);
+const canAddRoles = computed(() => !rolesReadOnly.value && parseSeqYaml(roles.value) !== null);
 const canAddConstants = computed(() => parseConstantsYaml() !== null);
 
 const hasEditableCategories = computed(() => {
@@ -947,6 +950,7 @@ const hasEditableCategories = computed(() => {
   return Array.isArray(v) && v.length > 0;
 });
 const hasEditableRoles = computed(() => {
+  if (rolesReadOnly.value) return false;
   const v = parsedOrNull(roles.value);
   return Array.isArray(v) && v.length > 0;
 });
@@ -6915,6 +6919,7 @@ onBeforeUnmount(() => {
                   <BsInput
                     type="editor"
                     :isFloating="false"
+                    :readonly="rolesReadOnly"
                     v-model="roles"
                     @save="saveForms()"
                     @init="onEditorInit"
