@@ -1308,7 +1308,7 @@ export default {
   },
   designer: {
     title: 'Concepteur',
-    lockTitle: 'Verrouillé',
+    lockTitle: 'Inactif',
     offDescription:
       "Modifiez les catégories, constantes, formulaires et rôles. Démarrez le designer pour verrouiller la configuration pendant l'édition.",
     formsDescription:

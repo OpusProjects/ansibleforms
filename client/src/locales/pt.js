@@ -1302,7 +1302,7 @@ export default {
   },
   designer: {
     title: 'Designer',
-    lockTitle: 'Bloqueado',
+    lockTitle: 'Inativo',
     offDescription:
       'Edite as categorias, constantes, formulários e funções. Inicie o designer para bloquear a configuração enquanto a edita.',
     formsDescription:

@@ -1303,7 +1303,7 @@ export default {
   },
   designer: {
     title: 'Dissenyador',
-    lockTitle: 'Bloquejat',
+    lockTitle: 'Inactiu',
     offDescription:
       "Edita les categories, les constants, els formularis i els rols. Inicia el dissenyador per bloquejar la configuració mentre l'edites.",
     formsDescription:

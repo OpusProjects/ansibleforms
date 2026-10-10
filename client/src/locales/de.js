@@ -1317,7 +1317,7 @@ export default {
   },
   designer: {
     title: 'Designer',
-    lockTitle: 'Gesperrt',
+    lockTitle: 'Inaktiv',
     offDescription:
       'Bearbeiten Sie Kategorien, Konstanten, Formulare und Rollen. Starten Sie den Designer, um die Konfiguration beim Bearbeiten zu sperren.',
     formsDescription:

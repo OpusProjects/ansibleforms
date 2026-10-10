@@ -3403,10 +3403,10 @@ function selectTab(name) {
   currentTab.value = name;
 }
 
-// the page title : the open view's name and icon once the designer is started, the lock
-// before that
+// the page title : the open view's name and icon once the designer is started ; before that,
+// inactive and an open lock - free for whoever starts it
 const pageTitle = computed(() => {
-  if (!lock.value || lock.value.free) return { title: t('designer.lockTitle'), icon: 'lock' };
+  if (!lock.value || lock.value.free) return { title: t('designer.lockTitle'), icon: 'unlock' };
   const tab = tabs.find((x) => x.name === currentTab.value);
   return tab ? { title: tab.label(), icon: tab.icon } : { title: t('designer.title'), icon: 'pen-to-square' };
 });

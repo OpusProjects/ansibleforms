@@ -1295,7 +1295,7 @@ export default {
   },
   designer: {
     title: 'Designer',
-    lockTitle: 'Bloccato',
+    lockTitle: 'Inattivo',
     offDescription:
       'Modifica categorie, costanti, form e ruoli. Avvia il designer per bloccare la configurazione mentre la modifichi.',
     formsDescription:

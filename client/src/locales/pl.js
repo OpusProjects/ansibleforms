@@ -1294,7 +1294,7 @@ export default {
   },
   designer: {
     title: 'Projektant',
-    lockTitle: 'Zablokowany',
+    lockTitle: 'Nieaktywny',
     offDescription:
       'Edytuj kategorie, stałe, formularze i role. Uruchom projektanta, aby zablokować konfigurację na czas edycji.',
     formsDescription:
