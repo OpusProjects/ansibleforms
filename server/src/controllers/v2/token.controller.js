@@ -6,6 +6,7 @@ import logger from "../../lib/logger.js";
 import Token from "../../models/token.model.js";
 import User from "../../models/user.model.js";
 import i18n from '../../lib/i18n.js';
+import { isRevoked } from '../../lib/tokenRevocation.js';
 
 const refresh = async function(req, res) {
     try {
@@ -39,6 +40,13 @@ const refresh = async function(req, res) {
         
         const username = jwtPayload.user.username;
         const username_type = jwtPayload.user.type;
+
+        // its session logged out, or its user changed the password since : no new tokens
+        if (await isRevoked(jwtPayload)) {
+            logger.warning(`Refresh refused for ${username} : the session was ended`);
+            await Token.delete(username, username_type, refreshtoken).catch(() => {});
+            return res.status(401).json(RestResult.error(i18n.t(req, 'errors.invalidRefreshToken')));
+        }
         
         await Token.check(username, username_type, refreshtoken);
         
@@ -65,8 +73,10 @@ const refresh = async function(req, res) {
             return res.status(401).json(RestResult.error(i18n.t(req, 'errors.refreshTokenUnknown')));
         }
 
-        const token = jwt.sign({ user: body, access:true }, authConfig.secret, { expiresIn: authConfig.jwtExpiration, issuer: authConfig.jwtIssuer });
-        const newRefreshtoken = jwt.sign({ user: body, refresh:true }, authConfig.secret, { expiresIn: authConfig.jwtRefreshExpiration, issuer: authConfig.jwtIssuer });
+        // the same session : a logout still ends what this refresh hands out
+        const sid = jwtPayload.sid;
+        const token = jwt.sign({ user: body, access:true, sid }, authConfig.secret, { expiresIn: authConfig.jwtExpiration, issuer: authConfig.jwtIssuer });
+        const newRefreshtoken = jwt.sign({ user: body, refresh:true, sid }, authConfig.secret, { expiresIn: authConfig.jwtRefreshExpiration, issuer: authConfig.jwtIssuer });
 
         await Token.store(username, username_type, newRefreshtoken);
         // Single use : the old row stayed valid, so a stolen refresh token kept working

@@ -314,8 +314,11 @@ async function changePassword() {
   saving.value = true;
   try {
     await axios.put(`/api/v2/profile`, password.value, TokenStorage.getAuthentication());
-    toast.success(t('profilePage.changed'));
+    // a new password ends every session of the user, this one too : sign in again with it
+    toast.success(t('profilePage.changedSignIn'));
     password.value = { currentPassword: '', password: '', password2: '' };
+    TokenStorage.clear();
+    router.push({ name: '/login' });
   } catch (err) {
     toast.error(err.response?.data?.message || err.toString());
   } finally {

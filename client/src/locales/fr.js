@@ -138,6 +138,7 @@ export default {
     confirmPassword: 'Confirmez le nouveau mot de passe',
     mismatch: 'Les nouveaux mots de passe ne correspondent pas.',
     changed: 'Votre mot de passe est changé.',
+    changedSignIn: 'Votre mot de passe est changé : reconnectez-vous avec le nouveau',
     change: 'Changer le mot de passe',
     elsewhere: 'Vous vous connectez avec {type} : votre mot de passe y est géré et ne peut pas être changé ici.',
     allowed: 'Autorisé',

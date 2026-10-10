@@ -406,5 +406,15 @@ CREATE TABLE `login_failures` (
   PRIMARY KEY (`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- revoked tokens : logouts and password changes : lib/tokenRevocation.js
+-- (keep in sync with src/db/create_token_revocations_table.sql)
+DROP TABLE IF EXISTS `token_revocations`;
+CREATE TABLE `token_revocations` (
+  `key` varchar(300) NOT NULL,
+  `revoked_before` bigint DEFAULT NULL,
+  `expires_at` datetime NOT NULL,
+  PRIMARY KEY (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- enable foreign key checks
 SET FOREIGN_KEY_CHECKS=1;

@@ -32,6 +32,7 @@ the removals below, this is what a 6.5 install changes when it moves to 7.
 | only the admin role adds, changes or deletes a runner (a runner receives the credentials of the jobs it runs) ; settings users see and test them | give the admin role to whoever manages runners |
 | only the admin role grants admin : a user with settings access cannot put an account in a group the admin role names, nor change, reset or delete an admin account or such a group ; a designer without the admin role cannot change the roles (a save or a restore whose roles differ is refused) | give the admin role to whoever manages admins and roles |
 | a login with the public default password (`AnsibleForms!123`) must change it first : every other API call answers 403 `password_change_required` until then | sign in once and choose a new password, or set `ADMIN_PASSWORD` before the first start ; scripts that log in with the default password must use another one |
+| tokens end at a logout (that session) and at a password change (every session of the user) ; an api token (`?expiryDays=`) lives `API_TOKEN_MAX_DAYS` (90) at most | after changing a password, sign in again ; scripts with long api tokens get a new one every 90 days at least |
 | optional : several app nodes | `AF_ROLE=app` nodes plus one `AF_ROLE=worker`, sharing the database and the persistent volume - see `examples/scale` |
 
 ## Removed in 7.0.0

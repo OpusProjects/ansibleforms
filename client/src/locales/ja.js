@@ -133,6 +133,7 @@ export default {
     confirmPassword: '新しいパスワードの確認',
     mismatch: '新しいパスワードが一致しません。',
     changed: 'パスワードを変更しました。',
+    changedSignIn: 'パスワードを変更しました : 新しいパスワードでもう一度サインインしてください',
     change: 'パスワードを変更',
     elsewhere: '{type} でサインインしているため、パスワードはそちらで管理されており、ここでは変更できません。',
     allowed: '許可',

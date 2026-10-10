@@ -643,6 +643,31 @@
       (the default). Form definitions and the values being filled in are sent to that
       provider ; passwords, credentials and job output never are. Takes effect at once,
       without a restart. See the Chat assistant page of the documentation.
+  - name: API_TOKEN_MAX_DAYS
+    version: 7.0.0
+    type: number
+    allowed: a positive integer
+    default: 90
+    short: The longest an api token lives, in days
+    hint: A login with ?expiryDays= longer than this is cut to it
+    description: |
+      A role with the `extendedTokenExpiration` option may log in with `?expiryDays=<n>` and get
+      an access token that lives n days, for scripts and integrations. It lives this many days at
+      most : a longer request is cut to it. Like every token, it ends sooner when its user
+      changes their password (or an admin sets it), or when its session logs out.
+  - name: AUTH_RATE_LIMIT
+    version: 7.0.0
+    type: number
+    allowed: 0 or a positive integer
+    default: 120
+    short: Requests a minute from one address on the login and token routes
+    hint: 0 turns it off
+    description: |
+      A ceiling on the authentication endpoints - the login, the logout, the token refresh and the
+      single sign-on callbacks - per client address and per app node : above it they answer 429
+      before any password or token is looked at. Generous, so that a person or a script never
+      reaches it ; LOGIN_MAX_FAILURES is what stops a password from being guessed. Behind a
+      reverse proxy, set TRUST_PROXY so the address is the client's. Applied without a restart.
   - name: LOGIN_MAX_FAILURES
     version: 7.0.0
     type: number

@@ -7,6 +7,25 @@ import i18n from '../../lib/i18n.js';
 import { assertMayTouchAdmin } from '../../lib/adminGrants.js';
 import { unlockAccount } from '../../lib/loginThrottle.js';
 import { DEFAULT_ADMIN_PASSWORD } from '../../../config/app.config.js';
+import authConfig from '../../../config/auth.config.js';
+import Token from '../../models/token.model.js';
+import { revokeUser } from '../../lib/tokenRevocation.js';
+
+/**
+ * Ends every session of a local user : their tokens issued before now, and their refresh tokens.
+ * After a password change or a delete, a stolen token is worth nothing.
+ *
+ * Args:
+ *   username (string): the user.
+ *
+ * Returns:
+ *   Promise<void>: settles once revoked.
+ */
+async function endSessions(username) {
+  if (!username) return;
+  await revokeUser(username, 'local', authConfig.apiTokenMaxDays * 86400);
+  await Token.deleteAllForUser(username).catch(() => {});
+}
 
 // a change only an admin may make (lib/adminGrants.js) : 403, with the reason
 function refused(res, err) {
@@ -96,10 +115,14 @@ const update = async function(req, res) {
           // user is moved into a group that grants admin by an admin only
           await assertMayTouchAdmin(req, { userId: req.params.id, groupIds: req.body.group_id !== undefined ? [req.body.group_id] : [] });
           await User.update(req.body,req.params.id);
-          // a password set by an admin also lifts a lockout (lib/loginThrottle.js)
+          // a password set by an admin also lifts a lockout (lib/loginThrottle.js), and ends
+          // the user's sessions : whoever held a token of theirs is out
           if (req.body.password) {
             const target = await User.findById(req.params.id).catch(() => null);
-            if (target?.username) await unlockAccount(target.username);
+            if (target?.username) {
+              await unlockAccount(target.username);
+              await endSessions(target.username);
+            }
           }
           res.json(RestResult.single(null));
         } catch(err) {
@@ -185,6 +208,8 @@ const changePassword = async function(req, res) {
           }
           delete req.body.currentPassword
           await User.update(req.body,req.user.user.id);
+          // a new password ends every session of the user, this one included : sign in again
+          if (req.body.password) await endSessions(req.user.user.username);
           res.json(RestResult.single(null));
         } catch(err) {
           res.status(500).json(RestResult.error(err.toString()));
@@ -202,7 +227,9 @@ const find = function(req, res) {
 const deleteUser = async function(req, res) {
     try {
       await assertMayTouchAdmin(req, { userId: req.params.id });
+      const gone = await User.findById(req.params.id).catch(() => null);
       await User.delete(req.params.id);
+      if (gone?.username) await endSessions(gone.username);
       res.json(RestResult.single(null));
     } catch(err) {
       if (refused(res, err)) return;

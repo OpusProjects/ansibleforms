@@ -15,6 +15,9 @@ export default {
   jwtExpiration: process.env.ACCESS_TOKEN_EXPIRATION || "30m",
   jwtRefreshExpiration: process.env.ACCESS_TOKEN_REFRESH_EXPIRATION || "24h",
   jwtIssuer: process.env.ACCESS_TOKEN_ISSUER || "ansibleforms",
+  // an api token (a login with ?expiryDays=, for a role with extendedTokenExpiration) lives this
+  // many days at most ; a longer request is cut to it
+  apiTokenMaxDays: Math.max(1, parseInt(process.env.API_TOKEN_MAX_DAYS ?? 90, 10) || 90),
   azureGraphUrl: process.env.AZURE_GRAPH_URI || "https://graph.microsoft.com",
   ldapErrorRegex:".*, data ([^,]*),.*",
   ldapErrors:{
