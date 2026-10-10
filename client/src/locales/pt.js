@@ -703,7 +703,8 @@ export default {
       deleteProvider: 'Eliminar Fornecedor',
       provider: 'Fornecedor',
       tenantId: 'Tenant ID',
-      tenantIdHelp: 'Deixe em branco se pretender usar o endpoint comum',
+      tenantIdHelp:
+        'O id do seu inquilino (um GUID) ou um dos seus domínios : só os seus utilizadores iniciam sessão. Obrigatório',
       clientId: 'Client ID',
       clientSecret: 'Client Secret',
       groupFilter: 'Filtro de Grupos',

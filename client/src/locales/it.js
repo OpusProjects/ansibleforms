@@ -701,7 +701,7 @@ export default {
       deleteProvider: 'Elimina provider',
       provider: 'Provider',
       tenantId: 'Tenant ID',
-      tenantIdHelp: "Lascia vuoto se vuoi usare l'endpoint comune",
+      tenantIdHelp: "L'id del tuo tenant (un GUID) o uno dei suoi domini : accedono solo i suoi utenti. Obbligatorio",
       clientId: 'Client ID',
       clientSecret: 'Client Secret',
       groupFilter: 'Filtro gruppi',

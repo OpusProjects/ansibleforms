@@ -701,7 +701,8 @@ export default {
       deleteProvider: 'Provider verwijderen',
       provider: 'Provider',
       tenantId: 'Tenant ID',
-      tenantIdHelp: 'Laat leeg om het gemeenschappelijke eindpunt te gebruiken',
+      tenantIdHelp:
+        'De id van uw tenant (een GUID) of een van zijn domeinen : alleen zijn gebruikers melden zich aan. Verplicht',
       clientId: 'Client ID',
       clientSecret: 'Client Secret',
       groupFilter: 'Groepfilter',

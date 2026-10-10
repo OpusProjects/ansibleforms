@@ -9,7 +9,8 @@ process.env.DB_PORT ||= "3306";
 process.env.DB_USER ||= "test";
 process.env.DB_PASSWORD ||= "test";
 vi.mock("../src/models/db.model.js", () => ({ default: { do: async () => [] } }));
-const provider = { enable: 1, groupfilter: "^af-" };
+const TENANT = "11111111-2222-3333-4444-555555555555";
+const provider = { enable: 1, groupfilter: "^af-", tenant_id: TENANT };
 vi.mock("../src/models/azureAd.model.js", () => ({ default: { isEnabled: async () => provider, find: async () => provider } }));
 vi.mock("../src/models/user.model.js", () => ({ default: { getRolesAndOptions: async (groups) => ({ roles: groups, options: { allowLogin: true } }) } }));
 vi.mock("../src/models/audit.model.js", () => ({ default: { log: async () => {} } }));
@@ -19,7 +20,7 @@ const { fetchAzureGroups, filterGroups } = await import("../src/lib/azureGraph.j
 const controller = (await import("../src/controllers/v2/login.controller.js")).default;
 const authConfig = (await import("../config/auth.config.js")).default;
 
-const azureToken = jwt.sign({ aud: "graph", iss: "https://sts.windows.net/t/", exp: Math.floor(Date.now() / 1000) + 600, upn: "alice@example.com", oid: "1234" }, "microsoft");
+const azureToken = jwt.sign({ aud: "graph", iss: `https://sts.windows.net/${TENANT}/`, exp: Math.floor(Date.now() / 1000) + 600, upn: "alice@example.com", oid: "1234", tid: TENANT }, "microsoft");
 
 const graph = (pages, status = 200) => vi.fn(async (url, init) => {
   graph.calls.push({ url, auth: init.headers.authorization });
@@ -32,13 +33,17 @@ const req = (token) => ({ body: { token }, headers: {}, ip: "127.0.0.1" });
 beforeEach(() => { graph.calls = []; });
 
 describe("the groups come from Graph, through the server", () => {
-  test("every page, the display names only", async () => {
-    const f = graph([
-      { value: [{ displayName: "af-admins" }, { displayName: null }, { id: "x" }], "@odata.nextLink": "https://graph.microsoft.com/v1.0/me/transitiveMemberOf?$skiptoken=2" },
-      { value: [{ displayName: "everyone" }] },
+  test("every page, the display names, or with ids the object ids and names", async () => {
+    const pages = [
+      { value: [{ id: "g1", displayName: "af-admins" }, { id: "g2", displayName: null }, { displayName: "noid" }], "@odata.nextLink": "https://graph.microsoft.com/v1.0/me/transitiveMemberOf?$skiptoken=2" },
+      { value: [{ id: "g3", displayName: "everyone" }] },
+    ];
+    expect(await fetchAzureGroups("tok", "https://graph.microsoft.com/", { fetchImpl: graph(pages) })).toEqual(["af-admins", "noid", "everyone"]);
+    graph.calls = [];
+    expect(await fetchAzureGroups("tok", "https://graph.microsoft.com/", { fetchImpl: graph(pages), withIds: true })).toEqual([
+      { id: "g1", name: "af-admins" }, { id: "g2", name: "" }, { id: "g3", name: "everyone" },
     ]);
-    expect(await fetchAzureGroups("tok", "https://graph.microsoft.com/", { fetchImpl: f })).toEqual(["af-admins", "everyone"]);
-    expect(graph.calls[0].url).toBe("https://graph.microsoft.com/v1.0/me/transitiveMemberOf?$select=displayName&$top=999");
+    expect(graph.calls[0].url).toBe("https://graph.microsoft.com/v1.0/me/transitiveMemberOf?$select=id,displayName&$top=999");
     expect(graph.calls[1].url).toContain("$skiptoken=2");
     expect(graph.calls.every((c) => c.auth === "Bearer tok")).toBe(true);
   });
@@ -49,20 +54,51 @@ describe("the groups come from Graph, through the server", () => {
     expect(filterGroups(["af-admins"], "(")).toEqual(["af-admins"]);
   });
 
-  test("the login : handoff in, Graph called with the opened access token, filtered groups prefixed, a jwt out", async () => {
-    vi.stubGlobal("fetch", graph([{ value: [{ displayName: "af-admins" }, { displayName: "everyone" }] }]));
+  test("the login : handoff in, Graph called with the opened access token, filtered groups by id and by name, a jwt out", async () => {
+    vi.stubGlobal("fetch", graph([{ value: [{ id: "g1", displayName: "af-admins" }, { id: "g2", displayName: "everyone" }] }]));
     const r = res();
     await controller.azureadoauth2login(req(signHandoff(azureToken, "azuread")), r);
     expect(r.statusCode).toBe(200);
     expect(graph.calls[0].auth).toBe(`Bearer ${azureToken}`);
     const user = jwt.verify(r.body.token, authConfig.secret).user;
-    expect(user).toMatchObject({ username: "alice@example.com", type: "azuread", groups: ["azuread/af-admins"], roles: ["azuread/af-admins"] });
+    expect(user).toMatchObject({ username: "alice@example.com", type: "azuread", groups: ["azuread/g1", "azuread/af-admins"] });
+  });
+
+  test("the openid-client login : the ID token's claims and the Graph access token, sealed", async () => {
+    vi.stubGlobal("fetch", graph([{ value: [{ id: "g1", displayName: "af-admins" }] }]));
+    const claims = { sub: "s", tid: TENANT, iss: `https://login.microsoftonline.com/${TENANT}/v2.0`, preferred_username: "alice@example.com", oid: "1234" };
+    const r = res();
+    await controller.azureadoauth2login(req(signHandoff({ claims, accessToken: "graph-access-token" }, "azuread")), r);
+    expect(r.statusCode).toBe(200);
+    expect(graph.calls[0].auth).toBe("Bearer graph-access-token");
+    expect(jwt.verify(r.body.token, authConfig.secret).user.username).toBe("alice@example.com");
+  });
+
+  test("a login of another tenant is refused", async () => {
+    vi.stubGlobal("fetch", graph([{ value: [] }]));
+    const r = res();
+    await controller.azureadoauth2login(req(signHandoff({ claims: { tid: "99999999-2222-3333-4444-555555555555", upn: "eve@other.com" }, accessToken: "x" }, "azuread")), r);
+    expect(r.statusCode).toBe(401);
+    expect(JSON.stringify(r.body)).toMatch(/another tenant/);
+    expect(graph.calls).toHaveLength(0);
+  });
+
+  test("no tenant configured : refused, never any tenant", async () => {
+    provider.tenant_id = "";
+    try {
+      const r = res();
+      await controller.azureadoauth2login(req(signHandoff(azureToken, "azuread")), r);
+      expect(r.statusCode).toBe(401);
+      expect(JSON.stringify(r.body)).toMatch(/tenant id/);
+    } finally {
+      provider.tenant_id = TENANT;
+    }
   });
 
   test("a handoff without a sealed access token falls back to its groups claim, filtered too", async () => {
     vi.stubGlobal("fetch", graph([]));
     const r = res();
-    await controller.azureadoauth2login(req(signHandoff({ upn: "alice@example.com", oid: "1234", groups: ["af-ops", "everyone"] }, "azuread")), r);
+    await controller.azureadoauth2login(req(signHandoff({ upn: "alice@example.com", oid: "1234", tid: TENANT, groups: ["af-ops", "everyone"] }, "azuread")), r);
     expect(r.statusCode).toBe(200);
     expect(graph.calls).toHaveLength(0);
     expect(jwt.verify(r.body.token, authConfig.secret).user.groups).toEqual(["azuread/af-ops"]);
@@ -84,5 +120,24 @@ describe("the groups come from Graph, through the server", () => {
       expect(r.statusCode).toBe(401);
     }
     expect(graph.calls).toHaveLength(0);
+  });
+});
+
+describe("the Entra ID strategy", () => {
+  test("one tenant only : common, organizations, consumers or none are refused", async () => {
+    const { isSingleTenant } = await import("../src/auth/auth_azuread.js");
+    expect(isSingleTenant(TENANT)).toBe(true);
+    expect(isSingleTenant("contoso.onmicrosoft.com")).toBe(true);
+    for (const t of ["", null, "common", "Organizations", "consumers"]) expect(isSingleTenant(t)).toBe(false);
+  });
+
+  test("the token's tenant must be the configured one", async () => {
+    const { assertTenant } = await import("../src/auth/auth_azuread.js");
+    expect(() => assertTenant({ tid: TENANT }, TENANT)).not.toThrow();
+    expect(() => assertTenant({ tid: "99999999-2222-3333-4444-555555555555" }, TENANT)).toThrow(/another tenant/);
+    expect(() => assertTenant({}, TENANT)).toThrow(/no tenant/);
+    // a domain as tenant id : the issuer must name the token's tenant
+    expect(() => assertTenant({ tid: TENANT, iss: `https://login.microsoftonline.com/${TENANT}/v2.0` }, "contoso.com")).not.toThrow();
+    expect(() => assertTenant({ tid: TENANT, iss: "https://login.microsoftonline.com/other/v2.0" }, "contoso.com")).toThrow(/does not come from/);
   });
 });

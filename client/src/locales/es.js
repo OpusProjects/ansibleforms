@@ -700,7 +700,8 @@ export default {
       deleteProvider: 'Eliminar Proveedor',
       provider: 'Proveedor',
       tenantId: 'ID de Inquilino',
-      tenantIdHelp: 'Deje en blanco si desea usar el punto de conexión común',
+      tenantIdHelp:
+        'El id de su inquilino (un GUID) o uno de sus dominios : solo sus usuarios inician sesión. Obligatorio',
       clientId: 'ID de Cliente',
       clientSecret: 'Secreto de Cliente',
       groupFilter: 'Filtro de Grupo',

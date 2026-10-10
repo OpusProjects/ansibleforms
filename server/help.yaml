@@ -1477,6 +1477,9 @@
         short: Groups
         description: |
           A list of groups.  They must be in the format of `local/groupname` or `ldap/groupname` or `azuread/groupname`
+
+          An Entra ID group can be named by its object id, `azuread/<object id>` : unique, where
+          two groups can share a display name. Both work ; the object id is the one to prefer.
       - name: users
         type: array
         required: true

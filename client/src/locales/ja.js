@@ -698,7 +698,7 @@ export default {
       deleteProvider: 'プロバイダーを削除',
       provider: 'プロバイダー',
       tenantId: 'テナント ID',
-      tenantIdHelp: '共通エンドポイントを使用する場合は空欄にしてください',
+      tenantIdHelp: 'テナントの ID (GUID) またはそのドメイン : そのユーザーだけがサインインします。必須',
       clientId: 'クライアント ID',
       clientSecret: 'クライアントシークレット',
       groupFilter: 'グループフィルター',

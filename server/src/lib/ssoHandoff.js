@@ -56,13 +56,16 @@ export function openToken(sealed) {
  */
 export function signHandoff(payload, type) {
   let claims = payload;
+  // azuread : { claims : the ID token's, accessToken : for Graph } (auth/auth_azuread.js)
+  const azure = type === 'azuread' && payload && typeof payload === 'object' && payload.claims;
+  if (azure) claims = payload.claims;
   if (typeof claims === 'string') claims = jwt.decode(claims) || {};
   if (!claims || typeof claims !== 'object') claims = {};
   let own = { ...claims };
   for (const k of PROVIDER_TOKEN_CLAIMS) delete own[k];
-  if (type === 'azuread' && typeof payload === 'string') {
+  if (type === 'azuread' && (azure || typeof payload === 'string')) {
     own = Object.fromEntries(AZURE_CLAIMS.filter((k) => own[k] !== undefined).map((k) => [k, own[k]]));
-    own.at = sealToken(payload);
+    own.at = sealToken(azure ? payload.accessToken : payload);
   }
   return jwt.sign(
     { ...own, sso: type },

@@ -707,7 +707,8 @@ export default {
       deleteProvider: 'Anbieter loeschen',
       provider: 'Anbieter',
       tenantId: 'Tenant-ID',
-      tenantIdHelp: 'Leer lassen, wenn der gemeinsame Endpunkt verwendet werden soll',
+      tenantIdHelp:
+        'Die ID Ihres Mandanten (eine GUID) oder eine seiner Domänen : nur seine Benutzer melden sich an. Erforderlich',
       clientId: 'Client-ID',
       clientSecret: 'Client-Secret',
       groupFilter: 'Gruppenfilter',

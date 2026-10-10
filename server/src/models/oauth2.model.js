@@ -3,6 +3,7 @@ import CrudModel from './crud.model.js';
 import Errors from '../lib/errors.js';
 import mysql from './db.model.js';
 import logger from '../lib/logger.js';
+import { isSingleTenant } from '../auth/auth_azuread.js';
 
 class OAuth2 extends CrudModel {
     static modelName = 'oauth2';
@@ -32,8 +33,16 @@ class OAuth2 extends CrudModel {
     // opts carries { fromSeed:true } for the declarative config seed only
     // preProcess writes, so everything that can refuse runs first - including the
     // required-field check and checkExist, which otherwise happen inside super.*
+    // an Entra ID provider names its tenant : without one (or with common, organizations,
+    // consumers) any Microsoft tenant could sign in (auth/auth_azuread.js refuses to start)
+    static assertEntraTenant(provider, tenantId) {
+        if (provider === 'azuread' && !isSingleTenant(tenantId)) {
+            throw new Errors.BadRequestError("An Entra ID provider needs the tenant id of your tenant (a GUID or its domain), not empty, common, organizations or consumers");
+        }
+    }
     static async create(data, opts = {}) {
         CrudModel.assertRequired(this.modelName, data);
+        this.assertEntraTenant(data.provider, data.tenant_id);
         // no Enable in the dialog any more : a new provider is the one its type signs in with when
         // its type has none yet ; another is chosen with Use for sign-in (enable : 1)
         if (data.enable === undefined && !opts.fromSeed) {
@@ -46,6 +55,10 @@ class OAuth2 extends CrudModel {
     static async update(data, id, opts = {}) {
         await CrudModel.checkExist(this.modelName, id);
         if (!opts.fromSeed) await CrudModel.assertNotManaged(this.modelName, id);
+        if ('tenant_id' in data || 'provider' in data) {
+            const current = (await mysql.do('SELECT provider, tenant_id FROM AnsibleForms.`oauth2_providers` WHERE id=?', [id]))?.[0] || {};
+            this.assertEntraTenant(data.provider ?? current.provider, 'tenant_id' in data ? data.tenant_id : current.tenant_id);
+        }
         data = await this.preProcess(data, 'update', opts);
         return super.update(this.modelName, data, id, opts);
     }

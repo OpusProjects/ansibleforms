@@ -13,6 +13,7 @@ import { signHandoff, openToken } from '../../lib/ssoHandoff.js';
 import { fetchAzureGroups, filterGroups } from '../../lib/azureGraph.js';
 import RestResult from "../../models/restResult.model.v2.js";
 import auth_oidc from "../../auth/auth_oidc.js";
+import { isSingleTenant } from "../../auth/auth_azuread.js";
 import i18n from "../../lib/i18n.js";
 import Audit from "../../models/audit.model.js";
 import { claimsDisplayName } from "../../lib/displayName.js";
@@ -370,10 +371,13 @@ async function assertProviderEnabled(model, name) {
  */
 async function azureGroups(payload, bodyGroups, groupfilter) {
   if (!payload.at) return filterGroups(ssoGroups(payload, bodyGroups, 'azuread'), groupfilter);
-  const names = await fetchAzureGroups(openToken(payload.at), authConfig.azureGraphUrl);
-  const kept = filterGroups(names, groupfilter);
-  logger.debug(`azuread login: ${names.length} groups from Graph, ${kept.length} after the group filter`);
-  return kept;
+  const groups = await fetchAzureGroups(openToken(payload.at), authConfig.azureGraphUrl, { withIds: true });
+  // the group filter is on the names, as it always was ; a kept group is known by its object id
+  // (unique, the way to name it in a role) and by its name (as roles named it before 7)
+  const keptNames = new Set(filterGroups(groups.map((g) => g.name), groupfilter));
+  const kept = groups.filter((g) => keptNames.has(g.name));
+  logger.debug(`azuread login: ${groups.length} groups from Graph, ${kept.length} after the group filter`);
+  return [...new Set(kept.flatMap((g) => [g.id, g.name].filter(Boolean)))];
 }
 
 /**
@@ -397,7 +401,9 @@ function ssoGroups(payload, bodyGroups, type) {
 
 const extractAzureUser = async function(payload, groups) {
   return {
-    username: payload.upn,
+    // the upn when the token has it (an access token, or an ID token with the optional claim),
+    // else the preferred username - the same value for a work account
+    username: payload.upn || payload.preferred_username,
     id: payload.oid,
     // the person's name from the token, for the header (see lib/displayName.js)
     ...(claimsDisplayName(payload) && { displayName: claimsDisplayName(payload) }),
@@ -441,6 +447,13 @@ const azureadoauth2login = async function(req, res,_next) {
     logger.debug("Azure AD login")
     const payload = verifyHandoff(req.body.token, 'azuread')
     const provider = await assertProviderEnabled(AzureAd, 'azuread')
+    // the tenant once more, at the login itself : the handoff of a login against another tenant
+    // is refused even if the strategy was reconfigured meanwhile
+    const azureConfig = await AzureAd.find()
+    if (!isSingleTenant(azureConfig.tenant_id)) throw new Error('Entra ID login needs the tenant id of your tenant')
+    if (payload.tid && /^[0-9a-f-]{36}$/i.test(String(azureConfig.tenant_id).trim()) && String(payload.tid).toLowerCase() !== String(azureConfig.tenant_id).trim().toLowerCase()) {
+      throw new Error('This Entra ID login is of another tenant')
+    }
     const user = await extractAzureUser(payload, await azureGroups(payload, req.body.groups, provider.groupfilter))
     user.type = "azuread"
     const ro = await User.getRolesAndOptions(user.groups,user)
