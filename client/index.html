@@ -43,18 +43,8 @@
       right: 0;
     }
   </style>
-  <script>
-    // resolve the public login background images against the base tag, so they
-    // follow the subpath the app is hosted under (relative urls in css custom
-    // properties are unreliable across browsers, so we make them absolute here)
-    (function () {
-      var style = document.documentElement.style;
-      ['light', 'dark', 'color'].forEach(function (theme) {
-        style.setProperty('--af-login-background-' + theme,
-          'url(' + new URL('img/login_background_' + theme + '.jpg', document.baseURI) + ')');
-      });
-    })();
-  </script>
+  <!-- served at runtime, not part of the build ; a file, not inline, for the Content-Security-Policy -->
+  <script src="js/login-backgrounds.js" vite-ignore></script>
   <!-- served at runtime, not part of the build -->
   <link rel="stylesheet" href="css/themes.css" vite-ignore />
 </head>

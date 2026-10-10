@@ -16,6 +16,8 @@ import passport from "passport";
 // App configuration and utilities
 import Middleware from "./lib/middleware.js";
 import { authRateLimit } from "./lib/authRateLimit.js";
+import { cspDirectives } from "./lib/csp.js";
+import authConfig from "../config/auth.config.js";
 import logger from "./lib/logger.js";
 import appConfig from "../config/app.config.js";
 
@@ -87,18 +89,24 @@ const load = async (app) => {
   // handling the request, and with a base url that is still this one (see lib/trustProxy.js)
   applyTrustProxy(app);
 
-  // security headers with helmet
+  // security headers with helmet, the Content-Security-Policy included (lib/csp.js) : scripts
+  // from the app only, no framing by another site. CONTENT_SECURITY_POLICY=0 sends it report
+  // only : the browser says what it would block, and blocks nothing.
   app.use(helmet({
-    contentSecurityPolicy: false, // disable CSP to avoid conflicts with dynamic content
+    contentSecurityPolicy: { useDefaults: false, directives: cspDirectives(), reportOnly: !appConfig.contentSecurityPolicy },
     crossOriginEmbedderPolicy: false // allow embedding if needed
   }));
 
-  // passport
+  // passport : the session only carries an SSO login's state, nonce and PKCE verifier across the
+  // round trip to the provider. Signed with the app's own secret - a constant known to all let
+  // anybody forge it - http only, and not sent along on another site's requests.
   app.use(
     session({
-      secret: "AnsibleForms",
-      resave: false,
-      saveUninitialized: true,
+      name: "af_session",
+      secret: authConfig.secret,
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 15 * 60 * 1000,
     })
   );
   app.use(passport.initialize());
