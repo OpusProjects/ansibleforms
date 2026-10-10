@@ -6,3 +6,4 @@ export default {
   filterJobOutputRegex: '.*',
   awxApiPrefix: '/api/v2',
 };
+export const DEFAULT_ADMIN_PASSWORD = "AnsibleForms!123";

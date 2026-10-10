@@ -6,10 +6,18 @@ import Errors from '../../lib/errors.js';
 import i18n from '../../lib/i18n.js';
 import { assertMayTouchAdmin } from '../../lib/adminGrants.js';
 import { unlockAccount } from '../../lib/loginThrottle.js';
-import { DEFAULT_ADMIN_PASSWORD } from '../../../config/app.config.js';
 import authConfig from '../../../config/auth.config.js';
 import Token from '../../models/token.model.js';
 import { revokeUser } from '../../lib/tokenRevocation.js';
+import { passwordProblem } from '../../lib/passwordPolicy.js';
+
+// a password the policy refuses (lib/passwordPolicy.js) : 400 with the reason
+function refusePassword(req, res, password, username) {
+  const problem = passwordProblem(password, username);
+  if (!problem) return false;
+  res.status(400).json(RestResult.error(i18n.t(req, `resources.${problem.key}`, problem.params || {})));
+  return true;
+}
 
 /**
  * Ends every session of a local user : their tokens issued before now, and their refresh tokens.
@@ -65,6 +73,7 @@ const create = async function(req, res) {
           // granting admin is an admin's : a user created in a group that grants it, or named
           // in the admin role
           await assertMayTouchAdmin(req, { username: req.body.username, groupIds: [req.body.group_id] });
+          if (req.body.password && refusePassword(req, res, req.body.password, req.body.username)) return;
           const user = await User.create(req.body);
           res.json(RestResult.single(user));
         } catch(err) {
@@ -114,6 +123,11 @@ const update = async function(req, res) {
           // an admin account (its password, its groups) is changed by an admin only, and a
           // user is moved into a group that grants admin by an admin only
           await assertMayTouchAdmin(req, { userId: req.params.id, groupIds: req.body.group_id !== undefined ? [req.body.group_id] : [] });
+          // a masked password is no new password (CrudModel.isSecretMask) : only a real one is checked
+          if (req.body.password && !/^\*{8,}$/.test(String(req.body.password))) {
+            const target = await User.findById(req.params.id).catch(() => null);
+            if (refusePassword(req, res, req.body.password, target?.username)) return;
+          }
           await User.update(req.body,req.params.id);
           // a password set by an admin also lifts a lockout (lib/loginThrottle.js), and ends
           // the user's sessions : whoever held a token of theirs is out
@@ -180,10 +194,8 @@ const changePassword = async function(req, res) {
           // of the account in one request. Only enforced when a password is actually being
           // set, so updating an email still works.
           if (req.body.password) {
-            // the public default is no new password
-            if (req.body.password === DEFAULT_ADMIN_PASSWORD) {
-              return res.status(400).json(RestResult.error(i18n.t(req, 'resources.defaultPasswordRefused')));
-            }
+            // the policy : long enough, not the username, not the public default
+            if (refusePassword(req, res, req.body.password, req.user.user.username)) return;
             const current = req.body.currentPassword;
             if (!current) {
               return res.status(400).json(RestResult.error(i18n.t(req, 'resources.currentPasswordRequired')));

@@ -655,6 +655,19 @@
       an access token that lives n days, for scripts and integrations. It lives this many days at
       most : a longer request is cut to it. Like every token, it ends sooner when its user
       changes their password (or an admin sets it), or when its session logs out.
+  - name: PASSWORD_MIN_LENGTH
+    version: 7.0.0
+    type: number
+    allowed: 0 or a positive integer
+    default: 12
+    short: The shortest password a person may set
+    hint: 0 checks no length
+    description: |
+      A local password set through the application - a new user, an admin setting it, a user
+      changing their own - needs at least this many characters, and is neither the username nor
+      the public default password. Length rather than composition rules : a long passphrase is
+      strong and easy to remember. ADMIN_PASSWORD at the first start is not checked. Applied
+      without a restart.
   - name: CONTENT_SECURITY_POLICY
     version: 7.0.0
     type: number

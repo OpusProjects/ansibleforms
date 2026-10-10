@@ -137,6 +137,7 @@ export default {
     mismatch: 'Le nuove password non coincidono.',
     changed: 'La tua password è stata cambiata.',
     changedSignIn: 'La password è stata cambiata : accedi di nuovo con quella nuova',
+    changeFailed: 'Impossibile cambiare la password',
     change: 'Cambia password',
     elsewhere: 'Accedi con {type}, quindi la tua password è gestita lì e non può essere cambiata qui.',
     allowed: 'Consentito',

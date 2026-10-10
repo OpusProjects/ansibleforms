@@ -134,6 +134,7 @@ export default {
     mismatch: 'De nieuwe wachtwoorden komen niet overeen.',
     changed: 'Je wachtwoord is gewijzigd.',
     changedSignIn: 'Uw wachtwoord is gewijzigd : meld u opnieuw aan met het nieuwe',
+    changeFailed: 'Het wachtwoord kon niet worden gewijzigd',
     change: 'Wachtwoord wijzigen',
     elsewhere: 'Je meldt je aan via {type}, dus je wachtwoord wordt daar beheerd en kan hier niet worden gewijzigd.',
     allowed: 'Toegestaan',

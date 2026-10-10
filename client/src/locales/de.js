@@ -137,6 +137,7 @@ export default {
     mismatch: 'Die neuen Passwörter stimmen nicht überein.',
     changed: 'Ihr Passwort wurde geändert.',
     changedSignIn: 'Ihr Passwort wurde geändert : melden Sie sich mit dem neuen erneut an',
+    changeFailed: 'Das Passwort konnte nicht geändert werden',
     change: 'Passwort ändern',
     elsewhere:
       'Sie melden sich über {type} an, daher wird Ihr Passwort dort verwaltet und kann hier nicht geändert werden.',

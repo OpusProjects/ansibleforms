@@ -82,6 +82,8 @@ export default {
     runnerNotFound: "Runner introuvable",
     runnerAdminOnly: "Seul un admin peut ajouter, modifier ou supprimer un runner : un runner recoit les identifiants des jobs qu'il execute",
     defaultPasswordRefused: "Choisissez un autre mot de passe que le mot de passe par défaut, public",
+    passwordTooShort: "Le mot de passe doit compter au moins {min} caractères",
+    passwordIsUsername: "Le mot de passe ne peut pas être le nom d'utilisateur",
     runnerConnectionOk: "La connexion au runner est OK",
     userNotFound: "Utilisateur introuvable",
     currentPasswordRequired: "Votre mot de passe actuel est requis pour en définir un nouveau",

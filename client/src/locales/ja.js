@@ -134,6 +134,7 @@ export default {
     mismatch: '新しいパスワードが一致しません。',
     changed: 'パスワードを変更しました。',
     changedSignIn: 'パスワードを変更しました : 新しいパスワードでもう一度サインインしてください',
+    changeFailed: 'パスワードを変更できませんでした',
     change: 'パスワードを変更',
     elsewhere: '{type} でサインインしているため、パスワードはそちらで管理されており、ここでは変更できません。',
     allowed: '許可',

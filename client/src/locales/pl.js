@@ -134,6 +134,7 @@ export default {
     mismatch: 'Nowe hasła nie są zgodne.',
     changed: 'Hasło zostało zmienione.',
     changedSignIn: 'Hasło zostało zmienione : zaloguj się ponownie nowym hasłem',
+    changeFailed: 'Nie udało się zmienić hasła',
     change: 'Zmień hasło',
     elsewhere: 'Logujesz się przez {type}, więc Twoje hasło jest zarządzane tam i nie można go tutaj zmienić.',
     allowed: 'Dozwolone',
