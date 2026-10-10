@@ -195,7 +195,7 @@ defineExpose({ add: addConstant });
           <tr>
             <th>{{ t('settings.settingsPage.key') }}</th>
             <th>{{ t('settings.settingsPage.value') }}</th>
-            <th class="col-action"></th>
+            <th class="af-row-menu-col"></th>
           </tr>
         </thead>
         <tbody>
@@ -225,18 +225,31 @@ defineExpose({ add: addConstant });
                 t('settings.settingsPage.subkeyCount', entry.row.children.length)
               }}</span>
             </td>
-            <td class="text-center">
-              <div v-if="!locked" class="d-flex justify-content-center gap-1">
-                <button
-                  class="btn btn-sm btn-outline-secondary"
-                  @click="addSubconstant(entry.row)"
-                  :title="t('settings.settingsPage.addSubconstant')"
+            <td class="bs-dt-row-actions">
+              <!-- the row's menu, as every table's : add a subkey, then delete, last -->
+              <div v-if="!locked" class="dropdown">
+                <a
+                  role="button"
+                  class="bs-dt-row-menu px-2"
+                  data-bs-toggle="dropdown"
+                  data-bs-popper-config='{"strategy":"fixed"}'
+                  @click.stop
                 >
-                  <FaIcon icon="plus" />
-                </button>
-                <button class="btn btn-sm btn-outline-danger" @click="removeConstant(entry.row)">
-                  <FaIcon icon="trash" />
-                </button>
+                  <FaIcon icon="ellipsis-vertical" />
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  <li>
+                    <a class="dropdown-item" href="#" @click.prevent="addSubconstant(entry.row)">
+                      <FaIcon icon="plus" class="me-2" />{{ t('settings.settingsPage.addSubconstant') }}
+                    </a>
+                  </li>
+                  <li><hr class="dropdown-divider" /></li>
+                  <li>
+                    <a class="dropdown-item text-danger" href="#" @click.prevent="removeConstant(entry.row)">
+                      <FaIcon icon="trash" class="me-2" />{{ t('common.delete') }}
+                    </a>
+                  </li>
+                </ul>
               </div>
             </td>
           </tr>
@@ -246,6 +259,10 @@ defineExpose({ add: addConstant });
   </div>
 </template>
 <style scoped lang="scss">
+/* the row's menu's column : narrow, its dots placed as every table's (bs-dt-row-actions) */
+.af-row-menu-col {
+  width: 3.5rem;
+}
 /* the table in a frame of the fields' grey, its header bar the tables' */
 .af-visual-table {
   border: 1px solid var(--af-field-border);
