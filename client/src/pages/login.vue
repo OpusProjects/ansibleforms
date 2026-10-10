@@ -154,9 +154,13 @@ async function login() {
 onMounted(() => {
   // TODO => check database before all else
 
-  if (route.query.token) {
+  // the SSO handoff comes in the fragment (#token=), which no server or proxy log sees ; it is
+  // taken out of the address at once, and the server takes it only once
+  const handoff = new URLSearchParams(String(route.hash || '').replace(/^#/, '')).get('token') || route.query.token;
+  if (handoff) {
+    router.replace({ path: route.path, query: { ...route.query, token: undefined }, hash: '' });
     loading.value = true;
-    getSettings(route.query.token);
+    getSettings(handoff);
   } else {
     getSettings();
   }
