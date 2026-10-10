@@ -1644,6 +1644,7 @@ export default {
     playbook: 'playbook',
     template: 'sjabloon',
     awxJob: 'AWX-job',
+    noNodeOutput: '{node} heeft geen uitvoer',
     collapseAll: 'Alles samenvouwen',
     expandAll: 'Alles uitvouwen',
     hosts: 'hosts',

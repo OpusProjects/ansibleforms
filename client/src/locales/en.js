@@ -1627,6 +1627,7 @@ export default {
     playbook: 'playbook',
     template: 'template',
     awxJob: 'AWX job',
+    noNodeOutput: '{node} has no output',
     collapseAll: 'Collapse all',
     expandAll: 'Expand all',
     hosts: 'hosts',

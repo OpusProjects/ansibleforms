@@ -1641,6 +1641,7 @@ export default {
     playbook: 'playbook',
     template: 'plantilla',
     awxJob: 'Trabajo AWX',
+    noNodeOutput: '{node} no tiene salida',
     collapseAll: 'Contraer todo',
     expandAll: 'Expandir todo',
     hosts: 'hosts',

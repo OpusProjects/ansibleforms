@@ -1641,6 +1641,7 @@ export default {
     playbook: 'playbook',
     template: 'szablon',
     awxJob: 'Zadanie AWX',
+    noNodeOutput: '{node} nie ma wyniku',
     collapseAll: 'Zwiń wszystko',
     expandAll: 'Rozwiń wszystko',
     hosts: 'hosty',

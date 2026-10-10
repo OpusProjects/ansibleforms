@@ -246,8 +246,29 @@ function expandAll() {
   folded.value = new Set();
 }
 
-// the job page's toolbar folds and unfolds it all
-defineExpose({ collapseAll, expandAll, allFolded });
+/**
+ * A workflow node's output, as the HTML its section holds : its banner and its lines.
+ *
+ * Args:
+ *   name (string): the node's name.
+ *
+ * Returns:
+ *   string|null: its lines (joined by <br>), or null when it has none.
+ */
+function nodeOutput(name) {
+  const head = lines.value.find(
+    (l) => l.level === 1 && /^WORKFLOW NODE \[/.test(plain(l.html)) && headerOf(l).name === name,
+  );
+  if (!head) return null;
+  const i = lines.value.indexOf(head);
+  return lines.value
+    .slice(i, head.end)
+    .map((l) => l.html)
+    .join('<br>');
+}
+
+// the job page's toolbar folds and unfolds it all ; the workflow's graph shows a node's output
+defineExpose({ collapseAll, expandAll, allFolded, nodeOutput });
 
 // the lines shown : those inside a folded section left out
 const shown = computed(() => {

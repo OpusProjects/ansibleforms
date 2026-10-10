@@ -1648,6 +1648,7 @@ export default {
     playbook: 'playbook',
     template: 'plantilla',
     awxJob: 'Tasca AWX',
+    noNodeOutput: '{node} no té sortida',
     collapseAll: 'Replega-ho tot',
     expandAll: 'Desplega-ho tot',
     hosts: 'hosts',
