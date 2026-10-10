@@ -432,6 +432,11 @@ const jobLogHtml = computed(() => ansiToHtml(props.jobLog));
   .has-text-warning {
     color: var(--af-ansible-output-text-warning) !important;
   }
+
+  /* a skipping line : blue, as ansible prints it */
+  .has-text-info {
+    color: var(--af-ansible-output-text-info) !important;
+  }
 }
 .af-ansible-lines.ansible {
   /* the gutter from the panel's left edge : the numbers and carets in the server log's grey
