@@ -385,6 +385,19 @@ const dataShown = computed(() => {
 // the playbook it ran, when it ran one
 const jobPlaybook = computed(() => job.value?.extravars?.__playbook__ || '');
 
+// the hosts an ansible job ran on : its limit (--limit), else all of its inventories, else the
+// localhost ansible falls back to without one ; null for any other job (AWX decides its own)
+const jobHosts = computed(() => {
+  const j = job.value;
+  if (!j || (j.job_type && j.job_type != 'ansible')) return null;
+  const list = (v) => (Array.isArray(v) ? v.join(', ') : String(v ?? '').trim());
+  const limit = list(j.extravars?.__limit__);
+  if (limit) return { value: limit, note: '' };
+  const inventory = list(j.extravars?.__inventory__);
+  if (inventory) return { value: inventory, note: t('jobs.allHosts') };
+  return { value: 'localhost', note: t('jobs.implicit') };
+});
+
 // a clock for a job still running : its duration counts up every second, till it ends
 const now = ref(Date.now());
 let clock = null;
@@ -1355,7 +1368,15 @@ onMounted(async () => {
                 <AppStatusPill :label="job.job_type || 'ansible'" tone="grey" />
               </div>
               <dl class="af-job-facts">
-                <div class="af-job-fact">
+                <!-- an ansible job : the hosts it ran on (its limit, else its inventories, else the
+                     implicit localhost) ; any other job : its form -->
+                <div v-if="jobHosts" class="af-job-fact">
+                  <dt><FaIcon icon="server" />{{ t('jobs.hosts') }}</dt>
+                  <dd :title="jobHosts.value">
+                    {{ jobHosts.value }}<span v-if="jobHosts.note" class="af-job-fact-note">{{ jobHosts.note }}</span>
+                  </dd>
+                </div>
+                <div v-else class="af-job-fact">
                   <dt><FaIcon icon="pen-to-square" />{{ t('jobs.form') }}</dt>
                   <dd :title="job.form">{{ job.form || '–' }}</dd>
                 </div>
