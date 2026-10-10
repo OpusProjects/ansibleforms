@@ -18,7 +18,7 @@ const forms = [
   { name: 'HelloWorld', description: 'Kicks off the HelloWorld template in AWX', categories: ['Demo', 'AWX'] },
   { name: 'Cleanup jobs', description: 'Removes old ansible job logs', categories: ['Maintenance'] },
 ];
-const pages = [{ title: 'Users', section: 'Settings', link: '/admin/users', icon: 'user' }];
+const pages = [{ title: 'Users', section: 'Settings', link: '/settings/users', icon: 'user' }];
 const index = Search.buildIndex(forms, pages);
 
 describe('Search.search', () => {
@@ -37,7 +37,7 @@ describe('Search.search', () => {
   });
 
   it('finds the pages, and links forms to the form page', () => {
-    expect(Search.search(index, 'users')[0]).toMatchObject({ kind: 'page', to: '/admin/users' });
+    expect(Search.search(index, 'users')[0]).toMatchObject({ kind: 'page', to: '/settings/users' });
     expect(Search.search(index, 'hello')[0].to).toEqual({ path: '/form', query: { form: 'HelloWorld' } });
   });
 
@@ -106,7 +106,7 @@ describe('searchPages', () => {
     const links = searchPages(t, { showJobs: true }).map((p) => p.link);
     expect(links).toContain('/jobs');
     expect(links).toContain('/profile');
-    expect(links).not.toContain('/admin/users');
+    expect(links).not.toContain('/settings/users');
     expect(links).not.toContain('/designer');
   });
 });

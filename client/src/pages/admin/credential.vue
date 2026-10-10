@@ -1,7 +1,7 @@
 <script setup>
 /******************************************************************/
 /*                                                                */
-/*  A credential's page (/admin/credentials/<id>), opened from    */
+/*  A credential's page (/settings/credentials/<id>), opened from    */
 /*  the credentials' list : the steps of its dialog as tabs, the  */
 /*  tab kept in the url -                                         */
 /*    Credential  its name and description                        */
@@ -175,11 +175,11 @@ const shownTab = computed(() => (tabs.value.some((x) => x.key === activeTab.valu
 
 // the title : Credentials › <name>, each step a link
 const crumbs = computed(() => [
-  { title: t('sidebar.credentials'), icon: 'lock', to: '/admin/credentials' },
+  { title: t('sidebar.credentials'), icon: 'lock', to: '/settings/credentials' },
   {
     title: credential.value?.name || credentialId.value,
     icon: 'lock',
-    to: `/admin/credentials/${credentialId.value}`,
+    to: `/settings/credentials/${credentialId.value}`,
   },
 ]);
 
@@ -270,7 +270,7 @@ async function deleteCredential() {
       TokenStorage.getAuthentication(),
     );
     credential.value = null;
-    router.push('/admin/credentials');
+    router.push('/settings/credentials');
   } catch (err) {
     toast.error(err.response?.data?.message || err.response?.data?.error || err.message);
   }

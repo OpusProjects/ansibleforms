@@ -22,16 +22,16 @@ const errorMessageHtml = computed(() => store.errorMessage?.replaceAll('\n', '<b
               <li>Login as local admin</li>
               <li>
                 Double check your environment variables.
-                <router-link class="btn btn-sm btn-secondary ms-2" to="/admin/settings">Settings</router-link>
+                <router-link class="btn btn-sm btn-secondary ms-2" to="/settings/general">Settings</router-link>
               </li>
               <li>
                 Check the logfiles.
-                <router-link class="btn btn-sm btn-secondary ms-2" to="/admin/logs">Logs</router-link>
+                <router-link class="btn btn-sm btn-secondary ms-2" to="/settings/logs">Logs</router-link>
               </li>
               <li>
                 Make sure you have a valid config.yaml file.<br />
                 Or make a repository to host your forms.
-                <router-link class="btn btn-sm btn-success ms-2" to="/admin/repositories"
+                <router-link class="btn btn-sm btn-success ms-2" to="/settings/repositories"
                   >Create repository</router-link
                 >
               </li>

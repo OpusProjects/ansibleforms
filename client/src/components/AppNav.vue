@@ -98,8 +98,8 @@ watch(
 );
 const menuOptions = computed(() => [
   { title: t('nav.jobs'), link: '/jobs', icon: 'history' },
-  // every settings page (all under /admin) keeps Settings active, not its General page alone
-  { title: t('nav.settings'), link: '/admin/settings', also: ['/admin'], icon: 'gear' },
+  // every settings page (all under /settings) keeps Settings active, not its General page alone
+  { title: t('nav.settings'), link: '/settings/general', also: ['/settings'], icon: 'gear' },
   { title: t('nav.designer'), link: '/designer', icon: 'pen-to-square' },
 ]);
 const helpMenuOptions = computed(() => [
@@ -145,7 +145,7 @@ const menu = computed(() => {
   });
 
   if (!store?.profile?.options?.showSettings) {
-    m = m.filter((m) => m.link != '/admin/settings');
+    m = m.filter((m) => m.link != '/settings/general');
   }
   if (!store?.profile?.options?.showDesigner) {
     m = m.filter((m) => m.link != '/designer');

@@ -138,73 +138,88 @@ const routes = [
   { path: '/jobs/stored', name: '/jobs/stored', component: storedJobs, beforeEnter: allowStoredJobs },
   { path: '/jobs/stored/:id', name: '/jobs/stored/:id', component: storedJob, beforeEnter: allowStoredJobs },
   { path: '/jobs/:id', name: '/jobs/:id', component: jobs, beforeEnter: checkJobs },
-  // the server log : a settings page, under /admin as the others
-  { path: '/admin/logs', name: '/admin/logs', component: logs, beforeEnter: checkLogs },
+  // the server log : a settings page, under /settings as the others
+  { path: '/settings/logs', name: '/settings/logs', component: logs, beforeEnter: checkLogs },
   { path: '/schema', name: '/schema', component: schema },
   { path: '/error', name: '/error', component: error },
   { path: '/api-docs', name: '/api-docs', component: apidocs },
   { path: '/:pathMatch(.*)*', name: '/unknown', component: unknown },
 
   // admin routes
-  { path: '/admin/credentials', name: '/admin/credentials', component: credentials, beforeEnter: checkSettings },
-  { path: '/admin/credentials/:id', name: '/admin/credentials/:id', component: credential, beforeEnter: checkSettings },
-  { path: '/admin/sso', name: '/admin/sso', component: sso, beforeEnter: checkSettings },
-  // an SSO provider's page : its Details, Sign-in and Groups tabs
-  { path: '/admin/sso/:id', name: '/admin/sso/:id', component: ssoProvider, beforeEnter: checkSettings },
-  // its address before it was called SSO : old links and bookmarks still arrive
-  { path: '/admin/oauth2', redirect: (to) => ({ path: '/admin/sso', query: to.query }) },
-  { path: '/admin/groups', name: '/admin/groups', component: groups, beforeEnter: checkSettings },
-  // a group's page : its Details and Users tabs
-  { path: '/admin/groups/:id', name: '/admin/groups/:id', component: group, beforeEnter: checkSettings },
-  { path: '/admin/knownHosts', name: '/admin/knownHosts', component: knownHosts, beforeEnter: checkSettings },
-  { path: '/admin/ldap', name: '/admin/ldap', component: ldap, beforeEnter: checkSettings },
-  { path: '/admin/chat', name: '/admin/chat', component: chatSettings, beforeEnter: checkSettings },
-  { path: '/admin/mcp', name: '/admin/mcp', component: mcpSettings, beforeEnter: checkSettings },
-  { path: '/admin/mailSettings', name: '/admin/mailSettings', component: mailSettings, beforeEnter: checkSettings },
+  { path: '/settings/credentials', name: '/settings/credentials', component: credentials, beforeEnter: checkSettings },
   {
-    path: '/admin/mailSettings/:id',
-    name: '/admin/mailSettings/:id',
+    path: '/settings/credentials/:id',
+    name: '/settings/credentials/:id',
+    component: credential,
+    beforeEnter: checkSettings,
+  },
+  { path: '/settings/sso', name: '/settings/sso', component: sso, beforeEnter: checkSettings },
+  // an SSO provider's page : its Details, Sign-in and Groups tabs
+  { path: '/settings/sso/:id', name: '/settings/sso/:id', component: ssoProvider, beforeEnter: checkSettings },
+  { path: '/settings/groups', name: '/settings/groups', component: groups, beforeEnter: checkSettings },
+  // a group's page : its Details and Users tabs
+  { path: '/settings/groups/:id', name: '/settings/groups/:id', component: group, beforeEnter: checkSettings },
+  { path: '/settings/knownHosts', name: '/settings/knownHosts', component: knownHosts, beforeEnter: checkSettings },
+  { path: '/settings/ldap', name: '/settings/ldap', component: ldap, beforeEnter: checkSettings },
+  { path: '/settings/chat', name: '/settings/chat', component: chatSettings, beforeEnter: checkSettings },
+  { path: '/settings/mcp', name: '/settings/mcp', component: mcpSettings, beforeEnter: checkSettings },
+  {
+    path: '/settings/mailSettings',
+    name: '/settings/mailSettings',
+    component: mailSettings,
+    beforeEnter: checkSettings,
+  },
+  {
+    path: '/settings/mailSettings/:id',
+    name: '/settings/mailSettings/:id',
     component: mailServer,
     beforeEnter: checkSettings,
   },
-  { path: '/admin/logo', name: '/admin/logo', component: logo, beforeEnter: checkSettings },
-  { path: '/admin/repositories', name: '/admin/repositories', component: repositories, beforeEnter: checkSettings },
+  { path: '/settings/logo', name: '/settings/logo', component: logo, beforeEnter: checkSettings },
   {
-    path: '/admin/repositories/:name',
-    name: '/admin/repositories/:name',
+    path: '/settings/repositories',
+    name: '/settings/repositories',
+    component: repositories,
+    beforeEnter: checkSettings,
+  },
+  {
+    path: '/settings/repositories/:name',
+    name: '/settings/repositories/:name',
     component: repository,
     beforeEnter: checkSettings,
   },
-  // moved under /jobs (7) : bookmarks to the old addresses still land on the page
-  { path: '/admin/schedules', redirect: '/jobs/schedules' },
-  { path: '/admin/stored-jobs', redirect: '/jobs/stored' },
-  { path: '/admin/settings', name: '/admin/settings', component: settings, beforeEnter: checkSettings },
-  { path: '/admin/roles', name: '/admin/roles', component: roles, beforeEnter: checkSettings },
+  { path: '/settings/general', name: '/settings/general', component: settings, beforeEnter: checkSettings },
+  { path: '/settings/roles', name: '/settings/roles', component: roles, beforeEnter: checkSettings },
   // a role's page : its General, Users and Groups tabs
-  { path: '/admin/roles/:name', name: '/admin/roles/:name', component: role, beforeEnter: checkSettings },
-  { path: '/admin/ssh', name: '/admin/ssh', component: ssh, beforeEnter: checkSettings },
-  { path: '/admin/users', name: '/admin/users', component: users, beforeEnter: checkSettings },
+  { path: '/settings/roles/:name', name: '/settings/roles/:name', component: role, beforeEnter: checkSettings },
+  { path: '/settings/ssh', name: '/settings/ssh', component: ssh, beforeEnter: checkSettings },
+  { path: '/settings/users', name: '/settings/users', component: users, beforeEnter: checkSettings },
   // a user's page : its Details and Groups tabs
-  { path: '/admin/users/:id', name: '/admin/users/:id', component: user, beforeEnter: checkSettings },
-  { path: '/admin/backups', name: '/admin/backups', component: backups, beforeEnter: allowBackupOps },
+  { path: '/settings/users/:id', name: '/settings/users/:id', component: user, beforeEnter: checkSettings },
+  { path: '/settings/backups', name: '/settings/backups', component: backups, beforeEnter: allowBackupOps },
   // GET /api/v2/health is mounted behind checkSettingsMiddleware, so the guard
   // matches the permission the endpoint actually requires. The endpoint keeps the
   // 'health' name (it is the conventional one for a monitor to poll); the PAGE is
   // called Status because it states facts as well as verdicts.
-  { path: '/admin/status', name: '/admin/status', component: status, beforeEnter: checkSettings },
+  { path: '/settings/status', name: '/settings/status', component: status, beforeEnter: checkSettings },
   // /api/v2/secretstore is behind checkSettingsMiddleware, so the guard matches
-  { path: '/admin/secretStores', name: '/admin/secretStores', component: secretStores, beforeEnter: checkSettings },
   {
-    path: '/admin/secretStores/:id',
-    name: '/admin/secretStores/:id',
+    path: '/settings/secretStores',
+    name: '/settings/secretStores',
+    component: secretStores,
+    beforeEnter: checkSettings,
+  },
+  {
+    path: '/settings/secretStores/:id',
+    name: '/settings/secretStores/:id',
     component: secretStore,
     beforeEnter: checkSettings,
   },
   // /api/v2/runner is behind checkSettingsMiddleware, so the guard matches
-  { path: '/admin/runners', name: '/admin/runners', component: runners, beforeEnter: checkSettings },
-  { path: '/admin/runners/:id', name: '/admin/runners/:id', component: runner, beforeEnter: checkSettings },
+  { path: '/settings/runners', name: '/settings/runners', component: runners, beforeEnter: checkSettings },
+  { path: '/settings/runners/:id', name: '/settings/runners/:id', component: runner, beforeEnter: checkSettings },
   // GET /api/v2/audit is mounted behind checkSettingsMiddleware, so the guard matches
-  { path: '/admin/audit', name: '/admin/audit', component: audit, beforeEnter: checkSettings },
+  { path: '/settings/audit', name: '/settings/audit', component: audit, beforeEnter: checkSettings },
 ];
 
 const router = createRouter({

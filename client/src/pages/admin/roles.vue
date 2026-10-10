@@ -38,13 +38,13 @@ useUnsavedGuard(isRolesDirty, () => t('settings.common.unsavedChanges'));
 const readOnly = computed(() => parseError.value || isTemplated.value || !!loadError.value);
 
 /**
- * Opens a role's page (/admin/roles/<name>) : its General, Users and Groups tabs.
+ * Opens a role's page (/settings/roles/<name>) : its General, Users and Groups tabs.
  *
  * Args:
  *   role (object): the role clicked.
  */
 function openRole(role) {
-  router.push(`/admin/roles/${encodeURIComponent(role._sortName || role.name)}`);
+  router.push(`/settings/roles/${encodeURIComponent(role._sortName || role.name)}`);
 }
 
 /**

@@ -1,7 +1,7 @@
 <script setup>
 /******************************************************************/
 /*                                                                */
-/*  A local user's page (/admin/users/<id>), opened from the      */
+/*  A local user's page (/settings/users/<id>), opened from the      */
 /*  users list : its Details tab (username, description, email)  */
 /*  and its Groups tab (the groups it belongs to : Add group, and */
 /*  a row's menu or the checkboxes remove one, never the last),   */
@@ -100,8 +100,8 @@ const { activeTab } = useRouteTab('details', (key) => tabs.value.some((x) => x.k
 
 // the title : Users › <username>, each step a link : Users back to the list, the name to this page
 const crumbs = computed(() => [
-  { title: t('settings.users.labelPlural'), icon: 'user', to: '/admin/users' },
-  { title: user.value?.username || userId.value, icon: 'user', to: `/admin/users/${userId.value}` },
+  { title: t('settings.users.labelPlural'), icon: 'user', to: '/settings/users' },
+  { title: user.value?.username || userId.value, icon: 'user', to: `/settings/users/${userId.value}` },
 ]);
 
 // ─── Details ──────────────────────────────────────────────────────────────────
@@ -214,7 +214,7 @@ async function deleteUser() {
   confirmDelete.value = false;
   try {
     await axios.delete(`/api/v2/user/${encodeURIComponent(userId.value)}`, TokenStorage.getAuthentication());
-    router.push('/admin/users');
+    router.push('/settings/users');
   } catch (err) {
     toast.error(err.response?.data?.message || err.response?.data?.error || err.message);
   }

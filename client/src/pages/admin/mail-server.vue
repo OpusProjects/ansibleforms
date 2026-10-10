@@ -1,7 +1,7 @@
 <script setup>
 /******************************************************************/
 /*                                                                */
-/*  A mail server's page (/admin/mailSettings/<id>), opened from  */
+/*  A mail server's page (/settings/mailSettings/<id>), opened from  */
 /*  the mail servers' list : the steps of its dialog as tabs, and */
 /*  a test mail, the tab kept in the url -                        */
 /*    Server      its name, description, and whether it is the    */
@@ -144,8 +144,8 @@ const { activeTab } = useRouteTab('server', (key) => tabs.value.some((x) => x.ke
 
 // the title : Mail › <name>, each step a link
 const crumbs = computed(() => [
-  { title: t('sidebar.mail'), icon: 'envelope', to: '/admin/mailSettings' },
-  { title: server.value?.name || serverId.value, icon: 'envelope', to: `/admin/mailSettings/${serverId.value}` },
+  { title: t('sidebar.mail'), icon: 'envelope', to: '/settings/mailSettings' },
+  { title: server.value?.name || serverId.value, icon: 'envelope', to: `/settings/mailSettings/${serverId.value}` },
 ]);
 
 // ─── actions ──────────────────────────────────────────────────────────────────
@@ -219,7 +219,7 @@ async function deleteServer() {
   try {
     await axios.delete(`/api/v2/mailserver/${encodeURIComponent(serverId.value)}`, TokenStorage.getAuthentication());
     server.value = null;
-    router.push('/admin/mailSettings');
+    router.push('/settings/mailSettings');
   } catch (err) {
     toast.error(err.response?.data?.message || err.response?.data?.error || err.message);
   }

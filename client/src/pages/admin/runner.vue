@@ -1,7 +1,7 @@
 <script setup>
 /******************************************************************/
 /*                                                                */
-/*  A runner's page (/admin/runners/<id>), opened from the        */
+/*  A runner's page (/settings/runners/<id>), opened from the        */
 /*  runners' list : the steps of its dialog as tabs, the tab kept */
 /*  in the url -                                                  */
 /*    Runner          its name, description, whether it is the    */
@@ -145,8 +145,8 @@ const { activeTab } = useRouteTab('runner', (key) => tabs.value.some((x) => x.ke
 
 // the title : Runners › <name>, each step a link
 const crumbs = computed(() => [
-  { title: t('sidebar.runners'), icon: 'rocket', to: '/admin/runners' },
-  { title: runner.value?.name || runnerId.value, icon: 'rocket', to: `/admin/runners/${runnerId.value}` },
+  { title: t('sidebar.runners'), icon: 'rocket', to: '/settings/runners' },
+  { title: runner.value?.name || runnerId.value, icon: 'rocket', to: `/settings/runners/${runnerId.value}` },
 ]);
 
 // the forms it is the default for : playbook forms (an RTE), template forms (the others)
@@ -241,7 +241,7 @@ async function deleteRunner() {
   try {
     await axios.delete(`/api/v2/runner/${encodeURIComponent(runnerId.value)}`, TokenStorage.getAuthentication());
     runner.value = null;
-    router.push('/admin/runners');
+    router.push('/settings/runners');
   } catch (err) {
     toast.error(err.response?.data?.message || err.response?.data?.error || err.message);
   }
