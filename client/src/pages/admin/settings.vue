@@ -229,15 +229,15 @@ const themeOptions = Theme.themes().map((th) => ({ value: th.value, label: th.ti
 
 const colorPalette = [
   { label: 'Blue', hex: '#008cba' },
-  { label: 'Indigo', hex: '#6610f2' },
-  { label: 'Purple', hex: '#744fc6' },
-  { label: 'Pink', hex: '#d63384' },
-  { label: 'Red', hex: '#dc3545' },
-  { label: 'Orange', hex: '#ff8800' },
-  { label: 'Green', hex: '#198754' },
-  { label: 'Teal', hex: '#20c997' },
-  { label: 'Cyan', hex: '#0190ce' },
+  { label: 'Cyan', hex: '#0369a1' },
   { label: 'Navy', hex: '#1b2a4a' },
+  { label: 'Indigo', hex: '#521ea6' },
+  { label: 'Purple', hex: '#4a2a8f' },
+  { label: 'Pink', hex: '#bb1c5e' },
+  { label: 'Red', hex: '#b92d34' },
+  { label: 'Orange', hex: '#c2570c' },
+  { label: 'Green', hex: '#198754' },
+  { label: 'Teal', hex: '#0f766e' },
   { label: 'Slate', hex: '#475569' },
   { label: 'Brown', hex: '#795548' },
 ];
@@ -253,7 +253,7 @@ const effectiveTheme = computed({
 
 const effectiveThemeColor = computed({
   get() {
-    return item.value.default_theme_color || '#008cba';
+    return Theme.current(item.value.default_theme_color || '#008cba');
   },
   set(val) {
     item.value.default_theme_color = val;
@@ -280,7 +280,7 @@ function resolveTheme(obj) {
 }
 
 function resolveThemeColor(obj) {
-  return obj.default_theme_color || '#008cba';
+  return Theme.current(obj.default_theme_color || '#008cba');
 }
 
 const settingsDirty = computed(() => {

@@ -508,3 +508,54 @@ button {
 .af-shadow {
   box-shadow: 0 0.5rem 1rem rgba(var(--af-shadow), 0.35) !important;
 }
+
+// The color theme's accent : the components whose blue Bootstrap compiled in as a fixed value
+// take the tones of the color picked instead (lib/Theme.js tones() sets them on the page) -
+// the primary button, the pager's current page, a checked box or switch, a focused field and a
+// menu's chosen entry. The status pills keep their own colors : they say a state, not a theme.
+[data-bs-theme='color'] {
+  .btn-primary {
+    --bs-btn-bg: var(--bs-primary);
+    --bs-btn-border-color: var(--bs-primary);
+    --bs-btn-hover-bg: var(--af-accent-hover);
+    --bs-btn-hover-border-color: var(--af-accent-hover);
+    --bs-btn-active-bg: var(--af-accent-hover);
+    --bs-btn-active-border-color: var(--af-accent-hover);
+    --bs-btn-disabled-bg: var(--bs-primary);
+    --bs-btn-disabled-border-color: var(--bs-primary);
+  }
+  .btn-outline-primary {
+    --bs-btn-color: var(--bs-primary);
+    --bs-btn-border-color: var(--bs-primary);
+    --bs-btn-hover-bg: var(--bs-primary);
+    --bs-btn-hover-border-color: var(--bs-primary);
+    --bs-btn-active-bg: var(--af-accent-hover);
+    --bs-btn-active-border-color: var(--af-accent-hover);
+    --bs-btn-disabled-color: var(--bs-primary);
+    --bs-btn-disabled-border-color: var(--bs-primary);
+  }
+  .pagination {
+    --bs-pagination-color: var(--af-accent-text);
+    --bs-pagination-hover-color: var(--af-accent-hover);
+    --bs-pagination-focus-color: var(--af-accent-hover);
+    --bs-pagination-focus-box-shadow: 0 0 0 0.25rem var(--bs-focus-ring-color);
+    --bs-pagination-active-bg: var(--bs-primary);
+    --bs-pagination-active-border-color: var(--bs-primary);
+  }
+  .form-check-input:checked {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+  }
+  .form-check-input:focus,
+  .form-control:focus,
+  .form-select:focus {
+    border-color: rgba(var(--bs-primary-rgb), 0.6);
+    box-shadow: 0 0 0 0.25rem var(--bs-focus-ring-color);
+  }
+  .dropdown-menu {
+    --bs-dropdown-link-active-bg: var(--bs-primary);
+  }
+  .btn:focus-visible {
+    box-shadow: 0 0 0 0.25rem var(--bs-focus-ring-color);
+  }
+}
