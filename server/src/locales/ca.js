@@ -110,6 +110,7 @@ export default {
     chatCheckFailed: "La comprovació del proveïdor del xat ha fallat",
     failedFindLdap: "No s'ha pogut trobar l'LDAP",
     ldapCheckFailed: "La comprovació de l'LDAP ha fallat",
+    storedPasswordOtherServer: "La contrasenya desada només s'utilitza amb el servidor desat : escriviu la contrasenya per comprovar-ne un altre",
     ldapUpdated: "LDAP actualitzat",
     failedUpdateLdap: "No s'ha pogut actualitzar l'LDAP",
     seedManagedSettings: "La configuració la gestiona el config seed i és de només lectura",

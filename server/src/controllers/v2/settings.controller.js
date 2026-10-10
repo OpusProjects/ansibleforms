@@ -61,6 +61,15 @@ const mailcheck = async function(req, res) {
     let settingsConfig = req.body;
     if (settingsConfig.mail_password === '**********') {
       const existingSettings = await Settings.find();
+      // the stored password only goes to the stored server, port and security : a test
+      // against another server would hand it the password
+      const text = (v) => (v === null || v === undefined ? '' : String(v).trim());
+      const flag = (v) => v === true || Number(v) === 1;
+      if (text(settingsConfig.mail_server) !== text(existingSettings.mail_server)
+        || text(settingsConfig.mail_port) !== text(existingSettings.mail_port)
+        || flag(settingsConfig.mail_secure) !== flag(existingSettings.mail_secure)) {
+        return res.status(400).json(RestResult.error(i18n.t(req, 'resources.mailCheckFailed'), i18n.t(req, 'resources.storedPasswordOtherServer')));
+      }
       settingsConfig.mail_password = existingSettings.mail_password;
     }
     // the settings page sends no subject or body : the test mail is in the admin's language

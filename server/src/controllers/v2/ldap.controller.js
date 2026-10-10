@@ -18,16 +18,43 @@ const find = async function(req, res) {
   }
 };
 
+// what decides where a check connects to, and how : the stored bind password is only ever
+// sent there
+const LDAP_TARGET_TEXT = ['server', 'port', 'cert', 'ca_bundle'];
+const LDAP_TARGET_FLAGS = ['enable_tls', 'ignore_certs'];
+
+/**
+ * Whether a check is for the stored LDAP server : every connection field as stored. A port
+ * sent as text or a number, and a flag as true or 1, count as the same value.
+ *
+ * Args:
+ *   sent (object): the configuration of the check.
+ *   stored (object): the stored configuration.
+ *
+ * Returns:
+ *   boolean: true when the check connects where the stored configuration does.
+ */
+function sameLdapTarget(sent, stored) {
+  const text = (v) => (v === null || v === undefined ? '' : String(v).trim());
+  const flag = (v) => v === true || Number(v) === 1;
+  return LDAP_TARGET_TEXT.every((f) => text(sent?.[f]) === text(stored?.[f]))
+    && LDAP_TARGET_FLAGS.every((f) => flag(sent?.[f]) === flag(stored?.[f]));
+}
+
 const check = async function(req, res) {
   if (req.body.constructor === Object && Object.keys(req.body).length === 0) {
     res.status(409).json(RestResultv2.error(i18n.t(req, 'errors.noDataSent')));
     return false;
   }
   try {
-    // If password is masked, fetch the real one from database for testing
+    // If password is masked, fetch the real one from database for testing - but only for the
+    // stored server : a check against another one would hand it the bind password
     let ldapConfig = req.body;
     if (ldapConfig.bind_user_pw === '**********') {
       const existingLdap = await Ldap.find();
+      if (!sameLdapTarget(ldapConfig, existingLdap)) {
+        return res.status(400).json(RestResultv2.error(i18n.t(req, 'resources.ldapCheckFailed'), i18n.t(req, 'resources.storedPasswordOtherServer')));
+      }
       ldapConfig.bind_user_pw = existingLdap.bind_user_pw;
     }
     const result = await Ldap.check(new Ldap(ldapConfig));
