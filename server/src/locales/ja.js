@@ -79,6 +79,8 @@ export default {
     runnerNotFound: "ランナーが見つかりません",
     runnerAdminOnly: "ランナーを追加、変更、削除できるのは admin だけです : ランナーは実行するジョブの認証情報を受け取ります",
     defaultPasswordRefused: "公開されている既定のパスワード以外を選んでください",
+    passwordTooShort: "パスワードは {min} 文字以上必要です",
+    passwordIsUsername: "パスワードにユーザー名は使えません",
     runnerConnectionOk: "ランナーの接続は正常です",
     secretStoreAdded: "シークレットストアを追加しました",
     secretStoreNotFound: "シークレットストアが見つかりません",

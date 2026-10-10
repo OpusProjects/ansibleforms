@@ -82,6 +82,8 @@ export default {
     runnerNotFound: "Runner niet gevonden",
     runnerAdminOnly: "Alleen een admin kan een runner toevoegen, wijzigen of verwijderen : een runner ontvangt de credentials van de jobs die hij uitvoert",
     defaultPasswordRefused: "Kies een ander wachtwoord dan het publieke standaardwachtwoord",
+    passwordTooShort: "Het wachtwoord heeft minstens {min} tekens nodig",
+    passwordIsUsername: "Het wachtwoord mag niet de gebruikersnaam zijn",
     runnerConnectionOk: "Runner verbinding is OK",
     userNotFound: "Gebruiker niet gevonden",
     currentPasswordRequired: "Uw huidige wachtwoord is vereist om een nieuw wachtwoord in te stellen",

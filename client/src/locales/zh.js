@@ -132,6 +132,7 @@ export default {
     mismatch: '两次输入的新密码不一致。',
     changed: '您的密码已修改。',
     changedSignIn: '密码已更改 : 请使用新密码重新登录',
+    changeFailed: '无法更改密码',
     change: '修改密码',
     elsewhere: '您通过 {type} 登录，因此您的密码在那里管理，无法在此修改。',
     allowed: '允许',

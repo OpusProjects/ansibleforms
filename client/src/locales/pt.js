@@ -136,6 +136,7 @@ export default {
     mismatch: 'As novas palavras-passe não coincidem.',
     changed: 'A sua palavra-passe foi alterada.',
     changedSignIn: 'A sua palavra-passe foi alterada : inicie sessão de novo com a nova',
+    changeFailed: 'Não foi possível alterar a palavra-passe',
     change: 'Alterar palavra-passe',
     elsewhere: 'Inicia sessão com {type}, por isso a sua palavra-passe é gerida aí e não pode ser alterada aqui.',
     allowed: 'Permitido',

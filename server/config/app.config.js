@@ -90,6 +90,8 @@ var app_config = {
   loginMaxFailures: Math.max(0, parseInt(process.env.LOGIN_MAX_FAILURES ?? 5, 10) || 0),
   loginMaxFailuresPerIp: Math.max(0, parseInt(process.env.LOGIN_MAX_FAILURES_PER_IP ?? 30, 10) || 0),
   loginLockoutMinutes: Math.max(0, parseInt(process.env.LOGIN_LOCKOUT_MINUTES ?? 15, 10) || 0),
+  // the shortest password a person may set through the API (lib/passwordPolicy.js) ; 0 : no length
+  passwordMinLength: Math.max(0, parseInt(process.env.PASSWORD_MIN_LENGTH ?? 12, 10) || 0),
   // the Content-Security-Policy of the web app (lib/csp.js) ; 0 sends it report only. At startup.
   contentSecurityPolicy: (process.env.CONTENT_SECURITY_POLICY ?? 1) != 0,
   // requests a minute from one address on the authentication routes (lib/authRateLimit.js)

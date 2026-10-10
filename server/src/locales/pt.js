@@ -79,6 +79,8 @@ export default {
     runnerNotFound: "Runner não encontrado",
     runnerAdminOnly: "Só um admin pode adicionar, alterar ou eliminar um runner : um runner recebe as credenciais dos trabalhos que executa",
     defaultPasswordRefused: "Escolha outra palavra-passe que não a predefinida pública",
+    passwordTooShort: "A palavra-passe precisa de pelo menos {min} caracteres",
+    passwordIsUsername: "A palavra-passe não pode ser o nome de utilizador",
     runnerConnectionOk: "A ligação ao runner está OK",
     secretStoreAdded: "Cofre de segredos adicionado",
     secretStoreNotFound: "Cofre de segredos não encontrado",

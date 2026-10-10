@@ -82,6 +82,8 @@ export default {
     runnerNotFound: "Runner non trovato",
     runnerAdminOnly: "Solo un admin può aggiungere, modificare o eliminare un runner : un runner riceve le credenziali dei job che esegue",
     defaultPasswordRefused: "Scegli una password diversa da quella predefinita pubblica",
+    passwordTooShort: "La password deve avere almeno {min} caratteri",
+    passwordIsUsername: "La password non può essere il nome utente",
     runnerConnectionOk: "La connessione al runner è OK",
     userNotFound: "Utente non trovato",
     currentPasswordRequired: "Per impostare una nuova password è necessaria quella attuale",

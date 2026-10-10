@@ -139,6 +139,7 @@ export default {
     mismatch: 'Les nouveaux mots de passe ne correspondent pas.',
     changed: 'Votre mot de passe est changé.',
     changedSignIn: 'Votre mot de passe est changé : reconnectez-vous avec le nouveau',
+    changeFailed: "Le mot de passe n'a pas pu être changé",
     change: 'Changer le mot de passe',
     elsewhere: 'Vous vous connectez avec {type} : votre mot de passe y est géré et ne peut pas être changé ici.',
     allowed: 'Autorisé',

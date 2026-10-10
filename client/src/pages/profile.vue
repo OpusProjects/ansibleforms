@@ -320,7 +320,8 @@ async function changePassword() {
     TokenStorage.clear();
     router.push({ name: '/login' });
   } catch (err) {
-    toast.error(err.response?.data?.message || err.toString());
+    // the server's reason (the password policy, a wrong current password) rather than the status
+    toast.error(Helpers.parseAxiosResponseError(err, t('profilePage.changeFailed')));
   } finally {
     saving.value = false;
   }

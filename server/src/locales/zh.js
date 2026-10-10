@@ -79,6 +79,8 @@ export default {
     runnerNotFound: "未找到运行器",
     runnerAdminOnly: "只有 admin 可以添加、更改或删除运行器 : 运行器会收到它运行的作业的凭据",
     defaultPasswordRefused: "请选择公开默认密码以外的密码",
+    passwordTooShort: "密码至少需要 {min} 个字符",
+    passwordIsUsername: "密码不能是用户名",
     runnerConnectionOk: "运行器连接正常",
     secretStoreAdded: "密钥库已添加",
     secretStoreNotFound: "未找到密钥库",

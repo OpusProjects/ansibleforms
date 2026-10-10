@@ -134,6 +134,7 @@ export default {
     mismatch: 'The new passwords do not match.',
     changed: 'Your password is changed.',
     changedSignIn: 'Your password is changed : sign in again with the new one',
+    changeFailed: 'The password could not be changed',
     change: 'Change password',
     elsewhere: 'You sign in with {type}, so your password is managed there and cannot be changed here.',
     allowed: 'Allowed',
