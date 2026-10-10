@@ -456,7 +456,7 @@ const jobLogHtml = computed(() => ansiToHtml(props.jobLog));
   /* the fields' darker border, as the inputs and a repository's output */
   border: 1px solid var(--af-field-border);
   border-radius: 5px;
-  background-color: var(--af-bg-light-subtle-color);
+  background-color: var(--af-output-bg);
 
   span {
     &.tag {
@@ -522,10 +522,10 @@ const jobLogHtml = computed(() => ansiToHtml(props.jobLog));
   font-size: 0.875rem;
   background: linear-gradient(
     to right,
-    var(--bs-secondary-bg) 4rem,
+    var(--af-output-gutter-bg) 4rem,
     var(--af-field-border) 4rem,
     var(--af-field-border) calc(4rem + 1px),
-    var(--af-bg-light-subtle-color) calc(4rem + 1px)
+    var(--af-output-bg) calc(4rem + 1px)
   );
   .af-ansible-line {
     display: flex;

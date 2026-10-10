@@ -1714,7 +1714,7 @@ onMounted(async () => {
   border: 1px solid var(--af-field-border);
   border-radius: 0.5rem;
   overflow: hidden;
-  background: var(--af-bg-light-subtle-color);
+  background: var(--af-output-bg);
 }
 .af-output-toolbar {
   display: flex;
