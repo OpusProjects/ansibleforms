@@ -27,6 +27,7 @@ import credentialModel from "../models/credential.model.v2.js";
 import Errors from "../lib/errors.js";
 import Helpers from '../lib/common.js';
 import { readSecret, mapPayloadToCredential, parseInlineSecret } from "../secrets/providers/index.js";
+import { playbookEnv } from '../lib/playbookEnv.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -391,7 +392,8 @@ const fnSsh = async function(user,host,cmd,jqe=null){
     // no protection against $(), backticks, ;, &&, ||).
     const command=`ssh ${shellQuote(`${user}@${host}`)} ${shellQuote(cmd)}`
     logger.debug(`invoking ssh : ${command}`)
-    var child = exec(command,{encoding: "UTF-8"});
+    // without AnsibleForms' own variables, as a playbook : ssh reads its own configuration
+    var child = exec(command,{encoding: "UTF-8", env: playbookEnv()});
     var output=[]
     
     // add output eventlistener to the process to save output

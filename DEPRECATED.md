@@ -26,6 +26,7 @@ the removals below, this is what a 6.5 install changes when it moves to 7.
 | HashiCorp Vault through `VAULT_*` | nothing : the first start imports them once as the secret store `vault` |
 | images are on `ghcr.io/ansibleforms` only | pull `ghcr.io/ansibleforms/ansibleforms:7` (and `ansibleforms-rte-full:7` or `ansibleforms-rte-core:7`) |
 | launch validation is on : `LAUNCH_VALIDATION` defaults to `enforce` (6.5 : `off`). Every launch is checked against the form's rules and runs the extravars and credentials the server builds ; a REST launch must send `rawFormData` (the raw field values, as the browser does) | REST callers that send only `extravars` : add `rawFormData`. To see what would be refused first, set `LAUNCH_VALIDATION=log` and read the warnings ; `off` restores 6.5's behaviour |
+| a playbook no longer inherits AnsibleForms' own environment variables (`ENCRYPTION_SECRET`, `DB_*`, `ACCESS_TOKEN_SECRET`, `RTE_TOKEN`, `VAULT_*` and every other documented one) ; the rest of the RTE's environment is passed | a playbook that read one of them with `lookup('env', ...)` : pass the value as an extravar or a credential, or set it under another name on the RTE |
 | optional : several app nodes | `AF_ROLE=app` nodes plus one `AF_ROLE=worker`, sharing the database and the persistent volume - see `examples/scale` |
 
 ## Removed in 7.0.0
