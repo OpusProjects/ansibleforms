@@ -1332,6 +1332,8 @@ export default {
     visualYamlError: 'El YAML no es pot mostrar aquí : corregiu-lo a la pestanya YAML',
     visualNotAList: 'no és una llista',
     visualNotAMap: 'no és un mapa',
+    menuPreviewHint:
+      "El menú de la pàgina Formularis, a partir de les categories tal com són ara. Una categoria sense formularis no s'hi mostra.",
     unsavedChanges: 'Canvis sense desar',
     unsavedConfirm: 'Segur que vols sortir del dissenyador ?',
     unsavedNote: 'Tens canvis sense desar.',

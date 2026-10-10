@@ -1282,6 +1282,7 @@ export default {
     visualYamlError: '无法在此显示 YAML：请在 YAML 标签中修正',
     visualNotAList: '不是列表',
     visualNotAMap: '不是映射',
+    menuPreviewHint: '根据当前分类生成的表单页面菜单。没有表单的分类不会显示。',
     unsavedChanges: '未保存的更改',
     unsavedConfirm: '确定要离开设计器吗？',
     unsavedNote: '您有未保存的更改。',

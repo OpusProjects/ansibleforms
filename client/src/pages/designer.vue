@@ -2586,14 +2586,22 @@ function refreshPreview() {
  */
 function showView(view) {
   editorView.value = view;
-  if (view === 'preview') refreshPreview();
+  if (view === 'preview' && currentTab.value === 'Forms') refreshPreview();
 }
+
+// the categories' preview : the Forms page's menu, from the categories as they are now and the
+// forms (no subforms : they are not in the menu) ; a click highlights a category, as there
+const previewCategory = ref('');
+const menuPreview = computed(() => ({
+  categories: categoriesObj.value || [],
+  forms: formsObj.value.filter((f) => f && f.name && f.type !== 'subform'),
+}));
 
 // another view opens on its YAML ; the preview is a form's : no form goes back to the YAML,
 // another form is previewed in its place (the visual tab is not a form's : left as it is)
 watch(currentTab, () => (editorView.value = 'yaml'));
 watch(currentForm, (form) => {
-  if (editorView.value !== 'preview') return;
+  if (editorView.value !== 'preview' || currentTab.value !== 'Forms') return;
   if (!form) editorView.value = 'yaml';
   else refreshPreview();
 });
@@ -6332,7 +6340,7 @@ onBeforeUnmount(() => {
         <!-- the item's views, on top of its card, once the designer runs : its YAML ; the categories
              and constants as tables (Visual) ; a form's preview -->
         <template v-if="lock && !lock.free && loaded" #tabs>
-          <ul class="nav nav-tabs mb-0">
+          <ul class="nav nav-tabs mb-0 designer-tabs">
             <li class="nav-item">
               <a class="nav-link" :class="{ active: editorView === 'yaml' }" href="#" @click.prevent="showView('yaml')">
                 <FaIcon icon="code" class="me-1" />
@@ -6351,8 +6359,9 @@ onBeforeUnmount(() => {
                 {{ t('designer.visual') }}
               </a>
             </li>
-            <!-- a form's preview : the form rendered from its YAML as it is now -->
-            <li v-if="currentTab == 'Forms' && currentForm" class="nav-item">
+            <!-- a form's preview : the form rendered from its YAML as it is now ; the categories' :
+                 the Forms page's menu, from them -->
+            <li v-if="(currentTab == 'Forms' && currentForm) || currentTab == 'Categories'" class="nav-item">
               <a
                 class="nav-link"
                 :class="{ active: editorView === 'preview' }"
@@ -6444,7 +6453,18 @@ onBeforeUnmount(() => {
                  margin of the empty <label> BsInput always renders, 17px again ; and under
                  the editor the wrapper's margin is removed (see the global style block), so
                  the editor ends 17px above the card's bottom edge as well. -->
-            <div class="d-flex align-items-center flex-wrap gap-2" style="padding-top: 0; padding-bottom: 9px">
+            <!-- a preview has no toolbar : the row then takes no room (unless a notice shows), and the
+                 preview starts where the toolbar does -->
+            <div
+              class="d-flex align-items-center flex-wrap gap-2"
+              :style="{
+                paddingTop: 0,
+                paddingBottom:
+                  editorView === 'preview' && !lockError && !configTemplated && !(lock && !lock.match && !lock.free)
+                    ? 0
+                    : '9px',
+              }"
+            >
               <small
                 v-if="lockError !== ''"
                 class="d-inline-flex px-2 py-1 fw-semibold text-warning-emphasis bg-warning-subtle border border-warning-subtle rounded-2"
@@ -6782,11 +6802,31 @@ onBeforeUnmount(() => {
             </div>
             <div
               class="designer-layout"
+              :class="{ 'designer-layout-preview': editorView === 'preview' }"
               :style="currentTab == 'Forms' ? { gridTemplateColumns: `1fr 1rem ${treeWidthPct}%` } : undefined"
             >
               <div class="designer-editor">
+                <!-- Preview : the Forms page's menu, from the categories as they are now -->
+                <div v-if="loaded && currentTab == 'Categories' && editorView === 'preview'" class="designer-preview">
+                  <div class="designer-preview-bar">
+                    <span class="text-body-secondary small">
+                      <FaIcon icon="circle-info" class="me-1" />{{ t('designer.menuPreviewHint') }}
+                    </span>
+                  </div>
+                  <div class="designer-menu-preview">
+                    <AppFormsMenu
+                      :formConfig="menuPreview"
+                      :currentCategory="previewCategory"
+                      preview
+                      @select="(path) => (previewCategory = path)"
+                    />
+                  </div>
+                </div>
                 <!-- Visual : the categories as a table, on the same YAML (saved with Save) -->
-                <div v-if="loaded && currentTab == 'Categories' && editorView === 'visual'" class="designer-visual">
+                <div
+                  v-else-if="loaded && currentTab == 'Categories' && editorView === 'visual'"
+                  class="designer-visual"
+                >
                   <AppCategoriesEditor
                     ref="visualEditor"
                     v-model="categories"
@@ -7495,6 +7535,17 @@ onBeforeUnmount(() => {
   cursor: not-allowed;
 }
 
+/* a preview : no toolbar over it, so no room for one - the preview and the file explorer
+   beside it start where the toolbar does */
+.designer-layout-preview .designer-preview,
+.designer-layout-preview .designer-tree {
+  margin-top: 0;
+}
+/* the card's tabs : their height, whatever the card under them holds - the page is a column
+   that fills the window, and a tall preview squeezed them */
+.designer-tabs {
+  flex-shrink: 0;
+}
 /* the visual editors (categories, constants) : as far down as the YAML editor */
 .designer-visual {
   margin-top: 0.5rem;
@@ -7512,6 +7563,9 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 .designer-preview-bar {
+  /* one height for every preview's bar : a form's, with its buttons (38px and the padding),
+     and the categories', with its text alone */
+  min-height: calc(2.375rem + 0.75rem + 1px);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -7519,6 +7573,13 @@ onBeforeUnmount(() => {
   padding: 0.375rem 0.5rem 0.375rem 0.75rem;
   border-bottom: 1px solid var(--af-field-border);
   background: var(--bs-tertiary-bg);
+}
+.designer-menu-preview {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  background: var(--bs-body-bg);
 }
 .designer-preview-frame {
   flex: 1 1 auto;

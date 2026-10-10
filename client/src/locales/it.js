@@ -1324,6 +1324,8 @@ export default {
     visualYamlError: 'Lo YAML non può essere mostrato qui : correggilo nella scheda YAML',
     visualNotAList: 'non è una lista',
     visualNotAMap: 'non è una mappa',
+    menuPreviewHint:
+      'Il menu della pagina Moduli, dalle categorie come sono ora. Una categoria senza moduli non vi è mostrata.',
     unsavedChanges: 'Modifiche non salvate',
     unsavedConfirm: 'Sei sicuro di voler uscire dal designer?',
     unsavedNote: 'Hai modifiche non salvate.',

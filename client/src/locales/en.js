@@ -1311,6 +1311,8 @@ export default {
     visualYamlError: 'The YAML cannot be shown here : fix it in the YAML tab',
     visualNotAList: 'not a list',
     visualNotAMap: 'not a map',
+    menuPreviewHint:
+      "The Forms page's menu, from the categories as they are now. A category without forms is not shown, as there.",
     unsavedChanges: 'Unsaved Changes',
     unsavedConfirm: 'Are you sure you want to leave the designer ?',
     unsavedNote: 'You have unsaved changes.',

@@ -1325,6 +1325,8 @@ export default {
     visualYamlError: 'El YAML no se puede mostrar aquí : corríjalo en la pestaña YAML',
     visualNotAList: 'no es una lista',
     visualNotAMap: 'no es un mapa',
+    menuPreviewHint:
+      'El menú de la página Formularios, a partir de las categorías tal como están. Una categoría sin formularios no se muestra.',
     unsavedChanges: 'Cambios sin Guardar',
     unsavedConfirm: '¿Está seguro de que desea abandonar el diseñador?',
     unsavedNote: 'Tiene cambios sin guardar.',

@@ -1323,6 +1323,8 @@ export default {
     visualYamlError: 'Nie można tu pokazać YAML : popraw go w karcie YAML',
     visualNotAList: 'to nie lista',
     visualNotAMap: 'to nie mapa',
+    menuPreviewHint:
+      'Menu strony Formularze, z kategorii w obecnej postaci. Kategoria bez formularzy nie jest tam pokazywana.',
     unsavedChanges: 'Niezapisane zmiany',
     unsavedConfirm: 'Czy na pewno chcesz opuścić projektanta?',
     unsavedNote: 'Masz niezapisane zmiany.',

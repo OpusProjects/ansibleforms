@@ -1308,6 +1308,7 @@ export default {
     visualYamlError: 'ここでは YAML を表示できません：YAML タブで修正してください',
     visualNotAList: 'リストではありません',
     visualNotAMap: 'マップではありません',
+    menuPreviewHint: '現在のカテゴリから作成したフォームページのメニュー。フォームのないカテゴリは表示されません。',
     unsavedChanges: '未保存の変更',
     unsavedConfirm: 'デザイナーを終了してもよろしいですか?',
     unsavedNote: '保存されていない変更があります。',

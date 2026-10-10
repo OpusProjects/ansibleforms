@@ -1346,6 +1346,8 @@ export default {
     visualYamlError: 'Das YAML kann hier nicht angezeigt werden : im Tab YAML korrigieren',
     visualNotAList: 'keine Liste',
     visualNotAMap: 'keine Zuordnung',
+    menuPreviewHint:
+      'Das Menü der Formularseite, aus den Kategorien, wie sie jetzt sind. Eine Kategorie ohne Formulare wird dort nicht gezeigt.',
     unsavedChanges: 'Ungespeicherte Aenderungen',
     unsavedConfirm: 'Sind Sie sicher, dass Sie den Designer verlassen moechten?',
     unsavedNote: 'Sie haben ungespeicherte Aenderungen.',

@@ -1338,6 +1338,8 @@ export default {
     visualYamlError: "Le YAML ne peut pas être affiché ici : corrigez-le dans l'onglet YAML",
     visualNotAList: 'pas une liste',
     visualNotAMap: 'pas une table',
+    menuPreviewHint:
+      "Le menu de la page Formulaires, à partir des catégories telles qu'elles sont. Une catégorie sans formulaire n'y figure pas.",
     unsavedChanges: 'Modifications non enregistrees',
     unsavedConfirm: 'Etes-vous sur de vouloir quitter le concepteur ?',
     unsavedNote: 'Vous avez des modifications non enregistrees.',
