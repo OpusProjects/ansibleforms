@@ -1666,6 +1666,7 @@ export default {
     playbook: 'Playbook',
     template: 'Vorlage',
     awxJob: 'AWX-Job',
+    noNodeOutput: '{node} hat keine Ausgabe',
     collapseAll: 'Alle einklappen',
     expandAll: 'Alle ausklappen',
     hosts: 'Hosts',

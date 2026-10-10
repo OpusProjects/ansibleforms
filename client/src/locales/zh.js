@@ -1592,6 +1592,7 @@ export default {
     playbook: 'Playbook',
     template: '模板',
     awxJob: 'AWX 作业',
+    noNodeOutput: '{node} 没有输出',
     collapseAll: '全部折叠',
     expandAll: '全部展开',
     hosts: '主机',

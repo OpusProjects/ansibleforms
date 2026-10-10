@@ -396,6 +396,34 @@ function toggleFoldAll() {
   }
 }
 
+// ─── a workflow node's output, from its graph ─────────────────────────────────
+// the node clicked and its output's HTML (its section of the job's output)
+const nodeShown = ref(null);
+
+/**
+ * Opens a node's output in a dialog : its section of the job's output.
+ *
+ * Args:
+ *   node (object): the node clicked on the graph.
+ */
+function openNodeOutput(node) {
+  const html = mainOutput.value?.nodeOutput(node.name);
+  if (!html) {
+    toast.info(t('jobs.noNodeOutput', { node: node.name }));
+    return;
+  }
+  nodeShown.value = { node, html };
+}
+
+// Esc closes the dialog first : before the full screen under it hears it
+function onNodeKey(e) {
+  if (e.key !== 'Escape' || !nodeShown.value) return;
+  e.preventDefault();
+  nodeShown.value = null;
+}
+onMounted(() => window.addEventListener('keydown', onNodeKey, true));
+onBeforeUnmount(() => window.removeEventListener('keydown', onNodeKey, true));
+
 // the playbook it ran, when it ran one
 const jobPlaybook = computed(() => job.value?.extravars?.__playbook__ || '');
 
@@ -1076,6 +1104,23 @@ onMounted(async () => {
         ></template
       >
     </BsModal>
+    <!-- a workflow node's output, opened from the graph : over the full screen too -->
+    <Teleport to="body">
+      <div v-if="nodeShown" class="af-node-modal">
+        <BsModal size="xl" @close="nodeShown = null">
+          <template #title> <FaIcon icon="diagram-project" class="me-2" />{{ nodeShown.node.name }} </template>
+          <template #default>
+            <AppAnsibleOutput
+              :output="nodeShown.html"
+              :workflow="job?.awx_workflow"
+              :copyLabel="t('jobs.copy')"
+              numbered
+              @copy="(text) => clip(text, true)"
+            />
+          </template>
+        </BsModal>
+      </div>
+    </Teleport>
     <main class="d-flex flex-nowrap af-settings-layout">
       <AppJobsSidebar :jobs="jobs || []" :loaded="jobsLoaded" :status="statusFilter" @select="selectStatus" />
       <AppSettings :title="pageTitle.title" :crumbs="pageCrumbs" :description="pageDescription" :icon="pageTitle.icon">
@@ -1433,7 +1478,7 @@ onMounted(async () => {
             <!-- awx workflow graph (only for awx workflow jobs) -->
             <div class="row" v-if="job.awx_workflow?.nodes?.length">
               <div class="col">
-                <AppAwxWorkflow :workflow="job.awx_workflow" />
+                <AppAwxWorkflow :workflow="job.awx_workflow" @node="openNodeOutput" />
               </div>
             </div>
 
@@ -2012,5 +2057,22 @@ tr.table-selected {
   --af-data-string: #7ee2a8;
   --af-data-number: #f6b26b;
   --af-data-literal: #c4a7ff;
+}
+/* a workflow node's output : over the graph's full screen (z-index 1056), and framed as the
+   job's output panel */
+.af-node-modal {
+  .modal {
+    z-index: 1062;
+  }
+  + .modal-backdrop,
+  .modal-backdrop {
+    z-index: 1061;
+  }
+  .modal-body {
+    padding: 0;
+  }
+  .af-ansible-groups {
+    border-radius: 0;
+  }
 }
 </style>

@@ -1622,6 +1622,7 @@ export default {
     playbook: 'プレイブック',
     template: 'テンプレート',
     awxJob: 'AWX ジョブ',
+    noNodeOutput: '{node} には出力がありません',
     collapseAll: 'すべて折りたたむ',
     expandAll: 'すべて展開',
     hosts: 'ホスト',

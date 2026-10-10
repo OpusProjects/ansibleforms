@@ -101,32 +101,66 @@ let dragStart = null;
  */
 function onPointerDown(e) {
   if (!fullscreen.value || e.button !== 0) return;
-  dragging.value = true;
   dragStart = { px: e.clientX, py: e.clientY, x: view.value.x, y: view.value.y };
-  e.currentTarget.setPointerCapture(e.pointerId);
 }
 
 /**
- * Moves the graph with the pointer.
+ * Moves the graph with the pointer : a drag once it went a few pixels (less is a click, on a
+ * node it opens the node's output).
  *
  * Args:
  *   e (PointerEvent): the pointer moved.
  */
 function onPointerMove(e) {
-  if (!dragging.value || !dragStart) return;
-  view.value = {
-    ...view.value,
-    x: dragStart.x + e.clientX - dragStart.px,
-    y: dragStart.y + e.clientY - dragStart.py,
-  };
+  if (!dragStart) return;
+  const dx = e.clientX - dragStart.px;
+  const dy = e.clientY - dragStart.py;
+  if (!dragging.value) {
+    if (Math.hypot(dx, dy) < 4) return;
+    dragging.value = true;
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+  view.value = { ...view.value, x: dragStart.x + dx, y: dragStart.y + dy };
 }
+
+// the click a drag ends with : not a click on a node
+let justDragged = false;
 
 /**
  * Ends a drag.
  */
 function onPointerUp() {
+  justDragged = dragging.value;
+  setTimeout(() => (justDragged = false));
   dragging.value = false;
   dragStart = null;
+}
+
+// ─── a node's output ──────────────────────────────────────────────────────────
+const emit = defineEmits(['node']);
+
+/**
+ * Whether a node has output to show : it ran (an AWX job of its own).
+ *
+ * Args:
+ *   n (object): the node.
+ *
+ * Returns:
+ *   boolean: true when it ran.
+ */
+function hasOutput(n) {
+  return !!n.job && n.status !== 'skipped' && !n.do_not_run;
+}
+
+/**
+ * A click on a node that ran : the page opens its output (not the click a drag ends with).
+ *
+ * Args:
+ *   n (object): the node clicked.
+ */
+function openNode(n) {
+  if (justDragged || !hasOutput(n)) return;
+  emit('node', n);
 }
 
 // the panel over the whole window (its toolbar, the graph at full size), and back : Esc, the
@@ -139,7 +173,8 @@ const fullscreen = ref(false);
  *   e (KeyboardEvent): the key pressed.
  */
 function onKey(e) {
-  if (e.key === 'Escape') fullscreen.value = false;
+  // a dialog over the full screen (a node's output) closes first
+  if (e.key === 'Escape' && !e.defaultPrevented) fullscreen.value = false;
 }
 watch(fullscreen, (on) => {
   // opened : the whole graph in the middle of the window
@@ -394,7 +429,13 @@ const graph = computed(() => {
                 </text>
               </g>
               <!-- workflow nodes -->
-              <g v-for="n in graph.nodes" :key="n.id" class="awx-node">
+              <g
+                v-for="n in graph.nodes"
+                :key="n.id"
+                class="awx-node"
+                :class="{ 'awx-node-open': hasOutput(n) }"
+                @click="openNode(n)"
+              >
                 <rect
                   :x="n.x"
                   :y="n.y"
@@ -594,6 +635,13 @@ const graph = computed(() => {
     letter-spacing: 1px;
   }
 
+  /* a node that ran : a click opens its output */
+  .awx-node-open {
+    cursor: pointer;
+    &:hover .awx-node-rect {
+      fill: var(--af-row-hover-bg);
+    }
+  }
   .awx-node-rect {
     fill: var(--bs-body-bg);
     stroke-width: 2;
