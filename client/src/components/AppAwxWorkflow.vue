@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 /******************************************************************/
@@ -29,6 +29,28 @@ const { t } = useI18n();
 
 // the graph at its size (scrolled sideways when wider than the panel), or shrunk to its width
 const fit = ref(false);
+
+// the panel over the whole window (its toolbar, the graph at full size), and back : Esc, the
+// button or a click beside it closes it ; the page under it does not scroll meanwhile
+const fullscreen = ref(false);
+/**
+ * Closes the full screen on Esc.
+ *
+ * Args:
+ *   e (KeyboardEvent): the key pressed.
+ */
+function onKey(e) {
+  if (e.key === 'Escape') fullscreen.value = false;
+}
+watch(fullscreen, (on) => {
+  document.body.style.overflow = on ? 'hidden' : '';
+  if (on) document.addEventListener('keydown', onKey);
+  else document.removeEventListener('keydown', onKey);
+});
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', onKey);
+  document.body.style.overflow = '';
+});
 
 // layout constants
 const NODE_W = 170;
@@ -148,102 +170,147 @@ const graph = computed(() => {
 <template>
   <!-- a panel as the job's output : its toolbar on top - what it is at the left, the legend and
        the fit at the right - and the graph under it, scrolled sideways when it is wider -->
-  <div class="awx-workflow">
-    <div class="awx-workflow-toolbar">
-      <div class="awx-workflow-label">
-        <FaIcon icon="diagram-project" />
-        <span>{{ t('workflow.title') }}</span>
-        <span class="awx-workflow-count">{{ t('workflow.nodes', { count: workflow.nodes?.length || 0 }) }}</span>
+  <!-- full screen : the panel lifted over the page (teleported, so no card clips it), a dimmed
+       backdrop under it -->
+  <Teleport to="body" :disabled="!fullscreen">
+    <div v-if="fullscreen" class="awx-workflow-backdrop" @click="fullscreen = false" />
+    <div class="awx-workflow" :class="{ 'awx-fullscreen': fullscreen }" :role="fullscreen ? 'dialog' : null">
+      <div class="awx-workflow-toolbar">
+        <div class="awx-workflow-label">
+          <FaIcon icon="diagram-project" />
+          <span>{{ t('workflow.title') }}</span>
+          <span class="awx-workflow-count">{{ t('workflow.nodes', { count: workflow.nodes?.length || 0 }) }}</span>
+        </div>
+        <div class="awx-workflow-tools">
+          <span class="awx-workflow-legend"
+            ><span class="legend-line" :style="{ background: edgeColors.success }"></span
+            >{{ t('workflow.onSuccess') }}</span
+          >
+          <span class="awx-workflow-legend"
+            ><span class="legend-line" :style="{ background: edgeColors.failure }"></span
+            >{{ t('workflow.onFailure') }}</span
+          >
+          <span class="awx-workflow-legend"
+            ><span class="legend-line" :style="{ background: edgeColors.always }"></span
+            >{{ t('workflow.always') }}</span
+          >
+          <span class="awx-tool-sep" />
+          <button type="button" class="awx-tool-btn" :class="{ active: fit }" :aria-pressed="fit" @click="fit = !fit">
+            <FaIcon icon="arrows-left-right-to-line" />{{ t('workflow.fit') }}
+          </button>
+          <button
+            type="button"
+            class="awx-tool-btn awx-tool-icon"
+            :title="fullscreen ? t('workflow.exitFullscreen') : t('workflow.fullscreen')"
+            :aria-label="fullscreen ? t('workflow.exitFullscreen') : t('workflow.fullscreen')"
+            @click="fullscreen = !fullscreen"
+          >
+            <FaIcon :icon="fullscreen ? 'compress' : 'expand'" />
+          </button>
+        </div>
       </div>
-      <div class="awx-workflow-tools">
-        <span class="awx-workflow-legend"
-          ><span class="legend-line" :style="{ background: edgeColors.success }"></span
-          >{{ t('workflow.onSuccess') }}</span
-        >
-        <span class="awx-workflow-legend"
-          ><span class="legend-line" :style="{ background: edgeColors.failure }"></span
-          >{{ t('workflow.onFailure') }}</span
-        >
-        <span class="awx-workflow-legend"
-          ><span class="legend-line" :style="{ background: edgeColors.always }"></span>{{ t('workflow.always') }}</span
-        >
-        <span class="awx-tool-sep" />
-        <button type="button" class="awx-tool-btn" :class="{ active: fit }" :aria-pressed="fit" @click="fit = !fit">
-          <FaIcon icon="maximize" />{{ t('workflow.fit') }}
-        </button>
-      </div>
-    </div>
-    <!-- the room around the graph, outside its scrolling box : the scrollbar (when it shows)
+      <!-- the room around the graph, outside its scrolling box : the scrollbar (when it shows)
          as far from the panel's edge as the graph is from its top -->
-    <div class="awx-workflow-body">
-      <div class="awx-workflow-scroll" :class="{ 'awx-fit': fit }">
-        <svg
-          :width="fit ? '100%' : graph.width"
-          :height="fit ? null : graph.height"
-          :viewBox="`0 0 ${graph.width} ${graph.height}`"
-          preserveAspectRatio="xMinYMid meet"
-        >
-          <!-- links -->
-          <path
-            v-for="(l, i) in graph.links"
-            :key="'link' + i"
-            :d="l.d"
-            fill="none"
-            :stroke="edgeColors[l.type]"
-            stroke-width="2"
-            opacity="0.8"
-          />
-          <!-- start node -->
-          <g>
-            <rect
-              :x="graph.start.x"
-              :y="graph.start.y"
-              :width="START_W"
-              :height="START_H"
-              :rx="START_H / 2"
-              class="awx-start"
+      <div class="awx-workflow-body">
+        <div class="awx-workflow-scroll" :class="{ 'awx-fit': fit }">
+          <svg
+            :width="fit ? '100%' : graph.width"
+            :height="fit ? null : graph.height"
+            :viewBox="`0 0 ${graph.width} ${graph.height}`"
+            preserveAspectRatio="xMinYMid meet"
+          >
+            <!-- links -->
+            <path
+              v-for="(l, i) in graph.links"
+              :key="'link' + i"
+              :d="l.d"
+              fill="none"
+              :stroke="edgeColors[l.type]"
+              stroke-width="2"
+              opacity="0.8"
             />
-            <text
-              :x="graph.start.x + START_W / 2"
-              :y="graph.start.y + START_H / 2 + 4"
-              text-anchor="middle"
-              class="awx-start-text"
-            >
-              START
-            </text>
-          </g>
-          <!-- workflow nodes -->
-          <g v-for="n in graph.nodes" :key="n.id" class="awx-node">
-            <rect
-              :x="n.x"
-              :y="n.y"
-              :width="NODE_W"
-              :height="NODE_H"
-              rx="6"
-              class="awx-node-rect"
-              :style="{ stroke: statusColor(n.status) }"
-              :stroke-dasharray="n.status == 'skipped' || n.do_not_run ? '4 3' : null"
-            />
-            <circle
-              :cx="n.x + 14"
-              :cy="n.y + NODE_H / 2"
-              r="5"
-              :fill="statusColor(n.status)"
-              :class="{ 'awx-pulse': n.status == 'running' }"
-            />
-            <text :x="n.x + 26" :y="n.y + 22" class="awx-node-name">{{ truncate(n.name) }}</text>
-            <text :x="n.x + 26" :y="n.y + 40" class="awx-node-status" :style="{ fill: statusColor(n.status) }">
-              {{ n.status }}
-              <template v-if="n.elapsed > 0">· {{ Math.round(n.elapsed) }}s</template>
-            </text>
-            <title>{{ n.name }} ({{ n.status }})</title>
-          </g>
-        </svg>
+            <!-- start node -->
+            <g>
+              <rect
+                :x="graph.start.x"
+                :y="graph.start.y"
+                :width="START_W"
+                :height="START_H"
+                :rx="START_H / 2"
+                class="awx-start"
+              />
+              <text
+                :x="graph.start.x + START_W / 2"
+                :y="graph.start.y + START_H / 2 + 4"
+                text-anchor="middle"
+                class="awx-start-text"
+              >
+                START
+              </text>
+            </g>
+            <!-- workflow nodes -->
+            <g v-for="n in graph.nodes" :key="n.id" class="awx-node">
+              <rect
+                :x="n.x"
+                :y="n.y"
+                :width="NODE_W"
+                :height="NODE_H"
+                rx="6"
+                class="awx-node-rect"
+                :style="{ stroke: statusColor(n.status) }"
+                :stroke-dasharray="n.status == 'skipped' || n.do_not_run ? '4 3' : null"
+              />
+              <circle
+                :cx="n.x + 14"
+                :cy="n.y + NODE_H / 2"
+                r="5"
+                :fill="statusColor(n.status)"
+                :class="{ 'awx-pulse': n.status == 'running' }"
+              />
+              <text :x="n.x + 26" :y="n.y + 22" class="awx-node-name">{{ truncate(n.name) }}</text>
+              <text :x="n.x + 26" :y="n.y + 40" class="awx-node-status" :style="{ fill: statusColor(n.status) }">
+                {{ n.status }}
+                <template v-if="n.elapsed > 0">· {{ Math.round(n.elapsed) }}s</template>
+              </text>
+              <title>{{ n.name }} ({{ n.status }})</title>
+            </g>
+          </svg>
+        </div>
       </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 <style lang="scss" scoped>
+/* full screen : the window's width and height but a margin, over a dimmed page */
+.awx-workflow-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1055;
+  background: rgba(0, 0, 0, 0.5);
+}
+.awx-workflow.awx-fullscreen {
+  position: fixed;
+  inset: 1.5rem;
+  z-index: 1056;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.3);
+  .awx-workflow-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+  }
+  /* the graph in the middle of the window, scrolled both ways when larger */
+  .awx-workflow-scroll {
+    flex: 1 1 auto;
+    overflow: auto;
+    display: flex;
+    svg {
+      margin: auto;
+    }
+  }
+}
 .awx-workflow {
   margin-bottom: 1.25rem;
   border: 1px solid var(--af-field-border);
@@ -286,6 +353,9 @@ const graph = computed(() => {
     width: 1px;
     height: 1.25rem;
     background: var(--af-field-border);
+  }
+  .awx-tool-icon {
+    padding: 0.3rem 0.5rem;
   }
   .awx-tool-btn {
     display: inline-flex;

@@ -3,6 +3,8 @@ export default {
     title: 'Fluxo de trabalho',
     nodes: '{count} nós',
     fit: 'Ajustar à largura',
+    fullscreen: 'Ecrã inteiro',
+    exitFullscreen: 'Sair do ecrã inteiro',
     onSuccess: 'em caso de sucesso',
     onFailure: 'em caso de falha',
     always: 'sempre',

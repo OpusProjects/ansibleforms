@@ -3,6 +3,8 @@ export default {
     title: '工作流',
     nodes: '{count} 个节点',
     fit: '适应宽度',
+    fullscreen: '全屏',
+    exitFullscreen: '退出全屏',
     onSuccess: '成功时',
     onFailure: '失败时',
     always: '始终',

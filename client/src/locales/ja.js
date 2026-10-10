@@ -3,6 +3,8 @@ export default {
     title: 'ワークフロー',
     nodes: '{count} ノード',
     fit: '幅に合わせる',
+    fullscreen: '全画面表示',
+    exitFullscreen: '全画面表示を終了',
     onSuccess: '成功時',
     onFailure: '失敗時',
     always: '常に',

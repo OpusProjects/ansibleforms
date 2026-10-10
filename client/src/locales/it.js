@@ -3,6 +3,8 @@ export default {
     title: 'Workflow',
     nodes: '{count} nodi',
     fit: 'Adatta alla larghezza',
+    fullscreen: 'Schermo intero',
+    exitFullscreen: 'Esci da schermo intero',
     onSuccess: 'in caso di successo',
     onFailure: 'in caso di errore',
     always: 'sempre',

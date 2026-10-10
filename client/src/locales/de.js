@@ -3,6 +3,8 @@ export default {
     title: 'Workflow',
     nodes: '{count} Knoten',
     fit: 'An Breite anpassen',
+    fullscreen: 'Vollbild',
+    exitFullscreen: 'Vollbild beenden',
     onSuccess: 'bei Erfolg',
     onFailure: 'bei Fehler',
     always: 'immer',

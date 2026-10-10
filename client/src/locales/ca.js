@@ -3,6 +3,8 @@ export default {
     title: 'Flux de treball',
     nodes: '{count} nodes',
     fit: "Ajusta a l'amplada",
+    fullscreen: 'Pantalla completa',
+    exitFullscreen: 'Surt de la pantalla completa',
     onSuccess: "en cas d'èxit",
     onFailure: "en cas d'error",
     always: 'sempre',

@@ -3,6 +3,8 @@ export default {
     title: 'Przepływ pracy',
     nodes: '{count} węzłów',
     fit: 'Dopasuj do szerokości',
+    fullscreen: 'Pełny ekran',
+    exitFullscreen: 'Zamknij pełny ekran',
     onSuccess: 'przy powodzeniu',
     onFailure: 'przy niepowodzeniu',
     always: 'zawsze',

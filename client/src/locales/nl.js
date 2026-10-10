@@ -3,6 +3,8 @@ export default {
     title: 'Workflow',
     nodes: '{count} knooppunten',
     fit: 'Aanpassen aan breedte',
+    fullscreen: 'Volledig scherm',
+    exitFullscreen: 'Volledig scherm sluiten',
     onSuccess: 'bij succes',
     onFailure: 'bij fout',
     always: 'altijd',

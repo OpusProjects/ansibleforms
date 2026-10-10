@@ -3,6 +3,8 @@ export default {
     title: 'Flujo de trabajo',
     nodes: '{count} nodos',
     fit: 'Ajustar al ancho',
+    fullscreen: 'Pantalla completa',
+    exitFullscreen: 'Salir de pantalla completa',
     onSuccess: 'en caso de éxito',
     onFailure: 'en caso de fallo',
     always: 'siempre',
