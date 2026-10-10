@@ -2318,9 +2318,14 @@ defineExpose({
 
     <!-- GROUPS -->
     <template :key="group" v-for="group in fieldGroups">
-      <div v-if="checkGroupDependencies(group)" v-show="!hideForm" class="mt-4 p-3" :class="getGroupClass(group)">
-        <!-- GROUP TITLE -->
-        <h3>{{ group }}</h3>
+      <div
+        v-if="checkGroupDependencies(group)"
+        v-show="!hideForm"
+        class="mt-4 p-3 af-form-group"
+        :class="getGroupClass(group)"
+      >
+        <!-- GROUP TITLE : only when the group has one (an empty title's margin pushed the fields down) -->
+        <h3 v-if="group">{{ group }}</h3>
 
         <!-- ROWS -->
         <div :key="line" v-for="line in fieldLines" class="row">
@@ -2815,6 +2820,17 @@ defineExpose({
   </div>
 </template>
 <style scoped lang="scss">
+/* a group's first row of fields : the room over its labels' letters as under the last field
+   (the card's padding and the field's margin) - a field's own top margin is to space it from
+   the row above, and a label's line box has room over its letters, taken back here */
+.af-form-group > .row > .col > .mt-3 {
+  margin-top: calc(1rem - 0.375rem) !important;
+}
+/* the rows under the first with fields (a row whose fields are all hidden renders empty) : a
+   field's own margin again */
+.af-form-group > .row:not(:empty) ~ .row > .col > .mt-3 {
+  margin-top: 1rem !important;
+}
 .limit-height {
   max-height: 300px;
   overflow-y: scroll;
