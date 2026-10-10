@@ -9,14 +9,17 @@ process.env.DB_PORT ||= "3306";
 process.env.DB_USER ||= "test";
 process.env.DB_PASSWORD ||= "test";
 
-// what the RTE answers a POST /jobs
+// what the RTE answers a POST /jobs, and a GET /jobs/:id
 let postAnswer;
+let getStatus = "running";
+// whether the RTE that claimed the job (jobs.host) heartbeats
+let claimerAlive = false;
 const posted = [];
 vi.mock("axios", () => ({
   default: {
     create: () => ({
       post: async (url, body) => { posted.push({ url, body }); return postAnswer(); },
-      get: async () => ({ data: { status: "running" } }),
+      get: async () => ({ data: { status: getStatus } }),
     }),
   },
 }));
@@ -27,6 +30,7 @@ vi.mock("../src/models/db.model.js", () => ({
   default: {
     do: async (sql) => {
       if (/^SELECT host FROM/.test(sql)) return [{ host: row.host }];
+      if (/JOIN AnsibleForms.`nodes` n ON n.id = j.host/.test(sql)) return claimerAlive ? [{ alive: 1 }] : [];
       if (/^SELECT extravars, credentials FROM/.test(sql)) return [{ extravars: JSON.stringify(row.extravars || {}), credentials: JSON.stringify(row.credentials || {}) }];
       if (/^SELECT status FROM/.test(sql)) return [{ status: row.status }];
       return [];
@@ -68,6 +72,8 @@ const noAnswer = () => Promise.reject(Object.assign(new Error("timeout of 10000m
 beforeEach(() => {
   row = { status: "running", host: null };
   credentialError = null;
+  getStatus = "running";
+  claimerAlive = false;
   ended.length = 0;
   posted.length = 0;
   abortResets = 0;
@@ -136,5 +142,42 @@ describe("the hand-over", () => {
     const ok = await rte.launch({ jobId: 7, runner });
     assert.equal(ok, true);
     assert.equal(ended.length, 0, "no 'failed' end, no second mail");
+  });
+});
+
+describe("replicas behind one address", () => {
+  // the app asks the RTE every 30 polls of a second ; two `unknown` answers in a row used to fail
+  // the job, though another replica behind the same address was running it fine
+  test("a replica that does not run it says unknown, the one that claimed it is alive : followed on", async () => {
+    getStatus = "unknown";
+    claimerAlive = true;
+    vi.useFakeTimers();
+    try {
+      postAnswer = async () => { row.host = "rte-2-8000"; return { status: 202 }; };
+      const done = rte.launch({ jobId: 7, runner });
+      await vi.advanceTimersByTimeAsync(95000);
+      expect(ended).toEqual([]);
+      row.status = "success";
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(await done).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("nobody alive holds it : it is lost, and failed once", async () => {
+    getStatus = "unknown";
+    claimerAlive = false;
+    vi.useFakeTimers();
+    try {
+      postAnswer = async () => { row.host = "rte-2-8000"; return { status: 202 }; };
+      const done = rte.launch({ jobId: 7, runner });
+      await vi.advanceTimersByTimeAsync(95000);
+      expect(await done).toBe(false);
+      expect(ended.length).toBe(1);
+      expect(ended[0].line).toMatch(/lost job 7/);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

@@ -13,6 +13,7 @@ import Errors from "../lib/errors.js";
 import { stripTrailingSlashes } from "../lib/url.js";
 import Job from "../models/job.model.js";
 import { safeParse } from "../lib/safejson.js";
+import { NODE_DEAD_SECONDS } from "../lib/nodes.js";
 import { resolveJobSecrets } from "../lib/jobSecrets.js";
 import { sealJobSecrets } from "../lib/sealedSecrets.js";
 
@@ -68,6 +69,28 @@ async function claimedBy(jobId) {
   return rows?.[0]?.host || null;
 }
 
+/**
+ * Whether the RTE that claimed a job is alive : it claimed it (jobs.host), and its heartbeat
+ * in `nodes` is recent. Several replicas behind one address (a kubernetes service) answer the
+ * status call in turn ; one that does not run the job says `unknown` while the replica that
+ * does runs it fine.
+ *
+ * Args:
+ *   jobId (number): the job.
+ *
+ * Returns:
+ *   Promise<boolean>: true when a live RTE holds it.
+ */
+async function heldByLiveRte(jobId) {
+  const rows = await mysql.do(
+    "SELECT 1 AS alive FROM AnsibleForms.`jobs` j JOIN AnsibleForms.`nodes` n ON n.id = j.host " +
+      "WHERE j.id=? AND n.last_seen > (NOW() - INTERVAL ? SECOND)",
+    [jobId, NODE_DEAD_SECONDS],
+    true
+  );
+  return rows?.length > 0;
+}
+
 async function dbStatus(jobId) {
   const rows = await mysql.do("SELECT status FROM AnsibleForms.`jobs` WHERE id=?", [jobId], true);
   return rows?.[0]?.status;
@@ -84,10 +107,15 @@ async function track(jobId, rte) {
     if (++polls % ASK_RTE_EVERY) continue;
     try {
       const { data } = await rte.http.get(`/jobs/${jobId}`);
-      // the RTE answers but does not run it, and the row still says running : it is lost
+      // the RTE answers but does not run it, and the row still says running : it is lost -
+      // unless another replica behind the same address claimed it and is alive
       unknown = data?.status === "unknown" ? unknown + 1 : 0;
       if (unknown >= 2) {
         if ((await dbStatus(jobId)) !== "running") continue;
+        if (await heldByLiveRte(jobId).catch(() => true)) {
+          unknown = 0;
+          continue;
+        }
         return failJob(jobId, `the RTE '${rte.name}' lost job ${jobId}`);
       }
     } catch (err) {
