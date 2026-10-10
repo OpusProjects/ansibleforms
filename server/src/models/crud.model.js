@@ -52,10 +52,28 @@ class CrudModel {
       .join(', ');
   }
 
+  /**
+   * Whether a value is the mask the API shows a secret as ('**********', or '********' for
+   * runners and secret stores) : sent back on an update, it means "unchanged".
+   *
+   * Args:
+   *   value (any): the value sent.
+   *
+   * Returns:
+   *   boolean: true for a run of 8 or more asterisks.
+   */
+  static isSecretMask(value) {
+    return typeof value === 'string' && /^\*{8,}$/.test(value);
+  }
+
   static getFieldValues(modelName, data, isUpdate=false) {
     const config = this.getConfig(modelName);
     const result = {};
     for (const field of config.fields) {
+      // a secret the API showed masked and the caller sent back unchanged : its stored value
+      // stays. Written, the mask itself became the password (any edit of a credential,
+      // repository or SSO provider that did not retype it).
+      if (isUpdate && field.isEncrypted && this.isSecretMask(data[field.name])) continue;
       if (data[field.name] !== undefined) {
         let value = data[field.name];
         if (field.isEncrypted && value) {
