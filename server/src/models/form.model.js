@@ -1407,6 +1407,22 @@ Form.save = async function(data){
 
   return true
 }
+/**
+ * The roles a configuration backup holds, for a check before it is restored.
+ *
+ * Args:
+ *   backupName (string): the backup.
+ *
+ * Returns:
+ *   object[]|null: its roles ; null when the backup holds no base configuration.
+ */
+Form.backupRoles = function(backupName){
+  const suffix = getBackupSuffix(backupName)
+  const file = configBackupPathForSource(backupConfigSource(backupName))+suffix
+  if(!fs.existsSync(file)) return null
+  return yaml.parse(fs.readFileSync(file,'utf8'))?.roles || []
+}
+
 Form.restore = async function(backupName,backupBeforeRestore){
   logger.info(`Restoring backup '${backupName}'`)
   var tmpbackup

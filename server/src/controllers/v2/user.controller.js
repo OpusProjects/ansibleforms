@@ -4,6 +4,14 @@ import User from '../../models/user.model.js';
 import RestResult from '../../models/restResult.model.v2.js';
 import Errors from '../../lib/errors.js';
 import i18n from '../../lib/i18n.js';
+import { assertMayTouchAdmin } from '../../lib/adminGrants.js';
+
+// a change only an admin may make (lib/adminGrants.js) : 403, with the reason
+function refused(res, err) {
+  if (!(err instanceof Errors.AccessDeniedError)) return false;
+  res.status(403).json(RestResult.error(err.message));
+  return true;
+}
 
 const findAllOr1 = async function(req, res) {
   try {
@@ -33,9 +41,13 @@ const create = async function(req, res) {
         res.status(400).json(RestResult.error(i18n.t(req, 'errors.requiredFields')));
     }else{
         try {
+          // granting admin is an admin's : a user created in a group that grants it, or named
+          // in the admin role
+          await assertMayTouchAdmin(req, { username: req.body.username, groupIds: [req.body.group_id] });
           const user = await User.create(req.body);
           res.json(RestResult.single(user));
         } catch(err) {
+      if (refused(res, err)) return;
           res.status(500).json(RestResult.error(err.toString()));
         }
     }
@@ -78,9 +90,13 @@ const update = async function(req, res) {
         res.status(400).json(RestResult.error(i18n.t(req, 'errors.requiredFields')));
     }else{
         try {
+          // an admin account (its password, its groups) is changed by an admin only, and a
+          // user is moved into a group that grants admin by an admin only
+          await assertMayTouchAdmin(req, { userId: req.params.id, groupIds: req.body.group_id !== undefined ? [req.body.group_id] : [] });
           await User.update(req.body,req.params.id);
           res.json(RestResult.single(null));
         } catch(err) {
+      if (refused(res, err)) return;
           res.status(500).json(RestResult.error(err.toString()));
         }
     }
@@ -94,9 +110,11 @@ const addGroup = async function(req, res) {
     return res.status(400).json(RestResult.error(i18n.t(req, 'errors.requiredFields')));
   }
   try {
+    await assertMayTouchAdmin(req, { userId: req.params.id, groupIds: [req.body.group_id] });
     await User.addGroup(req.params.id, req.body.group_id);
     res.json(RestResult.single(null));
   } catch(err) {
+      if (refused(res, err)) return;
     res.status(err instanceof Errors.NotFoundError ? 404 : 400).json(RestResult.error(err.message || err.toString()));
   }
 };
@@ -106,9 +124,11 @@ const addGroup = async function(req, res) {
  */
 const removeGroup = async function(req, res) {
   try {
+    await assertMayTouchAdmin(req, { userId: req.params.id });
     await User.removeGroup(req.params.id, req.params.groupId);
     res.json(RestResult.single(null));
   } catch(err) {
+      if (refused(res, err)) return;
     res.status(err instanceof Errors.NotFoundError ? 404 : 400).json(RestResult.error(err.message || err.toString()));
   }
 };
@@ -170,9 +190,11 @@ const find = function(req, res) {
 
 const deleteUser = async function(req, res) {
     try {
+      await assertMayTouchAdmin(req, { userId: req.params.id });
       await User.delete(req.params.id);
       res.json(RestResult.single(null));
     } catch(err) {
+      if (refused(res, err)) return;
       res.status(500).json(RestResult.error(err.toString()));
     }
 };

@@ -17,6 +17,31 @@ import appConfig from "../../../config/app.config.js";
 
 import { fileURLToPath } from 'url';
 import { bump } from '../../lib/epochs.js';
+import Errors from '../../lib/errors.js';
+import yaml from 'yaml';
+import { isAdminRequest } from '../../lib/adminGrants.js';
+import { canonicalJson } from '../../lib/formEngine/output.js';
+
+/**
+ * Refuses to a non-admin a configuration whose roles differ from the active ones. The roles
+ * decide who is an admin and what every role may do : a designer who could edit them could
+ * make themselves admin. Forms, categories and constants stay the designer's.
+ *
+ * Args:
+ *   req (object): the request (the signed-in user).
+ *   roles (object[]|null): the roles of the configuration about to be written ; null when it
+ *     holds no base configuration.
+ *
+ * Raises:
+ *   Errors.AccessDeniedError: a non-admin changes the roles.
+ */
+async function assertRolesUnchanged(req, roles) {
+  if (roles === null || isAdminRequest(req)) return;
+  const active = yaml.parse((await Settings.getActiveConfig().catch(() => '')) || '')?.roles || [];
+  if (canonicalJson(active) !== canonicalJson(roles || [])) {
+    throw new Errors.AccessDeniedError('Only an admin can change the roles');
+  }
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -319,6 +344,12 @@ const restore = async function(req,res){
       if(!backupName){
         return res.status(400).json(RestResult.error(i18n.t(req, 'config.failedRestoreNoName')))
       }
+      try {
+        await assertRolesUnchanged(req, Form.backupRoles(backupName))
+      } catch (err) {
+        if (err instanceof Errors.AccessDeniedError) return res.status(403).json(RestResult.error(i18n.t(req, 'config.failedRestoreForms'), err.message))
+        throw err
+      }
       var restore = await Form.restore(backupName,backupBeforeRestore)
       if(restore) {
         res.json(RestResult.single(null));
@@ -372,6 +403,15 @@ const save = async function(req,res){
   if(lock.match || lock.free){
     const newConfig = new Form(req.body);
     try{
+      // the roles are the admin's : a designer saves forms, categories and constants
+      let incomingRoles = null
+      try { incomingRoles = Form.parse(newConfig)?.roles || [] } catch { incomingRoles = null }
+      try {
+        await assertRolesUnchanged(req, incomingRoles)
+      } catch (err) {
+        if (err instanceof Errors.AccessDeniedError) return res.status(403).json(RestResult.error(i18n.t(req, 'config.failedSaveForms'), err.message))
+        throw err
+      }
       // the designer writes the whole document, so the previous one has to be read
       // before the save to get a role delta out of it
       var previousConfig = await Settings.getActiveConfig().catch(() => '')
@@ -495,3 +535,5 @@ export default {
   configMode,
   configTemplated
 };
+
+export { assertRolesUnchanged };
