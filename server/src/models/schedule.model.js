@@ -1,7 +1,7 @@
 'use strict';
 
 import logger from "../lib/logger.js";
-import Job, { launchValidationMode } from "./job.model.js";
+import Job, { guardLaunch } from "./job.model.js";
 import yaml from 'yaml';
 import CrudModel from './crud.model.js';
 import mysql from './db.model.js';
@@ -76,8 +76,9 @@ class Schedule extends CrudModel {
    * @param {object} user the authenticated user (req.user.user)
    * @param {object} data the request body
    * @returns {Promise<number>} the id of the new schedule
-   * @throws {Errors.BadRequestError} no name or run_at, extra_vars not a dictionary, or a
-   *   form whose launch validation is 'enforce'
+   * @throws {Errors.BadRequestError} no name or run_at, extra_vars or raw_form_data not a
+   *   dictionary
+   * @throws {Errors.ValidationError} launch validation 'enforce' refuses the field values
    * @throws {Errors.AccessDeniedError} no allowPlannedJobs, not one-time, a form the user may
    *   not run, or verbose mode without allowVerboseMode
    */
@@ -103,14 +104,6 @@ class Schedule extends CrudModel {
       throw err;
     }
     if (!formName || !formConfig?.forms?.length) throw noAccess;
-    // A planned run is launched like a browser launch, with launch validation - but "Run
-    // later" stores the built extra_vars, not the raw field values that validation reads.
-    // Under 'enforce' the run would therefore be refused when it fires, after the schedule
-    // was accepted and with nobody there to see it (a one-time schedule is deleted after
-    // its run). Refuse it now, while the user is still looking.
-    if (launchValidationMode(formConfig.forms[0]) === 'enforce') {
-      throw new Errors.BadRequestError(`Form '${formName}' cannot be run later : its launch validation is 'enforce', and a planned run has no raw form data to validate.`);
-    }
     let extravars;
     try {
       extravars = yaml.parse(data.extra_vars || '{}');
@@ -124,6 +117,22 @@ class Schedule extends CrudModel {
     if (extravars.__verbose__ && !user?.options?.allowVerboseMode) {
       throw new Errors.AccessDeniedError("You do not have permission to run jobs in verbose mode.");
     }
+    // A planned run is launched like a browser launch, with launch validation, so it keeps
+    // the raw field values that validation reads. They are checked now as well : under
+    // 'enforce' a run that would be refused when it fires - with nobody there to see it, a
+    // one-time schedule is deleted after its run - is refused while the user is looking.
+    let rawFormData = data.raw_form_data ?? {};
+    if (typeof rawFormData === 'string') {
+      try {
+        rawFormData = rawFormData.trim() ? JSON.parse(rawFormData) : {};
+      } catch (e) {
+        throw new Errors.BadRequestError(`Raw form data is not valid json : ${e.message}`);
+      }
+    }
+    if (rawFormData === null || typeof rawFormData !== 'object' || Array.isArray(rawFormData)) {
+      throw new Errors.BadRequestError("Raw form data is not a valid dictionary.");
+    }
+    await guardLaunch({ form: formName, formConfig, formObj: formConfig.forms[0], user, rawFormData, extravars: structuredClone(extravars) });
     // the identity the job will run as : the user object of the token, as it is now - the
     // same object a launch from the browser puts in `ansibleforms_user`, so a playbook sees
     // the same fields either way (displayName, the oid of an Entra ID user...). It is the
@@ -136,6 +145,7 @@ class Schedule extends CrudModel {
       one_time_run: true,
       run_at: data.run_at,
       extra_vars: data.extra_vars || '',
+      raw_form_data: Object.keys(rawFormData).length ? JSON.stringify(rawFormData) : null,
       owner: JSON.stringify(owner),
       // it waits for its time : idle
       state: 'idle',
@@ -263,14 +273,26 @@ class Schedule extends CrudModel {
         user.groups = [];
         user.roles = ['admin'];
       }
-      extravars.schedule = { ...schedule };
-      delete extravars.schedule.owner;
-      delete extravars.schedule.output;
-      delete extravars.schedule.status;
-      delete extravars.schedule.state;
-      delete extravars.schedule.last_run;
-      delete extravars.schedule.cron;
-      delete extravars.schedule.extra_vars;
+      // the schedule's own record, for the playbook : added by the server after the launch
+      // validation (serverExtravars), it is not form output
+      const scheduleInfo = { ...schedule };
+      delete scheduleInfo.owner;
+      delete scheduleInfo.output;
+      delete scheduleInfo.status;
+      delete scheduleInfo.state;
+      delete scheduleInfo.last_run;
+      delete scheduleInfo.cron;
+      delete scheduleInfo.extra_vars;
+      delete scheduleInfo.raw_form_data;
+      // a planned job's raw field values, for the launch validation (Schedule.plan)
+      let rawFormData = {};
+      if (planned && schedule.raw_form_data) {
+        try {
+          rawFormData = JSON.parse(schedule.raw_form_data) || {};
+        } catch (e) {
+          throw new Error(`The raw form data of this planned job cannot be read : ${e.message}`, { cause: e });
+        }
+      }
       // Job.launch is fire-and-forget and returns { id } - always truthy - so the else
       // below was unreachable and a schedule whose playbook failed still read 'success'.
       // Report what is actually known: the job was STARTED, and name it so the operator
@@ -280,7 +302,7 @@ class Schedule extends CrudModel {
       // the reserved-key strip and launch validation a launch from the browser gets.
       // Job.launch loads the form with the owner's roles, so a role taken off the form
       // since the planning is honoured too.
-      const launched = await Job.launch({ form, user, extravars, fromClient: planned });
+      const launched = await Job.launch({ form, user, extravars, rawFormData, fromClient: planned, serverExtravars: { schedule: scheduleInfo } });
       if (launched?.id) {
         output = `The schedule started job ${launched.id}.\nThis says the job was launched, not that it succeeded - open that job to see how it ended.`;
       } else {

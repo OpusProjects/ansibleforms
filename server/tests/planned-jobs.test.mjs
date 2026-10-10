@@ -24,10 +24,19 @@ vi.mock("../src/lib/i18n.js", () => ({
 
 // what Job.launch receives, per test
 let launched = null;
+// what the launch validation was asked to check when a job was planned
+let guarded = null;
 vi.mock("../src/models/job.model.js", () => ({
   default: { launch: async (args) => { launched = args; return { id: 42 }; } },
-  // the real rule : the stricter of the form's own setting and the instance's (off here)
-  launchValidationMode: (formObj) => formObj?.launchValidation || "off",
+  // the form 'Strict Form' is under 'enforce' : a planned run without a host is refused
+  guardLaunch: async (args) => {
+    guarded = args;
+    if (args.formObj?.launchValidation === "enforce" && !args.rawFormData?.host) {
+      const err = new Error("The form data of 'Strict Form' is not valid - missing : host");
+      err.name = "ValidationError";
+      throw err;
+    }
+  },
 }));
 
 // Schedule.launch claims the row with one conditional statement (two processes reading the
@@ -118,6 +127,7 @@ let created = null;
 beforeEach(() => {
   created = null;
   launched = null;
+  guarded = null;
   CrudModel.create = async (_model, data) => { created = { ...data }; return 7; };
 });
 
@@ -176,9 +186,24 @@ describe("Schedule.plan", () => {
     assert.equal(owner.type, "ldap");
   });
 
-  test("a form with launch validation 'enforce' is refused when planned, not when it fires", async () => {
-    await assert.rejects(Schedule.plan(planner, planBody({ form: "Strict Form" })), { name: "BadRequestError" });
+  test("the raw field values are checked when planned, and kept for when it fires", async () => {
+    await Schedule.plan(planner, planBody({ raw_form_data: { username: "x" } }));
+    assert.equal(guarded.form, "Demo Form");
+    assert.deepEqual(guarded.rawFormData, { username: "x" });
+    assert.deepEqual(guarded.extravars, { username: "x" });
+    assert.equal(created.raw_form_data, JSON.stringify({ username: "x" }));
+  });
+
+  test("launch validation 'enforce' refuses invalid values when planned, not when it fires", async () => {
+    await assert.rejects(Schedule.plan(planner, planBody({ form: "Strict Form" })), { name: "ValidationError" });
     assert.equal(created, null);
+    await Schedule.plan(planner, planBody({ form: "Strict Form", raw_form_data: JSON.stringify({ host: "prod-1" }) }));
+    assert.equal(created.raw_form_data, JSON.stringify({ host: "prod-1" }));
+  });
+
+  test("raw form data that is not a dictionary is refused", async () => {
+    await assert.rejects(Schedule.plan(planner, planBody({ raw_form_data: "{bad" })), { name: "BadRequestError" });
+    await assert.rejects(Schedule.plan(planner, planBody({ raw_form_data: [1] })), { name: "BadRequestError" });
   });
 
   test("without allowPlannedJobs nothing is planned", async () => {
@@ -208,7 +233,16 @@ describe("Schedule.launch", () => {
     assert.equal(launched.user.username, "bob");
     assert.deepEqual(launched.user.roles, ["users"], "it must not run with the admin role");
     assert.equal(launched.fromClient, true, "its extra_vars came from a request body");
-    assert.equal(launched.extravars.schedule.owner, undefined);
+    assert.equal(launched.serverExtravars.schedule.owner, undefined);
+    assert.equal(launched.extravars.schedule, undefined, "the schedule's record is not form output");
+  });
+
+  test("a planned job fires with the raw field values it was planned with", async () => {
+    row.owner = JSON.stringify({ username: "bob", type: "local", roles: ["users"], groups: [], options: {} });
+    row.raw_form_data = JSON.stringify({ host: "prod-1" });
+    await Schedule.launch(1);
+    assert.deepEqual(launched.rawFormData, { host: "prod-1" });
+    assert.equal(launched.serverExtravars.schedule.raw_form_data, undefined);
   });
 
   test("an admin-level schedule still runs as the Schedule Service", async () => {

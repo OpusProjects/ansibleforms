@@ -548,7 +548,7 @@ const SCHEMA_MANIFEST = {
                                'credentials.credential_type', 'repositories.credential', 'groups.description',
                                'secret_stores.credential', 'credentials.client_cert', 'credentials.client_key',
                                'chat_settings.credential',
-                               'users.description'] },
+                               'users.description', 'schedule.raw_form_data'] },
   },
 };
 
@@ -849,6 +849,8 @@ async function patchVersion7(messages, success, failed) {
   await checkPromise(addColumn("settings", "vault_env_imported_at", "datetime", true, "NULL"), messages, success, failed);
   // the user a planned job ("Run later" with allowPlannedJobs) runs as - see Schedule.plan
   await checkPromise(addColumn("schedule", "owner", "longtext", true, "NULL"), messages, success, failed);
+  // a planned job's raw field values, checked by the launch validation when it fires
+  await checkPromise(addColumn("schedule", "raw_form_data", "longtext", true, "NULL"), messages, success, failed);
 
   // 7 : runners (where a playbook runs : an RTE) and the runner a job ran on
   const runners = fs.readFileSync(`${__dirname}/../db/create_runners_table.sql`);
