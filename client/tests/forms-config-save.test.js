@@ -20,8 +20,14 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 const http = vi.hoisted(() => ({ get: null, put: null, puts: [], gets: 0 }));
 vi.mock('axios', () => ({
   default: {
-    get: (...a) => { http.gets++; return http.get(...a); },
-    put: (...a) => { http.puts.push(a[1]); return http.put ? http.put(...a) : Promise.resolve({ data: {} }); },
+    get: (...a) => {
+      http.gets++;
+      return http.get(...a);
+    },
+    put: (...a) => {
+      http.puts.push(a[1]);
+      return http.put ? http.put(...a) : Promise.resolve({ data: {} });
+    },
   },
 }));
 
@@ -58,8 +64,10 @@ forms:
     roles: [operators]
 `;
 
-const okGet = (yamlStr, hash = 'HASH-1') => () =>
-  Promise.resolve({ data: { forms_yaml: yamlStr, baseHash: hash } });
+const okGet =
+  (yamlStr, hash = 'HASH-1') =>
+  () =>
+    Promise.resolve({ data: { forms_yaml: yamlStr, baseHash: hash } });
 
 beforeEach(() => {
   http.puts.length = 0;
@@ -133,9 +141,10 @@ describe('saving', () => {
     // the pre-save GET returns a DIFFERENT hash - it must not be adopted, or a
     // concurrent change could never be detected
     let n = 0;
-    http.get = () => Promise.resolve({
-      data: { forms_yaml: YAML, baseHash: n++ === 0 ? 'HASH-1' : 'HASH-MOVED' },
-    });
+    http.get = () =>
+      Promise.resolve({
+        data: { forms_yaml: YAML, baseHash: n++ === 0 ? 'HASH-1' : 'HASH-MOVED' },
+      });
     const c = useFormsConfig();
     await c.load();
     c.categories.value[0].name = 'Operations';

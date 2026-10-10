@@ -18,19 +18,30 @@ import { describe, it, expect } from 'vitest';
 import {
   isDefaultCategory,
   flattenCategories,
-  canMoveUp, canMoveDown, canIndent, canOutdent,
-  moveCategoryUp, moveCategoryDown, indentCategory, outdentCategory,
-  categoryPaths, movedCategoryPaths,
+  canMoveUp,
+  canMoveDown,
+  canIndent,
+  canOutdent,
+  moveCategoryUp,
+  moveCategoryDown,
+  indentCategory,
+  outdentCategory,
+  categoryPaths,
+  movedCategoryPaths,
 } from '@/config/categories';
 
-const tree = () => ([
+const tree = () => [
   { name: 'Default', icon: 'bars' },
-  { name: 'Infra', icon: 'server', items: [
-    { name: 'Databases', icon: 'database' },
-    { name: 'Network', icon: 'wifi' },
-  ] },
+  {
+    name: 'Infra',
+    icon: 'server',
+    items: [
+      { name: 'Databases', icon: 'database' },
+      { name: 'Network', icon: 'wifi' },
+    ],
+  },
   { name: 'Apps', icon: 'box' },
-]);
+];
 
 describe('reordering siblings', () => {
   it('moves a top level category up', () => {
@@ -66,18 +77,21 @@ describe('reordering siblings', () => {
 describe('changing the parent', () => {
   it('indents a category under the sibling above it', () => {
     const cats = tree();
-    expect(indentCategory(cats, cats[2])).toBe(true);           // Apps under Infra
+    expect(indentCategory(cats, cats[2])).toBe(true); // Apps under Infra
     expect(cats.map((c) => c.name)).toEqual(['Default', 'Infra']);
     expect(cats[1].items.map((c) => c.name)).toEqual(['Databases', 'Network', 'Apps']);
   });
 
   it('takes the whole subtree with it', () => {
     const cats = tree();
-    indentCategory(cats, cats[1]);                              // Infra under Default? no:
+    indentCategory(cats, cats[1]); // Infra under Default? no:
     // Default is the previous sibling and is protected, so nothing moved
     expect(cats[1].name).toBe('Infra');
     // with a movable sibling above, the children come along
-    const other = [{ name: 'A', icon: 'bars' }, { name: 'B', icon: 'bars', items: [{ name: 'B1', icon: 'bars' }] }];
+    const other = [
+      { name: 'A', icon: 'bars' },
+      { name: 'B', icon: 'bars', items: [{ name: 'B1', icon: 'bars' }] },
+    ];
     expect(indentCategory(other, other[1])).toBe(true);
     expect(categoryPaths(other)).toEqual(['A', 'A/B', 'A/B/B1']);
   });
@@ -127,21 +141,28 @@ describe('the Default category the schema pins', () => {
   });
 
   it('cannot be nested under another category', () => {
-    const cats = [{ name: 'Infra', icon: 'server' }, { name: 'Default', icon: 'bars' }];
+    const cats = [
+      { name: 'Infra', icon: 'server' },
+      { name: 'Default', icon: 'bars' },
+    ];
     expect(canIndent(cats, cats[1])).toBe(false);
     expect(indentCategory(cats, cats[1])).toBe(false);
     expect(cats.map((c) => c.name)).toEqual(['Infra', 'Default']);
   });
 
   it('cannot be given children by indenting something into it', () => {
-    const cats = tree();                                        // Default is above Infra
+    const cats = tree(); // Default is above Infra
     expect(canIndent(cats, cats[1])).toBe(false);
     expect(indentCategory(cats, cats[1])).toBe(false);
     expect(cats[0].items).toBeUndefined();
   });
 
   it('does not block a category that has another sibling above it', () => {
-    const cats = [{ name: 'Default', icon: 'bars' }, { name: 'Infra', icon: 'server' }, { name: 'Apps', icon: 'box' }];
+    const cats = [
+      { name: 'Default', icon: 'bars' },
+      { name: 'Infra', icon: 'server' },
+      { name: 'Apps', icon: 'box' },
+    ];
     expect(canIndent(cats, cats[2])).toBe(true);
   });
 });
@@ -150,7 +171,7 @@ describe('the paths a move leaves behind', () => {
   it('reports the paths that no longer exist', () => {
     const before = tree();
     const after = tree();
-    indentCategory(after, after[2]);                            // Apps -> Infra/Apps
+    indentCategory(after, after[2]); // Apps -> Infra/Apps
     expect(movedCategoryPaths(before, after)).toEqual(['Apps']);
     expect(categoryPaths(after)).toContain('Infra/Apps');
   });
@@ -159,7 +180,7 @@ describe('the paths a move leaves behind', () => {
     const before = tree();
     const after = tree();
     const infra = after[1];
-    outdentCategory(after, infra.items[0]);                     // Databases leaves Infra
+    outdentCategory(after, infra.items[0]); // Databases leaves Infra
     expect(movedCategoryPaths(before, after)).toEqual(['Infra/Databases']);
   });
 
@@ -191,7 +212,11 @@ describe('flattenCategories', () => {
     const cats = tree();
     const flat = flattenCategories(cats);
     expect(flat.map((f) => [f.cat.name, f.depth])).toEqual([
-      ['Default', 0], ['Infra', 0], ['Databases', 1], ['Network', 1], ['Apps', 0],
+      ['Default', 0],
+      ['Infra', 0],
+      ['Databases', 1],
+      ['Network', 1],
+      ['Apps', 0],
     ]);
     expect(flat[2].cat).toBe(cats[1].items[0]);
   });

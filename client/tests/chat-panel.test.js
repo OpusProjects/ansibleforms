@@ -11,7 +11,9 @@ const app = readFileSync(path.join(here, '../src/App.vue'), 'utf8');
 
 describe('the chat panel', () => {
   it('shows only for a logged-in user, with the chat enabled on the server, and allowChat not off', () => {
-    expect(src).toMatch(/const visible = computed\(\s*\(\) =>\s*store\.authenticated &&\s*store\.chatEnabled &&\s*store\.profile\?\.options\?\.allowChat !== false &&\s*!NO_CHAT_ROUTES\.has\(route\.name\),?\s*\)/);
+    expect(src).toMatch(
+      /const visible = computed\(\s*\(\) =>\s*store\.authenticated &&\s*store\.chatEnabled &&\s*store\.profile\?\.options\?\.allowChat !== false &&\s*!NO_CHAT_ROUTES\.has\(route\.name\),?\s*\)/,
+    );
     // an expired session lands on the login page with store.authenticated still true
     expect(src).toMatch(/NO_CHAT_ROUTES = new Set\(\['\/login', '\/logout', '\/error', '\/schema'\]\)/);
     expect(src).toMatch(/watch\(visible, \(shown\) => \{\n +if \(shown\) return;\n +open\.value = false;/);
@@ -20,7 +22,9 @@ describe('the chat panel', () => {
   });
 
   it('approves with the plan id only - never a payload the page could have changed', () => {
-    expect(src).toMatch(/axios\.post\(\s*'\/api\/v2\/chat\/approve',\s*\{ sessionId, planId: proposal\.planId \},\s*TokenStorage\.getAuthentication\(\),?\s*\)/);
+    expect(src).toMatch(
+      /axios\.post\(\s*'\/api\/v2\/chat\/approve',\s*\{ sessionId, planId: proposal\.planId \},\s*TokenStorage\.getAuthentication\(\),?\s*\)/,
+    );
     expect(src).not.toMatch(/approve[^\n]*extravars/);
   });
 
@@ -36,7 +40,7 @@ describe('the chat panel', () => {
     expect(src).toMatch(/if \(switchedOff\(err\)\) \{\s*store\.chatEnabled = false;\s*return;\s*\}/);
   });
 
-  it('names a few of the user\'s own chat forms in the welcome, from the server', () => {
+  it("names a few of the user's own chat forms in the welcome, from the server", () => {
     expect(src).toMatch(/examples\.value = Array\.isArray\(res\.data\?\.examples\) \? res\.data\.examples : \[\];/);
     expect(src).toMatch(/v-if="examples\.length"/);
   });

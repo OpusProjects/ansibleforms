@@ -118,8 +118,10 @@ describe('structured values', () => {
   });
 
   it('reads a list of objects', () => {
-    expect(coerceConstantValue('- name: a\n  id: 1\n- name: b\n  id: 2'))
-      .toEqual([{ name: 'a', id: 1 }, { name: 'b', id: 2 }]);
+    expect(coerceConstantValue('- name: a\n  id: 1\n- name: b\n  id: 2')).toEqual([
+      { name: 'a', id: 1 },
+      { name: 'b', id: 2 },
+    ]);
   });
 
   it('reads a block map, which the tree then shows as subkeys', () => {
@@ -173,8 +175,8 @@ describe('structured values', () => {
 // resolves, and it is a string. The editors refuse the save and name the key instead.
 describe('reporting an unreadable value', () => {
   it('reports yaml that cannot be parsed', () => {
-    expect(constantValueError('- a\n- b\n  c: 1')).toBeTruthy();   // indentation
-    expect(constantValueError('[1, 2')).toBeTruthy();              // never closed
+    expect(constantValueError('- a\n- b\n  c: 1')).toBeTruthy(); // indentation
+    expect(constantValueError('[1, 2')).toBeTruthy(); // never closed
     expect(constantValueError('{not: yaml: at all}')).toBeTruthy();
   });
 

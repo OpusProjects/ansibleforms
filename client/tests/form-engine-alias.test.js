@@ -6,10 +6,14 @@ import * as engine from '@engine/index.js';
 import Helpers from '@/lib/Helpers.js';
 
 const subforms = [
-  { name: 'disk', type: 'subform', fields: [
-    { name: 'size', type: 'number', model: 'spec.size' },
-    { name: 'tier', type: 'enum', valueColumn: 'name' },
-  ] },
+  {
+    name: 'disk',
+    type: 'subform',
+    fields: [
+      { name: 'size', type: 'number', model: 'spec.size' },
+      { name: 'tier', type: 'enum', valueColumn: 'name' },
+    ],
+  },
 ];
 
 const fields = [
@@ -34,13 +38,23 @@ const raw = {
   nooutput: 'x',
   data: { a: [1, 2] },
   when: { year: 2026, month: 8 },
-  disks: [{ size: 5, tier: { name: 'gold', id: 1 } }, { size: 7, tier: { name: 'silver', id: 2 } }],
+  disks: [
+    { size: 5, tier: { name: 'gold', id: 1 } },
+    { size: 7, tier: { name: 'silver', id: 2 } },
+  ],
   picked: [{ id: 1 }, { id: 2 }],
 };
 
 describe('@engine is importable in the browser build', () => {
   it('exposes the browser-safe surface and nothing node-only', () => {
-    for (const name of ['buildFormOutput', 'replacePlaceholderInString', 'checkDependencies', 'req', 'requiredReq', 'humanFileSize']) {
+    for (const name of [
+      'buildFormOutput',
+      'replacePlaceholderInString',
+      'checkDependencies',
+      'req',
+      'requiredReq',
+      'humanFileSize',
+    ]) {
       expect(typeof engine[name]).toBe('function');
     }
     expect(engine.sha256).toBeUndefined();

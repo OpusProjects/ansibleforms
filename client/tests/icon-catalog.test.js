@@ -46,10 +46,7 @@ describe('the icon catalogue', () => {
 
   test('every icon resolves in the solid set, or it renders as nothing', () => {
     const missing = availableIcons.filter((n) => !findIconDefinition({ prefix: 'fas', iconName: n }));
-    expect(
-      missing,
-      `these do not resolve and would render as an empty box: ${missing.join(', ')}`
-    ).toEqual([]);
+    expect(missing, `these do not resolve and would render as an empty box: ${missing.join(', ')}`).toEqual([]);
   });
 
   test('no two entries render the same glyph', () => {
@@ -65,7 +62,7 @@ describe('the icon catalogue', () => {
     expect(
       identical,
       'these render identically - FontAwesome aliases, keep only the canonical name: ' +
-        identical.map((g) => g.join(' == ')).join(' ; ')
+        identical.map((g) => g.join(' == ')).join(' ; '),
     ).toEqual([]);
   });
 

@@ -15,7 +15,10 @@ describe('a save must not reorder the forms files', () => {
   // without touching anything rewrote every forms file with its forms alphabetised. On a
   // repository-backed config that is a whole-file diff on every save.
   it('the save path does not use the display ordering', () => {
-    const formsObj = designer.slice(designer.indexOf('const formsObj = computed'), designer.indexOf('const idmapping = computed'));
+    const formsObj = designer.slice(
+      designer.indexOf('const formsObj = computed'),
+      designer.indexOf('const idmapping = computed'),
+    );
     expect(formsObj).toContain('formIdsForSave');
     expect(formsObj).not.toMatch(/formnames\(/);
   });
@@ -38,7 +41,10 @@ describe('the drag order does not survive a reload', () => {
   // form ids are POSITIONAL (form_0, form_1, ...) so the next load reuses them. A stale
   // map therefore applied one document's ordering to a different one.
   it('loadForms resets formOrderMap', () => {
-    const fn = designer.slice(designer.indexOf('async function loadForms'), designer.indexOf('async function loadLock'));
+    const fn = designer.slice(
+      designer.indexOf('async function loadForms'),
+      designer.indexOf('async function loadLock'),
+    );
     expect(fn).toMatch(/formOrderMap\.value\s*=\s*\{\}/);
   });
 });
@@ -67,7 +73,10 @@ describe('the lock switch follows the real lock state', () => {
   // flipped while the lock was untouched - the designer read "Locked by me" with no lock
   // and the next save answered 423 for no visible reason.
   it('the change handler puts the DOM back', () => {
-    const fn = designer.slice(designer.indexOf('function onLockToggle'), designer.indexOf('async function releaseLock'));
+    const fn = designer.slice(
+      designer.indexOf('function onLockToggle'),
+      designer.indexOf('async function releaseLock'),
+    );
     expect(fn).toMatch(/event\.target\.checked = held/);
   });
 
@@ -78,7 +87,10 @@ describe('the lock switch follows the real lock state', () => {
 });
 
 describe('a ytt templated config cannot be saved over', () => {
-  const fn = designer.slice(designer.indexOf('async function loadConfigTemplated'), designer.indexOf('function defaultRepo'));
+  const fn = designer.slice(
+    designer.indexOf('async function loadConfigTemplated'),
+    designer.indexOf('function defaultRepo'),
+  );
 
   it('asks an endpoint a designer can actually reach', () => {
     // /settings/config needs settings access : a designer without it got a 403, the
@@ -100,7 +112,10 @@ describe('a save in flight cannot swallow the edits typed during it', () => {
   // isDirty went false, Save greyed out, the unsaved marker cleared and the navigation
   // guard stopped warning, for an edit that was never sent.
   it('the baseline is captured before the request, not after', () => {
-    const fn = designer.slice(designer.indexOf('const formConfig = assembleForms();'), designer.indexOf('toast.success(t(\'designer.formsSaved\'))'));
+    const fn = designer.slice(
+      designer.indexOf('const formConfig = assembleForms();'),
+      designer.indexOf("toast.success(t('designer.formsSaved'))"),
+    );
     const capture = fn.indexOf('captureBaseline()');
     const send = fn.indexOf('await Form.save(');
     const apply = fn.indexOf('applyBaseline(');
@@ -123,7 +138,10 @@ describe('a failed lock operation does not trap the editor behind a spinner', ()
   // for the lock left an endless spinner that only a page reload cleared - with the
   // in-memory buffers still there but unreachable.
   it('setLock restores loaded on the error path', () => {
-    const fn = designer.slice(designer.indexOf('async function setLock'), designer.indexOf('async function restoreBackup'));
+    const fn = designer.slice(
+      designer.indexOf('async function setLock'),
+      designer.indexOf('async function restoreBackup'),
+    );
     const c = fn.slice(fn.indexOf('} catch (err) {'));
     expect(c).toMatch(/loaded\.value = true/);
   });
@@ -179,8 +197,8 @@ describe('read-only still closes the dirty modal', () => {
     // there - what you get when someone force-unlocks while you are editing
     // bounded by the block's own end, not a character count : the explanatory comment
     // inside it is long enough that a fixed window stopped short of the code
-    const at = designer.indexOf("if (!lock.value?.match) {");
-    const fn = designer.slice(at, designer.indexOf("\n  }", at));
+    const at = designer.indexOf('if (!lock.value?.match) {');
+    const fn = designer.slice(at, designer.indexOf('\n  }', at));
     expect(fn).toMatch(/if \(close\) resetAction\(\);/);
   });
 });
@@ -190,12 +208,18 @@ describe('a manual form ordering follows its file', () => {
   // left the ordering behind: the tree snapped back to alphabetical and the save order
   // fell back to document order, with no message.
   it('rename moves the order', () => {
-    const fn = designer.slice(designer.indexOf('function doRenameFile'), designer.indexOf('function doRenameFile') + 900);
+    const fn = designer.slice(
+      designer.indexOf('function doRenameFile'),
+      designer.indexOf('function doRenameFile') + 900,
+    );
     expect(fn).toMatch(/moveFormOrder\(renameSource\.value, newName\)/);
   });
 
   it('move-to-folder moves it too', () => {
-    const fn = designer.slice(designer.indexOf('function doMoveFileToFolder'), designer.indexOf('function doMoveFileToFolder') + 900);
+    const fn = designer.slice(
+      designer.indexOf('function doMoveFileToFolder'),
+      designer.indexOf('function doMoveFileToFolder') + 900,
+    );
     expect(fn).toMatch(/moveFormOrder\(source, newSource\)/);
   });
 
@@ -210,7 +234,12 @@ describe('restoring a backup asks before discarding unsaved work', () => {
   // loadAll() replaces every buffer, so this threw away whatever was in the editor with
   // no prompt - while pullAndReload, which does the same thing from a repository, goes
   // through withReloadConfirm.
-  const fn = designer.slice(designer.indexOf('async function restoreBackup'), designer.indexOf('async function pushToRepo') > -1 ? designer.indexOf('async function pushToRepo') : designer.indexOf('async function restoreBackup') + 1200);
+  const fn = designer.slice(
+    designer.indexOf('async function restoreBackup'),
+    designer.indexOf('async function pushToRepo') > -1
+      ? designer.indexOf('async function pushToRepo')
+      : designer.indexOf('async function restoreBackup') + 1200,
+  );
 
   it('found the function, so these assertions are not vacuous', () => {
     expect(fn).toContain('Backup.restore(');
