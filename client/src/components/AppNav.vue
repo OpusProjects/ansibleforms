@@ -32,6 +32,7 @@ const navHomeIcon = ref('rectangle-list');
 import axios from 'axios';
 import Time from '@/lib/Time';
 import { useLiveEvent } from '@/composables/useLiveEvent';
+import { jobsPath } from '@/lib/jobsPath';
 
 onMounted(async () => {
   try {
@@ -252,7 +253,7 @@ const buildMismatch = computed(() => {
       <BsNavItem>
         <router-link
           class="btn af-icon-btn af-bell"
-          :to="{ path: '/jobs', query: { status: 'approve' } }"
+          :to="jobsPath('approve')"
           :title="t('jobs.menu.approve')"
           :aria-label="t('jobs.menu.approve')"
         >
