@@ -166,8 +166,23 @@ describe("a value cannot become code", () => {
   });
 
   test("a template literal cannot be closed or interpolated", () => {
-    assert.equal(spliceExpressionValues("`a ${'b'} $(x)`", { x: "${" + attack + "}" }), "`a ${'b'} \"\\${fn.fnCredentials('.*')}\"`");
-    assert.equal(spliceExpressionValues("`$(x)`", { x: "`+" + attack + "+`" }), "`\"\\`+fn.fnCredentials('.*')+\\`\"`");
+    // a backtick and ${ are written as unicode escapes : inert in the template literal
+    assert.equal(spliceExpressionValues("`a ${'b'} $(x)`", { x: "${" + attack + "}" }), "`a ${'b'} \"\\u0024{fn.fnCredentials('.*')}\"`");
+    assert.equal(spliceExpressionValues("`$(x)`", { x: "`+" + attack + "+`" }), "`\"\\u0060+fn.fnCredentials('.*')+\\u0060\"`");
+  });
+
+  test("a value in a template literal reads back exactly, nothing run", () => {
+    // evaluated : the value comes back as the text it was, backslashes included, and the
+    // attack is never called (fn is not even defined here)
+    const evaluate = (src) => new Function(`return ${src}`)();
+    for (const x of ["${" + attack + "}", "`+" + attack + "+`", "a\\`b", "\\${x}", "\\\\`", "plain"]) {
+      // in a template literal the spliced JSON literal's escapes are read too : the value back,
+      // in its quotes
+      assert.equal(evaluate(spliceExpressionValues("`$(x)`", { x })), '"' + x + '"');
+      assert.equal(evaluate(spliceExpressionValues("`v:$(x)`", { x })), 'v:"' + x + '"');
+      assert.equal(evaluate(spliceExpressionValues("'$(x)'", { x })), x);
+      assert.equal(evaluate(spliceExpressionValues('"pre $(x)"', { x })), "pre " + x);
+    }
   });
 
   test("a literal is JSON data re-serialised by the server, never the caller's text", () => {

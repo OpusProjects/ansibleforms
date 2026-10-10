@@ -94,6 +94,22 @@ export function quoteContextAt(expression, index) {
 }
 
 /**
+ * A JS literal's text with a template literal's two active sequences - a backtick, which
+ * closes it, and `${`, which runs code - written as unicode escapes (\u0060, \u0024{).
+ *
+ * A unicode escape needs no backslash of its own to be undone : it reads as the same
+ * character in a '...', "..." or `...` literal whatever precedes it, so it is safe on text that
+ * already carries escapes (the JSON literals spliced here) - where escaping with a backslash
+ * (\`) would have to escape the backslashes first, and those are already escaped by JSON.
+ *
+ * @param {string} text  a JS literal's source (a JSON literal, or a string literal's body)
+ * @returns {string} the same literal, inert inside a template literal
+ */
+export function templateInert(text) {
+  return text.split('`').join('\\u0060').split('${').join('\\u0024{');
+}
+
+/**
  * Splice a resolved value into an expression at the first occurrence of its placeholder,
  * as a JS literal - see the long comment on the client version for the three cases.
  */
@@ -104,10 +120,10 @@ export function substituteExpressionPlaceholder(expression, placeholder, value, 
   const end = at + placeholder.length;
   const quote = quoteContextAt(expression, at);
   // quoteContextAt does not track template literals, so a value landing inside one could
-  // close it with a backtick or run code with ${...}. Escaping both keeps the value intact
-  // in every other context too : \` and \$ are valid escapes inside any JS string literal,
-  // and a JSON literal only ever carries these characters inside its strings.
-  const safe = (s) => (hardened ? String(s).replace(/`/g, '\\`').replace(/\$\{/g, '\\${') : s);
+  // close it with a backtick or run code with ${...}. Both are written as unicode escapes
+  // (templateInert) : inert in a template literal, the same characters in any other JS string
+  // literal, and a JSON literal only ever carries them inside its strings.
+  const safe = (s) => (hardened ? templateInert(String(s)) : s);
   if (!quote) {
     const literal = isSource ? value : JSON.stringify(value);
     return expression.slice(0, at) + safe(literal) + expression.slice(end);
