@@ -233,7 +233,9 @@ body {
   }
   .btn-primary {
     color: var(--bs-body-color) !important;
-    background-color: color.mix($primary, $light, 20%) !important;
+    // the color picked, not the blue built in : its tint, and its tone as the border
+    background-color: color-mix(in srgb, var(--bs-primary) 20%, #{$light}) !important;
+    border-color: var(--bs-primary) !important;
   }
   .btn-success {
     color: var(--bs-body-color) !important;
