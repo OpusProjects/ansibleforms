@@ -9,18 +9,7 @@ const settings = computed(() => getSettings(t));
 import TokenStorage from '@/lib/TokenStorage';
 
 const adminMulti = ref(null);
-const currentSchedule = ref(null);
-const showScheduleOutput = ref(false);
 const authenticated = ref(false);
-
-function previewOutput(schedule) {
-  currentSchedule.value = schedule;
-  showScheduleOutput.value = true;
-}
-
-function offcanvasClose() {
-  showScheduleOutput.value = false;
-}
 
 async function triggerLaunch(schedule) {
   adminMulti.value.setItemProperty({ id: schedule.id, key: 'status', value: 'running' });
@@ -48,12 +37,8 @@ onMounted(async () => {
         apiVersion="2"
         ref="adminMulti"
         :settings="settings.schedules"
-        @preview="previewOutput"
         @trigger="triggerLaunch"
       />
-      <BsOffCanvas :title="t('admin.lastOutput')" :show="showScheduleOutput" @close="offcanvasClose">
-        <pre>{{ currentSchedule?.output || t('admin.loading') }}</pre>
-      </BsOffCanvas>
     </main>
   </div>
 </template>

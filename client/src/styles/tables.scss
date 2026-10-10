@@ -212,6 +212,12 @@
 .af-pill-grey {
   background-color: #6c757d !important;
 }
+/* an empty pill column's en dash (emptyPill) : the pill's room, no fill, the text's colour */
+.af-pill.af-pill-empty {
+  background: transparent;
+  color: var(--bs-body-color);
+  font-weight: normal;
+}
 
 /* the selection column's right padding : after the rules above for every cell and header (the
    class twice to outrank them), so the checkbox and its 0.5rem fit the column */
