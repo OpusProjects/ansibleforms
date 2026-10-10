@@ -314,6 +314,7 @@ export default {
     statusWarning: 'Requiere atención',
     statusError: 'Problema',
     checkDatabase: 'Conexión a la base de datos',
+    checkDatabaseUser: 'Usuario de la base de datos',
     checkSchema: 'Esquema de base de datos',
     sectionChecks: 'Comprobaciones',
     sectionInfo: 'Información',

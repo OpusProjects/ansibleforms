@@ -318,6 +318,7 @@ export default {
     statusWarning: 'Beachtung erforderlich',
     statusError: 'Problem',
     checkDatabase: 'Datenbankverbindung',
+    checkDatabaseUser: 'Datenbankbenutzer',
     checkSchema: 'Datenbankschema',
     sectionChecks: 'Prüfungen',
     sectionInfo: 'Informationen',

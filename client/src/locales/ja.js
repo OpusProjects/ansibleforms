@@ -314,6 +314,7 @@ export default {
     statusWarning: '要確認',
     statusError: '問題あり',
     checkDatabase: 'データベース接続',
+    checkDatabaseUser: 'データベースユーザー',
     checkSchema: 'データベーススキーマ',
     sectionChecks: 'チェック',
     sectionInfo: '情報',

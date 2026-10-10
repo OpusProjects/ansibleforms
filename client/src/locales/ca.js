@@ -316,6 +316,7 @@ export default {
     statusWarning: 'Requereix atenció',
     statusError: 'Problema',
     checkDatabase: 'Connexió amb la base de dades',
+    checkDatabaseUser: 'Usuari de la base de dades',
     checkSchema: 'Esquema de la base de dades',
     sectionChecks: 'Comprovacions',
     sectionInfo: 'Informació',

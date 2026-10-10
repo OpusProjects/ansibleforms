@@ -310,6 +310,7 @@ export default {
     statusWarning: '需要关注',
     statusError: '有问题',
     checkDatabase: '数据库连接',
+    checkDatabaseUser: '数据库用户',
     checkSchema: '数据库架构',
     sectionChecks: '检查项',
     sectionInfo: '信息',

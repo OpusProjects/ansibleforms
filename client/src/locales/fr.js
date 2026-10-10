@@ -319,6 +319,7 @@ export default {
     statusWarning: 'Attention requise',
     statusError: 'Problème',
     checkDatabase: 'Connexion à la base de données',
+    checkDatabaseUser: 'Utilisateur de la base de données',
     checkSchema: 'Schéma de base de données',
     sectionChecks: 'Vérifications',
     sectionInfo: 'Informations',
