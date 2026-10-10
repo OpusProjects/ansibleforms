@@ -2,6 +2,7 @@
 
 // Composables
 import { createRouter, createWebHistory } from 'vue-router';
+import { JOBS_STATUS_SLUGS } from '@/lib/jobsPath';
 import BaseUrl from '@/lib/BaseUrl';
 
 // Pages load on first visit rather than up front: each becomes its own chunk, so the first
@@ -137,7 +138,15 @@ const routes = [
   },
   { path: '/jobs/stored', name: '/jobs/stored', component: storedJobs, beforeEnter: allowStoredJobs },
   { path: '/jobs/stored/:id', name: '/jobs/stored/:id', component: storedJob, beforeEnter: allowStoredJobs },
-  { path: '/jobs/:id', name: '/jobs/:id', component: jobs, beforeEnter: checkJobs },
+  // the jobs of a status (/jobs/running, /jobs/approval ...) ; a job's page by its number only,
+  // so a status's name is never read as a job
+  {
+    path: `/jobs/:status(${JOBS_STATUS_SLUGS.join('|')})`,
+    name: '/jobs/:status',
+    component: jobs,
+    beforeEnter: checkJobs,
+  },
+  { path: '/jobs/:id(\\d+)', name: '/jobs/:id', component: jobs, beforeEnter: checkJobs },
   // the server log : a settings page, under /settings as the others
   { path: '/settings/logs', name: '/settings/logs', component: logs, beforeEnter: checkLogs },
   { path: '/schema', name: '/schema', component: schema },

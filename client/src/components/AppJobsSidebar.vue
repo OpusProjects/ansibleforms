@@ -27,6 +27,7 @@
 /******************************************************************/
 
 import { useI18n } from 'vue-i18n';
+import { jobsPath } from '@/lib/jobsPath';
 import { ref, computed, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
@@ -90,7 +91,7 @@ const isJobsList = computed(() => props.jobs !== null);
 // on the jobs list a status filters in place ; elsewhere it opens the jobs list on it
 function pick(status) {
   if (isJobsList.value) emit('select', status);
-  else router.push({ path: '/jobs', query: status ? { status } : {} });
+  else router.push(jobsPath(status));
 }
 
 const sections = computed(() => {

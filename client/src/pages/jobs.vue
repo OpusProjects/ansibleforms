@@ -15,6 +15,7 @@ import { useLiveEvent } from '@/composables/useLiveEvent';
 import { useFollowOutput } from '@/composables/useFollowOutput';
 import BsColumnPicker from '@/components/BsColumnPicker.vue';
 import { headerWidth } from '@/lib/tableCells';
+import { jobsPath, statusFromSlug } from '@/lib/jobsPath';
 
 // INIT
 
@@ -49,31 +50,33 @@ const showReject = ref(false);
 const relaunchVerbose = ref(false);
 const relaunchWithEdit = ref(false);
 const tempJobId = ref(null);
-// the left menu's status filter : null shows every job ; ?status= opens the page on one
-// (the approvals bell in the header links to ?status=approve)
-const statusFilter = ref(route.query.status || null);
+// the left menu's status filter : null shows every job ; /jobs/<status> opens the page on one
+// (/jobs/running ; the approvals bell in the header links to /jobs/approval)
+const statusFilter = ref(statusFromSlug(route.params.status));
 watch(
-  () => route.query.status,
-  (status) => (statusFilter.value = status || null),
+  () => route.params.status,
+  (slug) => {
+    // a job's page keeps the list's filter : it is the list it goes back to
+    if (!route.params.id) statusFilter.value = statusFromSlug(slug);
+  },
 );
 // a status picked in the left menu : the address follows, so a reload or a shared link
-// opens the same view (the job that is open, if any, stays open)
+// opens the same view
 function selectStatus(status) {
   statusFilter.value = status;
-  const query = { ...route.query };
-  if (status) query.status = status;
-  else delete query.status;
   // from a job's page a status goes back to the list ; on the list it only filters
-  if (isJobPage.value) router.push({ path: '/jobs', query });
-  else router.replace({ query });
+  if (isJobPage.value) router.push({ path: jobsPath(status), query: route.query });
+  else router.replace({ path: jobsPath(status), query: route.query });
 }
 
 // a job that is opened (/jobs/:id) has a page of its own : its actions in the header, and
-// its output - not the list. The list's status filter rides along in
-// the address, so going back opens the list as it was left.
+// its output - not the list. The list's status filter is kept while it shows, so going back
+// opens the list as it was left (listPath).
 const isJobPage = computed(() => !!route.params.id);
+// the list a job was opened from (its status filter) : where its page goes back to
+const listPath = computed(() => jobsPath(statusFilter.value));
 function backToJobs() {
-  router.push({ path: '/jobs', query: route.query });
+  router.push({ path: listPath.value, query: route.query });
 }
 // a job's page and the list open at the top
 // to the top when a job opens or closes : the page scrolls in #app, below the header
@@ -281,7 +284,7 @@ const MENU_STATUSES = [
 const pageCrumbs = computed(() =>
   isJobPage.value
     ? [
-        { title: t('nav.jobs'), icon: 'history', to: '/jobs' },
+        { title: t('nav.jobs'), icon: 'history', to: listPath.value },
         { title: pageTitle.value.title, icon: 'file-lines', to: `/jobs/${route.params.id}` },
       ]
     : [],
