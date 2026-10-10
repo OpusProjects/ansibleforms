@@ -84,6 +84,16 @@ Middleware.checkMcpMiddleware = permissionGuard(u => u.options.allowMcp !== fals
 Middleware.checkSettingsOrScheduledJobsMiddleware = permissionGuard(
   u => u.options.showSettings || u.options.allowScheduledJobs, 'errors.noSettingsAccess')
 
+// A user who signed in with the public default password (config/app.config.js
+// DEFAULT_ADMIN_PASSWORD) may do one thing : change it, on /api/v2/profile. Everything else
+// answers 403 with code password_change_required, which the client turns into the
+// change-password page. Mounted right after the token check, on every authenticated route.
+Middleware.passwordChangeGate = (req, res, next) => {
+  if (!req?.user?.user?.mustChangePassword) return next();
+  if (req.baseUrl === '/api/v2/profile' || String(req.originalUrl || '').startsWith('/api/v2/profile')) return next();
+  return res.status(403).json({ ...RestResult.error(i18n.t(req, 'auth.passwordChangeRequired')), code: 'password_change_required' });
+}
+
 // The scope of the signed-in user (lib/resourceScope.js) for the rest of the request : what
 // their roles allow of the credentials, the secret stores and the runners. Resolving a
 // credential - a form query, fnCredentials, a launch - checks it. The roles of the

@@ -139,7 +139,9 @@ const load = async (app) => {
   // using json web tokens as middleware
   // the jwtauthentication strategy from passport (/auth/auth.js)
   // is used as a middleware.  Every route will check the token for validity
-  const authobj = passport.authenticate("jwt", { session: false });
+  // the token, then the gate of a user who still has the default password : every
+  // authenticated route mounts both
+  const authobj = [passport.authenticate("jwt", { session: false }), Middleware.passwordChangeGate];
 
   // api docs for v1 and v2
   // note : the swagger paths must include the base url (subpath hosting, issue #106)
