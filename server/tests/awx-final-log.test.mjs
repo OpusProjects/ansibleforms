@@ -120,7 +120,7 @@ const job = () => ({ id: 88, url: "/api/v2/jobs/88/", related: { stdout: "/api/v
 // the stored stdout, in order, without the final status line
 const storedLog = () =>
   rows
-    .filter((r) => r.output_type == "stdout" && !r.output.startsWith("Successfully completed"))
+    .filter((r) => r.output_type == "stdout" && !r.output.startsWith("ok: [Successfully completed"))
     .sort((a, b) => a.order - b.order)
     .map((r) => r.output)
     .join("\n");
@@ -139,7 +139,7 @@ test("after the job, the stored log is exactly AWX's final stdout : every line o
   assert.equal(jobRow.status, "success");
   // and the status line still comes after it
   const last = [...rows].sort((a, b) => b.order - a.order)[0];
-  assert.match(last.output, /^Successfully completed/);
+  assert.match(last.output, /^ok: \[Successfully completed/);
 });
 
 test("a final stdout that is AWX's too-large placeholder does not replace the stored log", { timeout: 30000 }, async () => {
