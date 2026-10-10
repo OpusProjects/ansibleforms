@@ -82,7 +82,7 @@ const envGroupOrder = [
     key: 'authentication',
     label: () => t('settings.settingsPage.envGroupAuthentication'),
     icon: 'user-shield',
-    prefix: ['ADMIN_', 'ACCESS_TOKEN_'],
+    prefix: ['ADMIN_', 'ACCESS_TOKEN_', 'LOGIN_'],
     exact: ['REINIT_ADMIN', 'AZURE_GRAPH_URI'],
   },
   {
