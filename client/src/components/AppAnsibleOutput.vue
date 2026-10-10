@@ -72,6 +72,9 @@ function openSpans(html, open) {
   return stack;
 }
 
+// parsed in an inert template : nothing in it runs or loads, its text read as the browser does
+const parser = typeof document !== 'undefined' ? document.createElement('template') : null;
+
 /**
  * A line's text, its tags left out.
  *
@@ -82,7 +85,9 @@ function openSpans(html, open) {
  *   string: its text, trimmed.
  */
 function plain(html) {
-  return html.replace(/<[^>]*>/g, '').trim();
+  if (!parser) return '';
+  parser.innerHTML = html;
+  return (parser.content.textContent || '').trim();
 }
 
 /**
@@ -96,7 +101,7 @@ function plain(html) {
  *   number: its level.
  */
 function headLevel(html) {
-  const text = html.replace(/<[^>]*>/g, '').trimStart();
+  const text = plain(html);
   // a workflow's banners (a node's output, the summary at the end) carry a row of stars ; the
   // summary's own line per node does not, and stays a plain line
   if (/^WORKFLOW( NODE)? \[.*\] \([^)]*\) \*{5,}/.test(text)) return 1;
@@ -109,7 +114,7 @@ function headLevel(html) {
 const lines = computed(() => {
   if (!props.numbered) return [];
   const raw = (props.output || '').split(/<br\s*\/?>|\r?\n/i);
-  while (raw.length && !raw[raw.length - 1].replace(/<[^>]*>/g, '').trim()) raw.pop();
+  while (raw.length && !plain(raw[raw.length - 1])) raw.pop();
   let open = [];
   const out = raw.map((line) => {
     const html = open.join('') + line;
