@@ -6,6 +6,7 @@ import logger from '../lib/logger.js';
 import Helpers from '../lib/common.js';
 import Ldap from '../models/ldap.model.js';
 import { ldapDisplayName } from '../lib/displayName.js'
+import { DEFAULT_ADMIN_PASSWORD } from '../../config/app.config.js'
 
 
 // create username / password login strategy
@@ -30,6 +31,9 @@ passport.use(
         const ro = await User.getRolesAndOptions(user.groups,user)
         user.roles = ro.roles
         user.options = ro.options        
+        // the public default password : everything but changing it is refused until then
+        // (Middleware.passwordChangeGate)
+        if (password === DEFAULT_ADMIN_PASSWORD) user.mustChangePassword = true
         return done(null,user)
       }catch(err){
         return done(err)

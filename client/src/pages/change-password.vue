@@ -6,6 +6,7 @@ import { toast } from 'vue-sonner';
 import TokenStorage from '@/lib/TokenStorage';
 import { useVuelidate } from '@vuelidate/core';
 import Navigate from '@/lib/Navigate';
+import Helpers from '@/lib/Helpers';
 import { required, helpers, sameAs } from '@vuelidate/validators';
 
 const router = useRouter();
@@ -30,14 +31,25 @@ const fields = [
   },
 ];
 
+// signed in with the public default password : the server refuses everything else until it is
+// changed (code password_change_required), so this page cannot be closed
+const mustChange = !!TokenStorage.getPayload()?.user?.mustChangePassword;
+
 async function updateItem() {
   if (!$v.$invalid) {
     try {
       await axios.put(`/api/v2/profile`, item.value, TokenStorage.getAuthentication());
+      if (mustChange) {
+        // the session still carries the default password's mark : sign in again with the new one
+        toast.success('Password is changed, sign in with your new password');
+        TokenStorage.clear();
+        router.push({ name: '/login' });
+        return;
+      }
       toast.success('Password is changed');
       Navigate.toHome(router);
     } catch (err) {
-      toast.error(err.toString());
+      toast.error(Helpers.parseAxiosResponseError(err, 'Failed to change the password'));
     }
   } else {
     toast.warning('Invalid form data');
@@ -98,7 +110,10 @@ const $v = useVuelidate(rules, { item });
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-2">
           <h5 class="card-title mb-0">Please Change Password</h5>
-          <button class="btn-close" aria-label="Close" @click="Navigate.toHome(router)"></button>
+          <button v-if="!mustChange" class="btn-close" aria-label="Close" @click="Navigate.toHome(router)"></button>
+        </div>
+        <div v-if="mustChange" class="alert alert-warning py-2" role="alert">
+          You signed in with the default password, which is public. Choose another one to continue.
         </div>
         <BsInput
           :isHorizontal="true"

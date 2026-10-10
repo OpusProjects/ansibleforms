@@ -6,6 +6,7 @@ import Errors from '../../lib/errors.js';
 import i18n from '../../lib/i18n.js';
 import { assertMayTouchAdmin } from '../../lib/adminGrants.js';
 import { unlockAccount } from '../../lib/loginThrottle.js';
+import { DEFAULT_ADMIN_PASSWORD } from '../../../config/app.config.js';
 
 // a change only an admin may make (lib/adminGrants.js) : 403, with the reason
 function refused(res, err) {
@@ -156,6 +157,10 @@ const changePassword = async function(req, res) {
           // of the account in one request. Only enforced when a password is actually being
           // set, so updating an email still works.
           if (req.body.password) {
+            // the public default is no new password
+            if (req.body.password === DEFAULT_ADMIN_PASSWORD) {
+              return res.status(400).json(RestResult.error(i18n.t(req, 'resources.defaultPasswordRefused')));
+            }
             const current = req.body.currentPassword;
             if (!current) {
               return res.status(400).json(RestResult.error(i18n.t(req, 'resources.currentPasswordRequired')));

@@ -37,6 +37,12 @@ function registerAxiosInterceptor() {
     },
     async (error) => {
       checkBuild(error.response);
+      // signed in with the public default password : the server refuses everything but the
+      // password change (server/src/lib/middleware.js passwordChangeGate)
+      if (error.response?.status === 403 && error.response?.data?.code === 'password_change_required') {
+        if (router.currentRoute.value?.name !== '/change-password') router.push({ name: '/change-password' });
+        throw error;
+      }
       // Return any error which is not due to authentication back to the calling service
       if (error.response?.status !== 401) {
         throw error;

@@ -3,6 +3,10 @@ import os from "os";
 import { fileURLToPath } from "url";
 import { normalizeBaseUrl } from "../src/lib/baseurl.js";
 
+// the admin password of a new install when ADMIN_PASSWORD is not set : public, in the docs
+// and this source, so a login with it must change it first (Middleware.passwordChangeGate)
+export const DEFAULT_ADMIN_PASSWORD = "AnsibleForms!123";
+
 /**
  * JOBS_LIST_SIZE : how many of the newest jobs the jobs list loads, 10 to 10000 (1000 when
  * unset or not a number).
@@ -124,7 +128,7 @@ var app_config = {
   enableConfigInDatabase: (process.env.ENABLE_CONFIG_IN_DATABASE ?? 0) == 1,
   processMaxBuffer: process.env.PROCESS_MAX_BUFFER || 1024 * 1024,
   adminUsername: process.env.ADMIN_USERNAME || "admin",
-  adminPassword: process.env.ADMIN_PASSWORD || "AnsibleForms!123",
+  adminPassword: process.env.ADMIN_PASSWORD || DEFAULT_ADMIN_PASSWORD,
   awxApiPrefix: process.env.AWX_API_PREFIX || "/api/v2",
   backupPath: process.env.BACKUP_PATH || path.resolve(__dirname + "/../persistent/backups"),
   mysqldumpCommand: process.env.MYSQLDUMP_COMMAND || "mariadb-dump --ssl-verify-server-cert=OFF",

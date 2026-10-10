@@ -120,6 +120,9 @@ function processLogin(data) {
   if (!TokenStorage.isAuthenticated()) {
     // console.log("Not authenticated, redirecting to login")
     Navigate.toLogin(router, route);
+  } else if (TokenStorage.getPayload()?.user?.mustChangePassword) {
+    // the public default password : nothing else works until it is changed
+    router.push({ name: '/change-password' });
   } else {
     // console.log("Authenticated")
     Navigate.toOrigin(router, route);
