@@ -105,6 +105,19 @@
   --af-field-border: #b6bec6;
 }
 
+// The pager under every table : its page boxes in the same grey, as the page size beside them
+.pagination {
+  --bs-pagination-border-color: var(--af-field-border);
+  --bs-pagination-disabled-border-color: var(--af-field-border);
+  // Previous or Next with nowhere to go : a lighter grey than the boxes' text, and no pointer
+  --bs-pagination-disabled-color: var(--bs-tertiary-color);
+
+  .page-item.disabled,
+  .page-item.disabled .page-link {
+    cursor: default;
+  }
+}
+
 // The grey of a hovered table row, one for every table of the app : ours (styles/tables.scss)
 // and Bootstrap's .table-hover ones (the forms' list, a select's table), whose own darker
 // shade it replaces

@@ -181,7 +181,8 @@ onMounted(() => {
       <option :value="100">100</option>
     </select>
     <ul class="pagination justify-content-end user-select-none">
-      <li role="button" class="page-item" :class="{ disabled: page <= 1 }">
+      <!-- Previous and Next disabled at either end : no button there, no pointer -->
+      <li :role="page <= 1 ? null : 'button'" class="page-item" :class="{ disabled: page <= 1 }">
         <a class="page-link" @click="setPage(page - 1)"
           ><FaIcon icon="angles-left" class="af-pager-arrow me-1" />{{ t('common.previous') }}</a
         >
@@ -213,7 +214,7 @@ onMounted(() => {
           >{{ pages.length }}</a
         >
       </li>
-      <li role="button" class="page-item" :class="{ disabled: page >= pages.length }">
+      <li :role="page >= pages.length ? null : 'button'" class="page-item" :class="{ disabled: page >= pages.length }">
         <a class="page-link" @click="setPage(page + 1)"
           >{{ t('common.next') }}<FaIcon icon="angles-right" class="af-pager-arrow ms-1"
         /></a>

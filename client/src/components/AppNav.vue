@@ -103,7 +103,12 @@ const menuOptions = computed(() => [
   { title: t('nav.designer'), link: '/designer', icon: 'pen-to-square' },
 ]);
 const helpMenuOptions = computed(() => [
-  { title: t('nav.documentation'), href: 'https://ansibleforms.com', icon: 'globe', target: '_blank' },
+  {
+    title: t('nav.documentation'),
+    href: 'https://ansibleforms.com',
+    icon: 'arrow-up-right-from-square',
+    target: '_blank',
+  },
   { title: t('nav.apiDocs'), link: '/api-docs', icon: 'code', target: '_blank' },
 ]);
 const profileMenu = computed(() => [
@@ -280,7 +285,7 @@ const buildMismatch = computed(() => {
           <li><hr class="dropdown-divider" /></li>
           <li>
             <button type="button" class="dropdown-item d-flex align-items-center" @click="showVersion = true">
-              <span class="icon"><font-awesome-icon icon="code-branch" /></span>
+              <span class="icon"><font-awesome-icon icon="circle-info" /></span>
               <span class="ms-2">{{ t('nav.about') }}</span>
               <span class="ms-auto ps-3 af-menu-meta">v{{ store.version }}</span>
             </button>
