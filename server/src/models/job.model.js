@@ -1258,10 +1258,12 @@ Job.relaunchWithValues = async function ({ user, id, values = {}, verbose = fals
   }
 
   // otherwise through the form engine : resolved, validated, the extravars built here
-  if (Array.isArray(formObj.wizard) && formObj.wizard.length > 0) {
-    throw codedError(Errors.BadRequestError, `'${job.form}' is a wizard form ; it cannot be ${changed ? 'relaunched with changes' : 'checked under launch validation \'enforce\''} yet`, 'unsupported');
-  }
   const stored = job.raw_form_data ? safeParse(job.raw_form_data, null, `job.raw_form_data id=${id}`) : null;
+  // a wizard is checked from its stored step drafts : as it ran, not with changes, and only
+  // when the job stored them (a wizard job launched before 7 stored its merged output)
+  if (Array.isArray(formObj.wizard) && formObj.wizard.length > 0 && (changed || stored?.__wizard__ !== true)) {
+    throw codedError(Errors.BadRequestError, `'${job.form}' is a wizard form ; ${changed ? 'it cannot be relaunched with changes' : 'this job did not store its step drafts, so it cannot be checked under launch validation \'enforce\''}`, 'unsupported');
+  }
   if (!stored) {
     throw new Errors.NotFoundError(`No saved form data found for job ${id}, so it cannot be relaunched with changes. This job may have been created before the relaunch feature was enabled.`);
   }

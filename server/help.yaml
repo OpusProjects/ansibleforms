@@ -2417,8 +2417,8 @@
           stricter than the instance, never looser. The MCP server always validates and builds
           the extravars itself, whatever this says.
 
-          Not for wizard forms yet : a wizard form with `launchValidation` does not load. See
-          the **Launch validation** page of the documentation.
+          A wizard form is checked step by step : every step the browser submits is resolved
+          against its subform. See the **Launch validation** page of the documentation.
         examples:
           - name: A form that is launched over REST
             code: |

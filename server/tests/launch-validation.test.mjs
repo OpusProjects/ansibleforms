@@ -50,6 +50,31 @@ afterAll(() => {
   fs.rmSync(outside, { force: true });
 });
 
+// a wizard : two steps under one defaultModel, the second only for a large VM, the third optional
+const wizardForm = {
+  name: "Wizard VM",
+  fields: [],
+  wizard: [
+    { subform: "basics", defaultModel: "vm" },
+    { subform: "disk", defaultModel: "vm", when: "$(__parent__.basics.large) === true" },
+    { name: "extra", subform: "extras", optional: true },
+  ],
+  subforms: [
+    { name: "basics", type: "subform", fields: [
+      { name: "name", type: "text", required: true, regex: { expression: "^prod-", description: "Must start with prod-" } },
+      { name: "large", type: "checkbox", default: true },
+      { name: "secret", type: "password" },
+      { name: "cred", type: "credential", expression: "'cred_' + '$(name)'", output: false },
+    ] },
+    { name: "disk", type: "subform", fields: [
+      { name: "size", type: "number", required: true, maxValue: 100 },
+    ] },
+    { name: "extras", type: "subform", fields: [
+      { name: "note", type: "text", required: true },
+    ] },
+  ],
+};
+const wizardRaw = (drafts, skipped = { extra: true }) => ({ __wizard__: true, drafts, skipped });
 const args = (rawFormData, extravars = {}, files = {}) => ({ form: formObj.name, formConfig, formObj, user, rawFormData, extravars, files });
 
 let warned;
@@ -78,9 +103,10 @@ describe("validateLaunch", () => {
     expect(r.payload.credentials).toEqual({ cred: "cred_prod-1" });
   });
 
-  test("a wizard form is skipped", async () => {
-    const r = await validateLaunch({ formConfig, formObj: { ...formObj, wizard: [{ subform: "s1" }] }, user, services, rawFormData: {}, extravars: {} });
-    expect(r.skipped).toMatch(/wizard/);
+  test("a wizard form without its step drafts is refused", async () => {
+    const r = await validateLaunch({ formConfig, formObj: { ...formObj, wizard: [{ subform: "s1" }] }, user, services, rawFormData: { host: "x" }, extravars: {} });
+    expect(r.ok).toBe(false);
+    expect(r.reason).toMatch(/step drafts/);
   });
 
   test("the log line names fields and rule types, never values", () => {
@@ -162,14 +188,61 @@ describe("per-form launchValidation", () => {
     await expect(guardLaunch(args({ host: "test-1" }))).resolves.toBeUndefined();
   });
 
-  test("the form schema takes it on a form, refuses it on a wizard form and on a subform", () => {
+  test("the form schema takes it on a form and a wizard form, refuses it on a subform", () => {
     const base = { name: "F", type: "ansible", playbook: "p.yml", roles: ["public"], categories: [], fields: [{ name: "a", type: "text" }] };
     expect(() => Form.validateForm({ ...base, launchValidation: "enforce" })).not.toThrow();
     expect(() => Form.validateForm({ ...base, launchValidation: "strict" })).toThrow();
     const wizard = { ...base, fields: undefined, wizard: [{ subform: "s1" }] };
     expect(() => Form.validateForm(wizard)).not.toThrow();
-    expect(() => Form.validateForm({ ...wizard, launchValidation: "enforce" })).toThrow();
+    expect(() => Form.validateForm({ ...wizard, launchValidation: "enforce" })).not.toThrow();
     expect(() => Form.validateForm({ name: "S", type: "subform", fields: [{ name: "a", type: "text" }], launchValidation: "log" })).toThrow();
+  });
+});
+
+describe("wizard forms", () => {
+  const run = (rawFormData, extravars = {}) =>
+    validateLaunch({ formConfig, formObj: wizardForm, user, services, rawFormData, extravars, files: {}, uploadPath: uploadDir });
+
+  test("every shown step is checked and merged under its defaultModel", async () => {
+    const r = await run(wizardRaw({ basics: { name: "prod-web", large: true }, disk: { size: 50 } }), { vm: { secret: "s" } });
+    expect(r.ok).toBe(true);
+    expect(r.payload.extravars).toEqual({ vm: { name: "prod-web", large: true, secret: "s", size: 50 } });
+    expect(r.payload.credentials).toEqual({ cred: "cred_prod-web" });
+  });
+
+  test("a step whose `when` is false is left out, and not checked", async () => {
+    const r = await run(wizardRaw({ basics: { name: "prod-web", large: false }, disk: { size: 500 } }));
+    expect(r.ok).toBe(true);
+    expect(r.payload.extravars).toEqual({ vm: { name: "prod-web", large: false } });
+  });
+
+  test("an optional step is left out only when skipped", async () => {
+    const r = await run(wizardRaw({ basics: { name: "prod-web", large: false } }, {}));
+    expect(r.ok).toBe(false);
+    expect(r.errors.missing).toEqual(["extra.note"]);
+    // a step that is not optional cannot be skipped
+    const forced = await run(wizardRaw({ basics: { name: "prod-web" } }, { extra: true, disk: true }));
+    expect(forced.ok).toBe(false);
+    expect(forced.errors.missing).toEqual(["disk.size"]);
+  });
+
+  test("the errors name the step and the field", async () => {
+    const r = await run(wizardRaw({ basics: { name: "test-web" }, disk: { size: 500 } }));
+    expect(r.ok).toBe(false);
+    expect(Object.keys(r.errors.validationErrors).sort()).toEqual(["basics.name", "disk.size"]);
+    expect(describeLaunchErrors(r.errors)).toMatch(/basics\.name \(regex\)/);
+  });
+
+  test("a credential is computed on the server, whatever the draft says", async () => {
+    const r = await run(wizardRaw({ basics: { name: "prod-web", large: false, cred: "prod-root" } }));
+    expect(r.ok).toBe(true);
+    expect(r.payload.credentials).toEqual({ cred: "cred_prod-web" });
+  });
+
+  test("the log mode compares the client's merged output with the server's", async () => {
+    appConfig.launchValidation = "log";
+    await guardLaunch({ ...args(wizardRaw({ basics: { name: "prod-web", large: false } }), { vm: { name: "other", large: false } }), formObj: wizardForm });
+    expect(warned.join("\n")).toMatch(/differ.*vm/);
   });
 });
 
@@ -247,12 +320,17 @@ describe("guardLaunch", () => {
     expect(err.details.uploads).toEqual([{ field: "upload", reason: "the upload is not in the upload folder" }]);
   });
 
-  test("enforce : a wizard form is refused, it cannot be checked yet", async () => {
+  test("enforce : a wizard form runs the extravars the server built from its steps", async () => {
     appConfig.launchValidation = "enforce";
-    const wizard = { ...formObj, wizard: [{ subform: "s1" }] };
-    const err = await guardLaunch({ ...args({ host: "prod-1" }), formObj: wizard }).catch((e) => e);
+    const built = await guardLaunch({ ...args(wizardRaw({ basics: { name: "prod-web" }, disk: { size: 50 } }), { forged: true }), formObj: wizardForm });
+    expect(built.extravars).toEqual({ vm: { name: "prod-web", large: true, size: 50 } });
+  });
+
+  test("enforce : a wizard step that breaks its rules is refused", async () => {
+    appConfig.launchValidation = "enforce";
+    const err = await guardLaunch({ ...args(wizardRaw({ basics: { name: "test-web" }, disk: { size: 50 } })), formObj: wizardForm }).catch((e) => e);
     expect(err.name).toBe("ValidationError");
-    expect(err.message).toMatch(/cannot be launched with launch validation 'enforce' yet/);
+    expect(err.message).toMatch(/basics\.name \(regex\)/);
   });
 
   test("enforce : leaving rawFormData out is not a way around the check", async () => {
