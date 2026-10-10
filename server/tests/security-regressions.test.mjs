@@ -21,7 +21,7 @@ vi.mock("../src/models/db.model.js", () => ({
   },
 }));
 
-const { stripReservedExtravars, pushForminfoToExtravars } = await import("../src/models/job.model.js");
+const { stripReservedExtravars, stripUndeclaredCredentials, pushForminfoToExtravars } = await import("../src/models/job.model.js");
 const Job = (await import("../src/models/job.model.js")).default;
 const Helpers = (await import("../src/lib/common.js")).default;
 
@@ -146,6 +146,47 @@ describe("the client cannot choose what a job actually runs", () => {
     assert.deepEqual(stripReservedExtravars(undefined), {});
     assert.deepEqual(stripReservedExtravars(null), {});
     assert.deepEqual(stripReservedExtravars("nope"), {});
+  });
+});
+
+describe("the client cannot hand a job a credential the form does not declare", () => {
+  // The browser sends a credentials map built from the form's credential fields, and
+  // pushForminfoToExtravars merged it into __credentials__ whatever its keys : a raw REST
+  // call could add one of its own and pass any stored credential to the playbook.
+  test("an undeclared key is dropped", () => {
+    const out = stripUndeclaredCredentials({ stolen: "prod-root" }, { fields: [{ name: "host", type: "text" }] });
+    assert.deepEqual(out, {});
+  });
+
+  test("a credential field and an asCredential field are kept", () => {
+    const form = { fields: [
+      { name: "vcenter", type: "credential" },
+      { name: "db", type: "expression", asCredential: true },
+      { name: "host", type: "text" },
+    ] };
+    const out = stripUndeclaredCredentials({ vcenter: "vc", db: "mysql", host: "x", extra: "y" }, form);
+    assert.deepEqual(out, { vcenter: "vc", db: "mysql" });
+  });
+
+  test("a wizard step's subform and a multistep step declare theirs", () => {
+    const form = {
+      fields: [],
+      wizard: [{ subform: "step1" }],
+      subforms: [{ name: "step1", fields: [{ name: "wiz", type: "credential" }] }, { name: "unused", fields: [{ name: "other", type: "credential" }] }],
+      steps: [{ fields: [{ name: "multi", asCredential: true }] }],
+    };
+    const out = stripUndeclaredCredentials({ wiz: 1, multi: 2, other: 3 }, form);
+    assert.deepEqual(out, { wiz: 1, multi: 2 });
+  });
+
+  test("a map that is not an object yields none", () => {
+    assert.deepEqual(stripUndeclaredCredentials(["a"], { fields: [] }), {});
+    assert.deepEqual(stripUndeclaredCredentials(null, { fields: [] }), {});
+  });
+
+  test("Job.launch filters the client's credentials before they reach the extravars", () => {
+    const src = readFileSync(new URL("../src/models/job.model.js", import.meta.url), "utf8");
+    assert.match(src, /if \(fromClient\) creds = stripUndeclaredCredentials\(creds, formObj\);/);
   });
 });
 

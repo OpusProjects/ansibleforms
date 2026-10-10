@@ -161,6 +161,54 @@ function stripReservedExtravars(extravars, formObj = null) {
 }
 
 /**
+ * Keep only the credentials a CLIENT may send : the ones the form declares.
+ *
+ * The browser sends a credentials map built from the form's credential fields (a field of
+ * type `credential`, or any field with `asCredential: true`), keyed by the field's name.
+ * pushForminfoToExtravars merges that map into `__credentials__`, so a raw REST call could
+ * add a key of its own and hand the job any stored credential, under any name, on a form
+ * that never asked for one. The form definition is the gate, as for the reserved extravars :
+ * a key survives only when the form (one of its multistep steps, or a wizard step's
+ * subform) declares a credential field by that name.
+ *
+ * Args:
+ *   credentials (object): the credentials map from the request body.
+ *   formObj (object): the form being launched, as Form.load returned it.
+ *
+ * Returns:
+ *   object: a new map holding only the declared keys ; {} when none is declared or the
+ *     map is not an object.
+ */
+function stripUndeclaredCredentials(credentials, formObj = null) {
+  if (!credentials || typeof credentials !== "object" || Array.isArray(credentials)) return {};
+  const declared = new Set();
+  const addFields = (fields) => {
+    for (const field of fields || []) {
+      if (!field || typeof field !== "object" || typeof field.name !== "string") continue;
+      if (field.asCredential === true || field.type === "credential") declared.add(field.name);
+    }
+  };
+  addFields(formObj?.fields);
+  // multistep: each step carries its own fields
+  for (const step of formObj?.steps || []) addFields(step?.fields);
+  // wizard: each step is a subform, inlined by Form.load as formObj.subforms
+  for (const step of Array.isArray(formObj?.wizard) ? formObj.wizard : []) {
+    const sub = (formObj.subforms || []).find((s) => s?.name === step?.subform);
+    if (sub) addFields(sub.fields);
+  }
+  const kept = {};
+  const removed = [];
+  for (const [key, value] of Object.entries(credentials)) {
+    if (declared.has(key)) kept[key] = value;
+    else removed.push(key);
+  }
+  if (removed.length) {
+    logger.warning(`Ignoring credentials supplied by the client that the form does not declare : ${removed.join(", ")}`);
+  }
+  return kept;
+}
+
+/**
  * Put the launching user into the extravars as `ansibleforms_user`, trimmed to whatever the
  * instance and the form asked for (see Helpers.userForExtravars).
  *
@@ -908,6 +956,8 @@ Job.launch = async function ({
   // form's own value. formObj comes from Form.load(user.roles, ...), so the declarations are
   // read from a form this user is allowed to run.
   if (fromClient) stripReservedExtravars(extravars, formObj);
+  // the same gate for the credentials map : only the form's own credential fields
+  if (fromClient) creds = stripUndeclaredCredentials(creds, formObj);
 
   // the field values of a REST launch against the form's rules, as the browser checks them
   if (fromClient && !validated && !isStep) {
@@ -2064,4 +2114,4 @@ for (const fn of CHANGES_A_JOB) {
 // Ansible stuff
 export default Job;
 // named export for the tests
-export { Multistep, stripReservedExtravars, setUserExtravars, guardLaunch, launchValidationMode, pushForminfoToExtravars };
+export { Multistep, stripReservedExtravars, stripUndeclaredCredentials, setUserExtravars, guardLaunch, launchValidationMode, pushForminfoToExtravars };
