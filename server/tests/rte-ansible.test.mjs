@@ -65,7 +65,8 @@ vi.mock("../src/models/runner.model.js", () => ({
   },
 }));
 
-const { default: Job } = await import("../src/models/job.model.js");
+const jobExports = await import("../src/models/job.model.js");
+const { default: Job } = jobExports;
 const { default: mysql } = await import("../src/models/db.model.js");
 const { default: Repository } = await import("../src/models/repository.model.js");
 const core = await import("../src/rte/ansible-core.js");
@@ -192,6 +193,63 @@ describe("a playbook job runs from its jobs row", () => {
     await runToEnd(() => core.runAnsibleJob({ jobId: 11 }));
     const after = outputs.slice(1).map((o) => o.order);
     assert.ok(after.every((n) => n > 4), "every new line comes after the existing ones");
+  });
+});
+
+describe("a form value is never a template", () => {
+  // ansible templates a string from an extravars file when the playbook uses it : a value of
+  // `{{ lookup('pipe', ...) }}` typed into a form field ran that command on the RTE
+  const attack = "{{ lookup('pipe', 'id') }}";
+
+  test("a string with a Jinja marker is written as ansible's unsafe, anywhere in the extravars", async () => {
+    row({ __playbook__: "site.yml", name: attack, list: ["ok", "{% if 1 %}x{% endif %}"], nested: { note: "{# c #}" } });
+    await runToEnd(() => core.runAnsibleJob({ jobId: 11 }));
+    const ev = spawned[0].extravars;
+    assert.deepEqual(ev.name, { __ansible_unsafe: attack });
+    assert.deepEqual(ev.list, ["ok", { __ansible_unsafe: "{% if 1 %}x{% endif %}" }]);
+    assert.deepEqual(ev.nested, { note: { __ansible_unsafe: "{# c #}" } });
+  });
+
+  test("everything without a marker is written exactly as before", async () => {
+    const values = { __playbook__: "site.yml", name: "web01", n: 3, on: true, none: null, tags: ["a", "b"], obj: { k: "{ not jinja }" } };
+    row(values);
+    await runToEnd(() => core.runAnsibleJob({ jobId: 11 }));
+    assert.deepEqual(spawned[0].extravars, { ...values, __jobid__: 11 });
+  });
+
+  test("a credential's password is never templated, in the extravars or the hidden file", async () => {
+    credentialRows.braces = { name: "braces", user: "u", password: "p{{w}}" };
+    row({ __playbook__: "site.yml", __credentials__: { c: "braces" }, __ansibleCredentials__: "braces" });
+    await runToEnd(() => core.runAnsibleJob({ jobId: 11 }));
+    assert.deepEqual(spawned[0].extravars.c.password, { __ansible_unsafe: "p{{w}}" });
+    assert.deepEqual(spawned[0].hidden.ansible_password, { __ansible_unsafe: "p{{w}}" });
+    delete credentialRows.braces;
+  });
+
+  test("a form with allowJinjaInExtravars keeps its templates", async () => {
+    row({ __playbook__: "site.yml", __allowJinjaInExtravars__: true, name: "{{ inventory_hostname }}" });
+    await runToEnd(() => core.runAnsibleJob({ jobId: 11 }));
+    assert.equal(spawned[0].extravars.name, "{{ inventory_hostname }}");
+  });
+
+  test("only a real true opts out", async () => {
+    row({ __playbook__: "site.yml", __allowJinjaInExtravars__: "false", name: attack });
+    await runToEnd(() => core.runAnsibleJob({ jobId: 11 }));
+    assert.deepEqual(spawned[0].extravars.name, { __ansible_unsafe: attack });
+  });
+});
+
+describe("the form decides allowJinjaInExtravars, never the request", () => {
+  test("the form property is handed to the RTE as __allowJinjaInExtravars__", () => {
+    const formObj = { name: "f", playbook: "site.yml", allowJinjaInExtravars: true, fields: [] };
+    const ev = {};
+    jobExports.pushForminfoToExtravars(formObj, ev);
+    assert.equal(ev.__allowJinjaInExtravars__, true);
+  });
+
+  test("a client cannot switch it on for a form that does not declare it", () => {
+    const ev = jobExports.stripReservedExtravars({ __allowJinjaInExtravars__: true, name: "x" }, { name: "f", fields: [{ name: "name" }] });
+    assert.equal("__allowJinjaInExtravars__" in ev, false);
   });
 });
 

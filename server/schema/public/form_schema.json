@@ -320,6 +320,9 @@
             "keepExtravars": {
               "not": {}
             },
+            "allowJinjaInExtravars": {
+              "not": {}
+            },
             "userExtravars": {
               "not": {}
             },
@@ -1227,6 +1230,9 @@
           "type": "boolean"
         },
         "keepExtravars": {
+          "type": "boolean"
+        },
+        "allowJinjaInExtravars": {
           "type": "boolean"
         },
         "userExtravars": {
@@ -4534,6 +4540,9 @@
               "keepExtravars": {
                 "not": {}
               },
+              "allowJinjaInExtravars": {
+                "not": {}
+              },
               "userExtravars": {
                 "not": {}
               },
@@ -5441,6 +5450,9 @@
             "type": "boolean"
           },
           "keepExtravars": {
+            "type": "boolean"
+          },
+          "allowJinjaInExtravars": {
             "type": "boolean"
           },
           "userExtravars": {

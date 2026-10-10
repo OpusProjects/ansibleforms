@@ -1808,6 +1808,7 @@
                 diff: false                                    # show differences
                 verbose: false                                 # verbose output
                 keepExtravars: false                           # keep extravars json file                  
+                allowJinjaInExtravars: false                   # let ansible template jinja in values
                 tags: vm,create                                # optional ansible tags (comma separated)
                 type: ansible                                  # type is awx or ansible
                 onSubmit:                                      # event handler on form submit
@@ -2343,6 +2344,18 @@
 
           **Note** : You can also dynamically set this property by using a field called `__keepExtravars__`.  It must be sent as extravar.  If this extravar is found it will overwrite the static diff field.  The field must result in a boolean (expression or checkbox)          
           **Note** : If you use multistep and you want to dynamically set every step, use the `key` property and `model` property to create separate extravars per step.              
+      - name: allowJinjaInExtravars
+        type: boolean
+        with_types: ansible
+        short: Let ansible template Jinja in the form's values
+        group: workflow
+        version: 7.0.1
+        description: |
+          A value that contains Jinja (`{{ }}`, `{% %}` or `{# #}`) is passed to the playbook as plain text - ansible receives it marked unsafe and never templates it. Without this, a user could type `{{ lookup('pipe', '...') }}` into a field and run commands on the RTE. AWX applies the same rule to launch-time extra vars by default.
+
+          Set this to `true` only when the form deliberately passes Jinja for the playbook to evaluate. Values without Jinja are never affected.
+
+          **Note** : You can also dynamically set this property by using a field called `__allowJinjaInExtravars__`. The field must result in a boolean `true`.
       - name: userExtravars
         type: string
         with_types: ansible, awx, multistep

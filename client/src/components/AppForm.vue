@@ -1051,6 +1051,7 @@ function findVariableDependencies() {
     '__diff__',
     '__verbose__',
     '__keepExtravars__',
+    '__allowJinjaInExtravars__',
     '__credentials__',
     '__inventory__',
     '__awxCredentials__',
