@@ -339,6 +339,24 @@ function cellPlain(item, col) {
   return String(raw);
 }
 
+/**
+ * A cell's native tooltip : its full text (a long value is cut with an ellipsis) - none for a
+ * checkbox, and none for a cell with a popover of its own (data-af-popover, a cron's meaning in
+ * words), which would show both at once.
+ *
+ * Args:
+ *   item (object): the row.
+ *   col (object): the column.
+ *
+ * Returns:
+ *   string|null: the tooltip, or null for none.
+ */
+function cellTitle(item, col) {
+  if (!col || col.type === 'checkbox') return null;
+  if (col.render && String(col.render(item[col.key], item)).includes('data-af-popover')) return null;
+  return cellPlain(item, col);
+}
+
 // ─── Selection ────────────────────────────────────────────────────────────────
 // filteredItems.indexOf(item) fails with Vue 3 Proxy wrapping — two proxies of
 // the same object are not === equal. Use id-based lookup instead.
@@ -642,7 +660,7 @@ function exportCsv() {
               v-for="(col, cIdx) in visibleColumns"
               :key="col.key"
               :class="{ 'text-end': col.align === 'end', 'af-row-open': !rowClickSelects && isLinkColumn(col, cIdx) }"
-              :title="col.type !== 'checkbox' ? cellPlain(item, col) : null"
+              :title="cellTitle(item, col)"
             >
               <template v-if="col.type === 'checkbox'">
                 <font-awesome-icon v-if="item[col.key]" icon="check" class="text-success" />
