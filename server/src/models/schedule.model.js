@@ -49,6 +49,8 @@ class Schedule extends CrudModel {
     // `owner` is written by plan() alone. A request body that carries one is somebody
     // choosing which user a schedule runs as - drop it, like the internal fields below.
     delete data.owner
+    // a new schedule waits for its time : idle, not without a state
+    data.state = 'idle'
     return super.create(this.modelName, data);
   }
 
@@ -135,6 +137,8 @@ class Schedule extends CrudModel {
       run_at: data.run_at,
       extra_vars: data.extra_vars || '',
       owner: JSON.stringify(owner),
+      // it waits for its time : idle
+      state: 'idle',
     });
   }
 

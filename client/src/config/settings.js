@@ -60,6 +60,18 @@ function cronCell(value) {
 }
 
 /**
+ * The empty value of a pill column (a schedule that never ran) : an en dash in a pill with no
+ * colour of its own - the text's - so it lines up with the other rows' pill text rather than
+ * starting at their edge, without looking like a value.
+ *
+ * Returns:
+ *   string: the pill's HTML.
+ */
+export function emptyPill() {
+  return `<span class="badge rounded-pill af-pill af-pill-empty"><span class="af-pill-label">–</span></span>`;
+}
+
+/**
  * A status as a pill of the shared tables, the colors of the audit log's outcomes : running in
  * blue, success in green, failed in red, anything else grey ; none, an en dash.
  *
@@ -71,7 +83,7 @@ function cronCell(value) {
  *   string: the cell's HTML, escaped.
  */
 export function statusPill(t, value) {
-  if (!value) return '–';
+  if (!value) return emptyPill();
   const known = { running: PILL.blue, success: PILL.green, failed: PILL.red };
   const label = known[value] ? t(`jobs.menu.${value}`) : value;
   return `<span class="badge rounded-pill fw-semibold af-pill ${known[value] || PILL.grey}"><span class="af-pill-label">${escapeHtml(label)}</span></span>`;
@@ -101,7 +113,8 @@ export function statusPill(t, value) {
  *   string: the pill's HTML, escaped.
  */
 export function schedulePill(t, state) {
-  if (!state) return '–';
+  // never run : waiting for its time, idle
+  if (!state) state = 'idle';
   const known = { running: PILL.blue, queued: PILL.amber, idle: PILL.grey };
   const label = known[state] ? t(`settings.schedules.state_${state}`) : state;
   return `<span class="badge rounded-pill fw-semibold af-pill ${known[state] || PILL.grey}"><span class="af-pill-label">${escapeHtml(label)}</span></span>`;
@@ -837,16 +850,20 @@ export default function getSettings(t) {
       // reloadSeconds: 7,
       icon: 'clock',
       selectable: false,
+      // a schedule has its own page (pages/schedule.vue) : its row and Edit open it, New the
+      // wizard
+      openPage: (item) => `/jobs/schedules/${item.id}`,
       // the dialog in steps : what runs (its name, the form), when (once at a time, or on a cron
       // schedule), the extra vars it sends to the form
       steps: [
-        { key: 'schedule', label: t('settings.schedules.stepSchedule') },
-        { key: 'when', label: t('settings.schedules.stepWhen') },
+        // as its page's tabs : Details, then Schedule (once at a time, or a cron)
+        { key: 'schedule', label: t('settings.common.tabDetails') },
+        { key: 'when', label: t('settings.schedules.stepSchedule') },
         { key: 'vars', label: t('settings.schedules.stepExtraVars') },
       ],
       actions: [
-        // in the row menu, as every list's : editing, running it now, its last output, then
-        // Delete last, each apart
+        // in the row menu, as every list's : editing, running it now, then Delete last, each
+        // apart
         { name: 'edit', icon: 'pencil', title: t('settings.schedules.editSchedule'), color: 'edit' },
         {
           name: 'trigger',
@@ -855,29 +872,34 @@ export default function getSettings(t) {
           color: 'refresh',
           dividerBefore: true,
         },
-        {
-          name: 'preview',
-          icon: 'terminal',
-          title: t('settings.common.showOutput'),
-          color: 'preview',
-          dividerBefore: true,
-        },
         { name: 'delete', icon: 'trash', title: t('settings.schedules.deleteSchedule'), color: 'delete' },
       ],
-      // the table's columns share its width (the widths below) : a date with its time and zone
-      // gets room around it at any screen width, the one word columns (status, state) less
+      // the short columns as wide as their headers, a date as wide as its text, the name and
+      // the form share the rest
       fields: [
         { key: 'id', hidden: true, noInput: true },
         { key: 'output', hidden: true, noInput: true },
         {
           key: 'name',
-          width: '18%',
           icon: 'heading',
           label: t('settings.fields.name'),
           placeholder: t('settings.schedules.placeholderName'),
           readonly: false,
           required: true,
           help: t('settings.repositories.helpName'),
+        },
+        {
+          // the form it runs
+          key: 'form',
+          icon: 'pen-to-square',
+          label: t('settings.fields.form'),
+          type: 'select',
+          parent: 'formnames',
+          values: 'config/formnames',
+          valueKey: 'name',
+          labelKey: 'name',
+          readonly: false,
+          required: true,
         },
         {
           key: 'one_time_run',
@@ -890,7 +912,10 @@ export default function getSettings(t) {
         },
         {
           key: 'cron',
-          width: '14%',
+          // the column : a short title, the dialog keeps the full one
+          columnLabel: t('settings.schedules.cronShort'),
+          // room for a five-field cron (0 2 * * *)
+          width: '7.5rem',
           step: 'when',
           icon: 'stopwatch',
           label: t('settings.fields.cronSchedule'),
@@ -919,24 +944,21 @@ export default function getSettings(t) {
           required: true,
           dependency: 'one_time_run',
         },
+        // when it last ran, then when it runs next
         {
-          key: 'form',
-          icon: 'pen-to-square',
-          label: t('settings.fields.form'),
-          type: 'select',
-          parent: 'formnames',
-          values: 'config/formnames',
-          valueKey: 'name',
-          labelKey: 'name',
-          readonly: false,
-          required: true,
-          hidden: true,
+          key: 'last_run',
+          width: '14rem',
+          label: t('settings.fields.lastRun'),
+          type: 'datetime',
+          noInput: true,
+          render: (v) => (v ? Helpers.formatServerDate(v) : '–'),
         },
         // when it runs next : its cron's next occurrence, or its one time run while ahead (the
         // server computes it, schedule.model.js)
         {
           key: 'next_run',
-          width: '21%',
+          // a date with its time and zone, in full
+          width: '14rem',
           label: t('settings.schedules.nextRun'),
           type: 'datetime',
           noInput: true,
@@ -945,7 +967,7 @@ export default function getSettings(t) {
         // none yet (a schedule that never ran) : an en dash rather than an empty cell
         {
           key: 'status',
-          width: '10%',
+          width: headerWidth(t('settings.fields.status')),
           label: t('settings.fields.status'),
           noInput: true,
           // the last run's outcome as a pill, as a job's status
@@ -954,19 +976,11 @@ export default function getSettings(t) {
         // none yet (a schedule that never ran) : an en dash rather than an empty cell
         {
           key: 'state',
-          width: '9%',
+          width: headerWidth(t('settings.fields.state')),
           label: t('settings.fields.state'),
           noInput: true,
           // running blue, queued amber, idle grey
           render: (v) => schedulePill(t, v),
-        },
-        {
-          key: 'last_run',
-          width: '20%',
-          label: t('settings.fields.lastRun'),
-          type: 'datetime',
-          noInput: true,
-          render: (v) => (v ? Helpers.formatServerDate(v) : '–'),
         },
         {
           key: 'extra_vars',

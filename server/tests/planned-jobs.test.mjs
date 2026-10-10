@@ -153,9 +153,11 @@ describe("Schedule.plan", () => {
     const forged = JSON.stringify({ username: "admin", roles: ["admin"] });
     await Schedule.plan(planner, planBody({ owner: forged, state: "queued", queue_id: 1, status: "success" }));
     assert.equal(JSON.parse(created.owner).username, "bob");
-    for (const key of ["state", "queue_id", "status", "output", "cron"]) {
+    for (const key of ["queue_id", "status", "output", "cron"]) {
       assert.equal(created[key], undefined, `${key} must not come from the request`);
     }
+    // its state is the server's : a new plan waits for its time, idle - never the request's
+    assert.equal(created.state, "idle", "state must not come from the request");
   });
 
   test("verbose needs allowVerboseMode, as on a direct launch", async () => {

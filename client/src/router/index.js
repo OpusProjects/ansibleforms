@@ -37,6 +37,7 @@ const logo = () => import('@/pages/admin/logo.vue');
 const repositories = () => import('@/pages/admin/repositories.vue');
 const repository = () => import('@/pages/admin/repository.vue');
 const schedules = () => import('@/pages/admin/schedules.vue');
+const schedule = () => import('@/pages/schedule.vue');
 const storedJobs = () => import('@/pages/admin/stored-jobs.vue');
 const settings = () => import('@/pages/admin/settings.vue');
 const status = () => import('@/pages/admin/status.vue');
@@ -129,6 +130,12 @@ const routes = [
   // the scheduled and stored jobs live with the jobs (their menu is the jobs menu) ; a fixed
   // segment outranks /jobs/:id, whatever the order
   { path: '/jobs/schedules', name: '/jobs/schedules', component: schedules, beforeEnter: allowScheduledJobs },
+  {
+    path: '/jobs/schedules/:id',
+    name: '/jobs/schedules/:id',
+    component: schedule,
+    beforeEnter: allowScheduledJobs,
+  },
   { path: '/jobs/stored', name: '/jobs/stored', component: storedJobs, beforeEnter: allowStoredJobs },
   { path: '/jobs/:id', name: '/jobs/:id', component: jobs, beforeEnter: checkJobs },
   // the server log : a settings page, under /admin as the others
