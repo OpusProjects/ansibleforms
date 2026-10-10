@@ -801,10 +801,22 @@ export default {
     storedJobs: {
       label: 'Zapisane zadanie',
       labelPlural: 'Zapisane zadania',
-      description: 'Przeglądaj wcześniej wykonane rekordy zadań i zarządzaj nimi.',
+      description:
+        'Zapisane wartości formularza do ponownego uruchomienia: otwórz jedno wypełnione w jego formularzu, stąd lub przyciskiem Wczytaj formularza.',
       viewDetails: 'Pokaż szczegóły zapisanego zadania',
       deleteJob: 'Usuń zapisane zadanie',
       userTypeName: 'Użytkownik (typ/nazwa)',
+      editJob: 'Edytuj zapisane zadanie',
+      openInForm: 'Otwórz w formularzu',
+      tabValues: 'Wartości',
+      valuesNotMap: 'Wartości muszą być mapą nazw pól i wartości.',
+      notFound: "Nie ma zapisanego zadania o id '{id}'.",
+      nameRequired: 'Nazwa jest wymagana.',
+      formHelp: 'Formularz, do którego należą te wartości.',
+      owner: 'Użytkownik',
+      neverExpires: 'Nigdy nie wygasa',
+      valuesHelp: 'Wartości formularza zapisane jego przyciskiem Zapisz. Otwórz w formularzu je wypełnia.',
+      valuesHelpNew: 'Wartości formularza w YAML: nazwy pól i ich wartości.',
     },
     knownhosts: {
       label: 'Znany host',
@@ -1634,6 +1646,8 @@ export default {
     failedToLoad: 'Nie udało się wczytać zadań',
   },
   form: {
+    storedJobLoaded: 'Załadowano „{name}" do formularza',
+    storedJobLoadFailed: 'Nie udało się załadować zapisanego zadania',
     showHelp: 'Pokaż pomoc',
     hideHelp: 'Ukryj pomoc',
     showExtravars: 'Pokaż extravars',

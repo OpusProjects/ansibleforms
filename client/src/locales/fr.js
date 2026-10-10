@@ -875,10 +875,23 @@ export default {
     storedJobs: {
       label: 'Job enregistre',
       labelPlural: 'Jobs enregistres',
-      description: 'Consulter et gérer les enregistrements de tâches précédemment exécutées.',
+      description:
+        "Des valeurs de formulaire enregistrées pour être relancées : ouvrez-en une dans son formulaire, remplie, d'ici ou depuis le bouton Charger du formulaire.",
       viewDetails: 'Afficher les details du job enregistre',
       deleteJob: 'Supprimer le job enregistre',
       userTypeName: 'Utilisateur (type/nom)',
+      editJob: 'Modifier le job enregistré',
+      openInForm: 'Ouvrir dans le formulaire',
+      tabValues: 'Valeurs',
+      valuesNotMap: 'Les valeurs doivent être une table de noms de champs et de valeurs.',
+      notFound: "Aucun job enregistré avec l'id '{id}'.",
+      nameRequired: 'Un nom est obligatoire.',
+      formHelp: 'Le formulaire auquel ces valeurs sont destinées.',
+      owner: 'Utilisateur',
+      neverExpires: "N'expire jamais",
+      valuesHelp:
+        'Les valeurs du formulaire, telles que son bouton Enregistrer les a sauvegardées. Ouvrir dans le formulaire les remplit.',
+      valuesHelpNew: 'Les valeurs du formulaire, en YAML : noms des champs et leurs valeurs.',
     },
     knownhosts: {
       label: 'Hote connu',
@@ -1647,6 +1660,8 @@ export default {
     failedToLoad: 'Echec du chargement des jobs',
   },
   form: {
+    storedJobLoaded: '« {name} » chargé dans le formulaire',
+    storedJobLoadFailed: "Le job enregistré n'a pas pu être chargé",
     showHelp: "Afficher l'aide",
     hideHelp: "Masquer l'aide",
     showExtravars: 'Afficher les variables supplementaires',

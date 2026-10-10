@@ -1646,6 +1646,24 @@ async function loadForm() {
         if (stepName) wizardDrafts[stepName] = {};
       });
     }
+
+    // Opened from a stored job's page (?storedJob=<id>) : its values filled in, as the form's
+    // own Load button does - a wizard's per-step drafts too
+    if (route.query.storedJob) {
+      try {
+        const res = await axios.get(
+          `/api/v2/stored-jobs/${encodeURIComponent(route.query.storedJob)}`,
+          TokenStorage.getAuthentication(),
+        );
+        const stored = res.data?.records ? res.data.records[0] : res.data;
+        if (stored?.form_data) {
+          buildMainStoreCtx().onLoad(JSON.parse(stored.form_data));
+          toast.success(t('form.storedJobLoaded', { name: stored.name }));
+        }
+      } catch (err) {
+        toast.error(Helpers.parseAxiosResponseError(err, t('form.storedJobLoadFailed')));
+      }
+    }
   }
 }
 
