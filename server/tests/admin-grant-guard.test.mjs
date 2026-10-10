@@ -1,7 +1,7 @@
 // Granting admin is the admin role's own : a user with settings access cannot put an account
 // in a group that grants admin, nor change, reset or delete an admin account or such a group,
 // and a designer without the admin role cannot change the roles (lib/adminGrants.js).
-import { describe, test, expect, vi, beforeEach } from "vitest";
+import { describe, test, expect, vi } from "vitest";
 
 process.env.DB_HOST ||= "127.0.0.1";
 process.env.DB_PORT ||= "3306";
