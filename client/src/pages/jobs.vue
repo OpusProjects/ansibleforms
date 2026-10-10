@@ -31,7 +31,6 @@ const jobs = ref([]);
 const jobsLoaded = ref(false);
 const job = ref(null);
 const isLoading = ref(false);
-const lines = ref(1000);
 const jobId = ref(null);
 const displayedJobs = ref([]);
 const showExtraVars = ref(false);
@@ -384,16 +383,6 @@ watch(
   },
 );
 
-// persist lines when user changes the select; also reload jobs
-watch(lines, async (val, oldVal) => {
-  try {
-    Helpers.setCookie('jobs_lines', String(val), 365);
-  } catch (e) {}
-  if (val !== oldVal) {
-    await loadJobs();
-  }
-});
-
 // METHODS
 
 // copy string to clipboard
@@ -457,7 +446,8 @@ async function loadJobs() {
   if (!isLoading.value) {
     try {
       isLoading.value = true;
-      const result = await axios.get(`/api/v2/job?records=${lines.value}`, TokenStorage.getAuthentication());
+      const result = await // as many of the newest jobs as Settings > Jobs says (JOBS_LIST_SIZE)
+      axios.get('/api/v2/job', TokenStorage.getAuthentication());
       if (result.status === 200) {
         jobs.value = result.data.records;
         jobsLoaded.value = true;
@@ -543,7 +533,8 @@ async function refreshLive() {
     return;
   }
   try {
-    const result = await axios.get(`/api/v2/job?records=${lines.value}`, TokenStorage.getAuthentication());
+    const result = await // as many of the newest jobs as Settings > Jobs says (JOBS_LIST_SIZE)
+    axios.get('/api/v2/job', TokenStorage.getAuthentication());
     if (result.status === 200) jobs.value = result.data.records;
   } catch {
     // the next change, or the stream opening again, re-reads
@@ -831,14 +822,6 @@ function jobBackground(job) {
 
 // mounted
 onMounted(async () => {
-  // restore lines per-page from cookie if present
-  try {
-    const savedLines = Helpers.getCookie('jobs_lines');
-    if (savedLines && !isNaN(parseInt(savedLines))) {
-      lines.value = parseInt(savedLines);
-    }
-  } catch (e) {}
-
   // restore column visibility from cookie
   try {
     const savedCols = Helpers.getCookie('dt_cols_jobs');
@@ -1081,17 +1064,6 @@ onMounted(async () => {
             <BsButton v-if="selected.size" icon="trash" cssClass="me-2 text-nowrap" @click="showBulkDelete = true">{{
               t('jobs.deleteSelected', { count: selected.size })
             }}</BsButton>
-            <div class="input-group me-2" style="width: 160px">
-              <span class="input-group-text">
-                <FaIcon icon="list-ol" />
-              </span>
-              <select v-model="lines" class="form-select">
-                <option value="100">100</option>
-                <option value="200">200</option>
-                <option value="500">500</option>
-                <option value="1000">1000</option>
-              </select>
-            </div>
             <!-- Column picker, with presets (BsColumnPicker, as the other tables) -->
             <BsColumnPicker
               class="me-2"

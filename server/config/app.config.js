@@ -3,6 +3,22 @@ import os from "os";
 import { fileURLToPath } from "url";
 import { normalizeBaseUrl } from "../src/lib/baseurl.js";
 
+/**
+ * JOBS_LIST_SIZE : how many of the newest jobs the jobs list loads, 10 to 10000 (1000 when
+ * unset or not a number).
+ *
+ * Args:
+ *   value (string): the variable.
+ *
+ * Returns:
+ *   number: the size.
+ */
+export function jobsListSize(value) {
+  const n = parseInt(value, 10);
+  if (Number.isNaN(n)) return 1000;
+  return Math.min(10000, Math.max(10, n));
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -87,6 +103,8 @@ var app_config = {
   // Form.restore is about to read
   oldBackupDays: parseInt(process.env.OLD_BACKUP_DAYS || "60", 10),
   filterJobOutputRegex: process.env.REGEX_FILTER_JOB_OUTPUT || "\\[low\\]",
+  // how many of the newest jobs the jobs list loads (10 to 10000)
+  jobsListSize: jobsListSize(process.env.JOBS_LIST_SIZE),
   // REINIT_ADMIN=1 forces a one-time recreation of the local `admin` user
   // (and its admins group) at startup, using ADMIN_USERNAME / ADMIN_PASSWORD.
   // Intended as a recovery hatch only — unset after use. NOT a runtime auth bypass.
