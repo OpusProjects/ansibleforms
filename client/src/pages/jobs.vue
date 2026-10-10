@@ -1093,7 +1093,6 @@ onBeforeUnmount(() => {
             <BsButton v-if="selected.size" icon="trash" cssClass="me-2 text-nowrap" @click="showBulkDelete = true">{{
               t('jobs.deleteSelected', { count: selected.size })
             }}</BsButton>
-            <BsButton icon="refresh" @click="loadJobs" cssClass="me-2 text-nowrap">{{ t('jobs.refresh') }}</BsButton>
             <div class="input-group me-2" style="width: 160px">
               <span class="input-group-text">
                 <FaIcon icon="list-ol" />
@@ -1115,6 +1114,8 @@ onBeforeUnmount(() => {
               @toggle="toggleColumn"
               @apply="applyColumnPreset"
             />
+            <!-- last, at the far right -->
+            <BsButton icon="refresh" @click="loadJobs" cssClass="text-nowrap">{{ t('jobs.refresh') }}</BsButton>
           </div>
         </template>
         <!-- the list : table and pager framed like the other tables, running to the card's edges -->

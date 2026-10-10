@@ -1576,7 +1576,7 @@ export default {
     refresh: 'Odśwież',
     filterPlaceholder: 'regex (na czymkolwiek)',
     deleteJob: 'Usuń zadanie',
-    duration: 'Czas',
+    duration: 'Czas trwania',
     openJob: 'Otwórz zadanie',
     deleteSelected: 'Usuń ({count})',
     deleteSelectedConfirm: 'Usunąć {count} zaznaczonych zadań?',

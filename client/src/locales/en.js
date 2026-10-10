@@ -1563,7 +1563,7 @@ export default {
     refresh: 'Refresh',
     filterPlaceholder: 'regex (on anything)',
     deleteJob: 'Delete job',
-    duration: 'Time',
+    duration: 'Duration',
     openJob: 'Open job',
     deleteSelected: 'Delete ({count})',
     deleteSelectedConfirm: 'Delete the {count} selected jobs?',
