@@ -19,6 +19,9 @@ FROM ghcr.io/astral-sh/uv:0.12.24@sha256:3af4716e991d6956a41e573eab705d0ee08500c
 
 FROM ${BASE_IMAGE}
 
+# the base runs as node : root for the installs, node again at the end
+USER root
+
 ARG VERSION=
 LABEL org.opencontainers.image.title="AnsibleForms RTE (core)" \
       org.opencontainers.image.description="Runtime environment that runs Ansible playbooks for AnsibleForms : python, ansible-core and the essentials" \
@@ -35,3 +38,8 @@ ENV PATH="/venv/bin:$PATH"
 COPY ./docker/rte-core/requirements.txt /tmp/rte-requirements.txt
 RUN pip install --no-cache-dir -r /tmp/rte-requirements.txt && rm /tmp/rte-requirements.txt
 COPY ./server/ansible.cfg /etc/ansible/ansible.cfg
+
+# the venv belongs to node : the "Pip Install Package" maintenance form, and a layer built on
+# this one, install into it without root
+RUN chown -R node:node /venv /home/node
+USER node

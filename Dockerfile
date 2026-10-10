@@ -121,8 +121,17 @@ LABEL org.opencontainers.image.source="https://github.com/ansibleforms/ansiblefo
 # for now we still run the app under dist..
 WORKDIR /app/dist
 
-# copy the server code, no more compiling needed sing ESM
-COPY --from=tmp_builder /app/server/. ./
+# copy the server code, no more compiling needed sing ESM. Owned by `node` (uid 1000), the
+# user the app runs as : it writes persistent/ (forms, repositories, uploads, backups) and
+# its ssh key and known_hosts in /home/node/.ssh
+COPY --chown=node:node --from=tmp_builder /app/server/. ./
+RUN mkdir -p /app/dist/persistent /home/node/.ssh \
+ && chown node:node /app/dist /app/dist/persistent /home/node/.ssh \
+ && chmod 700 /home/node/.ssh
+
+# never root : a hole in the app or a dependency gets a user that owns only the app's files
+USER node
+ENV HOME=/home/node
 
 
 EXPOSE 8000
