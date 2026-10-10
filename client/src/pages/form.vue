@@ -1319,6 +1319,9 @@ async function createSchedule() {
       one_time_run: scheduleForm.value.one_time_run,
       form: currentForm.value.name,
       extra_vars: YAML.stringify(formdata.value),
+      // the raw field values : a planned run is checked by the launch validation when it is
+      // planned and when it fires, as a launch from here is
+      raw_form_data: getFilteredRawFormData(),
     };
 
     // Add type-specific fields

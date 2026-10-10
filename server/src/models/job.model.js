@@ -959,7 +959,11 @@ Job.launch = async function ({
   // just before : the launch validation below need not run it a second time.
   validated = false,
   // the uploads of the form's file fields (POST /api/v2/job/upload results), keyed by field
-  files = {}
+  files = {},
+  // Set ONLY by the schedule : extravars the SERVER adds (the schedule's own record), merged
+  // after the launch validation, so they are neither checked as form output nor replaced
+  // by the extravars the server builds under 'enforce'.
+  serverExtravars = {}
 }) {
   let creds = credentials; // Alias for backward compatibility internally
 
@@ -1000,6 +1004,8 @@ Job.launch = async function ({
       creds = built.credentials;
     }
   }
+
+  if (serverExtravars && typeof serverExtravars === "object") Object.assign(extravars, serverExtravars);
 
   if (!isStep) setUserExtravars(extravars, user, formObj, replay);
 
