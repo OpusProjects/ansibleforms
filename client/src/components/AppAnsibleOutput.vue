@@ -513,29 +513,24 @@ const jobLogHtml = computed(() => ansiToHtml(props.jobLog));
     }
   }
 }
-/* an AWX workflow's output : each node a card, in a column with a gap between them */
+/* the output in sections, flat inside the panel's one frame (as a CI run's steps) : the lines
+   before the first section, each section (the job, a workflow's node, its summary) and the
+   closing line one under the other, a hairline between them, no frame of their own ; the
+   line numbers' grey column runs through them all */
 .af-ansible-groups.af-ansible-has-nodes {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  /* the lines before the first node : framed as the cards */
-  > :not(.af-node-card) > .ansible {
-    border: 1px solid var(--af-field-border);
-    border-radius: 0.375rem;
+  > * + * {
+    border-top: 1px solid var(--af-field-border);
   }
-}
-.af-node-card {
-  border: 1px solid var(--af-field-border);
-  border-radius: 0.375rem;
-  overflow: hidden;
-  background: var(--bs-body-bg);
   .ansible {
     margin: 0;
     border: 0;
     border-radius: 0;
   }
-  /* the header and the lines under it : a hairline between them */
+}
+.af-node-card {
+  /* the header and the lines under it : the frame's darker grey, as between the sections */
   .af-node-head:not(:last-child) {
     border-bottom: 1px solid var(--af-field-border);
   }
