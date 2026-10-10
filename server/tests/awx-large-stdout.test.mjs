@@ -43,6 +43,12 @@ mysql.do = async function (sql, params) {
     Object.assign(jobRow, params[0]);
     return { changedRows: 1 };
   }
+  // Job.transitionStatus : only from the statuses it names
+  if (sql.includes("UPDATE AnsibleForms.`jobs` SET ? WHERE id=? AND status IN (?)")) {
+    if (!params[2].includes(jobRow.status ?? "running")) return { affectedRows: 0 };
+    Object.assign(jobRow, params[0]);
+    return { affectedRows: 1, changedRows: 1 };
+  }
   if (sql.includes("SELECT abort_requested")) return [{ abort_requested: 0 }];
   if (sql.includes("SELECT id FROM AnsibleForms.`jobs`")) return [{ id: params[0] }];
   return [];

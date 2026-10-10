@@ -30,14 +30,12 @@ export async function approvalGate({ jobId, jobType, extravars, approval }) {
     jobId,
     (await Job.lastOrder(jobId)) + 1
   );
-  await Job.update(
-    {
-      status: "approve",
-      approval: JSON.stringify(approval),
-      end: getTimestamp(),
-    },
-    jobId
-  );
+  // only a running job waits for approval : one aborted meanwhile stays aborted
+  await Job.transitionStatus(jobId, ["running"], {
+    status: "approve",
+    approval: JSON.stringify(approval),
+    end: getTimestamp(),
+  });
   return true;
 }
 
