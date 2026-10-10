@@ -88,6 +88,8 @@ class User extends CrudModel {
         throw new Error("You cannot rename user 'admin'");
       }
     }
+    // the API shows the password masked : sent back, it means "keep the current one" as well
+    if (typeof data.password === 'string' && /^\*{8,}$/.test(data.password)) delete data.password;
     // An empty password means "keep the current one" ; an empty description or email is a value
     // (one cleared on the user's page), stored empty. Any other empty field is left out.
     for (const key of Object.keys(data)) {
