@@ -76,7 +76,7 @@ const { RUNNERS } = await import("../src/runners/index.js");
 let jobRow;
 let outputs;
 mysql.do = async function (sql, params) {
-  if (sql.includes("SELECT extravars, credentials FROM")) return [{ extravars: jobRow.extravars, credentials: jobRow.credentials }];
+  if (sql.includes("extravars, credentials FROM")) return [{ form: jobRow.form, extravars: jobRow.extravars, credentials: jobRow.credentials }];
   if (sql.includes("MAX(`order`)")) return [{ last: outputs.reduce((m, o) => Math.max(m, o.order), 0) }];
   if (sql.includes("INSERT INTO AnsibleForms.`job_output`")) {
     outputs.push({ ...params[0] });
@@ -185,6 +185,25 @@ describe("a playbook job runs from its jobs row", () => {
     assert.equal(spawned.length, 0, "nothing ran");
     assert.equal(jobRow.status, "failed");
     assert.ok(outputs.some((o) => o.output === "[ERROR]: Failed to get ansible credentials"));
+  });
+
+  test("a credential, the ansible and vault passwords never reach the output", async () => {
+    row({ __playbook__: "site.yml", __credentials__: { dbcred: "db" }, __ansibleCredentials__: "ssh", __vaultCredentials__: "vault" });
+    credentialRows.vault.password = "v@ultPw";
+    credentialRows.db.password = "dbpw-long";
+    try {
+      const done = core.runAnsibleJob({ jobId: 11 });
+      await new Promise((r) => setTimeout(r, 20));
+      child.stdout.emit("data", "ok: dbpw-long sshpw v@ultPw dbuser\n");
+      await new Promise((r) => setTimeout(r, 10));
+      child.emit("exit", 0);
+      await done;
+    } finally {
+      credentialRows.vault.password = "v@ult";
+      credentialRows.db.password = "dbpw";
+    }
+    const line = outputs.find((o) => o.output_type === "stdout" && o.output.startsWith("ok: "));
+    assert.equal(line.output, "ok: ******** ******** ******** dbuser\n");
   });
 
   test("output continues after what the job already wrote", async () => {

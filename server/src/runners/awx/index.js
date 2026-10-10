@@ -6,6 +6,7 @@ import Credential from "../../models/credential.model.v2.js";
 // a cycle (job.model imports the orchestrator) ; only used when a job runs
 import Job from "../../models/job.model.js";
 import Awx, { check } from "./api.js";
+import { forgetJobSecrets } from "../../lib/outputMask.js";
 
 export default {
   type: "awx",
@@ -15,7 +16,15 @@ export default {
   async launch(ctx) {
     const { jobId, extravars, credentialMap, runner } = ctx;
     const credentials = await Credential.resolveCredentialMap(extravars.__credentials__ || credentialMap || {});
-    return Awx.launch(runner, extravars, credentials, jobId, await Job.lastOrder(jobId));
+    // the template's output is tracked here : the credentials' secrets and the password
+    // fields' values are masked in it (they are passed to AWX as extra vars)
+    const rows = await mysql.do("SELECT form FROM AnsibleForms.`jobs` WHERE id=?", [jobId]);
+    await Job.registerOutputSecrets(jobId, { form: rows?.[0]?.form, extravars, credentials });
+    try {
+      return await Awx.launch(runner, extravars, credentials, jobId, await Job.lastOrder(jobId));
+    } finally {
+      forgetJobSecrets(jobId);
+    }
   },
   // the fast path : cancels the AWX job straight away ; the tracker also sees the abort flag
   async cancel(ctx) {

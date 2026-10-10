@@ -15,8 +15,9 @@ import Expression from "./expression.model.js";
 import Query from "./query.model.js";
 import { resolveFormQuery } from "../lib/queryPolicy.js";
 import { createFormServices } from "../lib/formServices.js";
-import { validateLaunch, describeLaunchErrors, compareExtravars } from "../lib/launchValidation.js";
+import { validateLaunch, describeLaunchErrors, compareExtravars, stepModel } from "../lib/launchValidation.js";
 import { filterRawFormData, readModelPath, maskPasswords } from "../lib/formEngine/output.js";
+import { collectSecrets, registerJobSecrets, maskOutput } from "../lib/outputMask.js";
 import { sha256 } from "../lib/formEngine/node/hash.js";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -536,6 +537,7 @@ async function cancelOnRunner(id) {
  */
 Job.replaceTrackedOutput = async function (jobId, fromOrder, output) {
   if (!output) return;
+  output = maskOutput(jobId, output);
   const res = await mysql.do("INSERT INTO AnsibleForms.`job_output` set ?;", [
     { output, output_type: "stdout", job_id: jobId, order: fromOrder },
   ]);
@@ -554,6 +556,8 @@ Job.deleteOutput = async function (record) {
 Job.createOutput = async function (record) {
   // logger.debug(`Creating job output`)
   if (record.output) {
+    // the secrets the runner registered for this job never reach the table
+    record = { ...record, output: maskOutput(record.job_id, record.output) };
     // insert output and return status in 1 go
     await Job.checkExists(record.job_id);
     await mysql.do(
@@ -702,7 +706,28 @@ const passwordFieldsCache = new Map();
 function rememberFormFields(formName, formObj) {
   if (!formName || !formObj) return;
   if (passwordFieldsCache.size > 500) passwordFieldsCache.clear();
-  passwordFieldsCache.set(formName, { at: Date.now(), fields: formObj.fields || [], subforms: formObj.subforms || [] });
+  passwordFieldsCache.set(formName, { at: Date.now(), fields: maskableFields(formObj), subforms: formObj.subforms || [] });
+}
+
+/**
+ * The fields whose values land in a form's extravars, for masking : the form's own, and for
+ * a wizard every step's subform fields under the model the step writes them to.
+ *
+ * Args:
+ *   formObj (object): the form, its subforms inlined.
+ *
+ * Returns:
+ *   object[]: the fields.
+ */
+function maskableFields(formObj) {
+  const fields = [...(formObj?.fields || [])];
+  for (const step of Array.isArray(formObj?.wizard) ? formObj.wizard : []) {
+    if (!step || step.summary) continue;
+    const sub = (formObj.subforms || []).find((s) => s?.name === step.subform);
+    const prefix = typeof step.defaultModel === "string" ? step.defaultModel.trim().replace(/^\.+|\.+$/g, "") : "";
+    for (const f of sub?.fields || []) if (f?.name) fields.push({ ...f, model: stepModel(f, prefix) });
+  }
+  return fields;
 }
 
 async function formFieldsFor(formName) {
@@ -711,7 +736,7 @@ async function formFieldsFor(formName) {
   // the definition is only read to know which fields are passwords, never returned : load
   // it regardless of the reader's roles (an approver may not have the form's role)
   const formObj = (await Form.load(["admin"], formName))?.forms?.[0];
-  const entry = { at: Date.now(), fields: formObj?.fields || [], subforms: formObj?.subforms || [] };
+  const entry = { at: Date.now(), fields: maskableFields(formObj), subforms: formObj?.subforms || [] };
   if (passwordFieldsCache.size > 500) passwordFieldsCache.clear();
   passwordFieldsCache.set(formName, entry);
   return entry;
@@ -735,6 +760,56 @@ async function maskPasswordFields(formName, extravarsText) {
     return extravarsText;
   }
 }
+
+/**
+ * The strings of `original` that `masked` replaced, at any depth : the values maskPasswords
+ * hid.
+ *
+ * Args:
+ *   original (any): the extravars as they are.
+ *   masked (any): the same, with the password fields masked.
+ *
+ * Returns:
+ *   string[]: the original strings that were masked.
+ */
+function maskedValues(original, masked) {
+  if (typeof original === "string") return original !== masked ? [original] : [];
+  if (Array.isArray(original)) return original.flatMap((v, i) => maskedValues(v, masked?.[i]));
+  if (original && typeof original === "object") {
+    return Object.entries(original).flatMap(([k, v]) => maskedValues(v, masked?.[k]));
+  }
+  return [];
+}
+
+/**
+ * Registers what a running job's output must not show (lib/outputMask.js) : the secrets of
+ * its resolved credentials, any other secret the runner holds (the ansible and vault
+ * passwords), and the values of the form's password fields. Called by the runner that
+ * resolves them, in its own process, before the job writes any output.
+ *
+ * Args:
+ *   jobId (number): the job.
+ *   form (string): the job's form, for its password fields.
+ *   extravars (object): the job's extravars.
+ *   credentials (object): the resolved credential map.
+ *   extra (string[]): other secret values.
+ *
+ * Returns:
+ *   Promise<void>: settles once registered ; a form that cannot be read registers the rest.
+ */
+Job.registerOutputSecrets = async function (jobId, { form = "", extravars = {}, credentials = {}, extra = [] } = {}) {
+  const secrets = [...collectSecrets(credentials), ...extra];
+  if (form) {
+    try {
+      const { fields, subforms } = await formFieldsFor(form);
+      const data = JSON.parse(JSON.stringify(extravars || {}));
+      secrets.push(...maskedValues(data, maskPasswords(JSON.parse(JSON.stringify(data)), fields, subforms)));
+    } catch (err) {
+      logger.debug(`[Job ${jobId}] Could not read the password fields of form '${form}' : ${err.message}`);
+    }
+  }
+  registerJobSecrets(jobId, secrets);
+};
 
 Job.findById = async function (user, id, asText, logSafe = false) {
   logger.info(`Finding job ${id}`);
