@@ -1,6 +1,7 @@
 // These settings define the gui admin pages
 // Accepts a t() function from vue-i18n for translations
 import { editorStyle } from './editorStyle';
+import YAML from 'yaml';
 import Helpers from '@/lib/Helpers';
 import i18n from '@/plugins/i18n';
 import { describeCron } from '@/config/cronDescribe';
@@ -1001,20 +1002,94 @@ export default function getSettings(t) {
       description: t('settings.storedJobs.description'),
       icon: 'floppy-disk',
       reloadSeconds: false, // Disable auto-reload
-      noCreate: true,
+      // a row opens its page (its name in the link blue), as every list's ; ticked by its box
+      selectable: false,
+      // a stored job has its own page (pages/stored-job.vue) : its row and Edit open it ; Add the
+      // wizard, as a form's Store button makes one too
+      openPage: (item) => `/jobs/stored/${item.id}`,
+      // the wizard in steps : what it is and for which form, then the form's values
+      steps: [
+        { key: 'details', label: t('settings.common.tabDetails') },
+        { key: 'values', label: t('settings.storedJobs.tabValues') },
+      ],
+      // the values are typed as YAML and stored as the JSON the form's Load reads ; no expiry,
+      // never
+      beforeSave: ({ form_data, never_expires, ...item }) => ({
+        ...item,
+        form_data: JSON.stringify(YAML.parse(form_data || '') || {}),
+        expires_at: never_expires ? null : item.expires_at || null,
+      }),
+      // in the row menu, as every list's : editing, opening its form with its values, then
+      // Delete last, each apart
       actions: [
-        { name: 'preview', icon: 'eye', title: t('settings.storedJobs.viewDetails'), color: 'preview' },
+        { name: 'edit', icon: 'pencil', title: t('settings.storedJobs.editJob'), color: 'edit' },
+        {
+          name: 'open_form',
+          icon: 'play',
+          title: t('settings.storedJobs.openInForm'),
+          color: 'test',
+          dividerBefore: true,
+          to: (j) => ({ path: '/form', query: { form: j.form_name, storedJob: j.id } }),
+        },
         { name: 'delete', icon: 'trash', title: t('settings.storedJobs.deleteJob'), color: 'delete' },
       ],
       fields: [
         { key: 'id', hidden: true, noInput: true },
-        { key: 'name', icon: 'heading', label: t('settings.fields.name') },
-        { key: 'description', icon: 'info-circle', label: t('settings.fields.description') },
-        { key: 'form_name', icon: 'play', label: t('settings.fields.form') },
-        { key: 'username', icon: 'user', label: t('settings.storedJobs.userTypeName') },
-        { key: 'form_data', hidden: true },
+        { key: 'name', step: 'details', icon: 'heading', label: t('settings.fields.name'), required: true },
+        // on the page, not a column : it squeezed the name and the form (still in Columns)
+        {
+          key: 'description',
+          step: 'details',
+          icon: 'info-circle',
+          label: t('settings.fields.description'),
+          hidden: true,
+        },
+        {
+          // the form its values are for : chosen once, here ; its page shows it greyed out
+          key: 'form_name',
+          step: 'details',
+          icon: 'pen-to-square',
+          label: t('settings.fields.form'),
+          type: 'select',
+          parent: 'formnames',
+          values: 'config/formnames',
+          valueKey: 'name',
+          labelKey: 'name',
+          required: true,
+        },
+        // whose it is : titled User, as on its page
+        {
+          key: 'username',
+          // the user who stores it : the server's to set
+          noInput: true,
+          icon: 'user',
+          label: t('settings.storedJobs.userTypeName'),
+          columnLabel: t('settings.storedJobs.owner'),
+        },
+        {
+          // the form's values, as YAML : a map of field names and values
+          key: 'form_data',
+          step: 'values',
+          type: 'editor',
+          lang: 'yaml',
+          label: t('settings.storedJobs.tabValues'),
+          help: t('settings.storedJobs.valuesHelpNew'),
+          style: editorStyle('30vh'),
+          hidden: true,
+          noTable: true,
+          validator: (v) => {
+            const parsed = YAML.parse(v || '');
+            return parsed !== null && (typeof parsed !== 'object' || Array.isArray(parsed))
+              ? t('settings.storedJobs.valuesNotMap')
+              : '';
+          },
+        },
         {
           key: 'created_at',
+          // set by the database
+          noInput: true,
+          // a date with its time and zone, in full, and room after it
+          width: '16rem',
           icon: 'calendar',
           label: t('settings.fields.createdAt'),
           type: 'datetime',
@@ -1022,12 +1097,30 @@ export default function getSettings(t) {
           render: (v) => Helpers.formatServerDate(v),
         },
         {
+          // never expires, or a date (not stored : expires_at is, none for never) ; on for a new one
+          key: 'never_expires',
+          step: 'details',
+          type: 'checkbox',
+          flush: true,
+          label: t('settings.storedJobs.neverExpires'),
+          initial: (r) => !r?.expires_at,
+          hidden: true,
+          noTable: true,
+        },
+        {
           key: 'expires_at',
+          step: 'details',
+          // only when it expires, and then needed
+          dependency: 'never_expires',
+          negateDependency: true,
+          required: true,
+          width: '16rem',
+          convertToUtc: true,
           icon: 'calendar',
           label: t('settings.fields.expiresAt'),
           type: 'datetime',
-          // in the user's zone, with its name : the raw value is a UTC ISO string
-          render: (v) => Helpers.formatServerDate(v),
+          // in the user's zone, with its name : the raw value is a UTC ISO string ; none, never
+          render: (v) => (v ? Helpers.formatServerDate(v) : escapeHtml(t('admin.storedJobs.never'))),
         },
       ],
     },

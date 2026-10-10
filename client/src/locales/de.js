@@ -877,10 +877,23 @@ export default {
     storedJobs: {
       label: 'Gespeicherter Job',
       labelPlural: 'Gespeicherte Jobs',
-      description: 'Zuvor ausgeführte Auftragsaufzeichnungen anzeigen und verwalten.',
+      description:
+        'Gespeicherte Formularwerte zum erneuten Ausführen: hier oder über den Laden-Knopf des Formulars ausgefüllt öffnen.',
       viewDetails: 'Details des gespeicherten Jobs anzeigen',
       deleteJob: 'Gespeicherten Job loeschen',
       userTypeName: 'Benutzer (typ/name)',
+      editJob: 'Gespeicherten Job bearbeiten',
+      openInForm: 'Im Formular öffnen',
+      tabValues: 'Werte',
+      valuesNotMap: 'Die Werte müssen eine Zuordnung von Feldnamen und Werten sein.',
+      notFound: "Es gibt keinen gespeicherten Job mit der ID '{id}'.",
+      nameRequired: 'Ein Name ist erforderlich.',
+      formHelp: 'Das Formular, für das diese Werte sind.',
+      owner: 'Benutzer',
+      neverExpires: 'Läuft nie ab',
+      valuesHelp:
+        'Die Werte des Formulars, wie sein Speichern-Knopf sie gesichert hat. Im Formular öffnen füllt sie aus.',
+      valuesHelpNew: 'Die Werte des Formulars als YAML: Feldnamen und ihre Werte.',
     },
     knownhosts: {
       label: 'Bekannter Host',
@@ -1658,6 +1671,8 @@ export default {
     failedToLoad: 'Jobs konnten nicht geladen werden',
   },
   form: {
+    storedJobLoaded: '„{name}" in das Formular geladen',
+    storedJobLoadFailed: 'Der gespeicherte Job konnte nicht geladen werden',
     showHelp: 'Hilfe anzeigen',
     hideHelp: 'Hilfe ausblenden',
     showExtravars: 'Extra-Variablen anzeigen',

@@ -804,10 +804,22 @@ export default {
     storedJobs: {
       label: 'Tarefa Guardada',
       labelPlural: 'Tarefas Guardadas',
-      description: 'Consulte e gira registos de tarefas executadas anteriormente.',
+      description:
+        'Valores de formulário guardados para voltar a executar: abra um no seu formulário, preenchido, a partir daqui ou do botão Carregar do formulário.',
       viewDetails: 'Ver Detalhes da Tarefa Guardada',
       deleteJob: 'Eliminar Tarefa Guardada',
       userTypeName: 'Utilizador (tipo/nome)',
+      editJob: 'Editar tarefa guardada',
+      openInForm: 'Abrir no formulário',
+      tabValues: 'Valores',
+      valuesNotMap: 'Os valores têm de ser um mapa de nomes de campo e valores.',
+      notFound: "Não existe nenhuma tarefa guardada com o id '{id}'.",
+      nameRequired: 'É necessário um nome.',
+      formHelp: 'O formulário a que estes valores se destinam.',
+      owner: 'Utilizador',
+      neverExpires: 'Nunca expira',
+      valuesHelp: 'Os valores do formulário, tal como o seu botão Guardar os guardou. Abrir no formulário preenche-os.',
+      valuesHelpNew: 'Os valores do formulário, em YAML: nomes dos campos e os seus valores.',
     },
     knownhosts: {
       label: 'Host Conhecido',
@@ -1642,6 +1654,8 @@ export default {
     failedToLoad: 'Falha ao carregar as tarefas',
   },
   form: {
+    storedJobLoaded: '"{name}" carregado no formulário',
+    storedJobLoadFailed: 'Não foi possível carregar a tarefa guardada',
     showHelp: 'Mostrar ajuda',
     hideHelp: 'Ocultar ajuda',
     showExtravars: 'Mostrar Extravars',

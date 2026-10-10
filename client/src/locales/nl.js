@@ -867,10 +867,22 @@ export default {
     storedJobs: {
       label: 'Opgeslagen invoer',
       labelPlural: 'Opgeslagen invoer',
-      description: 'Bekijk en beheer eerder uitgevoerde taakrecords.',
+      description:
+        'Opgeslagen formulierwaarden om opnieuw uit te voeren: open er een ingevuld in zijn formulier, hier of met de Laden-knop van het formulier.',
       viewDetails: 'Opgeslagen invoer details bekijken',
       deleteJob: 'Opgeslagen invoer verwijderen',
       userTypeName: 'Gebruiker (type/naam)',
+      editJob: 'Opgeslagen job bewerken',
+      openInForm: 'Openen in formulier',
+      tabValues: 'Waarden',
+      valuesNotMap: 'De waarden moeten een map van veldnamen en waarden zijn.',
+      notFound: "Er is geen opgeslagen job met id '{id}'.",
+      nameRequired: 'Een naam is verplicht.',
+      formHelp: 'Het formulier waarvoor deze waarden zijn.',
+      owner: 'Gebruiker',
+      neverExpires: 'Verloopt nooit',
+      valuesHelp: 'De waarden van het formulier, zoals de Opslaan-knop ze bewaarde. Openen in formulier vult ze in.',
+      valuesHelpNew: 'De waarden van het formulier, in YAML: veldnamen en hun waarden.',
     },
     knownhosts: {
       label: 'Known Host',
@@ -1637,6 +1649,8 @@ export default {
     failedToLoad: 'Jobs laden mislukt',
   },
   form: {
+    storedJobLoaded: '"{name}" in het formulier geladen',
+    storedJobLoadFailed: 'De opgeslagen job kon niet worden geladen',
     showHelp: 'Toon hulp',
     hideHelp: 'Verberg hulp',
     showExtravars: 'Toon Extravars',

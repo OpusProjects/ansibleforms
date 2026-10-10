@@ -859,10 +859,22 @@ export default {
     storedJobs: {
       label: 'Stored Job',
       labelPlural: 'Stored Jobs',
-      description: 'Browse and manage previously executed job records.',
+      description:
+        "Form values stored to run again: open one in its form, filled in, from here or from the form's Load button.",
       viewDetails: 'View Stored Job Details',
       deleteJob: 'Delete Stored Job',
       userTypeName: 'User (type/name)',
+      editJob: 'Edit Stored Job',
+      openInForm: 'Open in form',
+      tabValues: 'Values',
+      valuesNotMap: 'The values must be a map of field names and values.',
+      notFound: "There is no stored job with the id '{id}'.",
+      nameRequired: 'A name is required.',
+      formHelp: 'The form these values are for.',
+      owner: 'User',
+      neverExpires: 'Never expires',
+      valuesHelp: "The form's values, as the form's Store button saved them. Open in form fills them in.",
+      valuesHelpNew: "The form's values, as YAML: field names and their values.",
     },
     knownhosts: {
       label: 'Known Host',
@@ -1620,6 +1632,8 @@ export default {
     failedToLoad: 'Failed to load jobs',
   },
   form: {
+    storedJobLoaded: '"{name}" loaded into the form',
+    storedJobLoadFailed: 'The stored job could not be loaded',
     showHelp: 'Show help',
     hideHelp: 'Hide help',
     showExtravars: 'Show Extravars',

@@ -805,10 +805,22 @@ export default {
     storedJobs: {
       label: 'Tasca desada',
       labelPlural: 'Tasques desades',
-      description: 'Consulta i gestiona els registres de tasques executades anteriorment.',
+      description:
+        "Valors de formulari desats per tornar-los a executar: obriu-ne un al seu formulari, omplert, des d'aquí o amb el botó Carrega del formulari.",
       viewDetails: 'Mostra els detalls de la tasca desada',
       deleteJob: 'Suprimeix la tasca desada',
       userTypeName: 'Usuari (tipus/nom)',
+      editJob: 'Edita la tasca desada',
+      openInForm: 'Obre al formulari',
+      tabValues: 'Valors',
+      valuesNotMap: 'Els valors han de ser un mapa de noms de camp i valors.',
+      notFound: "No hi ha cap tasca desada amb l'id '{id}'.",
+      nameRequired: 'Cal un nom.',
+      formHelp: 'El formulari al qual corresponen aquests valors.',
+      owner: 'Usuari',
+      neverExpires: 'No caduca mai',
+      valuesHelp: 'Els valors del formulari, tal com els va desar el seu botó Desa. Obre al formulari els omple.',
+      valuesHelpNew: 'Els valors del formulari, en YAML: noms dels camps i els seus valors.',
     },
     knownhosts: {
       label: 'Amfitrió conegut',
@@ -1641,6 +1653,8 @@ export default {
     failedToLoad: "No s'han pogut carregar les tasques",
   },
   form: {
+    storedJobLoaded: '"{name}" carregat al formulari',
+    storedJobLoadFailed: "No s'ha pogut carregar la tasca desada",
     showHelp: "Mostra l'ajuda",
     hideHelp: "Amaga l'ajuda",
     showExtravars: 'Mostra les extravars',

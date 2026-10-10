@@ -795,10 +795,22 @@ export default {
     storedJobs: {
       label: '保存済みジョブ',
       labelPlural: '保存済みジョブ',
-      description: '以前に実行したジョブの記録を参照、管理します。',
+      description:
+        '再実行用に保存したフォームの値：ここから、またはフォームの読み込みボタンから、入力済みのフォームで開けます。',
       viewDetails: '保存済みジョブの詳細を表示',
       deleteJob: '保存済みジョブを削除',
       userTypeName: 'ユーザー (種類/名前)',
+      editJob: '保存したジョブを編集',
+      openInForm: 'フォームで開く',
+      tabValues: '値',
+      valuesNotMap: '値はフィールド名と値のマップである必要があります。',
+      notFound: "ID '{id}' の保存したジョブはありません。",
+      nameRequired: '名前は必須です。',
+      formHelp: 'これらの値の対象となるフォーム。',
+      owner: 'ユーザー',
+      neverExpires: '期限なし',
+      valuesHelp: 'フォームの保存ボタンで保存された値です。「フォームで開く」で入力されます。',
+      valuesHelpNew: 'フォームの値（YAML）：フィールド名とその値。',
     },
     knownhosts: {
       label: '既知のホスト',
@@ -1615,6 +1627,8 @@ export default {
     failedToLoad: 'ジョブの読み込みに失敗しました',
   },
   form: {
+    storedJobLoaded: '「{name}」をフォームに読み込みました',
+    storedJobLoadFailed: '保存したジョブを読み込めませんでした',
     showHelp: 'ヘルプを表示',
     hideHelp: 'ヘルプを非表示',
     showExtravars: 'Extravars を表示',

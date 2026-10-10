@@ -865,10 +865,22 @@ export default {
     storedJobs: {
       label: 'Job salvato',
       labelPlural: 'Job salvati',
-      description: 'Consultare e gestire i record delle attività eseguite in precedenza.',
+      description:
+        'Valori di modulo salvati per eseguirli di nuovo: aprine uno nel suo modulo, compilato, da qui o dal pulsante Carica del modulo.',
       viewDetails: 'Visualizza dettagli del job salvato',
       deleteJob: 'Elimina job salvato',
       userTypeName: 'Utente (tipo/nome)',
+      editJob: 'Modifica job salvato',
+      openInForm: 'Apri nel modulo',
+      tabValues: 'Valori',
+      valuesNotMap: 'I valori devono essere una mappa di nomi di campo e valori.',
+      notFound: "Non esiste alcun job salvato con l'id '{id}'.",
+      nameRequired: 'Un nome è obbligatorio.',
+      formHelp: 'Il modulo a cui sono destinati questi valori.',
+      owner: 'Utente',
+      neverExpires: 'Non scade mai',
+      valuesHelp: 'I valori del modulo, come li ha salvati il suo pulsante Salva. Apri nel modulo li compila.',
+      valuesHelpNew: 'I valori del modulo, in YAML: nomi dei campi e i loro valori.',
     },
     knownhosts: {
       label: 'Host conosciuto',
@@ -1635,6 +1647,8 @@ export default {
     failedToLoad: 'Impossibile caricare i job',
   },
   form: {
+    storedJobLoaded: '"{name}" caricato nel modulo',
+    storedJobLoadFailed: 'Impossibile caricare il job salvato',
     showHelp: 'Mostra aiuto',
     hideHelp: 'Nascondi aiuto',
     showExtravars: 'Mostra variabili extra',

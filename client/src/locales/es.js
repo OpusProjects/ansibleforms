@@ -865,10 +865,23 @@ export default {
     storedJobs: {
       label: 'Trabajo Almacenado',
       labelPlural: 'Trabajos Almacenados',
-      description: 'Consultar y gestionar registros de tareas ejecutadas anteriormente.',
+      description:
+        'Valores de formulario guardados para volver a ejecutarlos: abre uno en su formulario, ya rellenado, desde aquí o con el botón Cargar del formulario.',
       viewDetails: 'Ver Detalles del Trabajo Almacenado',
       deleteJob: 'Eliminar Trabajo Almacenado',
       userTypeName: 'Usuario (tipo/nombre)',
+      editJob: 'Editar job guardado',
+      openInForm: 'Abrir en el formulario',
+      tabValues: 'Valores',
+      valuesNotMap: 'Los valores deben ser un mapa de nombres de campo y valores.',
+      notFound: "No hay ningún job guardado con el id '{id}'.",
+      nameRequired: 'Se necesita un nombre.',
+      formHelp: 'El formulario al que corresponden estos valores.',
+      owner: 'Usuario',
+      neverExpires: 'No caduca nunca',
+      valuesHelp:
+        'Los valores del formulario, tal como los guardó su botón Guardar. Abrir en el formulario los rellena.',
+      valuesHelpNew: 'Los valores del formulario, en YAML: nombres de campo y sus valores.',
     },
     knownhosts: {
       label: 'Host Conocido',
@@ -1633,6 +1646,8 @@ export default {
     failedToLoad: 'Error al cargar los trabajos',
   },
   form: {
+    storedJobLoaded: '"{name}" cargado en el formulario',
+    storedJobLoadFailed: 'No se pudo cargar el job guardado',
     showHelp: 'Mostrar ayuda',
     hideHelp: 'Ocultar ayuda',
     showExtravars: 'Mostrar Variables Extra',

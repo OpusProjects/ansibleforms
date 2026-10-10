@@ -39,6 +39,7 @@ const repository = () => import('@/pages/admin/repository.vue');
 const schedules = () => import('@/pages/admin/schedules.vue');
 const schedule = () => import('@/pages/schedule.vue');
 const storedJobs = () => import('@/pages/admin/stored-jobs.vue');
+const storedJob = () => import('@/pages/stored-job.vue');
 const settings = () => import('@/pages/admin/settings.vue');
 const status = () => import('@/pages/admin/status.vue');
 const secretStores = () => import('@/pages/admin/secretStores.vue');
@@ -137,6 +138,7 @@ const routes = [
     beforeEnter: allowScheduledJobs,
   },
   { path: '/jobs/stored', name: '/jobs/stored', component: storedJobs, beforeEnter: allowStoredJobs },
+  { path: '/jobs/stored/:id', name: '/jobs/stored/:id', component: storedJob, beforeEnter: allowStoredJobs },
   { path: '/jobs/:id', name: '/jobs/:id', component: jobs, beforeEnter: checkJobs },
   // the server log : a settings page, under /admin as the others
   { path: '/admin/logs', name: '/admin/logs', component: logs, beforeEnter: checkLogs },
