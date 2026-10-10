@@ -48,7 +48,9 @@ function fakeNode(attributes = {}) {
   return {
     attrs,
     getAttribute: (name) => (name in attrs ? attrs[name] : null),
-    setAttribute: (name, value) => { attrs[name] = value; },
+    setAttribute: (name, value) => {
+      attrs[name] = value;
+    },
   };
 }
 

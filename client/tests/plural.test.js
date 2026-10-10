@@ -28,7 +28,13 @@ const flat = Object.fromEntries(LANGS.map((l) => [l, flatten(messages[l])]));
 const PLURAL_KEYS = Object.keys(flat.en).filter((k) => typeof flat.en[k] === 'string' && flat.en[k].includes(' | '));
 const forms = (value) => value.split(' | ').length;
 
-const i18n = createI18n({ legacy: false, locale: 'en', fallbackLocale: 'en', messages, pluralRules: pluralRules(LANGS) });
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  fallbackLocale: 'en',
+  messages,
+  pluralRules: pluralRules(LANGS),
+});
 function t(lang, ...args) {
   i18n.global.locale.value = lang;
   return i18n.global.t(...args);

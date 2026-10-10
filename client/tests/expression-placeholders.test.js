@@ -40,8 +40,11 @@ const evaluate = (expression) => {
 
 describe('a placeholder inside a longer string', () => {
   it('does not inject quotes into the string', () => {
-    const out = sub("fn.fnReadYamlFile('$(BASEDIR)/playbooks/vars/clusters.yml')",
-      '$(BASEDIR)', '/app/dist/persistent');
+    const out = sub(
+      "fn.fnReadYamlFile('$(BASEDIR)/playbooks/vars/clusters.yml')",
+      '$(BASEDIR)',
+      '/app/dist/persistent',
+    );
     expect(out).toBe("fn.fnReadYamlFile('/app/dist/persistent/playbooks/vars/clusters.yml')");
     expect(evaluate(out)).toBe('/app/dist/persistent/playbooks/vars/clusters.yml');
   });
@@ -53,8 +56,7 @@ describe('a placeholder inside a longer string', () => {
 
   it('keeps a url query intact', () => {
     // https://ansibleforms.com/faq : fn.fnRestJwtSecure('get','https://.../job_templates?organization=$(organization)',...)
-    const out = sub("'https://awx/api/v2/job_templates?organization=$(organization)'",
-      '$(organization)', 'my org');
+    const out = sub("'https://awx/api/v2/job_templates?organization=$(organization)'", '$(organization)', 'my org');
     expect(evaluate(out)).toBe('https://awx/api/v2/job_templates?organization=my org');
   });
 
@@ -85,8 +87,12 @@ describe('a source value that is really a string', () => {
   //   '\\"/home/mirko/server/persistent\\"/playbooks/vars/clusters.yml'
   // which still resolves to "/home/.../persistent"/playbooks/... and still ENOENTs.
   it('splices the string it denotes, not its JSON quotes, inside a longer string', () => {
-    const out = sub("fn.fnReadYamlFile('$(ANSIBLE_FORMS.persistent_path)/playbooks/vars/clusters.yml')",
-      '$(ANSIBLE_FORMS.persistent_path)', '"/home/mirko/server/persistent"', true);
+    const out = sub(
+      "fn.fnReadYamlFile('$(ANSIBLE_FORMS.persistent_path)/playbooks/vars/clusters.yml')",
+      '$(ANSIBLE_FORMS.persistent_path)',
+      '"/home/mirko/server/persistent"',
+      true,
+    );
     expect(out).toBe("fn.fnReadYamlFile('/home/mirko/server/persistent/playbooks/vars/clusters.yml')");
     expect(evaluate(out)).toBe('/home/mirko/server/persistent/playbooks/vars/clusters.yml');
   });

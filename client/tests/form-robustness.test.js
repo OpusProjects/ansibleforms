@@ -81,8 +81,13 @@ describe('the log viewer filter', () => {
   it('an invalid pattern narrows instead of throwing', () => {
     const build = (f) => {
       if (!f) return null;
-      try { const re = new RegExp(f); return (l) => re.test(l); }
-      catch { const n = f.toLowerCase(); return (l) => l.toLowerCase().includes(n); }
+      try {
+        const re = new RegExp(f);
+        return (l) => re.test(l);
+      } catch {
+        const n = f.toLowerCase();
+        return (l) => l.toLowerCase().includes(n);
+      }
     };
     const lines = ['error [db] down', 'info ok', 'warn [db] slow'];
     expect(() => lines.filter(build('['))).not.toThrow();
@@ -121,11 +126,10 @@ describe('the cron editor accepts named weekdays', () => {
   it('a named weekday survives normalization, a real modifier does not', () => {
     // mirrors normalizeNames for the dow field
     const DOW = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-    const norm = (e) => DOW.reduce((a, n, i) => a.replace(new RegExp(n, 'gi'), String(i)),
-      e.replace(/-sun/gi, '-7'));
+    const norm = (e) => DOW.reduce((a, n, i) => a.replace(new RegExp(n, 'gi'), String(i)), e.replace(/-sun/gi, '-7'));
     expect(/w/i.test(norm('WED'))).toBe(false);
     expect(/w/i.test(norm('mon-wed'))).toBe(false);
-    expect(/w/i.test('15W')).toBe(true);   // dom is not name-normalized, so this still trips
+    expect(/w/i.test('15W')).toBe(true); // dom is not name-normalized, so this still trips
   });
 });
 
@@ -164,10 +168,14 @@ describe('bindings that were passed as literal strings', () => {
       // the props object literal, by brace matching - a regex cannot find its end
       const start = src.indexOf('{', at);
       if (start === -1) continue;
-      let depth = 0, end = -1;
+      let depth = 0,
+        end = -1;
       for (let i = start; i < src.length; i++) {
         if (src[i] === '{') depth++;
-        else if (src[i] === '}' && --depth === 0) { end = i; break; }
+        else if (src[i] === '}' && --depth === 0) {
+          end = i;
+          break;
+        }
       }
       if (end === -1) continue;
       const block = src.slice(start, end + 1);
@@ -235,21 +243,13 @@ describe('copying to the clipboard reports what actually happened', () => {
   });
 
   it('no component calls copyText directly any more', () => {
-    for (const f of [
-      'src/components/BsSshKey.vue',
-      'src/components/AppForm.vue',
-      'src/pages/admin/knownHosts.vue',
-    ]) {
+    for (const f of ['src/components/BsSshKey.vue', 'src/components/AppForm.vue', 'src/pages/admin/knownHosts.vue']) {
       expect(read(f)).not.toMatch(/\bcopyText\(/);
     }
   });
 
   it('every call site toasts success only after the promise resolves', () => {
-    for (const f of [
-      'src/components/BsSshKey.vue',
-      'src/components/AppForm.vue',
-      'src/pages/admin/knownHosts.vue',
-    ]) {
+    for (const f of ['src/components/BsSshKey.vue', 'src/components/AppForm.vue', 'src/pages/admin/knownHosts.vue']) {
       const src = read(f);
       const calls = [...src.matchAll(/Helpers\.copyToClipboard\([^)]*\)([\s\S]{0,220})/g)];
       expect(calls.length).toBeGreaterThan(0);
@@ -319,7 +319,10 @@ describe('the settings page saves both halves or neither', () => {
   const src = read('src/pages/admin/settings.vue');
 
   it('an invalid settings half stops the combined save', () => {
-    const fn = src.slice(src.indexOf('async function saveActiveTab'), src.indexOf('async function loadEnvironmentVariables'));
+    const fn = src.slice(
+      src.indexOf('async function saveActiveTab'),
+      src.indexOf('async function loadEnvironmentVariables'),
+    );
     expect(fn).toMatch(/if \(\(?await saveSettings\(\)\)? === false\) return;/);
   });
 
@@ -334,7 +337,10 @@ describe('the settings page saves both halves or neither', () => {
     // from the designer lock or any 500 left the catch returning undefined, which passes
     // the `=== false` guard - so the environment half was written anyway and the user got
     // an error toast and a success toast for one button press.
-    const fn = src.slice(src.indexOf('async function saveSettings'), src.indexOf('async function importConfigToDatabase'));
+    const fn = src.slice(
+      src.indexOf('async function saveSettings'),
+      src.indexOf('async function importConfigToDatabase'),
+    );
     const catchBlock = fn.slice(fn.indexOf('} catch (err) {'));
     expect(catchBlock).toMatch(/return false;/);
     // and the success path has to be distinguishable from it
@@ -360,8 +366,11 @@ describe('a query field inside a subform is bound to its ROOT form', () => {
     // the wizard step and the list-row edit stack ; the main form deliberately does not.
     // The tag ends at the '>' that closes a LINE - a lazy match to the first '>' stops
     // inside `:ref="(el) => ..."` and silently reads only half the attributes.
-    const mounts = page.split('<AppForm').slice(1).map(s => s.slice(0, s.search(/>\s*\r?\n/)));
-    const subformMounts = mounts.filter(m => /:currentForm="(step\.subform|entry\.subform)"/.test(m));
+    const mounts = page
+      .split('<AppForm')
+      .slice(1)
+      .map((s) => s.slice(0, s.search(/>\s*\r?\n/)));
+    const subformMounts = mounts.filter((m) => /:currentForm="(step\.subform|entry\.subform)"/.test(m));
     expect(subformMounts.length).toBe(2);
     for (const m of subformMounts) expect(m).toMatch(/:rootFormName="currentForm\?\.name \|\| ''"/);
   });
@@ -375,7 +384,10 @@ describe('a query field inside a subform is bound to its ROOT form', () => {
   });
 
   it('the resolver returns what it resolved', () => {
-    const fn = form.slice(form.indexOf('function replacePlaceholderInString'), form.indexOf('function replacePlaceholders(item)'));
+    const fn = form.slice(
+      form.indexOf('function replacePlaceholderInString'),
+      form.indexOf('function replacePlaceholders(item)'),
+    );
     expect(fn).toMatch(/resolved\[match\[1\]\] = fieldvalue/);
     expect(fn).toMatch(/"?resolved"?: resolved/);
   });
@@ -475,7 +487,9 @@ describe('form field rules cannot take the whole form down', () => {
   it('a malformed pattern is reported, not thrown', () => {
     const field = { name: 'host', type: 'text', regex: { expression: '^[a-z', description: 'x' } };
     let built;
-    expect(() => { built = compileFieldRules(field); }).not.toThrow();
+    expect(() => {
+      built = compileFieldRules(field);
+    }).not.toThrow();
     expect(built.warnings).toEqual([expect.stringContaining("Field 'host': the regex '^[a-z' is not valid")]);
     // and the rule is only registered when there is a usable pattern
     expect(built.rules).toEqual([]);
@@ -613,7 +627,10 @@ describe('a refresh does not overwrite what the user is typing', () => {
   it('the refresh path honours the editable toggle', () => {
     // clearing the status makes the next tick re-run the expression over form.value, so a
     // field with editable: true and refresh: "30s" lost the typed value every 30s
-    const fn = src.slice(src.indexOf("if (item.refresh && typeof item.refresh == 'string')"), src.indexOf("if (item.refresh && typeof item.refresh == 'string')") + 900);
+    const fn = src.slice(
+      src.indexOf("if (item.refresh && typeof item.refresh == 'string')"),
+      src.indexOf("if (item.refresh && typeof item.refresh == 'string')") + 900,
+    );
     expect(fn).toMatch(/!fieldOptions\.value\[item\.name\]\?\.editable/);
   });
 });
@@ -703,8 +720,11 @@ describe('no rules builder can be taken down by a bad regex', () => {
   it('every dynamic RegExp in the client is either guarded or built from a literal', () => {
     // a sweep, so a new unguarded site anywhere is caught
     const files = [
-      'src/pages/login.vue', 'src/pages/logs.vue', 'src/pages/change-password.vue',
-      'src/components/AppForm.vue', 'src/components/AppAdminMulti.vue',
+      'src/pages/login.vue',
+      'src/pages/logs.vue',
+      'src/pages/change-password.vue',
+      'src/components/AppForm.vue',
+      'src/components/AppAdminMulti.vue',
       '../server/src/lib/formEngine/validate.js',
     ];
     const unguarded = [];
@@ -730,7 +750,10 @@ describe('an emptied dropdown clears the value it had selected', () => {
   // held the old row, and that stale value was submitted. The sibling component has
   // always called recalc() in this watcher.
   it('both sibling components recalc when values change', () => {
-    for (const f of ['src/components/BsInputSelectAdvancedTable.vue', 'src/components/BsInputSelectAdvancedTable2.vue']) {
+    for (const f of [
+      'src/components/BsInputSelectAdvancedTable.vue',
+      'src/components/BsInputSelectAdvancedTable2.vue',
+    ]) {
       const src = read(f);
       const at = src.search(/watch\(\s*\(\) => props\.values/);
       expect(at).toBeGreaterThan(-1);
@@ -745,7 +768,10 @@ describe('a null first row does not blank the whole select', () => {
   // Object.keys(null) threw - the exception escaped the watcher and the select rendered
   // with no labels and no rows. Reachable from `values: [~, a, b]` or a jq result.
   it('both components guard the first element', () => {
-    for (const f of ['src/components/BsInputSelectAdvancedTable.vue', 'src/components/BsInputSelectAdvancedTable2.vue']) {
+    for (const f of [
+      'src/components/BsInputSelectAdvancedTable.vue',
+      'src/components/BsInputSelectAdvancedTable2.vue',
+    ]) {
       const code = read(f).replace(/\/\/[^\n]*/g, '');
       expect(code).toMatch(/if \(!props\.values\[0\] \|\| typeof props\.values\[0\] !== ['"]object['"]\)/);
     }
@@ -761,9 +787,7 @@ describe('the file picker is always reset', () => {
   // the early returns (wrong extension, unparsable file) skipped the reset at the end, so
   // the input kept its value: re-picking the SAME path fired no change event and the
   // button was dead until a different file was chosen
-  it.each([
-    'src/components/AppListField.vue',
-  ])('%s resets in a finally', (file) => {
+  it.each(['src/components/AppListField.vue'])('%s resets in a finally', (file) => {
     const src = read(file);
     const at = src.indexOf('async function handleFileLoad');
     expect(at).toBeGreaterThan(-1);
@@ -782,7 +806,7 @@ describe('dropdown positioning actually runs', () => {
     // :isFloating="false" - so the branch that was missing the ref is the one every form
     // field renders. Without it the panel always dropped downward (clipped off-screen)
     // and kept width:100% instead of the computed multi-column width.
-    const groups = [...src.matchAll(/<div[^>]*class="input-group"[^>]*>/g)].map(m => m[0]);
+    const groups = [...src.matchAll(/<div[^>]*class="input-group"[^>]*>/g)].map((m) => m[0]);
     expect(groups.length).toBeGreaterThan(3);
     for (const g of groups) expect(g).toMatch(/ref="dtRef"/);
   });
@@ -879,8 +903,10 @@ describe('a cron field is validated with the same check the editor uses', () => 
 
   it('every cron field uses the shared validator', () => {
     // one entry per field object, not per line : a formatted field spans several lines
-    const cronFields = [...settings.matchAll(/\{[^{}]*\}/g)].map(m => m[0]).filter(l => /type:\s*['"]cron['"]/.test(l));
-    expect(cronFields.length).toBe(2);   // repositories, schedules
+    const cronFields = [...settings.matchAll(/\{[^{}]*\}/g)]
+      .map((m) => m[0])
+      .filter((l) => /type:\s*['"]cron['"]/.test(l));
+    expect(cronFields.length).toBe(2); // repositories, schedules
     for (const line of cronFields) {
       expect(line).toMatch(/validator: cronValidator\(t\)/);
       expect(line).not.toMatch(/regex:/);
@@ -896,7 +922,10 @@ describe('a cron field is validated with the same check the editor uses', () => 
   });
 
   it('AppAdminMulti honours a function validator, so the rule can block a save', () => {
-    const block = admin.slice(admin.indexOf("typeof field.validator === 'function'"), admin.indexOf("field.type == 'editor'"));
+    const block = admin.slice(
+      admin.indexOf("typeof field.validator === 'function'"),
+      admin.indexOf("field.type == 'editor'"),
+    );
     expect(block).toMatch(/rule\.custom/);
     expect(block).toMatch(/\$valid: false/);
     // a throwing validator must not take the whole form down
@@ -959,7 +988,7 @@ describe('a flat admin list identifies rows by value, not by position', () => {
     const byIndex = (list) => list.map((v, i) => ({ id: i, name: v }));
     const byValue = (list) => list.map((v) => ({ id: String(v), name: String(v) }));
     const before = ['host-a', 'host-b', 'host-c'];
-    const after = ['host-new', 'host-a', 'host-b', 'host-c'];   // an ssh pull prepended one
+    const after = ['host-new', 'host-a', 'host-b', 'host-c']; // an ssh pull prepended one
 
     // the user selected 'host-b'
     const pickedIndex = byIndex(before).find((r) => r.name === 'host-b').id;
@@ -969,8 +998,8 @@ describe('a flat admin list identifies rows by value, not by position', () => {
     const resolvedByIndex = byIndex(after).find((r) => r.id === pickedIndex);
     const resolvedByValue = byValue(after).find((r) => r.id === pickedValue);
 
-    expect(resolvedByIndex.name).toBe('host-a');   // the bug: a different host key
-    expect(resolvedByValue.name).toBe('host-b');   // the fix: the one that was selected
+    expect(resolvedByIndex.name).toBe('host-a'); // the bug: a different host key
+    expect(resolvedByValue.name).toBe('host-b'); // the fix: the one that was selected
   });
 });
 
@@ -990,8 +1019,12 @@ describe('"could not be evaluated" is not raised for a field that is only waitin
   });
 
   it('an empty dependency is undefined, null, empty, an empty list or an enum sentinel', () => {
-    const fn = src.slice(src.indexOf('function dependsOnEmptyField'), src.indexOf('// this field still wants its restored value'));
-    for (const t of ["v === undefined", "v === null", "v === ''", "v.length === 0", "'__auto__'"]) expect(fn).toContain(t);
+    const fn = src.slice(
+      src.indexOf('function dependsOnEmptyField'),
+      src.indexOf('// this field still wants its restored value'),
+    );
+    for (const t of ['v === undefined', 'v === null', "v === ''", 'v.length === 0', "'__auto__'"])
+      expect(fn).toContain(t);
     expect(fn).toContain('visibility.value[dep] === false');
   });
 

@@ -85,14 +85,18 @@ describe('keys built by concatenation are covered too', () => {
 
   it('every role option has a label', () => {
     const roles = read('client/src/config/roles.js');
-    const block = roles.slice(roles.indexOf('export const roleOptionKeys'), roles.indexOf('];', roles.indexOf('export const roleOptionKeys')));
+    const block = roles.slice(
+      roles.indexOf('export const roleOptionKeys'),
+      roles.indexOf('];', roles.indexOf('export const roleOptionKeys')),
+    );
     const keys = [...block.matchAll(/'([A-Za-z]+)'/g)].map((m) => m[1]);
     expect(keys.length).toBe(18);
     const gaps = [];
-    for (const k of keys) for (const lang of LANGS) {
-      const key = `settings.settingsPage.roleOption${cap(k)}`;
-      if (maps[lang][key] === undefined) gaps.push(`${lang}: ${key}`);
-    }
+    for (const k of keys)
+      for (const lang of LANGS) {
+        const key = `settings.settingsPage.roleOption${cap(k)}`;
+        if (maps[lang][key] === undefined) gaps.push(`${lang}: ${key}`);
+      }
     expect(gaps).toEqual([]);
   });
 
@@ -104,11 +108,15 @@ describe('keys built by concatenation are covered too', () => {
     expect(checks.length).toBeGreaterThan(10);
     expect(infos.length).toBeGreaterThan(10);
     const gaps = [];
-    for (const [prefix, list] of [['check', checks], ['info', infos]]) {
-      for (const k of list) for (const lang of LANGS) {
-        const key = `health.${prefix}${cap(k)}`;
-        if (maps[lang][key] === undefined) gaps.push(`${lang}: ${key}`);
-      }
+    for (const [prefix, list] of [
+      ['check', checks],
+      ['info', infos],
+    ]) {
+      for (const k of list)
+        for (const lang of LANGS) {
+          const key = `health.${prefix}${cap(k)}`;
+          if (maps[lang][key] === undefined) gaps.push(`${lang}: ${key}`);
+        }
     }
     expect(gaps).toEqual([]);
   });
