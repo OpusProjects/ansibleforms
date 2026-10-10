@@ -1298,7 +1298,7 @@ export default {
   },
   designer: {
     title: 'Designer',
-    lockTitle: 'Vergrendeld',
+    lockTitle: 'Inactief',
     offDescription:
       'Bewerk de categorieën, constanten, formulieren en rollen. Start de designer om de configuratie te vergrendelen tijdens het bewerken.',
     formsDescription:
