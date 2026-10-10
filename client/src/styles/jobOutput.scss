@@ -1,0 +1,234 @@
+// A job's output, as the job's page and the form's page show it : a panel with its toolbar (fold
+// all, the line count, the actions), the extravars or artifacts under it, the output itself
+// (AppAnsibleOutput) as its body. Shared by both pages, so that a job reads the same in each.
+
+/* ─── the output panel and its toolbar ─────────────────────────────────────── */
+.af-output-panel {
+  border: 1px solid var(--af-field-border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: var(--af-output-bg);
+}
+.af-output-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.375rem 0.5rem 0.375rem 1rem;
+  border-bottom: 1px solid var(--af-field-border);
+  background: var(--bs-tertiary-bg);
+}
+.af-output-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+/* the collapse / expand all : its icon over the sections' chevrons, as wide and as far in */
+.af-output-label .af-tool-icon {
+  margin-left: calc(-0.5rem - 1px);
+  svg {
+    width: 0.75rem;
+  }
+}
+.af-output-count {
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: var(--bs-secondary-color);
+}
+.af-output-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.125rem;
+}
+/* a toolbar's button : quiet, its icon and words in the body's grey, a soft background on
+   hover, and the primary color while it is on (the filter, the extravars) */
+.af-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid transparent;
+  border-radius: 0.375rem;
+  background: transparent;
+  font-size: 0.8125rem;
+  color: var(--bs-body-color);
+  white-space: nowrap;
+  svg {
+    color: var(--bs-secondary-color);
+  }
+  &:hover {
+    background: var(--bs-secondary-bg);
+  }
+  &:focus-visible {
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem var(--bs-focus-ring-color);
+  }
+  &.active {
+    border-color: var(--bs-primary-border-subtle);
+    background: var(--bs-primary-bg-subtle);
+    color: var(--bs-primary-text-emphasis);
+    svg {
+      color: inherit;
+    }
+  }
+}
+.af-tool-sep {
+  width: 1px;
+  height: 1.25rem;
+  margin: 0 0.25rem;
+  background: var(--af-field-border);
+}
+/* the extravars or artifacts : a section under the toolbar, its own head, scrolled when long */
+.af-output-data {
+  border-bottom: 1px solid var(--af-field-border);
+}
+.af-data-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.375rem 0.5rem 0.375rem 1rem;
+  /* the darker grey of the frame under the data, as the output's toolbar */
+  border-bottom: 1px solid var(--af-field-border);
+}
+.af-data-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+.af-data-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+/* JSON | YAML : two buttons in one frame */
+.af-segmented {
+  display: inline-flex;
+  margin-right: 0.25rem;
+  padding: 0.125rem;
+  border: 1px solid var(--af-field-border);
+  border-radius: 0.375rem;
+  .af-tool-btn {
+    padding: 0.15rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+  }
+}
+.af-tool-icon {
+  padding: 0.3rem 0.5rem;
+}
+.af-data-body {
+  max-height: 45vh;
+  overflow: auto;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.875rem;
+  /* the output's grey : the data reads as part of the job's record, not the page */
+  background: var(--af-bg-light-subtle-color);
+  pre {
+    margin: 0;
+  }
+}
+/* the output inside the panel : the panel is its frame */
+.af-output-body .ansible {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  padding: 1rem 1.25rem;
+  &.af-ansible-lines {
+    padding: 0.5rem 0;
+  }
+}
+.af-output-body > .col + .col {
+  border-left: 1px solid var(--af-field-border);
+}
+.af-output-body .af-job-title {
+  margin: 0;
+  padding: 0.75rem 1.25rem 0;
+  font-size: 1rem;
+}
+.af-output-body .logfile {
+  margin: 0 1.25rem 1.25rem;
+}
+
+/* the extravars and artifacts : one look for JSON (vue-json-pretty) and YAML (highlight.js) -
+   the output's monospace, size and spacing, and one palette for keys, strings, numbers,
+   booleans and null, so that switching shows another format, not another style. Not scoped :
+   the two libraries' own classes. A grey under them in the light theme, as the job's record */
+.af-data-body {
+  --af-data-key: #0b5394;
+  --af-data-string: #146c43;
+  --af-data-number: #b45309;
+  --af-data-literal: #7c3aed;
+  --af-data-punct: var(--bs-secondary-color);
+  font-family: monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--bs-body-color);
+
+  /* the same text in both : the libraries' own font, size and line height undone */
+  .vjs-tree,
+  pre,
+  code {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    color: inherit;
+  }
+  .vjs-tree-node {
+    line-height: inherit;
+    &:hover {
+      background-color: var(--af-row-hover-bg);
+    }
+  }
+  .vjs-indent-unit.has-line {
+    border-left-color: var(--af-field-border);
+  }
+
+  /* keys */
+  .vjs-key,
+  .hljs-attr {
+    color: var(--af-data-key);
+  }
+  /* strings */
+  .vjs-value-string,
+  .hljs-string {
+    color: var(--af-data-string);
+  }
+  /* numbers */
+  .vjs-value-number,
+  .hljs-number {
+    color: var(--af-data-number);
+  }
+  /* true, false, null */
+  .vjs-value-boolean,
+  .vjs-value-null,
+  .vjs-value-undefined,
+  .hljs-literal {
+    color: var(--af-data-literal);
+  }
+  /* brackets, colons, commas, a list's dashes */
+  .vjs-tree-brackets,
+  .vjs-colon,
+  .hljs-bullet,
+  .hljs-punctuation,
+  .hljs-meta {
+    color: var(--af-data-punct);
+  }
+}
+[data-bs-theme='light'] .af-data-body {
+  background: #f1f3f5;
+}
+[data-bs-theme='dark'] .af-data-body {
+  --af-data-key: #8ab4f8;
+  --af-data-string: #7ee2a8;
+  --af-data-number: #f6b26b;
+  --af-data-literal: #c4a7ff;
+}
