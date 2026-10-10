@@ -101,7 +101,7 @@ export async function validateLaunch({ formConfig, formObj, user, rawFormData, e
  * Returns:
  *   string|string[]: the model, in the shape the field declared it.
  */
-function stepModel(field, prefix) {
+export function stepModel(field, prefix) {
   const apply = (m) => {
     if (typeof m !== 'string') return m;
     if (m.startsWith('/')) return m.slice(1);

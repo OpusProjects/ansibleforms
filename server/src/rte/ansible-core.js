@@ -19,6 +19,7 @@ import Credential from "../models/credential.model.v2.js";
 import mysql from "../models/db.model.js";
 import Job from "../models/job.model.js";
 import { nodeId } from "../lib/role.js";
+import { registerJobSecrets, forgetJobSecrets, maskOutput } from "../lib/outputMask.js";
 
 /** this RTE's name, stored in jobs.host on the jobs it claims : rte-<hostname>-<port> (lib/role.js) */
 export function runnerIdentity() {
@@ -93,7 +94,7 @@ export function buildAnsibleArgs(extravars, { extravarsFileName, hiddenExtravars
  * Resolves true on success, false otherwise (the job row says why).
  */
 export async function runAnsibleJob({ jobId }) {
-  const rows = await mysql.do("SELECT extravars, credentials FROM AnsibleForms.`jobs` WHERE id=?", [jobId]);
+  const rows = await mysql.do("SELECT form, extravars, credentials FROM AnsibleForms.`jobs` WHERE id=?", [jobId]);
   if (!rows?.length) throw new Error(`Job ${jobId} does not exist`);
   const extravars = safeParse(rows[0].extravars, {}, `job.extravars id=${jobId}`);
   const creds = safeParse(rows[0].credentials, {}, `job.credentials id=${jobId}`);
@@ -101,7 +102,13 @@ export async function runAnsibleJob({ jobId }) {
   extravars.__jobid__ = jobId;
   // credentials passed through extravars have precedence over the others
   const credentials = await Credential.resolveCredentialMap(extravars.__credentials__ || creds || {});
-  return launchPlaybook(extravars, credentials, jobId, await Job.lastOrder(jobId));
+  // what the output must not show : the credentials' secrets and the password fields' values
+  await Job.registerOutputSecrets(jobId, { form: rows[0].form, extravars, credentials });
+  try {
+    return await launchPlaybook(extravars, credentials, jobId, await Job.lastOrder(jobId));
+  } finally {
+    forgetJobSecrets(jobId);
+  }
 }
 
 // Jinja markers. ansible templates a string from an extravars file whenever the playbook
@@ -144,6 +151,7 @@ async function launchPlaybook(ev, credentials, jobid, counter) {
       const runCredential = await Credential.resolveCredential(ansibleCredentials);
       hiddenExtravars.ansible_user = runCredential.user;
       hiddenExtravars.ansible_password = runCredential.password;
+      registerJobSecrets(jobid, [runCredential.password]);
     }
     // a credential's password is never a template
     hiddenExtravars = JSON.stringify(markUnsafe(hiddenExtravars));
@@ -164,6 +172,7 @@ async function launchPlaybook(ev, credentials, jobid, counter) {
     if (vaultCredentials) {
       const vaultCredential = await Credential.resolveCredential(vaultCredentials);
       vaultPassword = vaultCredential.password;
+      registerJobSecrets(jobid, [vaultPassword]);
     }
   } catch (err) {
     logger.error("Failed to get vault credentials : ", err);
@@ -328,7 +337,7 @@ export function executeCommand(cmd, jobid, counter) {
           if (seen !== jobLogSeen) {
             jobLogSeen = seen;
             const content = await fs.promises.readFile(jobLogPath, "utf8");
-            await mysql.do("UPDATE AnsibleForms.`jobs` SET job_log=? WHERE id=?", [content, jobid]);
+            await mysql.do("UPDATE AnsibleForms.`jobs` SET job_log=? WHERE id=?", [maskOutput(jobid, content), jobid]);
           }
           if (final) await fs.promises.unlink(jobLogPath);
         } catch (e) {
