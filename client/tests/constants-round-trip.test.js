@@ -1,5 +1,5 @@
-// The constants editor round-trip (config/constants.js), shared by admin/constants.vue
-// (through useFormsConfig) and the designer's constant modals.
+// The constants editor round-trip (config/constants.js), shared by the designer's visual
+// constants editor (AppConstantsEditor.vue) and its constant modals.
 //
 // Constants are referenced from forms as $(MY_KEY), so both halves matter: the KEY has to
 // come back byte-identical or the reference stops resolving, and the VALUE has to keep its

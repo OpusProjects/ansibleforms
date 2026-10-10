@@ -33,6 +33,7 @@ import {
   arrayToConstants,
   flattenConstants,
 } from '@/config/constants';
+import { normalizeCategories, buildCategories } from '@/composables/useFormsConfig';
 import {
   isDefaultCategory,
   flattenCategories,
@@ -2554,7 +2555,11 @@ function preparePreview() {
  */
 function previewForm() {
   const url = preparePreview();
-  if (url) window.open(url, '_blank');
+  if (!url) return;
+  window.open(url, '_blank');
+  // the new window copied the session as it opened : the designer's own copy goes, so a
+  // preview frame reloading later never reads it
+  sessionStorage.removeItem('designer-preview');
 }
 
 // ─── the card's tabs : the item's YAML, the categories' and constants' tables, a form's preview
@@ -2573,8 +2578,8 @@ const previewKey = ref(0);
  */
 function refreshPreview() {
   const url = preparePreview();
-  if (!url) return;
-  previewUrl.value = `${url}&embed=1`;
+  // nothing to preview (the YAML is broken) : no frame, rather than the form shown before
+  previewUrl.value = url ? `${url}&embed=1` : '';
   previewKey.value++;
 }
 
@@ -2593,10 +2598,25 @@ function showView(view) {
 // forms (no subforms : they are not in the menu) ; a click highlights a category, as there
 const previewCategory = ref('');
 const menuPreview = computed(() => ({
-  categories: categoriesObj.value || [],
+  // only the entries that are categories (a bare '-' parses to null), each as it is stored
+  categories: buildCategories(
+    normalizeCategories((categoriesObj.value || []).filter((c) => c && typeof c === 'object')),
+  ),
   forms: formsObj.value.filter((f) => f && f.name && f.type !== 'subform'),
 }));
 
+// a link to another view while in the designer (the search's ?view=...&tab=...) : the page is
+// reused, so its query is applied here, not only when it opens
+watch(
+  () => [route.query.view, route.query.tab],
+  ([view, tab]) => {
+    if (!tabs.some((x) => x.name === view)) return;
+    currentTab.value = view;
+    nextTick(() => {
+      editorView.value = tab === 'visual' && hasVisual(view) ? 'visual' : 'yaml';
+    });
+  },
+);
 // another view opens on its YAML ; the preview is a form's : no form goes back to the YAML,
 // another form is previewed in its place (the visual tab is not a form's : left as it is)
 watch(currentTab, () => (editorView.value = 'yaml'));
@@ -6641,11 +6661,11 @@ onBeforeUnmount(() => {
                   <!-- the visual tab : a row added to its table (the categories' or constants') -->
                   <BsButton
                     v-if="editorView === 'visual' && (currentTab === 'Categories' || currentTab === 'Constants')"
-                    :colorClass="busyOrTemplated ? 'secondary' : 'primary'"
+                    :colorClass="busyOrTemplated || visualEditor?.locked ? 'secondary' : 'primary'"
                     icon="plus"
                     :isIconButton="true"
                     @click="visualEditor?.add()"
-                    :disabled="busyOrTemplated"
+                    :disabled="busyOrTemplated || !!visualEditor?.locked"
                     :title="currentTab === 'Categories' ? t('designer.addCategory') : t('designer.addConstant')"
                   />
                   <template v-if="currentTab === 'Categories' && editorView === 'yaml'">

@@ -108,6 +108,8 @@ const newConstant = ref(null);
  * Opens the New constant dialog on an empty constant.
  */
 function addConstant() {
+  // the table cannot be edited (read only, or its YAML cannot be read) : nothing added
+  if (locked.value) return;
   newConstant.value = { _uid: nextUid(), key: '', value: '', children: [] };
 }
 
@@ -151,7 +153,7 @@ function removeConstant(target, list = constants.value) {
 }
 
 // the designer's toolbar adds a row (its + button)
-defineExpose({ add: addConstant });
+defineExpose({ add: addConstant, locked });
 </script>
 <template>
   <BsModal v-if="newConstant" size="lg" @close="newConstant = null">

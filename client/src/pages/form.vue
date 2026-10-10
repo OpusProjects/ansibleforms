@@ -1266,6 +1266,11 @@ async function handleSubmitAction({ action, visibility: formVisibility }) {
 
 // Open schedule off-canvas
 function openScheduleOffcanvas(action = 'schedule') {
+  // a preview (the designer's) runs nothing, stores nothing, schedules nothing
+  if (isPreview.value) {
+    toast.info(t('designer.previewNotRun'));
+    return;
+  }
   scheduleAction.value = action;
 
   // Reset schedule form with appropriate defaults
@@ -1354,6 +1359,11 @@ async function createSchedule() {
 
 // Store off-canvas functions
 function openStoreOffcanvas() {
+  // a preview (the designer's) runs nothing, stores nothing, schedules nothing
+  if (isPreview.value) {
+    toast.info(t('designer.previewNotRun'));
+    return;
+  }
   // Reset store form
   storeForm.value = {
     name: '',
@@ -1585,6 +1595,11 @@ async function getJob(id, final) {
 
 // execute the form
 async function launchForm(postdata) {
+  // a preview (the designer's) runs nothing, stores nothing, schedules nothing
+  if (isPreview.value) {
+    toast.info(t('designer.previewNotRun'));
+    return;
+  }
   message.value = 'Connecting with job api ';
   status.value = '';
   // the previous job is done with : until the server answers with the new id, the abort

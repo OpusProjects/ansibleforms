@@ -102,6 +102,8 @@ const newCategory = ref(null);
  * Opens the New category dialog on an empty category with the default icon.
  */
 function addCategory() {
+  // the table cannot be edited (read only, or its YAML cannot be read) : nothing added
+  if (locked.value) return;
   newCategory.value = { _uid: nextUid(), name: '', icon: DEFAULT_CATEGORY_ICON };
 }
 
@@ -144,7 +146,7 @@ function removeCategory(cat, list = categories.value) {
 }
 
 // the designer's toolbar adds a row (its + button)
-defineExpose({ add: addCategory });
+defineExpose({ add: addCategory, locked });
 </script>
 <template>
   <BsModal v-if="newCategory" size="lg" @close="newCategory = null">
