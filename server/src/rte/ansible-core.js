@@ -20,6 +20,7 @@ import mysql from "../models/db.model.js";
 import Job from "../models/job.model.js";
 import { nodeId } from "../lib/role.js";
 import { registerJobSecrets, forgetJobSecrets, maskOutput } from "../lib/outputMask.js";
+import { playbookEnv } from "../lib/playbookEnv.js";
 
 /** this RTE's name, stored in jobs.host on the jobs it claims : rte-<hostname>-<port> (lib/role.js) */
 export function runnerIdentity() {
@@ -294,6 +295,9 @@ export function executeCommand(cmd, jobid, counter) {
       var child = spawn(file, args, {
         cwd: directory,
         detached: true,
+        // the RTE's environment without AnsibleForms' own variables : a playbook never reads
+        // ENCRYPTION_SECRET, the database password or a token through lookup('env')
+        env: playbookEnv(),
       });
       child.stdout.setEncoding("utf8");
       child.stderr.setEncoding("utf8");

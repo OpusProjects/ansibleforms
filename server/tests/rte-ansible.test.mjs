@@ -171,6 +171,23 @@ describe("a playbook job runs from its jobs row", () => {
     assert.equal(fs.existsSync(path.join(dir, "extravars_11.json")), false, "files removed afterwards");
   });
 
+  test("the playbook runs without the app's secrets in its environment", async () => {
+    const saved = { e: process.env.ENCRYPTION_SECRET, d: process.env.DB_PASSWORD };
+    process.env.ENCRYPTION_SECRET = "the-key";
+    process.env.DB_PASSWORD = "db-root";
+    try {
+      row({ __playbook__: "site.yml" });
+      await runToEnd(() => core.runAnsibleJob({ jobId: 11 }));
+    } finally {
+      if (saved.e === undefined) delete process.env.ENCRYPTION_SECRET; else process.env.ENCRYPTION_SECRET = saved.e;
+      if (saved.d === undefined) delete process.env.DB_PASSWORD; else process.env.DB_PASSWORD = saved.d;
+    }
+    const env = spawned[0].options.env;
+    assert.equal(env.ENCRYPTION_SECRET, undefined);
+    assert.equal(env.DB_PASSWORD, undefined);
+    assert.equal(env.PATH, process.env.PATH, "the rest of the environment is passed");
+  });
+
   test("the playbook sub path is the working folder", async () => {
     fs.mkdirSync(path.join(dir, "sub"));
     row({ __playbook__: "site.yml", __playbookSubPath__: "sub" });
