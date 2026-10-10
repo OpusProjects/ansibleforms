@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 /******************************************************************/
@@ -29,28 +29,6 @@ const { t } = useI18n();
 
 // the graph at its size (scrolled sideways when wider than the panel), or shrunk to its width
 const fit = ref(false);
-
-// the sideways scrollbar's height, when it shows : taken off the space under the graph, so
-// that the space above and under it look the same
-const scroller = ref(null);
-const scrollbar = ref(0);
-let observer = null;
-/**
- * Measures the scrollbar under the graph (0 when the graph fits, or the scrollbar overlays).
- */
-function measure() {
-  const el = scroller.value;
-  scrollbar.value = el ? el.offsetHeight - el.clientHeight : 0;
-}
-onMounted(() => {
-  measure();
-  if (typeof ResizeObserver !== 'undefined' && scroller.value) {
-    observer = new ResizeObserver(measure);
-    observer.observe(scroller.value);
-    if (scroller.value.firstElementChild) observer.observe(scroller.value.firstElementChild);
-  }
-});
-onBeforeUnmount(() => observer?.disconnect());
 
 // layout constants
 const NODE_W = 170;
@@ -195,74 +173,73 @@ const graph = computed(() => {
         </button>
       </div>
     </div>
-    <div
-      ref="scroller"
-      class="awx-workflow-scroll"
-      :class="{ 'awx-fit': fit }"
-      :style="{ paddingBottom: `max(0px, calc(1rem - ${scrollbar}px))` }"
-    >
-      <svg
-        :width="fit ? '100%' : graph.width"
-        :height="fit ? null : graph.height"
-        :viewBox="`0 0 ${graph.width} ${graph.height}`"
-        preserveAspectRatio="xMinYMid meet"
-      >
-        <!-- links -->
-        <path
-          v-for="(l, i) in graph.links"
-          :key="'link' + i"
-          :d="l.d"
-          fill="none"
-          :stroke="edgeColors[l.type]"
-          stroke-width="2"
-          opacity="0.8"
-        />
-        <!-- start node -->
-        <g>
-          <rect
-            :x="graph.start.x"
-            :y="graph.start.y"
-            :width="START_W"
-            :height="START_H"
-            :rx="START_H / 2"
-            class="awx-start"
+    <!-- the room around the graph, outside its scrolling box : the scrollbar (when it shows)
+         as far from the panel's edge as the graph is from its top -->
+    <div class="awx-workflow-body">
+      <div class="awx-workflow-scroll" :class="{ 'awx-fit': fit }">
+        <svg
+          :width="fit ? '100%' : graph.width"
+          :height="fit ? null : graph.height"
+          :viewBox="`0 0 ${graph.width} ${graph.height}`"
+          preserveAspectRatio="xMinYMid meet"
+        >
+          <!-- links -->
+          <path
+            v-for="(l, i) in graph.links"
+            :key="'link' + i"
+            :d="l.d"
+            fill="none"
+            :stroke="edgeColors[l.type]"
+            stroke-width="2"
+            opacity="0.8"
           />
-          <text
-            :x="graph.start.x + START_W / 2"
-            :y="graph.start.y + START_H / 2 + 4"
-            text-anchor="middle"
-            class="awx-start-text"
-          >
-            START
-          </text>
-        </g>
-        <!-- workflow nodes -->
-        <g v-for="n in graph.nodes" :key="n.id" class="awx-node">
-          <rect
-            :x="n.x"
-            :y="n.y"
-            :width="NODE_W"
-            :height="NODE_H"
-            rx="6"
-            class="awx-node-rect"
-            :style="{ stroke: statusColor(n.status) }"
-            :stroke-dasharray="n.status == 'skipped' || n.do_not_run ? '4 3' : null"
-          />
-          <circle
-            :cx="n.x + 14"
-            :cy="n.y + NODE_H / 2"
-            r="5"
-            :fill="statusColor(n.status)"
-            :class="{ 'awx-pulse': n.status == 'running' }"
-          />
-          <text :x="n.x + 26" :y="n.y + 22" class="awx-node-name">{{ truncate(n.name) }}</text>
-          <text :x="n.x + 26" :y="n.y + 40" class="awx-node-status" :style="{ fill: statusColor(n.status) }">
-            {{ n.status }}
-            <template v-if="n.elapsed > 0">· {{ Math.round(n.elapsed) }}s</template>
-          </text>
-          <title>{{ n.name }} ({{ n.status }})</title>
-        </g>
-      </svg>
+          <!-- start node -->
+          <g>
+            <rect
+              :x="graph.start.x"
+              :y="graph.start.y"
+              :width="START_W"
+              :height="START_H"
+              :rx="START_H / 2"
+              class="awx-start"
+            />
+            <text
+              :x="graph.start.x + START_W / 2"
+              :y="graph.start.y + START_H / 2 + 4"
+              text-anchor="middle"
+              class="awx-start-text"
+            >
+              START
+            </text>
+          </g>
+          <!-- workflow nodes -->
+          <g v-for="n in graph.nodes" :key="n.id" class="awx-node">
+            <rect
+              :x="n.x"
+              :y="n.y"
+              :width="NODE_W"
+              :height="NODE_H"
+              rx="6"
+              class="awx-node-rect"
+              :style="{ stroke: statusColor(n.status) }"
+              :stroke-dasharray="n.status == 'skipped' || n.do_not_run ? '4 3' : null"
+            />
+            <circle
+              :cx="n.x + 14"
+              :cy="n.y + NODE_H / 2"
+              r="5"
+              :fill="statusColor(n.status)"
+              :class="{ 'awx-pulse': n.status == 'running' }"
+            />
+            <text :x="n.x + 26" :y="n.y + 22" class="awx-node-name">{{ truncate(n.name) }}</text>
+            <text :x="n.x + 26" :y="n.y + 40" class="awx-node-status" :style="{ fill: statusColor(n.status) }">
+              {{ n.status }}
+              <template v-if="n.elapsed > 0">· {{ Math.round(n.elapsed) }}s</template>
+            </text>
+            <title>{{ n.name }} ({{ n.status }})</title>
+          </g>
+        </svg>
+      </div>
     </div>
   </div>
 </template>
@@ -331,9 +308,14 @@ const graph = computed(() => {
 
   /* the graph : scrolled sideways, a soft shade at an edge with more of it beyond (the shades
      ride on the content's edges : they show only where it is cut) */
+  /* the room around the graph : as much under it (above the scrollbar) as over it, and the
+     scrollbar, when it shows, as far again from the panel's edge */
+  .awx-workflow-body {
+    padding: 1rem;
+  }
   .awx-workflow-scroll {
     overflow-x: auto;
-    padding: 1rem;
+    padding-bottom: 1rem;
     background:
       linear-gradient(to right, var(--af-bg-light-subtle-color), transparent) left / 2.5rem 100% no-repeat local,
       linear-gradient(to left, var(--af-bg-light-subtle-color), transparent) right / 2.5rem 100% no-repeat local,

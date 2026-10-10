@@ -1431,7 +1431,7 @@ onMounted(async () => {
             </div>
 
             <!-- awx workflow graph (only for awx workflow jobs) -->
-            <div class="row mb-3" v-if="job.awx_workflow?.nodes?.length">
+            <div class="row" v-if="job.awx_workflow?.nodes?.length">
               <div class="col">
                 <AppAwxWorkflow :workflow="job.awx_workflow" />
               </div>
