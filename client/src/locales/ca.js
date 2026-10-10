@@ -1642,6 +1642,8 @@ export default {
     playbook: 'playbook',
     template: 'plantilla',
     awxJob: 'Tasca AWX',
+    collapseAll: 'Replega-ho tot',
+    expandAll: 'Desplega-ho tot',
     hosts: 'hosts',
     allHosts: 'tots',
     implicit: 'implícit',

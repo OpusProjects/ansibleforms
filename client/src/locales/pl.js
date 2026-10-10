@@ -1635,6 +1635,8 @@ export default {
     playbook: 'playbook',
     template: 'szablon',
     awxJob: 'Zadanie AWX',
+    collapseAll: 'Zwiń wszystko',
+    expandAll: 'Rozwiń wszystko',
     hosts: 'hosty',
     allHosts: 'wszystkie',
     implicit: 'domyślny',

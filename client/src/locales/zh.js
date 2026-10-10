@@ -1586,6 +1586,8 @@ export default {
     playbook: 'Playbook',
     template: '模板',
     awxJob: 'AWX 作业',
+    collapseAll: '全部折叠',
+    expandAll: '全部展开',
     hosts: '主机',
     allHosts: '全部',
     implicit: '隐式',

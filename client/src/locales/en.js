@@ -1621,6 +1621,8 @@ export default {
     playbook: 'playbook',
     template: 'template',
     awxJob: 'AWX job',
+    collapseAll: 'Collapse all',
+    expandAll: 'Expand all',
     hosts: 'hosts',
     allHosts: 'all',
     implicit: 'implicit',

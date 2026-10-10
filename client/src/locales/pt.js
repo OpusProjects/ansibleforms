@@ -1643,6 +1643,8 @@ export default {
     playbook: 'playbook',
     template: 'modelo',
     awxJob: 'Tarefa AWX',
+    collapseAll: 'Recolher tudo',
+    expandAll: 'Expandir tudo',
     hosts: 'hosts',
     allHosts: 'todos',
     implicit: 'implícito',

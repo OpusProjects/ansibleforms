@@ -1649,6 +1649,8 @@ export default {
     playbook: 'playbook',
     template: 'modèle',
     awxJob: 'Job AWX',
+    collapseAll: 'Tout réduire',
+    expandAll: 'Tout développer',
     hosts: 'hôtes',
     allHosts: 'tous',
     implicit: 'implicite',

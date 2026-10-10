@@ -382,6 +382,20 @@ const dataShown = computed(() => {
   if (showArtifacts.value && job.value.job_type == 'awx') return { value: job.value.awx_artifacts ?? {} };
   return null;
 });
+// the outputs (the job's, and the current step's) : the toolbar folds or unfolds them all
+const mainOutput = ref(null);
+const subOutput = ref(null);
+
+/**
+ * Folds every section of the output, or unfolds them all when all are folded.
+ */
+function toggleFoldAll() {
+  const expand = mainOutput.value?.allFolded;
+  for (const out of [mainOutput.value, subOutput.value]) {
+    if (out) expand ? out.expandAll() : out.collapseAll();
+  }
+}
+
 // the playbook it ran, when it ran one
 const jobPlaybook = computed(() => job.value?.extravars?.__playbook__ || '');
 
@@ -1428,6 +1442,17 @@ onMounted(async () => {
             <div class="af-output-panel">
               <div class="af-output-toolbar">
                 <div class="af-output-label">
+                  <!-- fold or unfold every section, PLAY and TASK of the output -->
+                  <button
+                    v-if="mainOutput"
+                    type="button"
+                    class="af-tool-btn af-tool-icon"
+                    :title="mainOutput.allFolded ? t('jobs.expandAll') : t('jobs.collapseAll')"
+                    :aria-label="mainOutput.allFolded ? t('jobs.expandAll') : t('jobs.collapseAll')"
+                    @click="toggleFoldAll"
+                  >
+                    <FaIcon :icon="mainOutput.allFolded ? 'angles-down' : 'angles-up'" />
+                  </button>
                   <FaIcon icon="terminal" />
                   <span>{{ t('jobs.output') }}</span>
                   <span class="af-output-count">{{ t('jobs.lines', { count: outputLines }) }}</span>
@@ -1528,6 +1553,7 @@ onMounted(async () => {
               <div class="row g-0 af-output-body">
                 <div class="col">
                   <AppAnsibleOutput
+                    ref="mainOutput"
                     :output="filteredJobOutput"
                     :jobLog="job?.job_log"
                     :workflow="job?.awx_workflow"
@@ -1704,6 +1730,13 @@ onMounted(async () => {
   gap: 0.5rem;
   font-weight: 600;
   font-size: 0.875rem;
+}
+/* the collapse / expand all : its icon over the sections' chevrons, as wide and as far in */
+.af-output-label .af-tool-icon {
+  margin-left: calc(-0.5rem - 1px);
+  svg {
+    width: 0.75rem;
+  }
 }
 .af-output-count {
   font-weight: 400;

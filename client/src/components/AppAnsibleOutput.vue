@@ -194,6 +194,31 @@ function shortDuration(seconds) {
   return s >= 60 ? `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, '0')}s` : `${s}s`;
 }
 
+// every foldable head : the sections with lines under them, and the job's own card (-1)
+const foldable = computed(() => {
+  const heads = lines.value.flatMap((l, i) => (l.level && l.end > i + 1 ? [i] : []));
+  return run.value ? [-1, ...heads] : heads;
+});
+// all folded : the toolbar's toggle then expands
+const allFolded = computed(() => foldable.value.length > 0 && foldable.value.every((i) => folded.value.has(i)));
+
+/**
+ * Folds every section, PLAY and TASK : an overview of the run.
+ */
+function collapseAll() {
+  folded.value = new Set(foldable.value);
+}
+
+/**
+ * Unfolds everything.
+ */
+function expandAll() {
+  folded.value = new Set();
+}
+
+// the job page's toolbar folds and unfolds it all
+defineExpose({ collapseAll, expandAll, allFolded });
+
 // the lines shown : those inside a folded section left out
 const shown = computed(() => {
   const result = [];

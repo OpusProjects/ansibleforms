@@ -1635,6 +1635,8 @@ export default {
     playbook: 'playbook',
     template: 'plantilla',
     awxJob: 'Trabajo AWX',
+    collapseAll: 'Contraer todo',
+    expandAll: 'Expandir todo',
     hosts: 'hosts',
     allHosts: 'todos',
     implicit: 'implícito',

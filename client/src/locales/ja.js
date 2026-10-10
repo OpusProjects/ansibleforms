@@ -1616,6 +1616,8 @@ export default {
     playbook: 'プレイブック',
     template: 'テンプレート',
     awxJob: 'AWX ジョブ',
+    collapseAll: 'すべて折りたたむ',
+    expandAll: 'すべて展開',
     hosts: 'ホスト',
     allHosts: 'すべて',
     implicit: '暗黙',
