@@ -196,7 +196,8 @@ class User extends CrudModel {
       if (res.length > 0 && res[0].password) {
         return crypto.checkPassword(password, res[0].password, res[0]);
       } else {
-        throw `User ${username} not found`;
+        // as long as a wrong password : the timing does not tell which names exist
+        return crypto.checkNoPassword(password).then(() => { throw `User ${username} not found`; });
       }
     });
   }

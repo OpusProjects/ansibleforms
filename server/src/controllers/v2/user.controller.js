@@ -5,6 +5,7 @@ import RestResult from '../../models/restResult.model.v2.js';
 import Errors from '../../lib/errors.js';
 import i18n from '../../lib/i18n.js';
 import { assertMayTouchAdmin } from '../../lib/adminGrants.js';
+import { unlockAccount } from '../../lib/loginThrottle.js';
 
 // a change only an admin may make (lib/adminGrants.js) : 403, with the reason
 function refused(res, err) {
@@ -94,6 +95,11 @@ const update = async function(req, res) {
           // user is moved into a group that grants admin by an admin only
           await assertMayTouchAdmin(req, { userId: req.params.id, groupIds: req.body.group_id !== undefined ? [req.body.group_id] : [] });
           await User.update(req.body,req.params.id);
+          // a password set by an admin also lifts a lockout (lib/loginThrottle.js)
+          if (req.body.password) {
+            const target = await User.findById(req.params.id).catch(() => null);
+            if (target?.username) await unlockAccount(target.username);
+          }
           res.json(RestResult.single(null));
         } catch(err) {
       if (refused(res, err)) return;

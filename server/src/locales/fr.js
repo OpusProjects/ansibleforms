@@ -22,6 +22,7 @@ export default {
   auth: {
     authFailed: "Echec de l'authentification",
     invalidCredentials: "Identifiants invalides",
+    tooManyFailures: "Trop de connexions échouées : réessayez dans {minutes} minute(s)",
     loginDisabled: "Non authentifie, la connexion n'est pas activee pour cet utilisateur.",
     azureFailed: "Echec de l'authentification Azure AD",
     oidcFailed: "Echec de l'authentification OIDC",

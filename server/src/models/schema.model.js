@@ -503,7 +503,7 @@ const SCHEMA_MANIFEST = {
   base: {
     tables: ['groups', 'users', 'tokens', 'credentials', 'ldap', 'jobs', 'job_output',
              'settings', 'repositories', 'schedule', 'audit', 'chat_settings', 'secret_stores', 'runners',
-             'nodes', 'cache_epochs', 'designer_lock', 'user_groups', 'mail_servers'],
+             'nodes', 'cache_epochs', 'designer_lock', 'user_groups', 'mail_servers', 'login_failures'],
   },
   patches: {
     patchVersion4: { columns: ['ldap.groups_search_base', 'ldap.groups_attribute', 'ldap.group_class',
@@ -540,7 +540,7 @@ const SCHEMA_MANIFEST = {
     // dropped), and the job log a playbook writes is stored on the job
     // and the worker and several app nodes : the processes on the database, what changed
     // between them, the designer lock, and the node that follows a job
-    patchVersion7: { tables: ['secret_stores', 'runners', 'nodes', 'cache_epochs', 'designer_lock', 'user_groups', 'mail_servers'],
+    patchVersion7: { tables: ['secret_stores', 'runners', 'nodes', 'cache_epochs', 'designer_lock', 'user_groups', 'mail_servers', 'login_failures'],
                      columns: ['schedule.owner', 'credentials.secret_store', 'credentials.secret_ref', 'settings.vault_env_imported_at', 'jobs.runner',
                                'runners.username', 'runners.password', 'runners.use_credentials', 'runners.node_id', 'jobs.job_log',
                                'jobs.tracker', 'repositories.claim_node', 'repositories.claim_since',
@@ -884,6 +884,9 @@ async function patchVersion7(messages, success, failed) {
   const mailBuffer = fs.readFileSync(`${__dirname}/../db/create_mail_servers_table.sql`);
   await checkPromise(addTable("mail_servers", mailBuffer.toString()), messages, success, failed);
   await checkPromise(copyMailSettingsToServers(), messages, success, failed);
+  // failed logins, for the account lockout (lib/loginThrottle.js)
+  const loginFailures = fs.readFileSync(`${__dirname}/../db/create_login_failures_table.sql`);
+  await checkPromise(addTable("login_failures", loginFailures.toString()), messages, success, failed);
   // the chat's key can be an api credential's password instead of its own
   await checkPromise(addColumn("chat_settings", "credential", "varchar(250)", true, "NULL"), messages, success, failed);
   // a description on the local groups and users : what a group is for, who owns an account

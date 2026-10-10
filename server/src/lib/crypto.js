@@ -45,6 +45,14 @@ const hashPassword = (pw) => {
       })
     })
 }
+// a bcrypt hash of nothing anybody types : compared against when a username is unknown, so an
+// unknown name takes as long as a wrong password and the timing tells nobody which names exist
+// (made once, lazily, at the cost of the real ones : 10 rounds)
+let dummyHash = null;
+const checkNoPassword = (pw) => new Promise((resolve) => {
+  if (!dummyHash) dummyHash = bcrypt.hashSync(crypto.randomBytes(24).toString('hex'), 10);
+  bcrypt.compare(String(pw ?? ''), dummyHash, () => resolve({ isValid: false }));
+});
 // promise wrapper for bcrypt compare
 const checkPassword = (pw,hash,user) =>{
   return new Promise((resolve,reject)=>{
@@ -61,5 +69,6 @@ export default {
     decrypt,
     encrypt_to_file,
     hashPassword,
-    checkPassword
+    checkPassword,
+    checkNoPassword
 };

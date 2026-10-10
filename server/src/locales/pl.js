@@ -22,6 +22,7 @@ export default {
   auth: {
     authFailed: "Uwierzytelnianie nie powiodło się",
     invalidCredentials: "Nieprawidłowe dane logowania",
+    tooManyFailures: "Zbyt wiele nieudanych logowań : spróbuj ponownie za {minutes} min",
     loginDisabled: "Brak uwierzytelnienia, logowanie nie jest włączone dla tego użytkownika.",
     azureFailed: "Uwierzytelnianie Azure AD nie powiodło się",
     oidcFailed: "Uwierzytelnianie OIDC nie powiodło się",

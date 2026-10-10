@@ -16,6 +16,7 @@ import auth_oidc from "../../auth/auth_oidc.js";
 import i18n from "../../lib/i18n.js";
 import Audit from "../../models/audit.model.js";
 import { claimsDisplayName } from "../../lib/displayName.js";
+import { loginBlocked, loginFailed, loginSucceeded } from "../../lib/loginThrottle.js";
 
 // Login is audited here rather than by the blanket middleware, which deliberately
 // skips /auth : on a failed attempt there is no req.user, so that layer could only
@@ -134,7 +135,15 @@ const settings = async function(req, res) {
 }
 // basic authentication with local users
 const basic = async function(req, res,next) {
-    
+    // a locked account, or an address that failed too often, is refused before any password is
+    // checked (lib/loginThrottle.js) : the same answer whether the account exists or not
+    const blocked = await loginBlocked(attemptedUsername(req), req.ip).catch(() => ({ blocked: false }));
+    if (blocked.blocked) {
+      auditLogin(req, 'denied', 'unknown', 'too many failed logins');
+      res.setHeader('Retry-After', String((blocked.minutes || 1) * 60));
+      return res.status(429).json(RestResult.error(i18n.t(req, 'auth.authFailed'), i18n.t(req, 'auth.tooManyFailures', { minutes: blocked.minutes || 1 })));
+    }
+
     // as login, we authenticate against our passport basic (username and password are extracted by passport)
     // in auth.js the user is searched locally and eventually returns either an error or the user
     passport.authenticate(
@@ -160,6 +169,7 @@ const basic = async function(req, res,next) {
             }
             
             auditLogin(req, 'failure', 'local', e || 'invalid credentials');
+            await loginFailed(attemptedUsername(req), req.ip);
             // The specific reason stays on the server. Returning `e` told the caller
             // WHICH half failed - "user not found" for an unknown name against "wrong
             // password" for a real one - so the login form was a username oracle. The
@@ -183,6 +193,7 @@ const basic = async function(req, res,next) {
                 return res.status(401).json({ error: i18n.t(req, 'auth.loginDisabled') });
               }
               auditLogin(req, 'success', user.type, null, user.username);
+              await loginSucceeded(attemptedUsername(req));
               // send the tokens to the requester
               return res.json(userToJwt(user,req.query.expiryDays));
             }
@@ -217,6 +228,7 @@ const basic_ldap = async function(req, res,next) {
           // the end of the chain : local said 'not found' and fell through to here,
           // so this is the final verdict for the attempt
           auditLogin(req, 'failure', 'ldap', reason || 'invalid credentials');
+          await loginFailed(attemptedUsername(req), req.ip);
           // Generic answer, same as the local branch above: `reason` distinguishes an
           // unknown username from a wrong password, and also carries ldap internals
           // (bind failures, server names) that no anonymous caller should see.
@@ -239,6 +251,7 @@ const basic_ldap = async function(req, res,next) {
               return res.status(401).json({ error: i18n.t(req, 'auth.loginDisabled') });
             }
             auditLogin(req, 'success', user.type, null, user.username);
+            await loginSucceeded(attemptedUsername(req));
             // send the tokens to the requester
             return res.json(userToJwt(user,req.query.expiryDays));
           }
