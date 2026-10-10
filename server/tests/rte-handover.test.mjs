@@ -27,10 +27,23 @@ vi.mock("../src/models/db.model.js", () => ({
   default: {
     do: async (sql) => {
       if (/^SELECT host FROM/.test(sql)) return [{ host: row.host }];
+      if (/^SELECT extravars, credentials FROM/.test(sql)) return [{ extravars: JSON.stringify(row.extravars || {}), credentials: JSON.stringify(row.credentials || {}) }];
       if (/^SELECT status FROM/.test(sql)) return [{ status: row.status }];
       return [];
     },
     tryDo: async () => [],
+  },
+}));
+
+// the credentials table, resolved by the app : by name
+let credentialError = null;
+vi.mock("../src/models/credential.model.v2.js", () => ({
+  default: {
+    resolveCredentialMap: async (map) => {
+      if (credentialError) throw credentialError;
+      return Object.fromEntries(Object.entries(map || {}).map(([k, name]) => [k, { user: `${name}-user`, password: `${name}-pw` }]));
+    },
+    resolveCredential: async (name) => ({ user: `${name}-user`, password: `${name}-pw` }),
   },
 }));
 
@@ -47,24 +60,44 @@ vi.mock("../src/models/job.model.js", () => ({
 
 const { default: rte } = await import("../src/runners/rte.js");
 const { RTE_CONTRACT } = await import("../src/rte/contract.js");
+const { openJobSecrets } = await import("../src/lib/sealedSecrets.js");
 const runner = { name: "rte-1", type: "rte", uri: "http://rte:8000", token: "t" };
 const refused = (status, error) => () => Promise.reject(Object.assign(new Error("refused"), { response: { status, data: { error } } }));
 const noAnswer = () => Promise.reject(Object.assign(new Error("timeout of 10000ms exceeded"), { code: "ECONNABORTED" }));
 
 beforeEach(() => {
   row = { status: "running", host: null };
+  credentialError = null;
   ended.length = 0;
   posted.length = 0;
   abortResets = 0;
 });
 
 describe("the hand-over", () => {
-  test("the job id and the app's contract go to the RTE", async () => {
+  test("the job id, the app's contract and the job's secrets sealed for that RTE go to the RTE", async () => {
+    row.extravars = { __credentials__: { db: "cmdb" }, __ansibleCredentials__: "ssh", __vaultCredentials__: "vault" };
     postAnswer = async () => { row.host = "rte-1-8000"; setTimeout(() => { row.status = "success"; }, 50); return { status: 202 }; };
     const ok = await rte.launch({ jobId: 7, runner });
-    assert.deepEqual(posted[0], { url: "/jobs", body: { jobId: 7, contract: RTE_CONTRACT } });
+    assert.equal(posted[0].url, "/jobs");
+    assert.equal(posted[0].body.jobId, 7);
+    assert.equal(posted[0].body.contract, RTE_CONTRACT);
+    assert.equal(JSON.stringify(posted[0].body).includes("cmdb-pw"), false, "no secret in clear");
+    assert.deepEqual(openJobSecrets(posted[0].body.sealed, runner.token, 7), {
+      credentials: { db: { user: "cmdb-user", password: "cmdb-pw" } },
+      ansible: { user: "ssh-user", password: "ssh-pw" },
+      vault: { password: "vault-pw" },
+    });
+    assert.throws(() => openJobSecrets(posted[0].body.sealed, runner.token, 8), /do not open/, "for that job only");
     assert.equal(ok, true, "followed until the RTE wrote success");
     assert.equal(ended.length, 0, "the RTE ends the job, not the app");
+  });
+
+  test("secrets that cannot be resolved fail the job before anything is handed over", async () => {
+    credentialError = new Error("secret store unreachable");
+    const ok = await rte.launch({ jobId: 7, runner });
+    assert.equal(ok, false);
+    assert.equal(posted.length, 0);
+    assert.match(ended[0].line, /could not prepare the job's credentials for the RTE : secret store unreachable/);
   });
 
   test("refused by the RTE (409) : the job fails with the RTE's reason, and an abort flag is cleared", async () => {

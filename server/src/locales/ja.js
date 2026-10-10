@@ -75,6 +75,7 @@ export default {
     oauth2Added: "OAuth2 プロバイダーを追加しました",
     runnerAdded: "ランナーを追加しました",
     runnerNotFound: "ランナーが見つかりません",
+    runnerAdminOnly: "ランナーを追加、変更、削除できるのは admin だけです : ランナーは実行するジョブの認証情報を受け取ります",
     runnerConnectionOk: "ランナーの接続は正常です",
     secretStoreAdded: "シークレットストアを追加しました",
     secretStoreNotFound: "シークレットストアが見つかりません",

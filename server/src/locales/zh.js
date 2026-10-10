@@ -75,6 +75,7 @@ export default {
     oauth2Added: "OAuth2 提供商已添加",
     runnerAdded: "运行器已添加",
     runnerNotFound: "未找到运行器",
+    runnerAdminOnly: "只有 admin 可以添加、更改或删除运行器 : 运行器会收到它运行的作业的凭据",
     runnerConnectionOk: "运行器连接正常",
     secretStoreAdded: "密钥库已添加",
     secretStoreNotFound: "未找到密钥库",

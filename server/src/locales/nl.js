@@ -78,6 +78,7 @@ export default {
     secretStoreConnectionOk: "Secret store verbinding is OK",
     runnerAdded: "Runner toegevoegd",
     runnerNotFound: "Runner niet gevonden",
+    runnerAdminOnly: "Alleen een admin kan een runner toevoegen, wijzigen of verwijderen : een runner ontvangt de credentials van de jobs die hij uitvoert",
     runnerConnectionOk: "Runner verbinding is OK",
     userNotFound: "Gebruiker niet gevonden",
     currentPasswordRequired: "Uw huidige wachtwoord is vereist om een nieuw wachtwoord in te stellen",

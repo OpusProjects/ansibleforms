@@ -70,13 +70,14 @@ const { default: Job } = jobExports;
 const { default: mysql } = await import("../src/models/db.model.js");
 const { default: Repository } = await import("../src/models/repository.model.js");
 const core = await import("../src/rte/ansible-core.js");
+const { resolveJobSecrets } = await import("../src/lib/jobSecrets.js");
 const { dispatch, resolveRunner } = await import("../src/runners/orchestrator.js");
 const { RUNNERS } = await import("../src/runners/index.js");
 
 let jobRow;
 let outputs;
 mysql.do = async function (sql, params) {
-  if (sql.includes("extravars, credentials FROM")) return [{ form: jobRow.form, extravars: jobRow.extravars, credentials: jobRow.credentials }];
+  if (sql.includes("extravars, credentials FROM") || sql.includes("SELECT form, extravars FROM")) return [{ form: jobRow.form, extravars: jobRow.extravars, credentials: jobRow.credentials }];
   if (sql.includes("MAX(`order`)")) return [{ last: outputs.reduce((m, o) => Math.max(m, o.order), 0) }];
   if (sql.includes("INSERT INTO AnsibleForms.`job_output`")) {
     outputs.push({ ...params[0] });
@@ -112,6 +113,12 @@ afterEach(() => {
 
 function row(extravars, credentials = {}) {
   jobRow = { id: 11, status: "running", extravars: JSON.stringify(extravars), credentials: JSON.stringify(credentials) };
+}
+
+// the job as the RTE gets it : its secrets resolved by the app from the row (lib/jobSecrets.js)
+async function runJob() {
+  const secrets = await resolveJobSecrets(JSON.parse(jobRow.extravars), JSON.parse(jobRow.credentials));
+  return core.runAnsibleJob({ jobId: 11, secrets });
 }
 
 async function runToEnd(start, exitCode = 0) {
@@ -158,7 +165,7 @@ describe("the ansible-playbook arguments", () => {
 describe("a playbook job runs from its jobs row", () => {
   test("credentials, hidden credentials and the vault password are resolved from the names in the row", async () => {
     row({ __playbook__: "site.yml", __credentials__: { dbcred: "db" }, __ansibleCredentials__: "ssh", __vaultCredentials__: "vault" });
-    const ok = await runToEnd(() => core.runAnsibleJob({ jobId: 11 }));
+    const ok = await runToEnd(() => runJob());
     assert.equal(ok, true);
     const run = spawned[0];
     assert.equal(run.file, "ansible-playbook");
@@ -177,7 +184,7 @@ describe("a playbook job runs from its jobs row", () => {
     process.env.DB_PASSWORD = "db-root";
     try {
       row({ __playbook__: "site.yml" });
-      await runToEnd(() => core.runAnsibleJob({ jobId: 11 }));
+      await runToEnd(() => runJob());
     } finally {
       if (saved.e === undefined) delete process.env.ENCRYPTION_SECRET; else process.env.ENCRYPTION_SECRET = saved.e;
       if (saved.d === undefined) delete process.env.DB_PASSWORD; else process.env.DB_PASSWORD = saved.d;
@@ -191,13 +198,13 @@ describe("a playbook job runs from its jobs row", () => {
   test("the playbook sub path is the working folder", async () => {
     fs.mkdirSync(path.join(dir, "sub"));
     row({ __playbook__: "site.yml", __playbookSubPath__: "sub" });
-    await runToEnd(() => core.runAnsibleJob({ jobId: 11 }));
+    await runToEnd(() => runJob());
     assert.equal(spawned[0].options.cwd, path.join(dir, "sub"));
   });
 
   test("a missing ansible credential fails the job with the line it always had", async () => {
     row({ __playbook__: "site.yml", __ansibleCredentials__: "nope" });
-    const ok = await core.runAnsibleJob({ jobId: 11 });
+    const ok = await runJob();
     assert.equal(ok, false);
     assert.equal(spawned.length, 0, "nothing ran");
     assert.equal(jobRow.status, "failed");
@@ -209,7 +216,7 @@ describe("a playbook job runs from its jobs row", () => {
     credentialRows.vault.password = "v@ultPw";
     credentialRows.db.password = "dbpw-long";
     try {
-      const done = core.runAnsibleJob({ jobId: 11 });
+      const done = runJob();
       await new Promise((r) => setTimeout(r, 20));
       child.stdout.emit("data", "ok: dbpw-long sshpw v@ultPw dbuser\n");
       await new Promise((r) => setTimeout(r, 10));
@@ -226,7 +233,7 @@ describe("a playbook job runs from its jobs row", () => {
   test("output continues after what the job already wrote", async () => {
     row({ __playbook__: "site.yml" });
     outputs.push({ output: "changed: [approved by admin]", order: 4 });
-    await runToEnd(() => core.runAnsibleJob({ jobId: 11 }));
+    await runToEnd(() => runJob());
     const after = outputs.slice(1).map((o) => o.order);
     assert.ok(after.every((n) => n > 4), "every new line comes after the existing ones");
   });
@@ -239,7 +246,7 @@ describe("a form value is never a template", () => {
 
   test("a string with a Jinja marker is written as ansible's unsafe, anywhere in the extravars", async () => {
     row({ __playbook__: "site.yml", name: attack, list: ["ok", "{% if 1 %}x{% endif %}"], nested: { note: "{# c #}" } });
-    await runToEnd(() => core.runAnsibleJob({ jobId: 11 }));
+    await runToEnd(() => runJob());
     const ev = spawned[0].extravars;
     assert.deepEqual(ev.name, { __ansible_unsafe: attack });
     assert.deepEqual(ev.list, ["ok", { __ansible_unsafe: "{% if 1 %}x{% endif %}" }]);
@@ -249,14 +256,14 @@ describe("a form value is never a template", () => {
   test("everything without a marker is written exactly as before", async () => {
     const values = { __playbook__: "site.yml", name: "web01", n: 3, on: true, none: null, tags: ["a", "b"], obj: { k: "{ not jinja }" } };
     row(values);
-    await runToEnd(() => core.runAnsibleJob({ jobId: 11 }));
+    await runToEnd(() => runJob());
     assert.deepEqual(spawned[0].extravars, { ...values, __jobid__: 11 });
   });
 
   test("a credential's password is never templated, in the extravars or the hidden file", async () => {
     credentialRows.braces = { name: "braces", user: "u", password: "p{{w}}" };
     row({ __playbook__: "site.yml", __credentials__: { c: "braces" }, __ansibleCredentials__: "braces" });
-    await runToEnd(() => core.runAnsibleJob({ jobId: 11 }));
+    await runToEnd(() => runJob());
     assert.deepEqual(spawned[0].extravars.c.password, { __ansible_unsafe: "p{{w}}" });
     assert.deepEqual(spawned[0].hidden.ansible_password, { __ansible_unsafe: "p{{w}}" });
     delete credentialRows.braces;
@@ -264,13 +271,13 @@ describe("a form value is never a template", () => {
 
   test("a form with allowJinjaInExtravars keeps its templates", async () => {
     row({ __playbook__: "site.yml", __allowJinjaInExtravars__: true, name: "{{ inventory_hostname }}" });
-    await runToEnd(() => core.runAnsibleJob({ jobId: 11 }));
+    await runToEnd(() => runJob());
     assert.equal(spawned[0].extravars.name, "{{ inventory_hostname }}");
   });
 
   test("only a real true opts out", async () => {
     row({ __playbook__: "site.yml", __allowJinjaInExtravars__: "false", name: attack });
-    await runToEnd(() => core.runAnsibleJob({ jobId: 11 }));
+    await runToEnd(() => runJob());
     assert.deepEqual(spawned[0].extravars.name, { __ansible_unsafe: attack });
   });
 });
@@ -294,7 +301,7 @@ describe("every way out removes the files holding the credentials, and ends the 
 
   test("ansible-playbook missing (a spawn error : error and close, never exit)", async () => {
     row({ __playbook__: "site.yml", __credentials__: { dbcred: "db" } });
-    const done = core.runAnsibleJob({ jobId: 11 });
+    const done = runJob();
     await new Promise((r) => setTimeout(r, 20));
     child.emit("error", Object.assign(new Error("spawn ansible-playbook ENOENT"), { code: "ENOENT" }));
     child.emit("close", -2);
@@ -308,7 +315,7 @@ describe("every way out removes the files holding the credentials, and ends the 
 
   test("an error after the exit (a kill that failed) does not end the job a second time", async () => {
     row({ __playbook__: "site.yml" });
-    const done = core.runAnsibleJob({ jobId: 11 });
+    const done = runJob();
     await new Promise((r) => setTimeout(r, 20));
     child.emit("exit", 0);
     await done;
@@ -320,7 +327,7 @@ describe("every way out removes the files holding the credentials, and ends the 
 
   test("a playbook folder missing on the RTE says so, instead of failing on the extravars file", async () => {
     row({ __playbook__: "site.yml", __playbookSubPath__: "not/mounted" });
-    const ok = await core.runAnsibleJob({ jobId: 11 });
+    const ok = await runJob();
     assert.equal(ok, false);
     assert.equal(spawned.length, 0, "nothing ran");
     assert.equal(jobRow.status, "failed");
@@ -335,7 +342,7 @@ describe("the job log a playbook writes", () => {
       row({ __playbook__: "site.yml" });
       fs.mkdirSync(path.join(dir, ".joblogs"));
       const logFile = path.join(dir, ".joblogs", "job_log_11.log");
-      const done = core.runAnsibleJob({ jobId: 11 });
+      const done = runJob();
       await new Promise((r) => setTimeout(r, 20));
       fs.writeFileSync(logFile, "step 1 of 2\n");
       await vi.advanceTimersByTimeAsync(2000);
@@ -353,7 +360,7 @@ describe("the job log a playbook writes", () => {
 
   test("no log file is no job log, and no error", async () => {
     row({ __playbook__: "site.yml" });
-    await runToEnd(() => core.runAnsibleJob({ jobId: 11 }));
+    await runToEnd(() => runJob());
     assert.equal(jobRow.job_log, undefined);
     assert.equal(jobRow.status, "success");
   });

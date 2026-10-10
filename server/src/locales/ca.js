@@ -75,6 +75,7 @@ export default {
     oauth2Added: "Proveïdor OAuth2 afegit",
     runnerAdded: "Runner afegit",
     runnerNotFound: "No s'ha trobat el runner",
+    runnerAdminOnly: "Només un admin pot afegir, canviar o eliminar un runner : un runner rep les credencials dels treballs que executa",
     runnerConnectionOk: "La connexió amb el runner és correcta",
     secretStoreAdded: "Magatzem de secrets afegit",
     secretStoreNotFound: "No s'ha trobat el magatzem de secrets",

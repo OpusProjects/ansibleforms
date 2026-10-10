@@ -78,6 +78,7 @@ export default {
     secretStoreConnectionOk: "Verbindung zum Secret Store ist OK",
     runnerAdded: "Runner hinzugefügt",
     runnerNotFound: "Runner nicht gefunden",
+    runnerAdminOnly: "Nur ein Admin kann einen Runner hinzufuegen, aendern oder loeschen : ein Runner erhaelt die Zugangsdaten der Jobs, die er ausfuehrt",
     runnerConnectionOk: "Runner-Verbindung ist OK",
     userNotFound: "Benutzer nicht gefunden",
     currentPasswordRequired: "Zum Festlegen eines neuen Passworts ist Ihr aktuelles Passwort erforderlich",

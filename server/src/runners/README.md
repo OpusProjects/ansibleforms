@@ -30,23 +30,27 @@ as the old local runs: it is the same code.
              ▼                                                     ▼
         ┌──────────────────────── MySQL (shared) ─────────────────────────┐
         │ jobs (row = the input, status, abort flag, runner, job_log)      │
-        │ job_output (lines) ; credentials, secret_stores (ENCRYPTION_SECRET) │
+        │ job_output (lines) ; credentials, secret_stores : read by the app   │
         └──────────────────────────────────────────────────────────────────┘
 ```
 
 Three choices carry the design:
 
 1. **The RTE is this same server, started in another role** (`AF_ROLE=rte`). It shares the
-   models, the database layer, the credential resolver and the secret stores, and it holds
-   the only code that runs a playbook (`rte/ansible-core.js`). `index.js` loads only the
+   models and the database layer, and it holds the only code that runs a playbook
+   (`rte/ansible-core.js`). `index.js` loads only the
    modules of its role: an RTE never loads the web app, the app never loads ansible-core.
-2. **The database is the bus.** The RTE has the app's database settings and the same
-   `ENCRYPTION_SECRET`. It reads the job row, resolves the credentials itself, and writes the
-   output lines, the job log and the final status into the database. The browser polls the
-   job from the database every 2 seconds, so live output needs no streaming mechanism, and
-   secrets never travel over the RTE API.
-3. **A job is fully described by its row.** `runAnsibleJob({ jobId })` needs nothing else:
-   extravars and credential *names* are in the row, the rest is resolved at run time.
+2. **The database is the bus.** The RTE has the app's database settings. It reads the job row
+   and writes the output lines, the job log and the final status into the database. The
+   browser polls the job from the database every 2 seconds, so live output needs no
+   streaming mechanism.
+3. **The app resolves the secrets, the RTE never does.** At hand-over the app resolves the
+   job's credential map, its ansible login and its vault password (`lib/jobSecrets.js`, from
+   the credentials table and the secret stores) and sends them with the job, sealed with
+   AES-256-GCM under a key derived from the RTE's token and the job id
+   (`lib/sealedSecrets.js`). The bundle opens for that RTE and that job only, also over plain
+   http. The RTE never reads the credentials table nor a secret store, and needs
+   `ENCRYPTION_SECRET` only to register itself (its token is stored encrypted).
 
 ## Code map
 
@@ -104,8 +108,9 @@ so steps can name different runners.
    once a second until the status is final. The RTE claims the job
    (`UPDATE jobs SET host=<its name> WHERE id=? AND status='running' AND job_type='ansible' AND
    (host IS NULL OR host=<its name>)` - a repeated call is harmless, an AWX job or a multistep is
-   never taken), then runs `runAnsibleJob(jobId)`. The app sends its contract with the job id; an
-   RTE of another contract refuses it. When the POST gets no answer, the app follows the job if
+   never taken), then runs `runAnsibleJob({ jobId, secrets })`. The app sends its contract and
+   the sealed secrets with the job id; an RTE of another contract refuses it, and so does one
+   whose bundle does not open (another token, another job) - before it claims anything. When the POST gets no answer, the app follows the job if
    the RTE claimed it, and fails it only if not.
 5. Output: every chunk becomes a `job_output` row; `order` continues from `MAX(order)` in the
    database (`Job.lastOrder`), so two writers (app then RTE) never collide. A
@@ -163,8 +168,8 @@ release, so its tags always match the app's.
 
 ## Using a runner, step by step
 
-1. **Start an RTE** (see [Running it](#running-it)) with the app's database settings, the
-   app's `ENCRYPTION_SECRET` and a token (`RTE_TOKEN`).
+1. **Start an RTE** (see [Running it](#running-it)) with the app's database settings and a
+   token (`RTE_TOKEN`), plus the app's `ENCRYPTION_SECRET` when it registers itself.
 2. **It adds itself**: an RTE registers itself under Connections > Runners when it starts
    (`RTE_REGISTER=1`, the default), at `RTE_URL` or else at its own IP address and port, and
    the first one becomes the default. The Runners page shows it as *automatic*, or
@@ -196,7 +201,8 @@ In dev the `dev:rte` script uses `dev-rte-token-not-a-secret`; never outside a d
 | `RTE_TOKEN` | RTE | the token every call must carry; the app holds the same value on the runner row |
 | `RTE_REGISTER` | RTE | 1 (default): the RTE adds itself as a runner ; 0: add it by hand |
 | `RTE_URL` | RTE | the address the app reaches it on (`http://rte:8000`) ; unset: its IP address and port |
-| `DB_*`, `ENCRYPTION_SECRET` | RTE | the app's own values |
+| `DB_*` | RTE | the app's own values |
+| `ENCRYPTION_SECRET` | RTE | the app's own value, to store its token when it registers itself ; not needed with `RTE_REGISTER=0` |
 | `ANSIBLE_PATH`, `PROCESS_MAX_BUFFER`, `REPO_PATH`, `HOME_PATH`, `UPLOAD_PATH` | RTE | where its playbooks, repositories, SSH key and uploads are |
 | `PORT`, `HTTPS`, `HTTPS_CERT`, `HTTPS_KEY` | RTE | as for the app |
 | `AWX_API_PREFIX` | app | the AWX API prefix, added to an awx runner uri without an `/api/` path (a uri may carry it : `https://aap.example.com/api/controller/v2`) |
@@ -223,7 +229,7 @@ database and the folders. The RTE adds itself as runner `127.0.0.1-8010` (`RTE_U
 ```bash
 docker run -d --name rte -p 8010:8000 \
   -e DB_HOST=... -e DB_PORT=3306 -e DB_USER=... -e DB_PASSWORD=... \
-  -e ENCRYPTION_SECRET=<the app's> -e RTE_TOKEN=<token> -e RTE_URL=http://<this host>:8010 \
+  -e ENCRYPTION_SECRET=<the app's, to register itself> -e RTE_TOKEN=<token> -e RTE_URL=http://<this host>:8010 \
   -v <playbooks or repositories>:/app/dist/persistent/playbooks \
   -v <the app's .ssh>:/home/node/.ssh:ro \
   ghcr.io/ansibleforms/ansibleforms-rte-full:7
@@ -243,14 +249,16 @@ See [examples/rte](../../../examples/rte).
   The RTE has no users, no login and no web pages; `HTTPS=1` works as for the app (with the
   app's template certificate unless you mount your own: tick *Ignore certificates* on the
   runner, or give it the CA).
-- Runners are edited by users with settings access, not only admins: such a user can point the
-  default RTE elsewhere. A fake RTE receives job ids only and cannot write the database; the app
-  fails the job once it answers `unknown` twice.
+- A fake RTE (a runner pointed at another address) receives the jobs, with their secrets: only
+  admins can change a runner. The app fails a job once its RTE answers `unknown` twice.
 - Even with the token the API can only start a job that already exists and is `running`,
-  report its status, cancel it, and answer health. It cannot create jobs, read credentials or
-  return output.
-- The RTE holds the database password and `ENCRYPTION_SECRET`: it is as trusted as the app.
-  Every RTE can have its own token, and it cleans up only the jobs carrying its own name.
+  report its status, cancel it, and answer health. It cannot create jobs, read other jobs'
+  credentials or return output.
+- The RTE holds the database password, and `ENCRYPTION_SECRET` only when it registers itself.
+  It gets the secrets of the jobs it runs, never the others. Every RTE can have its own token,
+  and it cleans up only the jobs carrying its own name.
+- A runner receives the secrets of every job it runs, so only the admin role adds, changes or
+  deletes runners; users with settings access see and test them.
 
 ## Known limits
 
@@ -259,8 +267,6 @@ See [examples/rte](../../../examples/rte).
   database, the RTE cloning the playbooks repository itself.)
 - A form's `playbookSubPath` must exist on the RTE; a missing folder fails the job with the
   folder's name and what to mount.
-- A different `ENCRYPTION_SECRET` on the RTE is not detected yet: credentials would decrypt to
-  garbage (aes-256-ctr has no integrity check).
 - A multistep job, and an AWX job, are followed by the app node that started them: when that
   node goes, the job is abandoned (within two minutes on a cluster, at its restart otherwise).
   A step already handed to an RTE still finishes; an AWX job goes on in AWX.

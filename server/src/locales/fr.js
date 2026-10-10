@@ -78,6 +78,7 @@ export default {
     secretStoreConnectionOk: "La connexion au coffre de secrets est OK",
     runnerAdded: "Runner ajouté",
     runnerNotFound: "Runner introuvable",
+    runnerAdminOnly: "Seul un admin peut ajouter, modifier ou supprimer un runner : un runner recoit les identifiants des jobs qu'il execute",
     runnerConnectionOk: "La connexion au runner est OK",
     userNotFound: "Utilisateur introuvable",
     currentPasswordRequired: "Votre mot de passe actuel est requis pour en définir un nouveau",

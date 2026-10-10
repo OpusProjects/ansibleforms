@@ -36,8 +36,28 @@ const types = async (req, res) => {
   }
 };
 
+/**
+ * Refuses a change of the runners to anyone but an admin. A runner receives the secrets of
+ * every job it runs : an RTE gets them sealed with its token, AWX as extra vars. Whoever
+ * chooses a runner's address and token - or which runner is the default - chooses where
+ * every credential goes, so that is the admin role's, not every user with settings access.
+ *
+ * Args:
+ *   req (object): the request.
+ *
+ * Raises:
+ *   Errors.AccessDeniedError: the user is not an admin.
+ */
+function assertAdmin(req) {
+  const roles = req?.user?.user?.roles || [];
+  if (!roles.includes("admin")) {
+    throw new Errors.AccessDeniedError(i18n.t(req, "resources.runnerAdminOnly"));
+  }
+}
+
 const create = async (req, res) => {
   try {
+    assertAdmin(req);
     if (!req.body || Object.keys(req.body).length === 0) {
       throw new Errors.BadRequestError(i18n.t(req, "errors.requiredFields"));
     }
@@ -60,6 +80,7 @@ const findById = async (req, res) => {
 
 const update = async (req, res) => {
   try {
+    assertAdmin(req);
     if (!req.body || Object.keys(req.body).length === 0) {
       throw new Errors.BadRequestError(i18n.t(req, "errors.requiredFields"));
     }
@@ -73,6 +94,7 @@ const update = async (req, res) => {
 
 const deleteRunner = async (req, res) => {
   try {
+    assertAdmin(req);
     const deleted = await Runner.delete(req.params.id);
     if (!deleted) throw new Errors.NotFoundError(i18n.t(req, "resources.runnerNotFound"));
     return res.json(RestResult.single(deleted));
