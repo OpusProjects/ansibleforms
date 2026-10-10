@@ -696,7 +696,7 @@ export default {
       deleteProvider: 'Delete Provider',
       provider: 'Provider',
       tenantId: 'Tenant ID',
-      tenantIdHelp: 'Use blank if you want to use the common endpoint',
+      tenantIdHelp: "Your tenant's id (a GUID) or one of its domains : only its users sign in. Required",
       clientId: 'Client ID',
       clientSecret: 'Client Secret',
       groupFilter: 'Group Filter',

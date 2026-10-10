@@ -700,7 +700,7 @@ export default {
       deleteProvider: 'Usuń dostawcę',
       provider: 'Dostawca',
       tenantId: 'Tenant ID',
-      tenantIdHelp: 'Pozostaw puste, aby użyć wspólnego punktu końcowego (common)',
+      tenantIdHelp: 'Identyfikator dzierżawy (GUID) lub jedna z jej domen : logują się tylko jej użytkownicy. Wymagane',
       clientId: 'Client ID',
       clientSecret: 'Client Secret',
       groupFilter: 'Filtr grup',

@@ -733,6 +733,7 @@ export default function getSettings(t) {
           key: 'tenant_id',
           step: 'signin',
           label: t('settings.oauth2.tenantId'),
+          // required for Entra ID, checked by the server (the field only shows for azuread)
           required: false,
           icon: 'building',
           dependency: 'provider',

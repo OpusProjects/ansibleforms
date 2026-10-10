@@ -685,7 +685,7 @@ export default {
       deleteProvider: '删除提供商',
       provider: '提供商',
       tenantId: '租户 ID',
-      tenantIdHelp: '如需使用通用端点，请留空',
+      tenantIdHelp: '您的租户 ID (GUID) 或其域名之一 : 只有其用户可以登录。必填',
       clientId: '客户端 ID',
       clientSecret: '客户端密钥',
       groupFilter: '组筛选',

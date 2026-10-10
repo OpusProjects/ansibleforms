@@ -289,6 +289,7 @@ onMounted(async () => {
                 class="af-provider-field"
                 v-model="edit.tenant_id"
                 icon="building"
+                :required="true"
                 :isFloating="false"
                 :help="t('settings.oauth2.tenantIdHelp')"
                 :label="t('settings.oauth2.tenantId')"
