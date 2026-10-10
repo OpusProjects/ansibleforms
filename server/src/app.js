@@ -157,7 +157,6 @@ const load = async (app) => {
   const swaggerOptions = {
     customSiteTitle: "Ansibleforms Swagger UI",
     customfavIcon: `${appConfig.baseUrl}/favicon.svg`,
-    customCssUrl: `${appConfig.baseUrl}/assets/css/swagger.css`,
     docExpansion: "none",
   };
   // v2 docs
