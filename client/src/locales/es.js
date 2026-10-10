@@ -1170,6 +1170,7 @@ export default {
       outdentCategory: 'Sacar de su categoría padre',
       categoryPathsChanged:
         'Estas rutas de categoría ya no existen: {paths}. Los formularios que las referencian no aparecerán bajo ninguna categoría hasta que se actualicen.',
+      addKey: 'Añadir clave',
       addSubconstant: 'Añadir subclave',
       addRole: 'Agregar rol',
       newRole: 'Nuevo rol',
@@ -1318,6 +1319,15 @@ export default {
     fileExplorer: 'Explorador de archivos',
     search: 'Buscar',
     previewForm: 'Vista previa del formulario',
+    previewHint: 'El formulario tal como está, cambios sin guardar incluidos. Su envío no ejecuta nada.',
+    previewRefresh: 'Actualizar la vista previa',
+    previewNotRun: 'Esto es una vista previa : el formulario no se ha ejecutado',
+    visual: 'Visual',
+    visualYamlError: 'El YAML no se puede mostrar aquí : corríjalo en la pestaña YAML',
+    visualNotAList: 'no es una lista',
+    visualNotAMap: 'no es un mapa',
+    menuPreviewHint:
+      'El menú de la página Formularios, a partir de las categorías tal como están. Una categoría sin formularios no se muestra.',
     unsavedChanges: 'Cambios sin Guardar',
     unsavedConfirm: '¿Está seguro de que desea abandonar el diseñador?',
     unsavedNote: 'Tiene cambios sin guardar.',

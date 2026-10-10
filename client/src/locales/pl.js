@@ -1169,6 +1169,7 @@ export default {
       outdentCategory: 'Przenieś poza kategorię nadrzędną',
       categoryPathsChanged:
         'Te ścieżki kategorii już nie istnieją: {paths}. Formularze, które się do nich odwołują, nie pojawią się w żadnej kategorii, dopóki nie zostaną zaktualizowane.',
+      addKey: 'Dodaj klucz',
       addSubconstant: 'Dodaj podklucz',
       addRole: 'Dodaj rolę',
       newRole: 'Nowa rola',
@@ -1316,6 +1317,15 @@ export default {
     fileExplorer: 'Eksplorator plików',
     search: 'Szukaj',
     previewForm: 'Podgląd formularza',
+    previewHint: 'Formularz w obecnej postaci, z niezapisanymi zmianami. Wysłanie niczego nie uruchamia.',
+    previewRefresh: 'Odśwież podgląd',
+    previewNotRun: 'To jest podgląd : formularz nie został uruchomiony',
+    visual: 'Wizualny',
+    visualYamlError: 'Nie można tu pokazać YAML : popraw go w karcie YAML',
+    visualNotAList: 'to nie lista',
+    visualNotAMap: 'to nie mapa',
+    menuPreviewHint:
+      'Menu strony Formularze, z kategorii w obecnej postaci. Kategoria bez formularzy nie jest tam pokazywana.',
     unsavedChanges: 'Niezapisane zmiany',
     unsavedConfirm: 'Czy na pewno chcesz opuścić projektanta?',
     unsavedNote: 'Masz niezapisane zmiany.',

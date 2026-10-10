@@ -47,10 +47,8 @@ const secretStore = () => import('@/pages/admin/secret-store.vue');
 const runners = () => import('@/pages/admin/runners.vue');
 const runner = () => import('@/pages/admin/runner.vue');
 const audit = () => import('@/pages/admin/audit.vue');
-const categories = () => import('@/pages/admin/categories.vue');
 const roles = () => import('@/pages/admin/roles.vue');
 const role = () => import('@/pages/admin/role.vue');
-const constants = () => import('@/pages/admin/constants.vue');
 const ssh = () => import('@/pages/admin/ssh.vue');
 const users = () => import('@/pages/admin/users.vue');
 const user = () => import('@/pages/admin/user.vue');
@@ -181,11 +179,9 @@ const routes = [
   { path: '/admin/schedules', redirect: '/jobs/schedules' },
   { path: '/admin/stored-jobs', redirect: '/jobs/stored' },
   { path: '/admin/settings', name: '/admin/settings', component: settings, beforeEnter: checkSettings },
-  { path: '/admin/categories', name: '/admin/categories', component: categories, beforeEnter: checkSettings },
   { path: '/admin/roles', name: '/admin/roles', component: roles, beforeEnter: checkSettings },
   // a role's page : its General, Users and Groups tabs
   { path: '/admin/roles/:name', name: '/admin/roles/:name', component: role, beforeEnter: checkSettings },
-  { path: '/admin/constants', name: '/admin/constants', component: constants, beforeEnter: checkSettings },
   { path: '/admin/ssh', name: '/admin/ssh', component: ssh, beforeEnter: checkSettings },
   { path: '/admin/users', name: '/admin/users', component: users, beforeEnter: checkSettings },
   // a user's page : its Details and Groups tabs

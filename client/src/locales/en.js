@@ -1158,6 +1158,7 @@ export default {
       outdentCategory: 'Move out of its parent',
       categoryPathsChanged:
         'These category paths no longer exist: {paths}. Forms that reference them will not appear under a category until they are updated.',
+      addKey: 'Add key',
       addSubconstant: 'Add subkey',
       addRole: 'Add Role',
       newRole: 'New role',
@@ -1304,6 +1305,15 @@ export default {
     fileExplorer: 'File Explorer',
     search: 'Search',
     previewForm: 'Preview form',
+    previewHint: 'The form as it is now, unsaved edits included. Its submit runs nothing.',
+    previewRefresh: 'Refresh the preview',
+    previewNotRun: 'This is a preview : the form was not run',
+    visual: 'Visual',
+    visualYamlError: 'The YAML cannot be shown here : fix it in the YAML tab',
+    visualNotAList: 'not a list',
+    visualNotAMap: 'not a map',
+    menuPreviewHint:
+      "The Forms page's menu, from the categories as they are now. A category without forms is not shown, as there.",
     unsavedChanges: 'Unsaved Changes',
     unsavedConfirm: 'Are you sure you want to leave the designer ?',
     unsavedNote: 'You have unsaved changes.',

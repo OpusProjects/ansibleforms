@@ -1176,6 +1176,7 @@ export default {
       outdentCategory: 'Retirar da categoria-mãe',
       categoryPathsChanged:
         'Estes caminhos de categoria já não existem: {paths}. Os formulários que os referenciam não vão aparecer numa categoria até serem atualizados.',
+      addKey: 'Adicionar chave',
       addSubconstant: 'Adicionar subchave',
       addRole: 'Adicionar Função',
       newRole: 'Nova função',
@@ -1324,6 +1325,15 @@ export default {
     fileExplorer: 'Explorador de Ficheiros',
     search: 'Pesquisar',
     previewForm: 'Pré-visualizar formulário',
+    previewHint: 'O formulário tal como está, alterações não guardadas incluídas. O envio não executa nada.',
+    previewRefresh: 'Atualizar a pré-visualização',
+    previewNotRun: 'Isto é uma pré-visualização : o formulário não foi executado',
+    visual: 'Visual',
+    visualYamlError: 'O YAML não pode ser mostrado aqui : corrija-o no separador YAML',
+    visualNotAList: 'não é uma lista',
+    visualNotAMap: 'não é um mapa',
+    menuPreviewHint:
+      'O menu da página Formulários, a partir das categorias tal como estão. Uma categoria sem formulários não é mostrada.',
     unsavedChanges: 'Alterações por Guardar',
     unsavedConfirm: 'Tem a certeza de que pretende sair do designer ?',
     unsavedNote: 'Tem alterações por guardar.',

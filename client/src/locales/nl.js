@@ -1172,6 +1172,7 @@ export default {
       outdentCategory: 'Uit de bovenliggende categorie halen',
       categoryPathsChanged:
         'Deze categoriepaden bestaan niet meer: {paths}. Formulieren die ernaar verwijzen verschijnen onder geen enkele categorie totdat ze zijn bijgewerkt.',
+      addKey: 'Sleutel toevoegen',
       addSubconstant: 'Subsleutel toevoegen',
       addRole: 'Rol toevoegen',
       newRole: 'Nieuwe rol',
@@ -1320,6 +1321,15 @@ export default {
     fileExplorer: 'Bestandsverkenner',
     search: 'Zoeken',
     previewForm: 'Formulier bekijken',
+    previewHint: 'Het formulier zoals het nu is, niet-opgeslagen wijzigingen inbegrepen. Verzenden start niets.',
+    previewRefresh: 'Voorbeeld vernieuwen',
+    previewNotRun: 'Dit is een voorbeeld : het formulier is niet uitgevoerd',
+    visual: 'Visueel',
+    visualYamlError: 'De YAML kan hier niet worden getoond : corrigeer hem in het tabblad YAML',
+    visualNotAList: 'geen lijst',
+    visualNotAMap: 'geen map',
+    menuPreviewHint:
+      'Het menu van de formulierenpagina, uit de categorieën zoals ze nu zijn. Een categorie zonder formulieren wordt daar niet getoond.',
     unsavedChanges: 'Niet-opgeslagen wijzigingen',
     unsavedConfirm: 'Weet u zeker dat u de designer wilt verlaten?',
     unsavedNote: 'U heeft niet-opgeslagen wijzigingen.',

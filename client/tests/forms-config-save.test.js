@@ -1,5 +1,5 @@
-// useFormsConfig is the shared load/save behind the three config.yaml editors
-// (admin/categories.vue, admin/roles.vue, admin/constants.vue). It had no coverage at all,
+// useFormsConfig is the shared load/save behind the config.yaml editors (admin/roles.vue ; the
+// categories and constants, once settings pages, are edited in the designer now). It had no coverage at all,
 // and four of the properties below are the kind that fail quietly - the save appears to
 // work and the damage shows up in the stored document or on somebody else's screen.
 //

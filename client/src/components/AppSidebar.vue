@@ -47,16 +47,6 @@ const sections = computed(() =>
       ],
     },
     {
-      // How forms are grouped in the menu, and the global values they can
-      // reference. Both edit sections of config.yaml, which is also why they share
-      // useFormsConfig.js with the roles page.
-      title: t('sidebar.sections.forms'),
-      items: [
-        { title: t('sidebar.categories'), icon: 'sitemap', link: '/admin/categories', permission: 'showSettings' },
-        { title: t('sidebar.constants'), icon: 'sliders-h', link: '/admin/constants', permission: 'showSettings' },
-      ],
-    },
-    {
       // Who may sign in, and what they may do once in. Roles lives here rather
       // than with the other two config.yaml editors : sharing code is not a reason
       // to group them, and permissions belong next to users and groups.

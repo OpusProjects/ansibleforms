@@ -1,5 +1,5 @@
-// The constants editor round-trip (config/constants.js), shared by admin/constants.vue
-// (through useFormsConfig) and the designer's constant modals.
+// The constants editor round-trip (config/constants.js), shared by the designer's visual
+// constants editor (AppConstantsEditor.vue) and its constant modals.
 //
 // Constants are referenced from forms as $(MY_KEY), so both halves matter: the KEY has to
 // come back byte-identical or the reference stops resolving, and the VALUE has to keep its
@@ -73,6 +73,17 @@ describe('editing', () => {
     const rows = constantsToArray({ A: '1' });
     rows.push({ key: '   ', value: 'orphan', children: [] });
     expect(arrayToConstants(rows)).toEqual({ A: '1' });
+  });
+
+  it('keeps an empty map an empty map', () => {
+    const rows = constantsToArray({ EMPTY: {}, A: '1' });
+    expect(arrayToConstants(rows)).toEqual({ EMPTY: {}, A: '1' });
+  });
+
+  it('emptying a parent leaves an empty map', () => {
+    const rows = constantsToArray({ GROUP: { A: '1' } });
+    rows[0].children = [];
+    expect(arrayToConstants(rows)).toEqual({ GROUP: {} });
   });
 
   it('emptying a parent does not resurrect its children', () => {

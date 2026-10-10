@@ -1169,6 +1169,7 @@ export default {
       outdentCategory: 'Sposta fuori dalla categoria padre',
       categoryPathsChanged:
         'Questi percorsi di categoria non esistono più: {paths}. I formulari che li referenziano non appariranno sotto alcuna categoria finché non vengono aggiornati.',
+      addKey: 'Aggiungi chiave',
       addSubconstant: 'Aggiungi sottochiave',
       addRole: 'Aggiungi ruolo',
       newRole: 'Nuovo ruolo',
@@ -1317,6 +1318,15 @@ export default {
     fileExplorer: 'Esplora file',
     search: 'Cerca',
     previewForm: 'Anteprima modulo',
+    previewHint: "Il modulo com'è ora, modifiche non salvate comprese. L'invio non avvia nulla.",
+    previewRefresh: "Aggiorna l'anteprima",
+    previewNotRun: "Questa è un'anteprima : il modulo non è stato eseguito",
+    visual: 'Visuale',
+    visualYamlError: 'Lo YAML non può essere mostrato qui : correggilo nella scheda YAML',
+    visualNotAList: 'non è una lista',
+    visualNotAMap: 'non è una mappa',
+    menuPreviewHint:
+      'Il menu della pagina Moduli, dalle categorie come sono ora. Una categoria senza moduli non vi è mostrata.',
     unsavedChanges: 'Modifiche non salvate',
     unsavedConfirm: 'Sei sicuro di voler uscire dal designer?',
     unsavedNote: 'Hai modifiche non salvate.',

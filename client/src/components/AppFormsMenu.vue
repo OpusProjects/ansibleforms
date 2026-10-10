@@ -11,6 +11,8 @@
 /*  @props:                                                       */
 /*      formConfig: Object - the categories and forms (Form.list) */
 /*                  ; none, the menu loads them itself            */
+/*      preview: Boolean - the designer's preview : its config    */
+/*                  is not remembered for the Forms page          */
 /*      currentCategory: String - the category highlighted, as    */
 /*                  Infra/Linux ; empty for All Forms ; null while*/
 /*                  the page does not know it yet (an empty menu) */
@@ -39,19 +41,26 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  // the designer's preview (unsaved categories) : shown, never remembered as the Forms page's
+  preview: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 // the categories and forms : the page's once it has them, else the menu's own ; meanwhile the
 // last ones of this tab, so the menu draws at once instead of emptying on every page
 const ownConfig = ref(null);
-const config = computed(
-  () => (props.formConfig?.forms ? props.formConfig : null) || ownConfig.value || cachedFormConfig.value || {},
+const config = computed(() =>
+  props.preview
+    ? props.formConfig || {}
+    : (props.formConfig?.forms ? props.formConfig : null) || ownConfig.value || cachedFormConfig.value || {},
 );
 // the page's list, once loaded, is the one the next page starts with
 watch(
   () => props.formConfig,
   (value) => {
-    if (value?.forms) cachedFormConfig.value = value;
+    if (value?.forms && !props.preview) cachedFormConfig.value = value;
   },
   { immediate: true },
 );
@@ -107,6 +116,7 @@ onMounted(async () => {
         :menu="item"
         :forms="forms"
         :roles="roles"
+        :preview="preview"
       />
     </ul>
   </div>

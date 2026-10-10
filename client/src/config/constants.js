@@ -114,6 +114,12 @@ export function arrayToConstants(arr) {
       obj[key] = row._orig;
       continue;
     }
+    // a map with no keys (an empty map, or a parent whose subkeys were all deleted) and no value
+    // typed : a map still - an empty one, never the subtree back, never an empty string
+    if (isPlainObject(row._orig) && String(row.value ?? '') === '') {
+      obj[key] = {};
+      continue;
+    }
     obj[key] = coerceConstantValue(row.value);
   }
   return obj;

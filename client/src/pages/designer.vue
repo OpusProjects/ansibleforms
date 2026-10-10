@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed, nextTick } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed, nextTick, watch } from 'vue';
 import Form from '@/lib/Form';
 import Lock from '@/lib/Lock';
 import { useAppStore } from '@/stores/app';
@@ -91,7 +91,14 @@ const tabs = [
 // the views in the menu, alphabetically by their (translated) label
 const sortedTabs = computed(() => [...tabs].sort((a, b) => a.label().localeCompare(b.label(), locale.value)));
 // the designer opens on the first view of the menu ; a link to a form (?form=) opens that form
-const currentTab = ref(useRoute().query.form ? 'Forms' : sortedTabs.value[0].name);
+// a link from the old settings pages (?view=Categories) opens that view
+const currentTab = ref(
+  useRoute().query.form
+    ? 'Forms'
+    : tabs.some((x) => x.name === useRoute().query.view)
+      ? useRoute().query.view
+      : sortedTabs.value[0].name,
+);
 const showWarnings = ref(false);
 const action = ref(null);
 const lock = ref(false);
@@ -2507,10 +2514,18 @@ function resolveSubforms(form) {
   return { subforms, missing };
 }
 
-function previewForm() {
-  if (!currentFormName.value || !currentForm.value) return;
+/**
+ * Hands the form being edited to the form page for a preview, unsaved edits included : its
+ * YAML, the subforms it uses and the constants, in the session (the form page reads them once).
+ *
+ * Returns:
+ *   string|null: the preview's address, or null when there is nothing to preview (a toast says
+ *   why).
+ */
+function preparePreview() {
+  if (!currentFormName.value || !currentForm.value) return null;
   const yaml = forms.value[currentForm.value];
-  if (!yaml) return;
+  if (!yaml) return null;
   let parsed;
   try {
     parsed = YAML.parse(yaml);
@@ -2520,7 +2535,7 @@ function previewForm() {
   // a comment-only / '---' buffer parses to null : there is nothing to preview
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     toast.error(t('designer.badYamlUpdate'));
-    return;
+    return null;
   }
   const { subforms, missing } = resolveSubforms(parsed);
   if (missing.length > 0) {
@@ -2531,8 +2546,130 @@ function previewForm() {
     JSON.stringify({ form: yaml, subforms, constants: constantsObj.value || {} }),
   );
   // the app can be hosted under a subpath (BASE_URL), like the router does
-  window.open(`${BaseUrl}/form?form=${encodeURIComponent(currentFormName.value)}&preview=1`, '_blank');
+  return `${BaseUrl}/form?form=${encodeURIComponent(currentFormName.value)}&preview=1`;
 }
+
+/**
+ * Opens the preview in a new window (beside the designer, on another screen).
+ */
+function previewForm() {
+  const url = preparePreview();
+  if (!url) return;
+  window.open(url, '_blank');
+  // the new window copied the session as it opened : the designer's own copy goes, so a
+  // preview frame reloading later never reads it
+  sessionStorage.removeItem('designer-preview');
+}
+
+// ─── the card's tabs : the item's YAML, the categories' and constants' tables, a form's preview
+// the visual tab's table, for the toolbar's + button
+const visualEditor = ref(null);
+// which tab shows : 'yaml' (the editor and its toolbar), 'visual' (the categories or constants
+// as a table) or 'preview' (the form, rendered) ; a link may open the visual one (?tab=visual)
+const hasVisual = (view) => view === 'Categories' || view === 'Constants';
+const editorView = ref(useRoute().query.tab === 'visual' && hasVisual(currentTab.value) ? 'visual' : 'yaml');
+// the preview's address, and its key : a new key reloads it with the YAML as it is now
+const previewUrl = ref('');
+const previewKey = ref(0);
+
+/**
+ * Renders the form being edited in the Preview tab, as it is now (unsaved edits included).
+ */
+function refreshPreview() {
+  const url = preparePreview();
+  // nothing to preview (the YAML is broken) : no frame, rather than the form shown before
+  previewUrl.value = url ? `${url}&embed=1` : '';
+  previewKey.value++;
+}
+
+/**
+ * Shows a tab of the card : the preview renders the form afresh each time it opens.
+ *
+ * Args:
+ *   view (string): 'yaml' or 'preview'.
+ */
+function showView(view) {
+  editorView.value = view;
+  if (view === 'preview' && currentTab.value === 'Forms') refreshPreview();
+}
+
+// the categories' preview : the Forms page's menu, from the categories as they are now and the
+// forms (no subforms : they are not in the menu) ; a click highlights a category, as there
+const previewCategory = ref('');
+/**
+ * Categories as the menu can show them, whatever the YAML holds : only objects, at every
+ * depth, their name a string, their items a list (a bare '-', 'items: foo' or a number as a
+ * name would make the menu throw, and with it the whole designer).
+ *
+ * Args:
+ *   list (any): the categories, or anything.
+ *
+ * Returns:
+ *   object[]: the categories.
+ */
+function menuCategories(list) {
+  if (!Array.isArray(list)) return [];
+  return (
+    list
+      .filter((c) => c && typeof c === 'object' && !Array.isArray(c))
+      .map((c) => {
+        const cat = { name: String(c.name ?? '').trim(), icon: typeof c.icon === 'string' && c.icon ? c.icon : 'bars' };
+        const items = menuCategories(c.items);
+        if (items.length) cat.items = items;
+        return cat;
+      })
+      .filter((c) => c.name)
+      // one entry per name at a level : the menu keys them by name, and two would be one path
+      .filter((c, i, all) => all.findIndex((x) => x.name === c.name) === i)
+  );
+}
+const menuPreview = computed(() => ({
+  categories: menuCategories(categoriesObj.value),
+  // the forms as the menu reads them : their categories paths only (a half-typed '- ' parses to
+  // null, a number is no path - the menu would throw on them) ; none at all stays none, which
+  // the menu counts as Default
+  forms: formsObj.value
+    .filter((f) => f && typeof f === 'object' && f.name && f.type !== 'subform')
+    .map((f) =>
+      f.categories === undefined
+        ? f
+        : { ...f, categories: Array.isArray(f.categories) ? f.categories.filter((c) => typeof c === 'string') : [] },
+    ),
+}));
+
+// a link to a view (the search's ?view=...&tab=...) : applied when the designer opens (above)
+// and when it is already open (the page is reused), then taken out of the address - left in,
+// it would be carried into a form's link and pull the designer back to that view, and a second
+// click on the same link would be no navigation at all
+/**
+ * Removes the link's view and tab from the address, the rest of it kept.
+ */
+function dropViewQuery() {
+  if (route.query.view === undefined && route.query.tab === undefined) return;
+  const { view, tab, ...rest } = route.query; // eslint-disable-line no-unused-vars
+  router.replace({ query: rest });
+}
+watch(
+  () => `${route.query.view ?? ''}|${route.query.tab ?? ''}`,
+  () => {
+    const { view, tab } = route.query;
+    if (!tabs.some((x) => x.name === view)) return;
+    currentTab.value = view;
+    nextTick(() => {
+      editorView.value = tab === 'visual' && hasVisual(view) ? 'visual' : 'yaml';
+      dropViewQuery();
+    });
+  },
+);
+onMounted(dropViewQuery);
+// another view opens on its YAML ; the preview is a form's : no form goes back to the YAML,
+// another form is previewed in its place (the visual tab is not a form's : left as it is)
+watch(currentTab, () => (editorView.value = 'yaml'));
+watch(currentForm, (form) => {
+  if (editorView.value !== 'preview' || currentTab.value !== 'Forms') return;
+  if (!form) editorView.value = 'yaml';
+  else refreshPreview();
+});
 
 function openFieldEditor() {
   const src = fieldEditorSource.value;
@@ -3445,7 +3582,8 @@ function selectForm(id) {
   currentForm.value = id;
   // get the name and update the route
   if (currentFormName.value) {
-    const query = { ...route.query };
+    // the rest of the address kept, not a link's view and tab (they would pull it back)
+    const { view, tab, ...query } = route.query; // eslint-disable-line no-unused-vars
     query.form = currentFormName.value;
     router.push({ query });
   }
@@ -6265,6 +6403,43 @@ onBeforeUnmount(() => {
       <!-- titled after the open view, like the jobs and profile pages ; until the designer is
            started (nothing can be opened yet) after the lock it needs -->
       <AppSettings v-if="authenticated" :title="pageTitle.title" :description="tabDescription" :icon="pageTitle.icon">
+        <!-- the item's views, on top of its card, once the designer runs : its YAML ; the categories
+             and constants as tables (Visual) ; a form's preview -->
+        <template v-if="lock && !lock.free && loaded" #tabs>
+          <ul class="nav nav-tabs mb-0 designer-tabs">
+            <li class="nav-item">
+              <a class="nav-link" :class="{ active: editorView === 'yaml' }" href="#" @click.prevent="showView('yaml')">
+                <FaIcon icon="code" class="me-1" />
+                YAML
+              </a>
+            </li>
+            <!-- the categories and constants as tables, on the same YAML -->
+            <li v-if="currentTab == 'Categories' || currentTab == 'Constants'" class="nav-item">
+              <a
+                class="nav-link"
+                :class="{ active: editorView === 'visual' }"
+                href="#"
+                @click.prevent="showView('visual')"
+              >
+                <FaIcon icon="table-list" class="me-1" />
+                {{ t('designer.visual') }}
+              </a>
+            </li>
+            <!-- a form's preview : the form rendered from its YAML as it is now ; the categories' :
+                 the Forms page's menu, from them -->
+            <li v-if="(currentTab == 'Forms' && currentForm) || currentTab == 'Categories'" class="nav-item">
+              <a
+                class="nav-link"
+                :class="{ active: editorView === 'preview' }"
+                href="#"
+                @click.prevent="showView('preview')"
+              >
+                <FaIcon icon="eye" class="me-1" />
+                {{ t('designer.preview') }}
+              </a>
+            </li>
+          </ul>
+        </template>
         <template #feedback>
           <Transition appear>
             <div v-if="warnings.length > 0" class="ms-2">
@@ -6344,7 +6519,18 @@ onBeforeUnmount(() => {
                  margin of the empty <label> BsInput always renders, 17px again ; and under
                  the editor the wrapper's margin is removed (see the global style block), so
                  the editor ends 17px above the card's bottom edge as well. -->
-            <div class="d-flex align-items-center flex-wrap gap-2" style="padding-top: 0; padding-bottom: 9px">
+            <!-- a preview has no toolbar : the row then takes no room (unless a notice shows), and the
+                 preview starts where the toolbar does -->
+            <div
+              class="d-flex align-items-center flex-wrap gap-2"
+              :style="{
+                paddingTop: 0,
+                paddingBottom:
+                  editorView === 'preview' && !lockError && !configTemplated && !(lock && !lock.match && !lock.free)
+                    ? 0
+                    : '9px',
+              }"
+            >
               <small
                 v-if="lockError !== ''"
                 class="d-inline-flex px-2 py-1 fw-semibold text-warning-emphasis bg-warning-subtle border border-warning-subtle rounded-2"
@@ -6357,7 +6543,7 @@ onBeforeUnmount(() => {
                 class="d-inline-flex px-2 py-1 fw-semibold text-warning-emphasis bg-warning-subtle border border-warning-subtle rounded-2"
                 >{{ t('settings.settingsPage.configTemplated') }}</small
               >
-              <template v-if="lock && lock.match">
+              <template v-if="lock && lock.match && editorView !== 'preview'">
                 <div class="d-flex gap-1 flex-wrap designer-toolbar">
                   <template v-if="dbOnlyMode && isConfigTab">
                     <BsButton
@@ -6451,62 +6637,65 @@ onBeforeUnmount(() => {
                       :title="t('designer.restore')"
                     />
                   </template>
-                  <BsButton
-                    :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
-                    icon="rotate-left"
-                    :isIconButton="true"
-                    @click="editorUndo"
-                    :disabled="busy || !editorTarget"
-                    :title="t('designer.undo')"
-                  />
-                  <BsButton
-                    :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
-                    icon="rotate-right"
-                    :isIconButton="true"
-                    @click="editorRedo"
-                    :disabled="busy || !editorTarget"
-                    :title="t('designer.redo')"
-                  />
-                  <BsButton
-                    :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
-                    icon="scissors"
-                    :isIconButton="true"
-                    @click="editorCut"
-                    :disabled="busy || !editorTarget"
-                    :title="t('designer.cut')"
-                  />
-                  <BsButton
-                    :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
-                    icon="copy"
-                    :isIconButton="true"
-                    @click="editorCopy"
-                    :disabled="busy || !editorTarget"
-                    :title="t('designer.copy')"
-                  />
-                  <BsButton
-                    :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
-                    icon="paste"
-                    :isIconButton="true"
-                    @click="editorPaste"
-                    :disabled="busy || !editorTarget"
-                    :title="t('designer.paste')"
-                  />
-                  <BsButton
-                    :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
-                    icon="indent"
-                    :isIconButton="true"
-                    @click="editorFormat"
-                    :disabled="busy || !editorTarget"
-                    :title="t('designer.format')"
-                  />
-                  <BsButton
-                    :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
-                    icon="magnifying-glass"
-                    :isIconButton="true"
-                    @click="editorFind"
-                    :disabled="busy || !editorTarget"
-                    :title="t('designer.findReplace')"
-                  />
+                  <!-- the text editor's own : undo, redo, cut, copy, paste, format, find -->
+                  <template v-if="editorView === 'yaml'">
+                    <BsButton
+                      :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
+                      icon="rotate-left"
+                      :isIconButton="true"
+                      @click="editorUndo"
+                      :disabled="busy || !editorTarget"
+                      :title="t('designer.undo')"
+                    />
+                    <BsButton
+                      :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
+                      icon="rotate-right"
+                      :isIconButton="true"
+                      @click="editorRedo"
+                      :disabled="busy || !editorTarget"
+                      :title="t('designer.redo')"
+                    />
+                    <BsButton
+                      :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
+                      icon="scissors"
+                      :isIconButton="true"
+                      @click="editorCut"
+                      :disabled="busy || !editorTarget"
+                      :title="t('designer.cut')"
+                    />
+                    <BsButton
+                      :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
+                      icon="copy"
+                      :isIconButton="true"
+                      @click="editorCopy"
+                      :disabled="busy || !editorTarget"
+                      :title="t('designer.copy')"
+                    />
+                    <BsButton
+                      :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
+                      icon="paste"
+                      :isIconButton="true"
+                      @click="editorPaste"
+                      :disabled="busy || !editorTarget"
+                      :title="t('designer.paste')"
+                    />
+                    <BsButton
+                      :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
+                      icon="indent"
+                      :isIconButton="true"
+                      @click="editorFormat"
+                      :disabled="busy || !editorTarget"
+                      :title="t('designer.format')"
+                    />
+                    <BsButton
+                      :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
+                      icon="magnifying-glass"
+                      :isIconButton="true"
+                      @click="editorFind"
+                      :disabled="busy || !editorTarget"
+                      :title="t('designer.findReplace')"
+                    />
+                  </template>
                   <BsButton
                     :colorClass="busy || !isDirty || !editorTarget ? 'secondary' : 'primary'"
                     icon="right-left"
@@ -6515,7 +6704,17 @@ onBeforeUnmount(() => {
                     :disabled="busy || !isDirty || !editorTarget"
                     :title="t('designer.diff')"
                   />
-                  <template v-if="currentTab === 'Categories'">
+                  <!-- the visual tab : a row added to its table (the categories' or constants') -->
+                  <BsButton
+                    v-if="editorView === 'visual' && (currentTab === 'Categories' || currentTab === 'Constants')"
+                    :colorClass="busyOrTemplated || visualEditor?.locked ? 'secondary' : 'primary'"
+                    icon="plus"
+                    :isIconButton="true"
+                    @click="visualEditor?.add()"
+                    :disabled="busyOrTemplated || !!visualEditor?.locked"
+                    :title="currentTab === 'Categories' ? t('designer.addCategory') : t('designer.addConstant')"
+                  />
+                  <template v-if="currentTab === 'Categories' && editorView === 'yaml'">
                     <BsButton
                       :colorClass="busyOrTemplated || !canAddCategories ? 'secondary' : 'primary'"
                       icon="plus"
@@ -6551,7 +6750,7 @@ onBeforeUnmount(() => {
                       :title="t('designer.editRoles')"
                     />
                   </template>
-                  <template v-if="currentTab === 'Constants'">
+                  <template v-if="currentTab === 'Constants' && editorView === 'yaml'">
                     <BsButton
                       :colorClass="busyOrTemplated || !canAddConstants ? 'secondary' : 'primary'"
                       icon="plus"
@@ -6642,14 +6841,6 @@ onBeforeUnmount(() => {
                       :disabled="busyOrTemplated || !currentFormHasFields"
                       :title="t('designer.fieldProperties')"
                     />
-                    <BsButton
-                      :colorClass="busy || !currentForm ? 'secondary' : 'primary'"
-                      icon="eye"
-                      :isIconButton="true"
-                      @click="previewForm"
-                      :disabled="busy || !currentForm"
-                      :title="t('designer.previewForm')"
-                    />
                   </template>
                   <BsButton
                     :colorClass="busy || !editorTarget ? 'secondary' : 'primary'"
@@ -6677,10 +6868,38 @@ onBeforeUnmount(() => {
             </div>
             <div
               class="designer-layout"
+              :class="{ 'designer-layout-preview': editorView === 'preview' }"
               :style="currentTab == 'Forms' ? { gridTemplateColumns: `1fr 1rem ${treeWidthPct}%` } : undefined"
             >
               <div class="designer-editor">
-                <div v-if="loaded && currentTab == 'Categories'">
+                <!-- Preview : the Forms page's menu, from the categories as they are now -->
+                <div v-if="loaded && currentTab == 'Categories' && editorView === 'preview'" class="designer-preview">
+                  <div class="designer-preview-bar">
+                    <span class="text-body-secondary small">
+                      <FaIcon icon="circle-info" class="me-1" />{{ t('designer.menuPreviewHint') }}
+                    </span>
+                  </div>
+                  <div class="designer-menu-preview">
+                    <AppFormsMenu
+                      :formConfig="menuPreview"
+                      :currentCategory="previewCategory"
+                      preview
+                      @select="(path) => (previewCategory = path)"
+                    />
+                  </div>
+                </div>
+                <!-- Visual : the categories as a table, on the same YAML (saved with Save) -->
+                <div
+                  v-else-if="loaded && currentTab == 'Categories' && editorView === 'visual'"
+                  class="designer-visual"
+                >
+                  <AppCategoriesEditor
+                    ref="visualEditor"
+                    v-model="categories"
+                    :readOnly="!(lock && lock.match) || configTemplated"
+                  />
+                </div>
+                <div v-else-if="loaded && currentTab == 'Categories'">
                   <BsInput
                     type="editor"
                     :isFloating="false"
@@ -6706,7 +6925,15 @@ onBeforeUnmount(() => {
                     :style="editorStyle('100%')"
                   />
                 </div>
-                <div v-if="loaded && currentTab == 'Constants'">
+                <!-- Visual : the constants as a table, on the same YAML (saved with Save) -->
+                <div v-if="loaded && currentTab == 'Constants' && editorView === 'visual'" class="designer-visual">
+                  <AppConstantsEditor
+                    ref="visualEditor"
+                    v-model="constants"
+                    :readOnly="!(lock && lock.match) || configTemplated"
+                  />
+                </div>
+                <div v-else-if="loaded && currentTab == 'Constants'">
                   <BsInput
                     type="editor"
                     :isFloating="false"
@@ -6741,7 +6968,37 @@ onBeforeUnmount(() => {
                        focus. Keying on currentForm keeps the editor alive while the yaml
                        is broken, and still gives each form its own instance - and its own
                        undo stack - when you switch forms. -->
-                    <div v-if="editorTarget" :key="'formeditor-' + currentForm">
+                    <!-- the Preview tab : the form page in a frame, its own menu and header left out
+                         (embed) ; refreshed with the YAML as it is now, or opened in a new window -->
+                    <div v-if="editorTarget && editorView === 'preview'" class="designer-preview">
+                      <div class="designer-preview-bar">
+                        <span class="text-body-secondary small">
+                          <FaIcon icon="circle-info" class="me-1" />{{ t('designer.previewHint') }}
+                        </span>
+                        <span class="d-flex gap-1">
+                          <BsButton
+                            icon="rotate-right"
+                            :isIconButton="true"
+                            :title="t('designer.previewRefresh')"
+                            @click="refreshPreview"
+                          />
+                          <BsButton
+                            icon="arrow-up-right-from-square"
+                            :isIconButton="true"
+                            :title="t('designer.previewForm')"
+                            @click="previewForm"
+                          />
+                        </span>
+                      </div>
+                      <iframe
+                        v-if="previewUrl"
+                        :key="previewKey"
+                        :src="previewUrl"
+                        class="designer-preview-frame"
+                        :title="t('designer.preview')"
+                      ></iframe>
+                    </div>
+                    <div v-else-if="editorTarget" :key="'formeditor-' + currentForm">
                       <BsInput
                         type="editor"
                         :isFloating="false"
@@ -7342,6 +7599,59 @@ onBeforeUnmount(() => {
 .designer-toolbar > .btn.disabled {
   pointer-events: auto;
   cursor: not-allowed;
+}
+
+/* a preview : no toolbar over it, so no room for one - the preview and the file explorer
+   beside it start where the toolbar does */
+.designer-layout-preview .designer-preview,
+.designer-layout-preview .designer-tree {
+  margin-top: 0;
+}
+/* the card's tabs : their height, whatever the card under them holds - the page is a column
+   that fills the window, and a tall preview squeezed them */
+.designer-tabs {
+  flex-shrink: 0;
+}
+/* the visual editors (categories, constants) : as far down as the YAML editor */
+.designer-visual {
+  margin-top: 0.5rem;
+}
+/* a form's preview : a bar (what it is, refresh, a new window) over the form page in a frame,
+   the editor's height ; as far down as the editor and the file explorer beside it */
+.designer-preview {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 60vh;
+  border: 1px solid var(--af-field-border);
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+.designer-preview-bar {
+  /* one height for every preview's bar : a form's, with its buttons (38px and the padding),
+     and the categories', with its text alone */
+  min-height: calc(2.375rem + 0.75rem + 1px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.375rem 0.5rem 0.375rem 0.75rem;
+  border-bottom: 1px solid var(--af-field-border);
+  background: var(--bs-tertiary-bg);
+}
+.designer-menu-preview {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  background: var(--bs-body-bg);
+}
+.designer-preview-frame {
+  flex: 1 1 auto;
+  width: 100%;
+  border: 0;
+  background: var(--bs-body-bg);
 }
 </style>
 <route lang="yaml">

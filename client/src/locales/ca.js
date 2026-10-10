@@ -1177,6 +1177,7 @@ export default {
       outdentCategory: 'Treu-la de la categoria pare',
       categoryPathsChanged:
         "Aquestes rutes de categoria ja no existeixen: {paths}. Els formularis que hi fan referència no apareixeran sota cap categoria fins que s'actualitzin.",
+      addKey: 'Afegeix una clau',
       addSubconstant: 'Afegeix una subclau',
       addRole: 'Afegeix un rol',
       newRole: 'Rol nou',
@@ -1325,6 +1326,15 @@ export default {
     fileExplorer: 'Explorador de fitxers',
     search: 'Cerca',
     previewForm: 'Previsualitza el formulari',
+    previewHint: 'El formulari tal com és ara, amb els canvis no desats. El seu envia no executa res.',
+    previewRefresh: 'Actualitza la previsualització',
+    previewNotRun: "Això és una previsualització : el formulari no s'ha executat",
+    visual: 'Visual',
+    visualYamlError: 'El YAML no es pot mostrar aquí : corregiu-lo a la pestanya YAML',
+    visualNotAList: 'no és una llista',
+    visualNotAMap: 'no és un mapa',
+    menuPreviewHint:
+      "El menú de la pàgina Formularis, a partir de les categories tal com són ara. Una categoria sense formularis no s'hi mostra.",
     unsavedChanges: 'Canvis sense desar',
     unsavedConfirm: 'Segur que vols sortir del dissenyador ?',
     unsavedNote: 'Tens canvis sense desar.',

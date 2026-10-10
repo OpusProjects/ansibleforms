@@ -1182,6 +1182,7 @@ export default {
       outdentCategory: 'Sortir de sa catégorie parente',
       categoryPathsChanged:
         "Ces chemins de catégorie n'existent plus : {paths}. Les formulaires qui les référencent n'apparaîtront sous aucune catégorie tant qu'ils ne sont pas mis à jour.",
+      addKey: 'Ajouter une clé',
       addSubconstant: 'Ajouter une sous-cle',
       addRole: 'Ajouter un role',
       newRole: 'Nouveau rôle',
@@ -1331,6 +1332,15 @@ export default {
     fileExplorer: 'Explorateur de fichiers',
     search: 'Rechercher',
     previewForm: 'Aperçu du formulaire',
+    previewHint: "Le formulaire tel qu'il est, modifications non enregistrées comprises. Son envoi ne lance rien.",
+    previewRefresh: "Rafraîchir l'aperçu",
+    previewNotRun: "Ceci est un aperçu : le formulaire n'a pas été lancé",
+    visual: 'Visuel',
+    visualYamlError: "Le YAML ne peut pas être affiché ici : corrigez-le dans l'onglet YAML",
+    visualNotAList: 'pas une liste',
+    visualNotAMap: 'pas une table',
+    menuPreviewHint:
+      "Le menu de la page Formulaires, à partir des catégories telles qu'elles sont. Une catégorie sans formulaire n'y figure pas.",
     unsavedChanges: 'Modifications non enregistrees',
     unsavedConfirm: 'Etes-vous sur de vouloir quitter le concepteur ?',
     unsavedNote: 'Vous avez des modifications non enregistrees.',

@@ -1190,6 +1190,7 @@ export default {
       outdentCategory: 'Aus der übergeordneten Kategorie herausnehmen',
       categoryPathsChanged:
         'Diese Kategoriepfade existieren nicht mehr: {paths}. Formulare, die sie referenzieren, erscheinen unter keiner Kategorie, bis sie angepasst werden.',
+      addKey: 'Schlüssel hinzufügen',
       addSubconstant: 'Unterschlüssel hinzufügen',
       addRole: 'Rolle hinzufuegen',
       newRole: 'Neue Rolle',
@@ -1339,6 +1340,15 @@ export default {
     fileExplorer: 'Datei-Explorer',
     search: 'Suchen',
     previewForm: 'Formularvorschau',
+    previewHint: 'Das Formular, wie es jetzt ist, ungespeicherte Änderungen inklusive. Sein Absenden startet nichts.',
+    previewRefresh: 'Vorschau aktualisieren',
+    previewNotRun: 'Dies ist eine Vorschau : das Formular wurde nicht ausgeführt',
+    visual: 'Visuell',
+    visualYamlError: 'Das YAML kann hier nicht angezeigt werden : im Tab YAML korrigieren',
+    visualNotAList: 'keine Liste',
+    visualNotAMap: 'keine Zuordnung',
+    menuPreviewHint:
+      'Das Menü der Formularseite, aus den Kategorien, wie sie jetzt sind. Eine Kategorie ohne Formulare wird dort nicht gezeigt.',
     unsavedChanges: 'Ungespeicherte Aenderungen',
     unsavedConfirm: 'Sind Sie sicher, dass Sie den Designer verlassen moechten?',
     unsavedNote: 'Sie haben ungespeicherte Aenderungen.',

@@ -487,6 +487,11 @@ function handleWizardSubmitAction(action) {
   if (!wizardStepsComplete()) return;
   // Make sure formdata reflects merged wizard output for downstream consumers.
   generateJsonOutput();
+  // a preview (the designer's) runs nothing
+  if (isPreview.value) {
+    toast.info(t('designer.previewNotRun'));
+    return;
+  }
   switch (action) {
     case 'submit':
       wizardSubmit();
@@ -504,6 +509,10 @@ function handleWizardSubmitAction(action) {
   }
 }
 
+// a preview of the designer's form (?preview=1) : its submit runs nothing ; embedded in the
+// designer's Preview tab (?embed=1), without the app's header and menu
+const isPreview = computed(() => !!route.query.preview);
+const isEmbedded = computed(() => !!route.query.embed);
 const hideForm = ref(false); // possible action to hide form onsubmit for example
 const formdata = ref({}); // the eventual object sent to the api in the correct hierarchy
 const showExtraVars = ref(false); // flag to show/hide extravars
@@ -1220,6 +1229,11 @@ function resetResult() {
 // Handle submit action from AppForm component
 async function handleSubmitAction({ action, visibility: formVisibility }) {
   visibility.value = formVisibility;
+  // a preview (the designer's) runs nothing : submit, schedule, run later and store alike
+  if (isPreview.value) {
+    toast.info(t('designer.previewNotRun'));
+    return;
+  }
 
   switch (action) {
     case 'submit':
@@ -1252,6 +1266,11 @@ async function handleSubmitAction({ action, visibility: formVisibility }) {
 
 // Open schedule off-canvas
 function openScheduleOffcanvas(action = 'schedule') {
+  // a preview (the designer's) runs nothing, stores nothing, schedules nothing
+  if (isPreview.value) {
+    toast.info(t('designer.previewNotRun'));
+    return;
+  }
   scheduleAction.value = action;
 
   // Reset schedule form with appropriate defaults
@@ -1340,6 +1359,11 @@ async function createSchedule() {
 
 // Store off-canvas functions
 function openStoreOffcanvas() {
+  // a preview (the designer's) runs nothing, stores nothing, schedules nothing
+  if (isPreview.value) {
+    toast.info(t('designer.previewNotRun'));
+    return;
+  }
   // Reset store form
   storeForm.value = {
     name: '',
@@ -1571,6 +1595,11 @@ async function getJob(id, final) {
 
 // execute the form
 async function launchForm(postdata) {
+  // a preview (the designer's) runs nothing, stores nothing, schedules nothing
+  if (isPreview.value) {
+    toast.info(t('designer.previewNotRun'));
+    return;
+  }
   message.value = 'Connecting with job api ';
   status.value = '';
   // the previous job is done with : until the server answers with the new id, the abort
@@ -1757,12 +1786,13 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <AppNav />
+  <AppNav v-if="!isEmbedded" />
   <div class="flex-shrink-0">
     <main class="d-flex flex-nowrap af-settings-layout">
       <!-- the forms menu of the Forms page : the category browsed before opening the form
            highlighted ; a category goes back to the Forms page on it -->
       <AppFormsMenu
+        v-if="!isEmbedded"
         class="d-none d-md-block"
         :currentCategory="currentForm ? menuCategory : browsedCategory()"
         @select="openCategory"
@@ -1831,7 +1861,7 @@ onBeforeUnmount(() => {
                   @click="toggleShowExtraVars()"
                   >{{ t('form.showExtravars') }}<template #toggle>{{ t('form.hideExtravars') }}</template>
                 </BsButton>
-                <BsButton cssClass="text-nowrap" icon="redo" @click="reloadForm">
+                <BsButton v-if="!isEmbedded" cssClass="text-nowrap" icon="redo" @click="reloadForm">
                   {{ t('form.reloadForm') }}
                 </BsButton>
                 <BsButton
