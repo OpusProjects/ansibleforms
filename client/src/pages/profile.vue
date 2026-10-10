@@ -36,15 +36,15 @@ const { t, locale } = useI18n();
 // the same swatches as the header's theme switcher
 const palette = [
   '#008cba',
-  '#6610f2',
-  '#744fc6',
-  '#d63384',
-  '#dc3545',
-  '#ff8800',
-  '#198754',
-  '#20c997',
-  '#0190ce',
+  '#0369a1',
   '#1b2a4a',
+  '#521ea6',
+  '#4a2a8f',
+  '#bb1c5e',
+  '#b92d34',
+  '#c2570c',
+  '#198754',
+  '#0f766e',
   '#475569',
   '#795548',
 ];

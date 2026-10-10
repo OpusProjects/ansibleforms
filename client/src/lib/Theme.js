@@ -46,6 +46,7 @@ var Theme = {
   // checkboxes, switches and focus rings - in tones of it (styles/textColors.scss reads these
   // under [data-bs-theme=color]). The status pills keep their own colors : they say a state.
   applyColor(hex) {
+    hex = Theme.current(hex);
     localStorage.setItem('themeColor', hex);
     const el = document.documentElement;
     el.style.setProperty('--af-bg-navbar', hex);
@@ -116,7 +117,31 @@ var Theme = {
     return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
   },
   getColor() {
-    return localStorage.getItem('themeColor') || '#008cba';
+    return Theme.current(localStorage.getItem('themeColor') || '#008cba');
+  },
+  /**
+   * A color of the palette as it is now : the bright indigo, purple, pink, red, orange and teal
+   * it once offered were hard on the eye, and its cyan was hardly told from the blue - each became
+   * a darker tone of the same color. A pick of one of those (saved in the browser, or the server's
+   * default) reads as its darker tone.
+   *
+   * Args:
+   *   hex (string): the color picked.
+   *
+   * Returns:
+   *   string: the color to show.
+   */
+  current(hex) {
+    const RETIRED = {
+      '#6610f2': '#521ea6',
+      '#744fc6': '#4a2a8f',
+      '#0190ce': '#0369a1',
+      '#dc3545': '#b92d34',
+      '#ff8800': '#c2570c',
+      '#20c997': '#0f766e',
+      '#d63384': '#bb1c5e',
+    };
+    return RETIRED[String(hex || '').toLowerCase()] || hex;
   },
   themes() {
     return [
