@@ -22,6 +22,7 @@ import { useI18n } from 'vue-i18n';
 import Profile from '@/lib/Profile';
 import TokenStorage from '@/lib/TokenStorage';
 import Helpers from '@/lib/Helpers';
+import { useAppStore } from '@/stores/app';
 import { RUNNER_KINDS, runnerKind, registrationPill } from '@/config/settings';
 import { useUnsavedGuard } from '@/composables/useUnsavedGuard';
 import { useRouteTab } from '@/composables/useRouteTab';
@@ -81,6 +82,10 @@ function editable(record) {
 }
 
 const managed = computed(() => !!runner.value?.managed);
+// a runner receives the credentials of the jobs it runs : only an admin changes one (the server
+// refuses the others) ; a seeded one nobody changes here
+const appStore = useAppStore();
+const readOnly = computed(() => managed.value || !appStore.isAdmin);
 const isRte = computed(() => edit.value?.kind === 'rte');
 // an RTE takes its token ; an AWX, an AAP or an Ascender a token or a user and password
 const usesCredentials = computed(() => !isRte.value && !!edit.value?.use_credentials);
@@ -312,7 +317,7 @@ onMounted(async () => {
             <div v-if="managed" class="alert alert-secondary py-2">
               <FaIcon icon="lock" class="me-2" />{{ t('settings.common.seedManagedNotice') }}
             </div>
-            <fieldset :disabled="managed">
+            <fieldset :disabled="readOnly">
               <!-- Runner : what it is called, whether it is the default, its registration -->
               <template v-if="activeTab === 'runner'">
                 <BsInput
@@ -468,7 +473,7 @@ onMounted(async () => {
           <BsButton icon="plug" cssClass="text-nowrap" :disabled="testing" @click="testConnection()">{{
             t('settings.common.testConnection')
           }}</BsButton>
-          <template v-if="!managed">
+          <template v-if="!readOnly">
             <BsButton icon="lock" cssClass="text-nowrap" @click="changingSecret = true">{{
               usesCredentials ? t('settings.common.changePassword') : t('settings.runners.changeToken')
             }}</BsButton>

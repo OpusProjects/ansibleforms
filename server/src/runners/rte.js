@@ -1,6 +1,7 @@
 // An RTE (runtime environment) : the playbook runs in another container (AF_ROLE=rte),
-// which reads the job, resolves its credentials and writes the output and the final status
-// to the database itself. This side only hands the job over and waits for it to end.
+// which reads the job and writes the output and the final status to the database itself.
+// This side resolves the job's secrets, hands them over sealed for that RTE with the job
+// (lib/sealedSecrets.js), and waits for it to end.
 // The RTE's address and token come from its row in the runners table.
 import { RTE_CONTRACT } from "../rte/contract.js";
 import { appVersion } from "../lib/version.js";
@@ -11,6 +12,9 @@ import mysql from "../models/db.model.js";
 import Errors from "../lib/errors.js";
 import { stripTrailingSlashes } from "../lib/url.js";
 import Job from "../models/job.model.js";
+import { safeParse } from "../lib/safejson.js";
+import { resolveJobSecrets } from "../lib/jobSecrets.js";
+import { sealJobSecrets } from "../lib/sealedSecrets.js";
 
 const POLL_MS = 1000;
 // how often the RTE itself is asked about the job, in polls
@@ -129,8 +133,18 @@ export default {
     const rte = { ...client(runner), name: runner.name };
     // written before the hand-over, never after : from then on the RTE writes the output
     await Job.printJobOutput(`ok: [Running on RTE ${runner.name} (${rte.url})]`, "stdout", jobId, (await Job.lastOrder(jobId)) + 1);
+    // the job's secrets, resolved here and sealed for this RTE and this job
+    let sealed;
     try {
-      await rte.http.post("/jobs", { jobId, contract: RTE_CONTRACT });
+      const rows = await mysql.do("SELECT extravars, credentials FROM AnsibleForms.`jobs` WHERE id=?", [jobId]);
+      const extravars = safeParse(rows?.[0]?.extravars, {}, `job.extravars id=${jobId}`);
+      const creds = safeParse(rows?.[0]?.credentials, {}, `job.credentials id=${jobId}`);
+      sealed = sealJobSecrets(await resolveJobSecrets(extravars, creds), runner.token, jobId);
+    } catch (err) {
+      return failJob(jobId, `could not prepare the job's credentials for the RTE : ${err.message}`);
+    }
+    try {
+      await rte.http.post("/jobs", { jobId, contract: RTE_CONTRACT, sealed });
     } catch (err) {
       // the RTE refused it (4xx) : it is not running. No answer at all (a timeout, a reset
       // connection) may come after the RTE claimed and started it : then follow it, never

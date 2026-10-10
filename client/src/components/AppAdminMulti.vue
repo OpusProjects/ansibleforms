@@ -131,6 +131,12 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  // shown, never changed : no Add, no defaults, no Edit, Delete or Change password (a page
+  // whose writes the user's role does not allow, the runners for a non-admin)
+  readOnly: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 // DATA
@@ -160,7 +166,7 @@ const children = computed(() => props.settings.children || []);
 const actions = computed(() => props.settings.actions || []);
 const fields = computed(() => props.settings.fields || []);
 const childFields = computed(() => props.settings.childFields || {});
-const noCreate = computed(() => props.settings.noCreate === true);
+const noCreate = computed(() => props.settings.noCreate === true || props.readOnly);
 
 // VUELIDATE
 
@@ -1067,6 +1073,8 @@ function busyLabel(item) {
 
 function isActionEnabled(action, item) {
   if (isManaged(item) && MANAGED_BLOCKS.has(action.name)) return false;
+  // read only : nothing that ends in a write, the change_* actions (their page's forms) too
+  if (props.readOnly && (MANAGED_BLOCKS.has(action.name) || String(action.name).startsWith('change'))) return false;
   // a record the action may never touch (the admin user's delete)
   if (typeof action.enabledWhen === 'function' && !action.enabledWhen(item)) return false;
   if (!action.dependency) return true;
@@ -1131,7 +1139,7 @@ function dispatchAction(action, item) {
 }
 
 // ─── the default of each group, chosen in a dialog (settings.defaultPicker) ─────────────
-const defaultPicker = computed(() => props.settings.defaultPicker || null);
+const defaultPicker = computed(() => (props.readOnly ? null : props.settings.defaultPicker || null));
 // the dialog open, and the default each group would get there (group -> row id)
 const defaultsOpen = ref(false);
 const defaultDraft = ref({});
@@ -1287,7 +1295,7 @@ function onDataTableRowClick(item) {
     // normal way to edit on these pages (selectable:false + an edit action), and
     // it bypasses isActionEnabled entirely - so greying out the menu's Edit was
     // decorative: the click still opened a live form whose Save answered 403.
-    if (hasEditAction.value && !isManaged(item)) {
+    if (hasEditAction.value && !isManaged(item) && !props.readOnly) {
       editItem(item);
     } else {
       // No edit action defined → open the read-only "show" offcanvas

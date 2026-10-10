@@ -1,12 +1,14 @@
 // The RTE (runtime environment) : this server started with AF_ROLE=rte. It runs playbooks
 // for an AnsibleForms app and nothing else - no web interface, no scheduler, no seed.
 //
-// It shares the app's database and ENCRYPTION_SECRET, so it reads the job, resolves the
-// credentials and writes the output and the final status itself, with the same code the
-// only code that runs a playbook (ansible-core.js). The app only says "run job N".
+// It shares the app's database, so it reads the job and writes the output and the final
+// status itself, with the only code that runs a playbook (ansible-core.js). The app says
+// "run job N" and hands it the job's secrets, resolved and sealed for this RTE
+// (lib/sealedSecrets.js) : the RTE never reads the credentials table nor a secret store, and
+// needs ENCRYPTION_SECRET only to register itself (its token is stored encrypted).
 //
 //   GET  /rte/v1/health             version, contract, ansible, id, running job ids
-//   POST /rte/v1/jobs {jobId}       202 : accepted, runs in the background
+//   POST /rte/v1/jobs {jobId, sealed}  202 : accepted, runs in the background
 //   GET  /rte/v1/jobs/:id           running | finished | unknown
 //   POST /rte/v1/jobs/:id/cancel    stops it now (the abort flag in the database works too)
 //
@@ -23,6 +25,7 @@ import httpsConfig from "../../config/https.config.js";
 import appConfig from "../../config/app.config.js";
 import { runAnsibleJob, runnerIdentity } from "./ansible-core.js";
 import { RTE_CONTRACT } from "./contract.js";
+import { openJobSecrets } from "../lib/sealedSecrets.js";
 import { onShutdown } from "../lib/shutdown.js";
 import { appVersion as version } from "../lib/version.js";
 import { startHeartbeat } from "../lib/nodes.js";
@@ -90,6 +93,14 @@ async function acceptJob(req, res) {
   if (rows[0].status !== "running") return res.status(409).json({ error: `job ${jobId} is ${rows[0].status}, not running` });
   // an RTE runs playbooks : never claim an AWX job or a multistep, whose tracker drives them
   if (rows[0].job_type !== "ansible") return res.status(409).json({ error: `job ${jobId} is a ${rows[0].job_type || "?"} job, not a playbook` });
+  // the job's secrets, sealed by the app for this RTE and this job : one that does not open
+  // was not sealed with this RTE's token, and nothing is claimed
+  let secrets;
+  try {
+    secrets = openJobSecrets(req.body?.sealed, process.env.RTE_TOKEN || "", jobId);
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
   // the claim : one runner per job, and a repeated call is harmless
   const me = runnerIdentity();
   const claim = await mysql.do(
@@ -101,7 +112,7 @@ async function acceptJob(req, res) {
 
   activeJobs.add(jobId);
   logger.notice(`RTE : running job ${jobId}`);
-  runAnsibleJob({ jobId })
+  runAnsibleJob({ jobId, secrets })
     .catch((err) => logger.error(`RTE : job ${jobId} failed : ${err.message || err}`))
     .finally(() => activeJobs.delete(jobId));
   return res.status(202).json({ jobId, status: "running" });
@@ -144,8 +155,10 @@ export async function startRte() {
   process.on("unhandledRejection", (reason) => logger.error(`RTE : unhandled rejection : ${reason?.stack || reason}`));
   process.on("uncaughtException", (err) => logger.error(`RTE : uncaught exception : ${err?.stack || err}`));
 
-  if (appConfig.encryptionSecretIsDefault) {
-    logger.warning('[SECURITY] ENCRYPTION_SECRET is not set. This RTE decrypts credentials with the default key, which is public in the source code : set the same ENCRYPTION_SECRET as the app.');
+  // a job's secrets come sealed from the app : the key only stores this RTE's token when it
+  // registers itself (RTE_REGISTER). Without registration it needs no ENCRYPTION_SECRET at all.
+  if (appConfig.encryptionSecretIsDefault && String(process.env.RTE_REGISTER ?? "").trim() !== "0") {
+    logger.warning('[SECURITY] ENCRYPTION_SECRET is not set. This RTE registers itself and stores its token encrypted with the default key, which is public in the source code : set the same ENCRYPTION_SECRET as the app, or RTE_REGISTER=0 and add the runner under Connections > Runners or in the config seed.');
   }
   await waitForDatabase();
   onShutdown("database", () => mysql.end());

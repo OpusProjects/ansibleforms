@@ -46,11 +46,17 @@ vi.mock("../src/models/db.model.js", () => ({
 let runs;
 vi.mock("../src/rte/ansible-core.js", () => ({
   runnerIdentity: () => "rte-test-8000",
-  runAnsibleJob: ({ jobId }) => new Promise((resolve) => { runs.push({ jobId, resolve }); }),
+  runAnsibleJob: ({ jobId, secrets }) => new Promise((resolve) => { runs.push({ jobId, secrets, resolve }); }),
 }));
 
 const { acceptJob, jobStatus, cancelJob, activeJobs, bearer } = await import("../src/rte/server.js");
 const { RTE_CONTRACT } = await import("../src/rte/contract.js");
+const { sealJobSecrets } = await import("../src/lib/sealedSecrets.js");
+
+// what the app sends : the job, its contract and its secrets sealed with this RTE's token
+process.env.RTE_TOKEN = "the-rte-token-of-the-test";
+const secrets = { credentials: { db: { user: "u", password: "p" } }, ansible: null, vault: null };
+const job = (jobId, extra = {}) => ({ jobId, contract: RTE_CONTRACT, sealed: sealJobSecrets(secrets, process.env.RTE_TOKEN, jobId), ...extra });
 
 function call(handler, { body = {}, params = {}, headers = {} } = {}) {
   return new Promise((resolve) => {
@@ -89,25 +95,26 @@ describe("only the token opens it", () => {
 
 describe("the jobs it takes", () => {
   test("a running playbook job is claimed and run, once", async () => {
-    const first = await call(acceptJob, { body: { jobId: 11, contract: RTE_CONTRACT } });
+    const first = await call(acceptJob, { body: job(11) });
     assert.equal(first.status, 202);
     assert.equal(jobs[11].host, "rte-test-8000");
-    const again = await call(acceptJob, { body: { jobId: 11, contract: RTE_CONTRACT } });
+    const again = await call(acceptJob, { body: job(11) });
     assert.equal(again.status, 202, "a repeated call is harmless");
     assert.equal(runs.length, 1, "and does not run it twice");
+    assert.deepEqual(runs[0].secrets, secrets, "the run gets the secrets the app sealed");
   });
 
   test("never an AWX job or a multistep : their own tracker drives them", async () => {
-    const r = await call(acceptJob, { body: { jobId: 12 } });
+    const r = await call(acceptJob, { body: job(12) });
     assert.equal(r.status, 409);
     assert.equal(jobs[12].host, null, "not claimed");
     assert.equal(runs.length, 0);
   });
 
   test("a job claimed by another RTE, a finished one or an unknown one is refused", async () => {
-    assert.equal((await call(acceptJob, { body: { jobId: 14 } })).status, 409);
-    assert.equal((await call(acceptJob, { body: { jobId: 13 } })).status, 409);
-    assert.equal((await call(acceptJob, { body: { jobId: 99 } })).status, 404);
+    assert.equal((await call(acceptJob, { body: job(14) })).status, 409);
+    assert.equal((await call(acceptJob, { body: job(13) })).status, 409);
+    assert.equal((await call(acceptJob, { body: job(99) })).status, 404);
     assert.equal((await call(acceptJob, { body: {} })).status, 400);
     assert.equal(runs.length, 0);
   });
@@ -119,14 +126,25 @@ describe("the jobs it takes", () => {
     assert.equal(jobs[11].host, null);
   });
 
-  test("an app that sends no contract (an early 7 build) is still served", async () => {
-    assert.equal((await call(acceptJob, { body: { jobId: 11 } })).status, 202);
+  test("a job without its sealed secrets, or sealed for another job or token, is refused before anything is claimed", async () => {
+    for (const body of [
+      { jobId: 11, contract: RTE_CONTRACT },
+      job(11, { sealed: sealJobSecrets(secrets, process.env.RTE_TOKEN, 12) }),
+      job(11, { sealed: sealJobSecrets(secrets, "another-rte-token-entirely", 11) }),
+      job(11, { sealed: { ...sealJobSecrets(secrets, process.env.RTE_TOKEN, 11), data: sealJobSecrets({ other: 1 }, process.env.RTE_TOKEN, 11).data } }),
+    ]) {
+      const r = await call(acceptJob, { body });
+      assert.equal(r.status, 400);
+      assert.match(r.data.error, /sealed secrets/);
+    }
+    assert.equal(jobs[11].host, null);
+    assert.equal(runs.length, 0);
   });
 });
 
 describe("what it says about a job", () => {
   test("running while it runs it, finished with the status after, unknown otherwise", async () => {
-    await call(acceptJob, { body: { jobId: 11 } });
+    await call(acceptJob, { body: job(11) });
     assert.equal((await call(jobStatus, { params: { id: "11" } })).data.status, "running");
     activeJobs.delete(11);
     jobs[11].status = "success";
@@ -136,7 +154,7 @@ describe("what it says about a job", () => {
 
   test("cancel : only what it runs itself, and the flag is set", async () => {
     assert.equal((await call(cancelJob, { params: { id: "14" } })).status, 409);
-    await call(acceptJob, { body: { jobId: 11 } });
+    await call(acceptJob, { body: job(11) });
     assert.equal((await call(cancelJob, { params: { id: "11" } })).status, 202);
     assert.equal(jobs[11].abort_requested, 1);
   });

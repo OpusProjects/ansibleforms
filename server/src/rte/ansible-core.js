@@ -1,7 +1,8 @@
 // The one place a playbook runs : the RTE (AF_ROLE=rte, src/rte/server.js) calls
-// runAnsibleJob with nothing but a job id. Everything it needs is in the jobs row and the
-// database (credentials, secret stores). The app never imports this module : since 7 it
-// runs no playbook itself.
+// runAnsibleJob with a job id and the job's secrets, which the app resolved and sealed for it
+// (lib/jobSecrets.js, lib/sealedSecrets.js). Everything else it needs is in the jobs row : the
+// RTE never reads the credentials table nor a secret store. The app never imports this
+// module : since 7 it runs no playbook itself.
 //
 // The approval gate is NOT here : a job reaches an RTE only once it may run
 // (runners/orchestrator.js, in the app).
@@ -15,7 +16,6 @@ import { safeParse } from "../lib/safejson.js";
 import ansibleConfig from "../../config/ansible.config.js";
 import appConfig from "../../config/app.config.js";
 import Repository from "../models/repository.model.js";
-import Credential from "../models/credential.model.v2.js";
 import mysql from "../models/db.model.js";
 import Job from "../models/job.model.js";
 import { nodeId } from "../lib/role.js";
@@ -90,23 +90,27 @@ export function buildAnsibleArgs(extravars, { extravarsFileName, hiddenExtravars
 }
 
 /**
- * Runs a job's playbook : reads the row, resolves its credentials, writes the extravars
- * files, runs ansible-playbook and writes its output and final status to the database.
+ * Runs a job's playbook : reads the row, writes the extravars files with the job's secrets,
+ * runs ansible-playbook and writes its output and final status to the database.
  * Resolves true on success, false otherwise (the job row says why).
+ *
+ * Args:
+ *   jobId (number): the job.
+ *   secrets (object): the job's secrets as the app resolved them (lib/jobSecrets.js) :
+ *     { credentials, ansible, vault }.
  */
-export async function runAnsibleJob({ jobId }) {
-  const rows = await mysql.do("SELECT form, extravars, credentials FROM AnsibleForms.`jobs` WHERE id=?", [jobId]);
+export async function runAnsibleJob({ jobId, secrets }) {
+  if (!secrets || typeof secrets !== "object") throw new Error(`Job ${jobId} came without its secrets`);
+  const rows = await mysql.do("SELECT form, extravars FROM AnsibleForms.`jobs` WHERE id=?", [jobId]);
   if (!rows?.length) throw new Error(`Job ${jobId} does not exist`);
   const extravars = safeParse(rows[0].extravars, {}, `job.extravars id=${jobId}`);
-  const creds = safeParse(rows[0].credentials, {}, `job.credentials id=${jobId}`);
   // stored before the id was known
   extravars.__jobid__ = jobId;
-  // credentials passed through extravars have precedence over the others
-  const credentials = await Credential.resolveCredentialMap(extravars.__credentials__ || creds || {});
+  const credentials = secrets.credentials || {};
   // what the output must not show : the credentials' secrets and the password fields' values
   await Job.registerOutputSecrets(jobId, { form: rows[0].form, extravars, credentials });
   try {
-    return await launchPlaybook(extravars, credentials, jobId, await Job.lastOrder(jobId));
+    return await launchPlaybook(extravars, secrets, jobId, await Job.lastOrder(jobId));
   } finally {
     forgetJobSecrets(jobId);
   }
@@ -135,7 +139,8 @@ export function markUnsafe(value) {
   return value;
 }
 
-async function launchPlaybook(ev, credentials, jobid, counter) {
+async function launchPlaybook(ev, secrets, jobid, counter) {
+  const credentials = secrets.credentials || {};
   // we make a copy, we don't want to mutate the original
   var extravars = { ...ev };
   var playbook = extravars?.__playbook__;
@@ -149,7 +154,9 @@ async function launchPlaybook(ev, credentials, jobid, counter) {
   var hiddenExtravars = {};
   try {
     if (ansibleCredentials) {
-      const runCredential = await Credential.resolveCredential(ansibleCredentials);
+      // resolved by the app ; an error is why it could not read it
+      const runCredential = secrets.ansible;
+      if (!runCredential || runCredential.error) throw new Error(runCredential?.error || "the app sent no ansible credentials");
       hiddenExtravars.ansible_user = runCredential.user;
       hiddenExtravars.ansible_password = runCredential.password;
       registerJobSecrets(jobid, [runCredential.password]);
@@ -171,7 +178,8 @@ async function launchPlaybook(ev, credentials, jobid, counter) {
   var vaultPassword = "";
   try {
     if (vaultCredentials) {
-      const vaultCredential = await Credential.resolveCredential(vaultCredentials);
+      const vaultCredential = secrets.vault;
+      if (!vaultCredential || vaultCredential.error) throw new Error(vaultCredential?.error || "the app sent no vault credentials");
       vaultPassword = vaultCredential.password;
       registerJobSecrets(jobid, [vaultPassword]);
     }

@@ -75,6 +75,7 @@ export default {
     oauth2Added: "Dodano dostawcę OAuth2",
     runnerAdded: "Dodano runner",
     runnerNotFound: "Nie znaleziono runnera",
+    runnerAdminOnly: "Tylko admin może dodać, zmienić lub usunąć runner : runner otrzymuje poświadczenia zadań, które uruchamia",
     runnerConnectionOk: "Połączenie z runnerem działa poprawnie",
     secretStoreAdded: "Dodano magazyn sekretów",
     secretStoreNotFound: "Nie znaleziono magazynu sekretów",

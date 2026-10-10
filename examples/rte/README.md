@@ -20,7 +20,7 @@ What each layer adds: [Dockerfile.rte-base](../../Dockerfile.rte-base), [Dockerf
 docker build -f examples/rte/Dockerfile.netapp -t my-rte-netapp .
 ```
 
-Run it like the published image: the app's `DB_*` and `ENCRYPTION_SECRET`, a `RTE_TOKEN`
+Run it like the published image: the app's `DB_*` (and `ENCRYPTION_SECRET` when it registers itself), a `RTE_TOKEN`
 and `RTE_URL`, the address the app reaches it on. It adds itself under Connections > Runners.
 See
 [the runners README](../../server/src/runners/README.md).

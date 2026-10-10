@@ -9,6 +9,11 @@ const { t } = useI18n();
 const settings = computed(() => getSettings(t));
 import TokenStorage from '@/lib/TokenStorage';
 import Helpers from '@/lib/Helpers';
+import { useAppStore } from '@/stores/app';
+
+// a runner receives the credentials of the jobs it runs : only an admin changes one (the
+// server refuses the others), a user with settings access sees and tests them
+const store = useAppStore();
 
 const authenticated = ref(false);
 const tests = ref({});
@@ -49,6 +54,7 @@ onMounted(async () => {
         @test="test_connection"
         :busyItems="tests"
         :apiVersion="2"
+        :readOnly="!store.isAdmin"
       />
     </main>
   </div>

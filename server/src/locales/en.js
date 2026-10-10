@@ -78,6 +78,7 @@ export default {
     secretStoreConnectionOk: "Secret store connection is OK",
     runnerAdded: "Runner added",
     runnerNotFound: "Runner not found",
+    runnerAdminOnly: "Only an admin can add, change or delete a runner : a runner receives the credentials of the jobs it runs",
     runnerConnectionOk: "Runner connection is OK",
     userNotFound: "User not found",
     currentPasswordRequired: "Your current password is required to set a new one",
