@@ -15,6 +15,7 @@ import passport from "passport";
 
 // App configuration and utilities
 import Middleware from "./lib/middleware.js";
+import { authRateLimit } from "./lib/authRateLimit.js";
 import logger from "./lib/logger.js";
 import appConfig from "../config/app.config.js";
 
@@ -182,8 +183,11 @@ const load = async (app) => {
   app.use(`/api/v2/lock`, cors(), authobj, lockRoutes);
 
   // api routes for authorization
-  app.use(`/api/v2/auth`, cors(), loginRoutesv2);
-  app.use(`/api/v2/token`, cors(), tokenRoutesv2);
+  // a ceiling per address before anything else (lib/authRateLimit.js) ; the account lockout
+  // is lib/loginThrottle.js
+  const authLimiter = authRateLimit();
+  app.use(`/api/v2/auth`, cors(), authLimiter, loginRoutesv2);
+  app.use(`/api/v2/token`, cors(), authLimiter, tokenRoutesv2);
 
   // api routes for the vue3 app
   app.use(`/api/v2/app`, cors(), appRoutes);

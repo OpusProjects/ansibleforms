@@ -10,7 +10,7 @@ process.env.DB_PASSWORD ||= "test";
 let table = [];
 vi.mock("../src/models/db.model.js", () => ({
   default: {
-    do: async (sql, params) => {
+    do: async (sql) => {
       if (/^SELECT `key`, revoked_before/.test(sql)) return table;
       return { affectedRows: 1 };
     },

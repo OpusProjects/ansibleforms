@@ -97,6 +97,7 @@ const LIVE = {
   LOGIN_MAX_FAILURES: { key: 'loginMaxFailures', parse: v => Math.max(0, parseInt(v, 10) || 0) },
   LOGIN_MAX_FAILURES_PER_IP: { key: 'loginMaxFailuresPerIp', parse: v => Math.max(0, parseInt(v, 10) || 0) },
   LOGIN_LOCKOUT_MINUTES: { key: 'loginLockoutMinutes', parse: v => Math.max(0, parseInt(v, 10) || 0) },
+  AUTH_RATE_LIMIT: { key: 'authRateLimit', parse: v => Math.max(0, parseInt(v, 10) || 0) },
   // Job.launch reads it on every launch
   LAUNCH_VALIDATION: { key: 'launchValidation', parse: v => (['off', 'log', 'enforce'].includes(String(v || '').trim().toLowerCase()) ? String(v).trim().toLowerCase() : 'enforce') },
   // db.model.js checks this inside mysql.do, so it is evaluated per query - exactly the
