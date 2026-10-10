@@ -97,13 +97,17 @@ export function useFollowOutput(target, size, running) {
     scroller.scrollTop += gap;
   }
 
-  // a new run : followed from its start
+  // a new run : followed from its start ; an ended one a few seconds more - its status turns
+  // before its last lines arrive
+  let endedAt = 0;
   watch(running, (now, before) => {
     if (now && !before) following.value = true;
+    if (!now && before) endedAt = Date.now();
   });
-  // more output : followed when the reader is at its end and the job runs
+  const live = () => running() || Date.now() - endedAt < 5000;
+  // more output : followed when the reader is at its end and the job runs (or just ended)
   watch(size, async () => {
-    if (!running() || !following.value) return;
+    if (!live() || !following.value) return;
     await nextTick();
     follow();
   });

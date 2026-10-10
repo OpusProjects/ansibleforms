@@ -1818,14 +1818,9 @@ onBeforeUnmount(() => {
                   {{ t('form.showOutput') }}<template #toggle>{{ t('form.hideOutput') }}</template>
                 </BsButton>
               </template>
-              <!-- the form (or its wizard) : verbose, its extravars, reload, load its values -->
+              <!-- the form (or its wizard) : its extravars, reload, load its values (verbose : on the
+                   form's toolbar row, under the divider) -->
               <template v-else>
-                <BsInputCheckboxRaw
-                  v-if="store.profile.options?.allowVerboseMode"
-                  v-model="enableVerbose"
-                  :label="'verbose'"
-                  cssClass="d-inline-block me-1"
-                />
                 <BsButton
                   v-if="store.profile.options?.showExtraVars"
                   cssClass="text-nowrap"
@@ -1916,6 +1911,12 @@ onBeforeUnmount(() => {
                             </li>
                           </template>
                         </ol>
+                        <BsInputCheckboxRaw
+                          v-if="store.profile.options?.allowVerboseMode"
+                          v-model="enableVerbose"
+                          :label="'verbose'"
+                          cssClass="d-inline-block mb-0 ms-3"
+                        />
                       </template>
                     </AppForm>
 
@@ -1994,8 +1995,8 @@ onBeforeUnmount(() => {
                   </div>
                 </template>
 
-                <!-- Navigation footer -->
-                <div class="d-flex justify-content-between align-items-center mt-3">
+                <!-- Navigation footer : hidden while a run's result shows (its own bar under it) -->
+                <div v-if="status === ''" class="d-flex justify-content-between align-items-center mt-3">
                   <div>
                     <BsButton v-if="wizardIndex > 0" icon="arrow-left" colorClass="secondary" @click="wizardBack">
                       {{ t('form.back') || 'Back' }}
@@ -2049,6 +2050,15 @@ onBeforeUnmount(() => {
                 v-model:status="status"
                 @submit-action="handleSubmitAction"
               >
+                <!-- verbose : on the toolbar row's left, the show-hidden-fields icon at its right -->
+                <template #toolbarbuttons>
+                  <BsInputCheckboxRaw
+                    v-if="store.profile.options?.allowVerboseMode"
+                    v-model="enableVerbose"
+                    :label="'verbose'"
+                    cssClass="d-inline-block mb-0"
+                  />
+                </template>
               </AppForm>
 
               <!-- SUBFORMS: one AppForm per stacked edit, only the deepest is visible. -->
@@ -2112,29 +2122,7 @@ onBeforeUnmount(() => {
         </div>
         <!-- the job run from the form : its status and its output, under the form, in the form's
              column (the menu beside it) ; the form itself hidden when it asks (hideForm) -->
-        <div v-if="status != ''" class="af-form-result">
-          <div class="row my-3">
-            <div class="col">
-              <div class="d-grid">
-                <button
-                  type="button"
-                  class="btn text-white"
-                  :class="'btn-' + formStatus.color"
-                  @click="resetResult()"
-                  :disabled="formStatus.disabled"
-                >
-                  <FaIcon :icon="formStatus.icon"></FaIcon><span class="ms-3">{{ formStatus.label }}</span>
-                </button>
-              </div>
-            </div>
-            <div class="col" v-if="formStatus.abort && jobId && !abortTriggered && (currentForm.abortable || true)">
-              <div class="d-grid">
-                <button type="button" class="btn btn-danger text-white" @click="abortJob(jobId)">
-                  <FaIcon icon="stop"></FaIcon><span class="ms-3">{{ t('form.abort') }}</span>
-                </button>
-              </div>
-            </div>
-          </div>
+        <div v-if="status != ''" ref="outputPanel" class="af-form-result">
           <!-- awx workflow graph (only for awx workflow jobs) -->
           <div class="row" v-if="job.awx_workflow?.nodes?.length">
             <div class="col">
@@ -2143,7 +2131,7 @@ onBeforeUnmount(() => {
           </div>
           <!-- the job's output, as its page shows it : a panel, its toolbar on top - fold all and the
                line count at the left, the filter and what to do with it at the right -->
-          <div ref="outputPanel" class="af-output-panel">
+          <div class="af-output-panel">
             <div class="af-output-toolbar">
               <div class="af-output-label">
                 <button
@@ -2222,9 +2210,30 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <BsButton v-if="status != 'executing'" cssClass="mt-3" icon="rotate-right" @click="resetResult()">{{
-            t('form.closeOutput')
-          }}</BsButton>
+          <!-- the run's status and its actions : under the output, held at the window's bottom while
+               the output scrolls under it - Abort while it runs, Close output once it ended -->
+          <div class="af-form-actions">
+            <button
+              type="button"
+              class="btn text-white flex-fill"
+              :class="'btn-' + formStatus.color"
+              @click="resetResult()"
+              :disabled="formStatus.disabled"
+            >
+              <FaIcon :icon="formStatus.icon"></FaIcon><span class="ms-3">{{ formStatus.label }}</span>
+            </button>
+            <button
+              v-if="formStatus.abort && jobId && !abortTriggered && (currentForm.abortable || true)"
+              type="button"
+              class="btn btn-danger text-white flex-fill"
+              @click="abortJob(jobId)"
+            >
+              <FaIcon icon="stop"></FaIcon><span class="ms-3">{{ t('form.abort') }}</span>
+            </button>
+            <BsButton v-if="!formStatus.disabled" icon="rotate-right" cssClass="text-nowrap" @click="resetResult()">{{
+              t('form.closeOutput')
+            }}</BsButton>
+          </div>
         </div>
       </div>
       <div v-else-if="!formNotFound" class="loader">
@@ -2385,9 +2394,20 @@ onBeforeUnmount(() => {
   </BsOffCanvas>
 </template>
 <style scoped lang="scss">
-/* the job run from the form : under the form, the page's bottom margin under it */
+/* the job run from the form : under the form, its output then its bar */
 .af-form-result {
-  padding-bottom: 1.5rem;
+  margin-top: 1rem;
+}
+/* the run's status and actions : held at the bottom of the window while the output scrolls,
+   on the page's background so the output passes under it */
+.af-form-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  gap: 1rem;
+  padding: 1rem 0 1.5rem;
+  background: var(--bs-body-bg);
 }
 /* the form's buttons on its title line : the gap of the other pages' buttons */
 .af-form-buttons {
