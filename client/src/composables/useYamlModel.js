@@ -35,13 +35,20 @@ export function useYamlModel(props, emit, { toRows, fromRows }) {
   // from a reload, and our own text coming back from the parent from a new one
   let lastValue = '';
   let lastText = null;
+  // the text as last read from outside, and what it held : rows edited back to it give it back
+  // as it was written (its formatting, its comments), not rewritten - nothing then reads as changed
+  let readText = '';
+  let readValue = '';
 
   // the text into rows : an error (unparsable, the wrong shape) leaves the rows as they were
   function read(text) {
+    lastText = text;
     try {
       const parsed = text && text.trim() ? YAML.parse(text) : null;
       rows.value = toRows(parsed);
       lastValue = JSON.stringify(fromRows(rows.value));
+      readText = text;
+      readValue = lastValue;
       error.value = '';
     } catch (e) {
       error.value = e?.message || String(e);
@@ -66,7 +73,7 @@ export function useYamlModel(props, emit, { toRows, fromRows }) {
       const json = JSON.stringify(value);
       if (json === lastValue) return;
       lastValue = json;
-      lastText = YAML.stringify(value);
+      lastText = json === readValue ? readText : YAML.stringify(value);
       emit('update:modelValue', lastText);
     },
     { deep: true },

@@ -2557,11 +2557,13 @@ function previewForm() {
   if (url) window.open(url, '_blank');
 }
 
-// ─── the card's tabs : the item's YAML, and a form's preview ──────────────────
-// which tab shows : 'yaml' (the editor and its toolbar), or 'preview' (the form, rendered)
+// ─── the card's tabs : the item's YAML, the categories' and constants' tables, a form's preview
 // the visual tab's table, for the toolbar's + button
 const visualEditor = ref(null);
-const editorView = ref(useRoute().query.tab === 'visual' ? 'visual' : 'yaml');
+// which tab shows : 'yaml' (the editor and its toolbar), 'visual' (the categories or constants
+// as a table) or 'preview' (the form, rendered) ; a link may open the visual one (?tab=visual)
+const hasVisual = (view) => view === 'Categories' || view === 'Constants';
+const editorView = ref(useRoute().query.tab === 'visual' && hasVisual(currentTab.value) ? 'visual' : 'yaml');
 // the preview's address, and its key : a new key reloads it with the YAML as it is now
 const previewUrl = ref('');
 const previewKey = ref(0);
@@ -2587,12 +2589,13 @@ function showView(view) {
   if (view === 'preview') refreshPreview();
 }
 
-// the preview is a form's : another view, or no form, goes back to the YAML ; another form
-// is previewed in its place
+// another view opens on its YAML ; the preview is a form's : no form goes back to the YAML,
+// another form is previewed in its place (the visual tab is not a form's : left as it is)
 watch(currentTab, () => (editorView.value = 'yaml'));
 watch(currentForm, (form) => {
+  if (editorView.value !== 'preview') return;
   if (!form) editorView.value = 'yaml';
-  else if (editorView.value === 'preview') refreshPreview();
+  else refreshPreview();
 });
 
 function openFieldEditor() {
