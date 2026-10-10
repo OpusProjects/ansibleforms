@@ -10,6 +10,9 @@
 ARG BASE_IMAGE=ghcr.io/ansibleforms/ansibleforms-rte-core:7
 FROM ${BASE_IMAGE}
 
+# the core runs as node : root for the installs, node again at the end
+USER root
+
 ARG VERSION=
 LABEL org.opencontainers.image.title="AnsibleForms RTE (full)" \
       org.opencontainers.image.description="The AnsibleForms RTE ready to run : ansible with its collections, and the python libraries and tools the 6.5 image had" \
@@ -37,3 +40,8 @@ COPY ./docker/rte-full/collections.yml /tmp/full-collections.yml
 RUN pip install --no-cache-dir -r /tmp/full-requirements.txt \
  && ansible-galaxy collection install -r /tmp/full-collections.yml -p /usr/share/ansible/collections \
  && rm /tmp/full-requirements.txt /tmp/full-collections.yml
+
+# what was installed belongs to node : the maintenance forms (pip, ansible-galaxy) and a layer
+# built on this one install without root
+RUN chown -R node:node /venv /usr/share/ansible/collections
+USER node

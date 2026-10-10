@@ -41,9 +41,17 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app/dist
-COPY --from=builder /app/server/. ./
+# owned by `node` (uid 1000), the user the RTE and its playbooks run as
+COPY --chown=node:node --from=builder /app/server/. ./
+RUN mkdir -p /app/dist/persistent /home/node/.ssh /etc/ansible/collections /etc/ansible/roles /usr/share/ansible/collections \
+ && chown node:node /app/dist /app/dist/persistent /home/node/.ssh /usr/share/ansible/collections \
+ && chmod 700 /home/node/.ssh
 
 ENV AF_ROLE=rte
+# never root : a playbook is code a form author wrote, and it runs as this user. A layer built
+# on this one switches to root for its installs and back to node at the end (Dockerfile.rte-core)
+USER node
+ENV HOME=/home/node
 # the port takes a connection (server/healthcheck.js) ; its API answers only with the token
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD ["node", "./healthcheck.js"]
 ENTRYPOINT ["/usr/bin/tini", "--", "node", "./index.js"]

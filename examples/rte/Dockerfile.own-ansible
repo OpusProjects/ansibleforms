@@ -5,6 +5,9 @@
 #   docker build -f examples/rte/Dockerfile.own-ansible --build-arg ANSIBLE_CORE=2.20.6 -t my-rte .
 FROM ghcr.io/ansibleforms/ansibleforms-rte-base:7
 
+# the base runs as node : root for the system packages, node again at the end
+USER root
+
 ARG ANSIBLE_CORE=2.21.5
 # the base is debian (trixie) : python3 is 3.13. For another python, install it here instead
 # (uv, pyenv, a python:3.x image's binaries, ...) - the RTE only needs `ansible-playbook` on
@@ -22,3 +25,6 @@ COPY ./server/ansible.cfg /etc/ansible/ansible.cfg
 # and what your playbooks use, e.g.
 #   RUN ansible-galaxy collection install community.general -p /usr/share/ansible/collections
 #   RUN pip install --no-cache-dir jmespath netaddr
+
+RUN chown -R node:node /venv
+USER node

@@ -12,7 +12,7 @@ x-ansibleforms: &ansibleforms
     # one volume for every app node and the worker : forms, repositories, uploads, backups
     - persistent:/app/dist/persistent
     # the ssh key and known_hosts for git over ssh, the same everywhere
-    - ssh:/root/.ssh
+    - ssh:/home/node/.ssh
 
 services:
   db:
@@ -48,7 +48,7 @@ services:
     environment: { HTTPS: "0", RTE_URL: "http://rte:8000" }
     volumes:
       - persistent:/app/dist/persistent
-      - ssh:/root/.ssh
+      - ssh:/home/node/.ssh
 
   lb:
     image: nginx:stable

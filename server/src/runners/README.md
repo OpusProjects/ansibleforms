@@ -225,7 +225,7 @@ docker run -d --name rte -p 8010:8000 \
   -e DB_HOST=... -e DB_PORT=3306 -e DB_USER=... -e DB_PASSWORD=... \
   -e ENCRYPTION_SECRET=<the app's> -e RTE_TOKEN=<token> -e RTE_URL=http://<this host>:8010 \
   -v <playbooks or repositories>:/app/dist/persistent/playbooks \
-  -v <the app's .ssh>:/root/.ssh:ro \
+  -v <the app's .ssh>:/home/node/.ssh:ro \
   ghcr.io/ansibleforms/ansibleforms-rte-full:7
 ```
 
