@@ -76,11 +76,11 @@ var app_config = {
   // provider, which an operator decides. It applies without a restart (envSettings.js).
   enableChat: (process.env.ENABLE_CHAT ?? 0) == 1,
   // Validate the field values of every launch from the browser or the REST API against the
-  // form's rules (the same engine as the MCP server). off (default) = no check at all, so an
-  // upgrade changes nothing ; log = log what would be refused ; enforce = refuse.
-  // Read at every launch.
-  launchValidation: ['log', 'enforce'].includes(String(process.env.LAUNCH_VALIDATION || '').trim().toLowerCase())
-    ? String(process.env.LAUNCH_VALIDATION).trim().toLowerCase() : 'off',
+  // form's rules (the same engine as the MCP server). enforce (default) = refuse, and run the
+  // extravars the server builds ; log = log what would be refused ; off = no check at all.
+  // Unset or unknown is enforce : a typo must not switch the check off. Read at every launch.
+  launchValidation: ['off', 'log', 'enforce'].includes(String(process.env.LAUNCH_VALIDATION || '').trim().toLowerCase())
+    ? String(process.env.LAUNCH_VALIDATION).trim().toLowerCase() : 'enforce',
   useYtt: (process.env.USE_YTT ?? 0) == 1,
   yttDangerousAllowAllSymlinkDestinations: (process.env.YTT_DANGEROUS_ALLOW_ALL_SYMLINK_DESTINATIONS ?? 0) == 1,
   yttAllowSymlinkDestinations: process.env.YTT_ALLOW_SYMLINK_DESTINATIONS || "",

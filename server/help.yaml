@@ -639,12 +639,12 @@
     allowed: off, log, enforce
     choices:
     - name: "off"
-      description: No server-side check, launches behave as before
+      description: No server-side check, the job runs the extravars the client sent
     - name: log
       description: Launches that would be refused are logged as a warning and still run
     - name: enforce
       description: Launches whose field values break the form's rules are refused
-    default: "off"
+    default: enforce
     short: Check the field values of every launch against the form's validation rules
     hint: off does nothing, log logs what would be refused, enforce refuses the launch
     description: |
@@ -655,18 +655,21 @@
       server use. The check runs the form's expressions and queries again, as the user who
       launches, so it costs one extra evaluation of the form per launch.
 
-      - `off` (default) : no check, launches behave exactly as before.
-      - `log` : a launch that would be refused is logged as a warning and still runs. Use
-        this first, to see in the log what enforcing would refuse.
-      - `log` also names the extravars keys where what the client sent differs from what the
-        server builds (never their values).
-      - `enforce` : such a launch is refused with status 422 and the failing fields. A launch
-        that sends no `rawFormData` (a REST call that leaves it out) is
-        refused as well, because its values cannot be checked. A valid
-        launch runs the extravars and credentials the SERVER builds from the checked values,
-        not the ones the client sent : computed fields (expressions, queries) are the
-        server's evaluation, and a file field must point at a real upload in `UPLOAD_PATH`.
-        Wizard forms cannot be checked yet and are refused.
+      - `enforce` (default) : a launch whose field values break the form's rules is refused
+        with status 422 and the failing fields. A launch that sends no `rawFormData` (a REST
+        call that leaves it out) is refused as well, because its values cannot be checked.
+        A valid launch runs the extravars and credentials the SERVER builds from the checked
+        values, not the ones the client sent : computed fields (expressions, queries) are
+        the server's evaluation, and a file field must point at a real upload in
+        `UPLOAD_PATH`. A wizard form is checked step by step, and a planned run ("Run
+        later") when it is planned and again when it fires.
+      - `log` : a launch that would be refused is logged as a warning and still runs. It
+        also names the extravars keys where what the client sent differs from what the
+        server builds (never their values). Use it to see what enforcing refuses, for
+        instance before an upgrade.
+      - `off` : no check. The job runs the extravars and credentials the client sent, which
+        a REST caller chooses freely : only for an instance whose every launcher is trusted.
+        An unset or unknown value is `enforce`.
 
         **What the user saw is not always what runs.** The server evaluates every computed
         field again at launch, a moment after the browser did, as the launching user. A value
@@ -679,8 +682,8 @@
             locale (`toLocaleString`) runs with the server's.
         The same goes for validation : a rule that reads such a field (`notIn` against a
         query's result, `validIf` on a computed flag) is checked against the server's value.
-        Run `log` first : it names every extravars key where the client and the server
-        differ, so you see which forms this affects before you enforce.
+        Run `log` for a while if you are unsure : it names every extravars key where the
+        client and the server differ, so you see which forms this affects.
 
       The rows of a `list` field that were added or edited go through their subform on the
       server as well, with the form's values as `__parent__` : its rules are checked and

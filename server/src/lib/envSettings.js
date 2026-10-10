@@ -94,7 +94,7 @@ const LIVE = {
   MCP_CHAT_FORMS_ONLY: { key: 'mcpChatFormsOnly', parse: v => v == 1 },
   USE_YTT: { key: 'useYtt', parse: v => v == 1 },
   // Job.launch reads it on every launch
-  LAUNCH_VALIDATION: { key: 'launchValidation', parse: v => (['log', 'enforce'].includes(String(v || '').trim().toLowerCase()) ? String(v).trim().toLowerCase() : 'off') },
+  LAUNCH_VALIDATION: { key: 'launchValidation', parse: v => (['off', 'log', 'enforce'].includes(String(v || '').trim().toLowerCase()) ? String(v).trim().toLowerCase() : 'enforce') },
   // db.model.js checks this inside mysql.do, so it is evaluated per query - exactly the
   // setting you want to flip on while debugging and off again without a restart
   ENABLE_DB_QUERY_LOGGING: { key: 'enableDbQueryLogging', parse: v => v == 1 },
