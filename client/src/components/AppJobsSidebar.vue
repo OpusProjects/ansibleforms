@@ -33,6 +33,7 @@ import axios from 'axios';
 import TokenStorage from '@/lib/TokenStorage';
 import { useAppStore } from '@/stores/app';
 import { remembered } from '@/lib/menuMemory';
+import { useLiveEvent } from '@/composables/useLiveEvent';
 
 // PROPS
 
@@ -146,6 +147,9 @@ async function loadCounts() {
 // MOUNT
 
 onMounted(loadCounts);
+// and again whenever the jobs change (lib/liveEvents.js) : the counts follow a job starting,
+// ending, or waiting for approval
+useLiveEvent('jobs', loadCounts);
 </script>
 <template>
   <BsSidebar :sections="sections" storageKey="af_jobs_sidebar_collapsed" />

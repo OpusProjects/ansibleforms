@@ -11,6 +11,7 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import YAML from 'yaml';
 import Time from '@/lib/Time';
+import { useLiveEvent } from '@/composables/useLiveEvent';
 import BsColumnPicker from '@/components/BsColumnPicker.vue';
 import { headerWidth } from '@/lib/tableCells';
 
@@ -44,12 +45,10 @@ const showDelete = ref(false);
 const showAbort = ref(false);
 const showRelaunch = ref(false);
 const showApprove = ref(false);
-const runningJobsInterval = ref(null);
 const showReject = ref(false);
 const relaunchVerbose = ref(false);
 const relaunchWithEdit = ref(false);
 const tempJobId = ref(null);
-const noOfRecords = ref(500);
 // the left menu's status filter : null shows every job ; ?status= opens the page on one
 // (the approvals bell in the header links to ?status=approve)
 const statusFilter = ref(route.query.status || null);
@@ -143,7 +142,8 @@ const columnDefs = computed(() => [
     key: 'duration',
     label: t('jobs.duration'),
     sortable: true,
-    width: '5.5rem',
+    // as wide as its header, in the language shown
+    width: headerWidth(t('jobs.duration')),
     render: (j) => formatDuration(durationSeconds(j)),
     type: 'number',
     sortValue: (j) => durationSeconds(j) ?? -1,
@@ -357,12 +357,6 @@ const parentJobs = computed(() => {
 const subjobs = computed(() => {
   return job.value?.subjobs || [];
 });
-// all jobs that are running
-const runningJobs = computed(() => {
-  return jobs.value?.filter(
-    (x) => x.start && dayjs().diff(x.start, 'hours') < 6 && (x.status == 'running' || x.abort_requested),
-  );
-});
 // the last subjob id
 const subjobId = computed(() => {
   return subjobs.value.slice(-1)[0];
@@ -538,25 +532,24 @@ async function loadOutput(id, sub = false) {
     toast.error(result.data?.error || 'Failed to load job output');
   }
 }
-// load running jobs
-async function loadRunningJobs() {
-  // using await
-  for (const item of runningJobs.value) {
-    const result = await axios.get(`/api/v2/job/${item.id}`, TokenStorage.getAuthentication());
-    if (result.status == 200 && noOfRecords.value != result.data.no_of_records) {
-      await loadJobs(); // no of records changed ; reload jobs
-      noOfRecords.value = result.data.no_of_records;
-      return; // Exit early - loadJobs() has refreshed everything
-    }
-    const idx = getJobIndex(item.id);
-    if (idx !== -1) {
-      jobs.value[idx] = result.data;
-    }
-    if (item.id == jobId.value) {
-      job.value = result.data;
-    }
+// Live : the server says the jobs changed (lib/liveEvents.js) - one launched, its status, its
+// output, one deleted - or the stream (re)opened. A job's page re-reads its output, the list
+// re-reads the list : quietly, without the loading state, which would empty a multistep job's
+// steps and send the pager back to page 1 a few times a second while a playbook runs.
+async function refreshLive() {
+  if (isLoading.value) return;
+  if (isJobPage.value) {
+    if (jobId.value) await loadOutput(jobId.value);
+    return;
+  }
+  try {
+    const result = await axios.get(`/api/v2/job?records=${lines.value}`, TokenStorage.getAuthentication());
+    if (result.status === 200) jobs.value = result.data.records;
+  } catch {
+    // the next change, or the stream opening again, re-reads
   }
 }
+useLiveEvent('jobs', refreshLive);
 // download with axios
 async function downloadWithAxios(url, headers) {
   const response = await axios({
@@ -807,8 +800,8 @@ function approvalAllowed(job) {
   if (!job.approval) return true;
   // not admin and approval - lets check access
   // The list endpoint returns `approval` as a JSON STRING, the single-job endpoint
-  // returns it already PARSED - and loadRunningJobs writes a single-job payload into
-  // this list. A multistep job going running -> approve mid-poll therefore reached
+  // returns it already PARSED - and a single-job payload once ended up in this list. A
+  // multistep job going running -> approve mid-poll therefore reached
   // here as an object, and JSON.parse('[object Object]') threw inside the render,
   // breaking the jobs table for every non-admin approver.
   var approval = typeof job.approval === 'string' ? JSON.parse(job.approval) : job.approval;
@@ -874,11 +867,6 @@ onMounted(async () => {
       collapsed.value[selectedJob.parent_id] = true;
     }
   }
-  runningJobsInterval.value = setInterval(loadRunningJobs, 5000);
-});
-// destroy
-onBeforeUnmount(() => {
-  clearInterval(runningJobsInterval.value);
 });
 </script>
 <template>

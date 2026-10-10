@@ -1,4 +1,5 @@
 "use strict";
+import { publish } from "../lib/liveEvents.js";
 import fs from "fs";
 import moment from "moment";
 import Helpers from "../lib/common.js";
@@ -2036,6 +2037,29 @@ Multistep.launch = async function ({
     logger.error("Error in multistep, this should not happen : ", err);
   }
 };
+// ─── live events ──────────────────────────────────────────────────────────────
+// Every change of a job - created, its status, its output, aborted, approved, deleted,
+// abandoned, cleaned up - tells the browsers (lib/liveEvents.js) : the jobs list, a job's
+// page, the approvals bell and the jobs menu's counts re-read. Here, in the one model every
+// process writes jobs through (the app, the worker, the RTE), rather than at each caller :
+// a write path added later is covered as long as it goes through these functions.
+const CHANGES_A_JOB = [
+  "create", "update", "endJobStatus", "printJobOutput", "createOutput", "replaceTrackedOutput",
+  "deleteOutput", "delete", "abort", "requestAbort", "resetAbortRequested", "abandon",
+  "abandonOwn", "abandonDeadNodes", "removeOlderThan", "approve", "reject", "continue",
+];
+for (const fn of CHANGES_A_JOB) {
+  const original = Job[fn];
+  if (typeof original !== "function") continue;
+  Job[fn] = async function (...args) {
+    try {
+      return await original.apply(this, args);
+    } finally {
+      publish("jobs");
+    }
+  };
+}
+
 // Ansible stuff
 export default Job;
 // named export for the tests

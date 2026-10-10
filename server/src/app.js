@@ -46,6 +46,7 @@ import credentialRoutesv2 from "./routes/v2/credential.routes.js";
 import secretStoreRoutesv2 from "./routes/v2/secretStore.routes.js";
 import runnerRoutesv2 from "./routes/v2/runner.routes.js";
 import mailServerRoutesv2 from "./routes/v2/mailServer.routes.js";
+import eventsRoutesv2 from "./routes/v2/events.routes.js";
 import knownhostsRoutes from "./routes/v2/knownhosts.routes.js";
 import scheduleRoutes from "./routes/v2/schedule.routes.js";
 import storedJobsRoutes from "./routes/v2/stored-jobs.routes.js";
@@ -187,6 +188,8 @@ const load = async (app) => {
 
   // api routes for admin management
   app.use(`/api/v2/job`, cors(), authobj, jobRoutesv2);
+  // what changes, as it changes (lib/liveEvents.js) : every signed-in user, names only
+  app.use(`/api/v2/events`, cors(), authobj, eventsRoutesv2);
   app.use(`/api/v2/user`, cors(), authobj, Middleware.checkSettingsMiddleware, userRoutesv2);
   app.use(`/api/v2/group`, cors(), authobj, Middleware.checkSettingsMiddleware, groupRoutesv2);
   app.use(`/api/v2/settings`, cors(), authobj, Middleware.checkSettingsMiddleware, settingsRoutesv2);
