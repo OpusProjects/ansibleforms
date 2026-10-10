@@ -41,5 +41,5 @@ COPY ./server/ansible.cfg /etc/ansible/ansible.cfg
 
 # the venv belongs to node : the "Pip Install Package" maintenance form, and a layer built on
 # this one, install into it without root
-RUN chown -R node:node /venv
+RUN chown -R node:node /venv /home/node
 USER node

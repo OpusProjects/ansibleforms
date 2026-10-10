@@ -26,5 +26,5 @@ COPY ./server/ansible.cfg /etc/ansible/ansible.cfg
 #   RUN ansible-galaxy collection install community.general -p /usr/share/ansible/collections
 #   RUN pip install --no-cache-dir jmespath netaddr
 
-RUN chown -R node:node /venv
+RUN chown -R node:node /venv /home/node
 USER node

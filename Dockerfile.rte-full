@@ -41,7 +41,8 @@ RUN pip install --no-cache-dir -r /tmp/full-requirements.txt \
  && ansible-galaxy collection install -r /tmp/full-collections.yml -p /usr/share/ansible/collections \
  && rm /tmp/full-requirements.txt /tmp/full-collections.yml
 
-# what was installed belongs to node : the maintenance forms (pip, ansible-galaxy) and a layer
+# what was installed belongs to node, and its home (ansible-galaxy, run as root here, wrote
+# ~/.ansible) : the maintenance forms (pip, ansible-galaxy) and a layer
 # built on this one install without root
-RUN chown -R node:node /venv /usr/share/ansible/collections
+RUN chown -R node:node /venv /usr/share/ansible/collections /home/node
 USER node
