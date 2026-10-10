@@ -133,6 +133,7 @@ export default {
     confirmPassword: 'Confirma la nueva contraseña',
     mismatch: 'Las nuevas contraseñas no coinciden.',
     changed: 'Tu contraseña se ha cambiado.',
+    changedSignIn: 'Su contraseña ha cambiado : inicie sesión de nuevo con la nueva',
     change: 'Cambiar contraseña',
     elsewhere: 'Inicias sesión con {type}, así que tu contraseña se gestiona allí y no se puede cambiar aquí.',
     allowed: 'Permitido',

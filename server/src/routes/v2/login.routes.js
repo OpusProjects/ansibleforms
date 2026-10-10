@@ -6,6 +6,8 @@ import loginController from "../../controllers/v2/login.controller.js";
 // login with username and password (basic authentication)
 router.post('/login',loginController.basic,loginController.basic_ldap);
 router.get('/logout', loginController.logout)
+// with the refresh token in the body, so it goes too
+router.post('/logout', loginController.logout)
 router.get('/settings',loginController.settings);
 
 // Microsoft Entra ID

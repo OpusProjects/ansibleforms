@@ -39,15 +39,10 @@ async function updateItem() {
   if (!$v.$invalid) {
     try {
       await axios.put(`/api/v2/profile`, item.value, TokenStorage.getAuthentication());
-      if (mustChange) {
-        // the session still carries the default password's mark : sign in again with the new one
-        toast.success('Password is changed, sign in with your new password');
-        TokenStorage.clear();
-        router.push({ name: '/login' });
-        return;
-      }
-      toast.success('Password is changed');
-      Navigate.toHome(router);
+      // a new password ends every session of the user, this one too : sign in again with it
+      toast.success('Password is changed, sign in with your new password');
+      TokenStorage.clear();
+      router.push({ name: '/login' });
     } catch (err) {
       toast.error(Helpers.parseAxiosResponseError(err, 'Failed to change the password'));
     }

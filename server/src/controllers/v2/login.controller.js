@@ -17,6 +17,7 @@ import i18n from "../../lib/i18n.js";
 import Audit from "../../models/audit.model.js";
 import { claimsDisplayName } from "../../lib/displayName.js";
 import { loginBlocked, loginFailed, loginSucceeded } from "../../lib/loginThrottle.js";
+import { newSessionId, revokeSession } from "../../lib/tokenRevocation.js";
 
 // Login is audited here rather than by the blanket middleware, which deliberately
 // skips /auth : on a failed attempt there is no req.user, so that layer could only
@@ -77,15 +78,20 @@ function userToJwt(user,expiryDays){
   var tokenExpiresIn
 
   if(expiryDays && (user?.options["extendedTokenExpiration"] ?? false) && !isNaN(expiryDays)){  
-    tokenExpiresIn = `${expiryDays}D`
-    logger.info("Extended token expiration requested for " + user.username)
+    // bounded : an api token lives API_TOKEN_MAX_DAYS at most, and a password change or a
+    // logout of its session ends it sooner (lib/tokenRevocation.js)
+    const days = Math.min(Math.max(1, Math.floor(Number(expiryDays))), authConfig.apiTokenMaxDays)
+    tokenExpiresIn = `${days}d`
+    logger.info(`Extended token expiration (${days} days) requested for ${user.username}`)
   }else{
     tokenExpiresIn = authConfig.jwtExpiration
   }
 
   // we create 2 jwt tokens (accesstoken and refresh token)
-  const token = jwt.sign({user,access:true}, authConfig.secret,{ expiresIn: tokenExpiresIn, issuer: authConfig.jwtIssuer});
-  const refreshtoken = jwt.sign({user,refresh:true}, authConfig.secret,{ expiresIn: authConfig.jwtRefreshExpiration, issuer: authConfig.jwtIssuer});
+  // the session : both tokens and every refresh of them carry it, so a logout ends them all
+  const sid = newSessionId()
+  const token = jwt.sign({user,access:true,sid}, authConfig.secret,{ expiresIn: tokenExpiresIn, issuer: authConfig.jwtIssuer});
+  const refreshtoken = jwt.sign({user,refresh:true,sid}, authConfig.secret,{ expiresIn: authConfig.jwtRefreshExpiration, issuer: authConfig.jwtIssuer});
   logger.debug(JSON.stringify(user))
   // we store the tokens in the database, to later verify a refresh token action
   logger.info("Storing refreshtoken in database for user " + user.username)
@@ -268,6 +274,19 @@ const basic_ldap = async function(req, res,next) {
  * perform logout actions
  */
 const logout = async function(req, res, _next){
+  // the session of the token that logs out ends here, for every token of it : the access token
+  // (still valid for its lifetime otherwise), the refresh token, an api token of that login
+  try {
+    const bearer = String(req.headers?.authorization || '').replace(/^Bearer\s+/i, '')
+    if (bearer) {
+      const payload = jwt.verify(bearer, authConfig.secret, { issuer: authConfig.jwtIssuer, ignoreExpiration: true })
+      if (payload?.sid) await revokeSession(payload.sid, Date.now() + authConfig.apiTokenMaxDays * 86400 * 1000)
+      const refreshtoken = req.body?.refreshtoken
+      if (refreshtoken && payload?.user?.username) await Token.delete(payload.user.username, payload.user.type, refreshtoken)
+    }
+  } catch (err) {
+    logger.debug(`Logout : the token could not be read, nothing revoked : ${err.message || err}`)
+  }
   req.logout((err) => {
     if (err) {
       logger.error(helpers.getError(err))

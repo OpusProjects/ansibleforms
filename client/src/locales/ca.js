@@ -135,6 +135,7 @@ export default {
     confirmPassword: 'Confirma la contrasenya nova',
     mismatch: 'Les contrasenyes noves no coincideixen.',
     changed: "S'ha canviat la teva contrasenya.",
+    changedSignIn: "La contrasenya s'ha canviat : torneu a iniciar la sessió amb la nova",
     change: 'Canvia la contrasenya',
     elsewhere: 'Inicies la sessió amb {type}, així que la teva contrasenya es gestiona allà i no es pot canviar aquí.',
     allowed: 'Permès',

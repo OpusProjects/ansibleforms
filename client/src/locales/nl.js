@@ -133,6 +133,7 @@ export default {
     confirmPassword: 'Bevestig nieuw wachtwoord',
     mismatch: 'De nieuwe wachtwoorden komen niet overeen.',
     changed: 'Je wachtwoord is gewijzigd.',
+    changedSignIn: 'Uw wachtwoord is gewijzigd : meld u opnieuw aan met het nieuwe',
     change: 'Wachtwoord wijzigen',
     elsewhere: 'Je meldt je aan via {type}, dus je wachtwoord wordt daar beheerd en kan hier niet worden gewijzigd.',
     allowed: 'Toegestaan',
