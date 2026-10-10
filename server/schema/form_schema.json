@@ -131,6 +131,7 @@
         "enableForChat": {"not":{}},
         "verbose": {"not":{}},
         "keepExtravars": {"not":{}},
+        "allowJinjaInExtravars": {"not":{}},
         "userExtravars": {"not":{}},
         "image": {"not":{}},
         "icon": {"not":{}},
@@ -303,6 +304,9 @@
       "type": "boolean"
     },
     "keepExtravars":{
+      "type": "boolean"
+    },
+    "allowJinjaInExtravars":{
       "type": "boolean"
     },
     "userExtravars":{

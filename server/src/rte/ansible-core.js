@@ -104,6 +104,29 @@ export async function runAnsibleJob({ jobId }) {
   return launchPlaybook(extravars, credentials, jobId, await Job.lastOrder(jobId));
 }
 
+// Jinja markers. ansible templates a string from an extravars file whenever the playbook
+// uses it, so a form value of `{{ lookup('pipe', '...') }}` ran that command on the RTE.
+const JINJA = /\{\{|\{%|\{#/;
+
+/**
+ * The extravars with every string that carries a Jinja marker wrapped as
+ * {"__ansible_unsafe": "..."} - ansible's JSON spelling of !unsafe : the playbook receives
+ * the same string, it is just never templated. Strings without a marker, numbers, booleans
+ * and the structure are left exactly as they were. AWX refuses Jinja in launch-time extra
+ * vars by default (ALLOW_JINJA_IN_EXTRA_VARS) ; this is the same rule for the RTE, and a
+ * form opts out with allowJinjaInExtravars.
+ */
+export function markUnsafe(value) {
+  if (typeof value === "string") return JINJA.test(value) ? { __ansible_unsafe: value } : value;
+  if (Array.isArray(value)) return value.map(markUnsafe);
+  if (value && typeof value === "object") {
+    const out = {};
+    for (const [k, v] of Object.entries(value)) out[k] = markUnsafe(v);
+    return out;
+  }
+  return value;
+}
+
 async function launchPlaybook(ev, credentials, jobid, counter) {
   // we make a copy, we don't want to mutate the original
   var extravars = { ...ev };
@@ -122,7 +145,8 @@ async function launchPlaybook(ev, credentials, jobid, counter) {
       hiddenExtravars.ansible_user = runCredential.user;
       hiddenExtravars.ansible_password = runCredential.password;
     }
-    hiddenExtravars = JSON.stringify(hiddenExtravars);
+    // a credential's password is never a template
+    hiddenExtravars = JSON.stringify(markUnsafe(hiddenExtravars));
   } catch (err) {
     logger.error("Failed to get ansible credentials : ", err);
     await Job.endJobStatus(
@@ -163,7 +187,7 @@ async function launchPlaybook(ev, credentials, jobid, counter) {
     stdin: vaultPassword,
     description: "Running playbook",
     task: "Playbook",
-    extravars: JSON.stringify(merged),
+    extravars: JSON.stringify(merged.__allowJinjaInExtravars__ === true ? merged : markUnsafe(merged)),
     hiddenExtravars: hiddenExtravars,
     extravarsFileName: extravarsFileName,
     hiddenExtravarsFileName: hiddenExtravarsFileName,

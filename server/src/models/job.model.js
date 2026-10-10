@@ -47,6 +47,7 @@ function pushForminfoToExtravars(formObj, extravars, creds = {}) {
     "diff",
     "verbose",
     "keepExtravars",
+    "allowJinjaInExtravars",
     "credentials",
     "inventory",
     "awxCredentials",
