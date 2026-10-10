@@ -12,6 +12,7 @@ import utc from 'dayjs/plugin/utc';
 import YAML from 'yaml';
 import Time from '@/lib/Time';
 import { useLiveEvent } from '@/composables/useLiveEvent';
+import { useFollowOutput } from '@/composables/useFollowOutput';
 import BsColumnPicker from '@/components/BsColumnPicker.vue';
 import { headerWidth } from '@/lib/tableCells';
 
@@ -388,6 +389,14 @@ const dataShown = computed(() => {
 // the outputs (the job's, and the current step's) : the toolbar folds or unfolds them all
 const mainOutput = ref(null);
 const subOutput = ref(null);
+
+// a running job's output followed down as it comes in, while the reader is at its end
+const outputPanel = ref(null);
+useFollowOutput(
+  outputPanel,
+  () => (filteredJobOutput.value?.length || 0) + (filteredSubJobOutput.value?.length || 0),
+  () => job.value?.status === 'running',
+);
 
 /**
  * Folds every section of the output, or unfolds them all when all are folded.
@@ -1488,7 +1497,7 @@ onMounted(async () => {
 
             <!-- the output, in a panel : its toolbar on top - what is shown at the left, what to
                  do with it at the right -->
-            <div class="af-output-panel">
+            <div ref="outputPanel" class="af-output-panel">
               <div class="af-output-toolbar">
                 <div class="af-output-label">
                   <!-- fold or unfold every section, PLAY and TASK of the output -->

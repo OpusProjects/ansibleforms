@@ -12,6 +12,7 @@ import State from '@/lib/State';
 import Navigate from '@/lib/Navigate';
 import TokenStorage from '@/lib/TokenStorage';
 import YAML from 'yaml';
+import { useFollowOutput } from '@/composables/useFollowOutput';
 import Time from '@/lib/Time';
 
 // use
@@ -755,6 +756,14 @@ const filteredSubJobOutput = computed(() => {
       .replace(/(<br>\s*){3,}/gi, '<br><br>') || ''
   );
 });
+
+// a running job's output followed down as it comes in, while the reader is at its end
+const outputPanel = ref(null);
+useFollowOutput(
+  outputPanel,
+  () => (filteredJobOutput.value?.length || 0) + (filteredSubJobOutput.value?.length || 0),
+  () => status.value === 'running',
+);
 
 const formStatus = computed(() => {
   if (status.value == 'running') {
@@ -2134,7 +2143,7 @@ onBeforeUnmount(() => {
           </div>
           <!-- the job's output, as its page shows it : a panel, its toolbar on top - fold all and the
                line count at the left, the filter and what to do with it at the right -->
-          <div class="af-output-panel">
+          <div ref="outputPanel" class="af-output-panel">
             <div class="af-output-toolbar">
               <div class="af-output-label">
                 <button
