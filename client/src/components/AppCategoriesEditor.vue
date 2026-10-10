@@ -98,21 +98,53 @@ const duplicateCategory = computed(() => findDuplicate(categories.value));
 // ─── editing ──────────────────────────────────────────────────────────────────
 const newCategory = ref(null);
 
+// where the dialog's category goes : after a row (its menu's Add category), else at the end
+const insertAfter = ref(null);
+
 /**
  * Opens the New category dialog on an empty category with the default icon.
+ *
+ * Args:
+ *   after (object): { cat } - the category it goes after, at that one's level (its menu's Add
+ *     category) ; none, the end of the tree (the toolbar's +).
  */
-function addCategory() {
+function addCategory(after = null) {
   // the table cannot be edited (read only, or its YAML cannot be read) : nothing added
   if (locked.value) return;
+  insertAfter.value = after && after.cat ? after.cat : null;
   newCategory.value = { _uid: nextUid(), name: '', icon: DEFAULT_CATEGORY_ICON };
 }
 
 /**
- * Adds the dialog's category at the end of the tree (saved with the designer's Save).
+ * The list a category is in : the tree's, or a parent category's items.
+ *
+ * Args:
+ *   target (object): the category.
+ *   list (object[]): the list to look in, the whole tree by default.
+ *
+ * Returns:
+ *   object[]|null: its list, or null when it is not in the tree.
+ */
+function listOf(target, list = categories.value) {
+  if (list.includes(target)) return list;
+  for (const item of list) {
+    const found = item.items && listOf(target, item.items);
+    if (found) return found;
+  }
+  return null;
+}
+
+/**
+ * Adds the dialog's category (saved with the designer's Save) : right after the category its
+ * menu was opened on, or at the end of the tree.
  */
 function createCategory() {
-  categories.value.push(newCategory.value);
+  const after = insertAfter.value;
+  const list = after ? listOf(after) : null;
+  if (list) list.splice(list.indexOf(after) + 1, 0, newCategory.value);
+  else categories.value.push(newCategory.value);
   newCategory.value = null;
+  insertAfter.value = null;
 }
 
 /**
@@ -163,7 +195,7 @@ defineExpose({ add: addCategory, locked });
     </template>
     <template #footer>
       <BsButton icon="plus" :disabled="!newCategory.name.trim()" @click="createCategory()">{{
-        t('settings.settingsPage.addCategory')
+        t('designer.addCategory')
       }}</BsButton>
     </template>
   </BsModal>
@@ -191,7 +223,7 @@ defineExpose({ add: addCategory, locked });
           <tr>
             <th>{{ t('settings.settingsPage.name') }}</th>
             <th>{{ t('settings.settingsPage.icon') }}</th>
-            <th class="col-action-move"></th>
+            <th class="af-row-menu-col"></th>
           </tr>
         </thead>
         <tbody>
@@ -227,57 +259,78 @@ defineExpose({ add: addCategory, locked });
                 </select>
               </div>
             </td>
-            <td class="text-center align-middle">
-              <!-- move up and down, indent under the row above and back out ; disabled rather
-                   than hidden, so nothing shifts under the pointer as rows move -->
-              <div
-                v-if="!isDefaultCategory(row.cat, row.depth) && !locked"
-                class="d-flex justify-content-center gap-1 cat-actions"
-              >
-                <div class="btn-group btn-group-sm" role="group">
-                  <button
-                    class="btn btn-outline-secondary"
-                    :disabled="!canMoveUp(categories, row.cat)"
-                    @click="moveCategoryUp(categories, row.cat)"
-                    :title="t('settings.settingsPage.moveUp')"
-                  >
-                    <FaIcon icon="chevron-up" />
-                  </button>
-                  <button
-                    class="btn btn-outline-secondary"
-                    :disabled="!canMoveDown(categories, row.cat)"
-                    @click="moveCategoryDown(categories, row.cat)"
-                    :title="t('settings.settingsPage.moveDown')"
-                  >
-                    <FaIcon icon="chevron-down" />
-                  </button>
-                  <button
-                    class="btn btn-outline-secondary"
-                    :disabled="!canIndent(categories, row.cat)"
-                    @click="indentCategory(categories, row.cat)"
-                    :title="t('settings.settingsPage.indentCategory')"
-                  >
-                    <FaIcon icon="indent" />
-                  </button>
-                  <button
-                    class="btn btn-outline-secondary"
-                    :disabled="!canOutdent(categories, row.cat)"
-                    @click="outdentCategory(categories, row.cat)"
-                    :title="t('settings.settingsPage.outdentCategory')"
-                  >
-                    <FaIcon icon="outdent" />
-                  </button>
-                </div>
-                <button
-                  class="btn btn-sm btn-outline-secondary"
-                  @click="addSubcategory(row.cat)"
-                  :title="t('settings.settingsPage.addSubcategory')"
+            <td class="bs-dt-row-actions">
+              <!-- the row's menu, as every table's : add a category after it or under it, move it
+                   (a move that cannot apply greyed), then delete, last -->
+              <div v-if="!isDefaultCategory(row.cat, row.depth) && !locked" class="dropdown">
+                <a
+                  role="button"
+                  class="bs-dt-row-menu px-2"
+                  data-bs-toggle="dropdown"
+                  data-bs-popper-config='{"strategy":"fixed"}'
+                  @click.stop
                 >
-                  <FaIcon icon="plus" />
-                </button>
-                <button class="btn btn-sm btn-outline-danger" @click="removeCategory(row.cat)">
-                  <FaIcon icon="trash" />
-                </button>
+                  <FaIcon icon="ellipsis-vertical" />
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  <li>
+                    <a class="dropdown-item" href="#" @click.prevent="addCategory({ cat: row.cat })">
+                      <FaIcon icon="plus" class="me-2" />{{ t('designer.addCategory') }}
+                    </a>
+                  </li>
+                  <li>
+                    <a class="dropdown-item" href="#" @click.prevent="addSubcategory(row.cat)">
+                      <FaIcon icon="level-up-alt" class="me-2 fa-rotate-90" />{{ t('designer.addSubcategory') }}
+                    </a>
+                  </li>
+                  <li><hr class="dropdown-divider" /></li>
+                  <li>
+                    <a
+                      class="dropdown-item"
+                      :class="{ disabled: !canMoveUp(categories, row.cat) }"
+                      href="#"
+                      @click.prevent="moveCategoryUp(categories, row.cat)"
+                    >
+                      <FaIcon icon="chevron-up" class="me-2" />{{ t('settings.settingsPage.moveUp') }}
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      class="dropdown-item"
+                      :class="{ disabled: !canMoveDown(categories, row.cat) }"
+                      href="#"
+                      @click.prevent="moveCategoryDown(categories, row.cat)"
+                    >
+                      <FaIcon icon="chevron-down" class="me-2" />{{ t('settings.settingsPage.moveDown') }}
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      class="dropdown-item"
+                      :class="{ disabled: !canIndent(categories, row.cat) }"
+                      href="#"
+                      @click.prevent="indentCategory(categories, row.cat)"
+                    >
+                      <FaIcon icon="indent" class="me-2" />{{ t('settings.settingsPage.indentCategory') }}
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      class="dropdown-item"
+                      :class="{ disabled: !canOutdent(categories, row.cat) }"
+                      href="#"
+                      @click.prevent="outdentCategory(categories, row.cat)"
+                    >
+                      <FaIcon icon="outdent" class="me-2" />{{ t('settings.settingsPage.outdentCategory') }}
+                    </a>
+                  </li>
+                  <li><hr class="dropdown-divider" /></li>
+                  <li>
+                    <a class="dropdown-item text-danger" href="#" @click.prevent="removeCategory(row.cat)">
+                      <FaIcon icon="trash" class="me-2" />{{ t('common.delete') }}
+                    </a>
+                  </li>
+                </ul>
               </div>
             </td>
           </tr>
@@ -293,15 +346,8 @@ defineExpose({ add: addCategory, locked });
   border-radius: 0.375rem;
   overflow: hidden;
 }
-/* six controls in a cell that cannot grow : their padding trimmed, not their size */
-.cat-actions .btn {
-  --bs-btn-padding-x: 0.4rem;
-  white-space: nowrap;
-}
-/* a control that cannot apply reads as unclickable */
-.cat-actions .btn:disabled {
-  --bs-btn-disabled-color: var(--bs-secondary-color);
-  --bs-btn-disabled-border-color: var(--bs-border-color);
-  --bs-btn-disabled-opacity: 0.45;
+/* the row's menu's column : narrow, its dots placed as every table's (bs-dt-row-actions) */
+.af-row-menu-col {
+  width: 3.5rem;
 }
 </style>

@@ -202,7 +202,7 @@ defineExpose({ add: addConstant, locked });
     </template>
     <template #footer>
       <BsButton icon="plus" :disabled="!newConstant.key.trim()" @click="createConstant()">{{
-        t('settings.settingsPage.addConstant')
+        t('designer.addConstant')
       }}</BsButton>
     </template>
   </BsModal>
