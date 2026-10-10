@@ -110,6 +110,7 @@ export default {
     chatCheckFailed: "聊天提供商检查失败",
     failedFindLdap: "查找 LDAP 失败",
     ldapCheckFailed: "LDAP 检查失败",
+    storedPasswordOtherServer: "已保存的密码只用于已保存的服务器 : 要检查其他服务器，请输入密码",
     ldapUpdated: "LDAP 已更新",
     failedUpdateLdap: "更新 LDAP 失败",
     seedManagedSettings: "设置由配置种子管理，为只读",

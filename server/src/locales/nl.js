@@ -110,6 +110,7 @@ export default {
     chatCheckFailed: "De test van de chatprovider is mislukt",
     failedFindLdap: "Kan LDAP niet vinden",
     ldapCheckFailed: "LDAP controle mislukt",
+    storedPasswordOtherServer: "Het opgeslagen wachtwoord wordt alleen voor de opgeslagen server gebruikt : typ het wachtwoord om een andere te controleren",
     ldapUpdated: "LDAP bijgewerkt",
     failedUpdateLdap: "Kan LDAP niet bijwerken",
     seedManagedSettings: "De instellingen worden beheerd door de configuratie-seed en zijn alleen-lezen",

@@ -110,6 +110,7 @@ export default {
     chatCheckFailed: "The chat provider check failed",
     failedFindLdap: "Failed to find LDAP",
     ldapCheckFailed: "LDAP check failed",
+    storedPasswordOtherServer: "The stored password is only used for the stored server : type the password to check another one",
     ldapUpdated: "LDAP updated",
     failedUpdateLdap: "Failed to update LDAP",
     seedManagedSettings: "Settings are managed by the config seed and are read only",

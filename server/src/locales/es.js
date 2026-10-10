@@ -110,6 +110,7 @@ export default {
     chatCheckFailed: "La comprobación del proveedor de chat ha fallado",
     failedFindLdap: "Error al buscar LDAP",
     ldapCheckFailed: "La verificación de LDAP ha fallado",
+    storedPasswordOtherServer: "La contraseña guardada solo se usa con el servidor guardado : escriba la contraseña para comprobar otro",
     ldapUpdated: "LDAP actualizado",
     failedUpdateLdap: "Error al actualizar LDAP",
     seedManagedSettings: "Los ajustes están gestionados por el seed de configuración y son de solo lectura",

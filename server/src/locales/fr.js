@@ -110,6 +110,7 @@ export default {
     chatCheckFailed: "La vérification du fournisseur de chat a échoué",
     failedFindLdap: "Echec de la recherche LDAP",
     ldapCheckFailed: "Verification LDAP echouee",
+    storedPasswordOtherServer: "Le mot de passe enregistre ne sert qu'au serveur enregistre : saisissez le mot de passe pour en verifier un autre",
     ldapUpdated: "LDAP mis a jour",
     failedUpdateLdap: "Echec de la mise a jour LDAP",
     seedManagedSettings: "Les paramètres sont gérés par le seed de configuration et sont en lecture seule",

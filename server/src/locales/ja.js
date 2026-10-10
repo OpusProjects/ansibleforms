@@ -110,6 +110,7 @@ export default {
     chatCheckFailed: "チャットプロバイダーの確認に失敗しました",
     failedFindLdap: "LDAP の検索に失敗しました",
     ldapCheckFailed: "LDAP の確認に失敗しました",
+    storedPasswordOtherServer: "保存されたパスワードは保存されたサーバーにのみ使用されます : 別のサーバーを確認するにはパスワードを入力してください",
     ldapUpdated: "LDAP を更新しました",
     failedUpdateLdap: "LDAP の更新に失敗しました",
     seedManagedSettings: "設定は config seed で管理されており、読み取り専用です",
