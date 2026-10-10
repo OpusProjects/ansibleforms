@@ -5,6 +5,7 @@ import mysql from './db.model.js';
 import crypto from '../lib/crypto.js';
 import { readSecret, mapPayloadToCredential, parseInlineSecret, VAULT_STORE_NAME } from '../secrets/providers/index.js';
 import dbConfig from '../../config/db.config.js';
+import { currentScope, assertCredentialAllowed, assertSecretStoreAllowed } from "../lib/resourceScope.js";
 
 class CredentialModel extends CrudModel {
   static modelName = 'credential';
@@ -91,6 +92,8 @@ class CredentialModel extends CrudModel {
   // Exact name, every column of the row (the API's ?name= and fnCredentials use it).
   // user/password come from the secret store when the row names one.
   static async findByName(name) {
+    // the roles of the user this runs for may limit the credentials (lib/resourceScope.js)
+    assertCredentialAllowed(name);
     const cached = await super.findByName(this.modelName, name);
     if (!cached) return cached;
     const result = { ...cached };
@@ -110,16 +113,14 @@ class CredentialModel extends CrudModel {
     logger.debug("Resolving a credential");
     // "vault:<path>" / "secret:<store>:<ref>" : straight from the store, no row
     const inline = parseInlineSecret(nameOrRegex);
-    if (inline) return resolveInlineSecret(nameOrRegex, inline);
-    const cache = this.getCache(this.modelName);
-    const cacheKey = `regex:${nameOrRegex}|${fallbackName || ""}`;
-    // the ROW is cached, password still encrypted ; decrypting and reading the secret
-    // store happen on every call, so a rotated secret is never served from here
-    let row = cache?.get(cacheKey);
-    if (!row) {
-      row = await lookupRow(nameOrRegex, fallbackName);
-      cache?.set(cacheKey, row);
+    if (inline) {
+      assertInlineAllowed(nameOrRegex, inline);
+      return resolveInlineSecret(nameOrRegex, inline);
     }
+    const row = await this.lookupCachedRow(nameOrRegex, fallbackName);
+    // the roles of the user this runs for may limit the credentials (lib/resourceScope.js) :
+    // checked on the name the pattern found, not on the pattern
+    assertCredentialAllowed(row.name);
     const result = { ...row };
     const isDatabase = !!result.is_database;
     if (result.is_database) {
@@ -145,6 +146,47 @@ class CredentialModel extends CrudModel {
     return result;
   }
 
+  // The row a name or pattern finds (fallback when it finds none), cached with its password
+  // still encrypted : decrypting and reading the secret store happen on every resolution, so a
+  // rotated secret is never served from here.
+  static async lookupCachedRow(nameOrRegex, fallbackName = "") {
+    const cache = this.getCache(this.modelName);
+    const cacheKey = `regex:${nameOrRegex}|${fallbackName || ""}`;
+    let row = cache?.get(cacheKey);
+    if (!row) {
+      row = await lookupRow(nameOrRegex, fallbackName);
+      cache?.set(cacheKey, row);
+    }
+    return row;
+  }
+
+  /**
+   * Refuses a credential reference the scope does not allow, without reading any secret : the
+   * name a pattern finds, the store of an inline secret, or the app's own database
+   * (`__self__`). A reference that finds nothing is left to the resolution, which says so.
+   *
+   * Args:
+   *   spec (string): "name[,fallback]", "__self__", "vault:<path>" or "secret:<store>:<ref>".
+   *   scope (object|null): the scope (lib/resourceScope.js).
+   *
+   * Raises:
+   *   Errors.AccessDeniedError: the scope does not allow it.
+   */
+  static async assertAllowed(spec, scope) {
+    if (!scope || spec === undefined || spec === null || spec === "") return;
+    if (spec === "__self__") return assertCredentialAllowed("__self__", scope);
+    const inline = parseInlineSecret(String(spec));
+    if (inline) return assertInlineAllowed(String(spec), inline, scope);
+    const [name, fallback = ""] = String(spec).split(",").map((v) => v.trim());
+    let row;
+    try {
+      row = await this.lookupCachedRow(name, fallback);
+    } catch {
+      return;
+    }
+    assertCredentialAllowed(row.name, scope);
+  }
+
   // A form's credential map, { extravarKey: "name[,fallback]" | "__self__" } ->
   // { extravarKey: credential }. A credential that cannot be resolved is logged and left
   // out : the playbook runs without that extra var, as it did before 6.3.
@@ -152,6 +194,13 @@ class CredentialModel extends CrudModel {
     const credentials = {};
     for (const [key, value] of Object.entries(spec || {})) {
       if (value == "__self__") {
+        // the app's own database : a credential like the others for the roles that list them
+        try {
+          assertCredentialAllowed("__self__");
+        } catch (err) {
+          logger.error(`Cannot resolve credential '${key}' : ${err.message}`);
+          continue;
+        }
         credentials[key] = {
           host: selfConfig.host,
           user: selfConfig.user,
@@ -169,6 +218,25 @@ class CredentialModel extends CrudModel {
     }
     return credentials;
   }
+}
+
+/**
+ * Refuses an inline secret (vault:<path>, secret:<store>:<ref>) the scope does not allow : its
+ * store must be allowed, and when the roles limit the credentials but not the stores, the
+ * reference itself must match a credential pattern - an inline secret is no way around them.
+ *
+ * Args:
+ *   spec (string): the reference.
+ *   inline (object): its store and ref (parseInlineSecret).
+ *   scope (object|null): the scope, the current one by default.
+ *
+ * Raises:
+ *   Errors.AccessDeniedError: the scope does not allow it.
+ */
+function assertInlineAllowed(spec, inline, scope = currentScope()) {
+  if (!scope) return;
+  assertSecretStoreAllowed(inline.store, scope);
+  if (!scope.secretStores && scope.credentials) assertCredentialAllowed(spec, scope);
 }
 
 const ROW_SQL = "SELECT host,port,db_name,name,user,password,secure,db_type,is_database,vault_path,secret_store,secret_ref FROM AnsibleForms.`credentials` WHERE name REGEXP ?";

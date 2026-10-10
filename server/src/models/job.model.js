@@ -22,7 +22,9 @@ import { sha256 } from "../lib/formEngine/node/hash.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import i18n from "../lib/i18n.js";
-import { dispatch } from "../runners/orchestrator.js";
+import { dispatch, resolveRunner } from "../runners/orchestrator.js";
+import Credential from "./credential.model.v2.js";
+import { scopeFromRoles, assertRunnerAllowed, runWithScope } from "../lib/resourceScope.js";
 import { getRunner } from "../runners/index.js";
 import Runner from "./runner.model.js";
 import { stripTrailingSlashes } from "../lib/url.js";
@@ -242,6 +244,54 @@ function filterRawFormDataOf(formObj, rawFormData) {
 }
 
 /**
+ * The scope of a user : the credentials, secret stores and runners their roles allow
+ * (lib/resourceScope.js), from the roles of the configuration as it is now.
+ *
+ * Args:
+ *   user (object): the user.
+ *
+ * Returns:
+ *   Promise<object|null>: the scope, or null when nothing limits the user.
+ */
+async function scopeOfUser(user) {
+  if (!user || (user.roles || []).includes("admin")) return null;
+  const base = await Form.load(null, null, null, true);
+  return scopeFromRoles(user, base?.roles || []);
+}
+
+/**
+ * Refuses a launch whose credentials or runner the user's roles do not allow : every
+ * credential the job passes on (its credential map, the ansible and vault credentials) and
+ * the runner it would run on. Checked as the launching user, before the job exists ; the job's
+ * own dispatch then runs with no request scope, so an approver's roles never judge it.
+ *
+ * Args:
+ *   user (object): the launching user.
+ *   jobType (string): ansible, awx or multistep.
+ *   extravars (object): the job's extravars (its __credentials__, __runner__ ...).
+ *   creds (object): the job's credential map.
+ *
+ * Raises:
+ *   Errors.AccessDeniedError: a credential, a secret store or the runner is not allowed.
+ */
+async function assertLaunchScope(user, jobType, extravars, creds) {
+  const scope = await scopeOfUser(user);
+  if (!scope) return;
+  const specs = [...Object.values(extravars.__credentials__ || creds || {}), extravars.__ansibleCredentials__, extravars.__vaultCredentials__];
+  for (const spec of specs) await Credential.assertAllowed(spec, scope);
+  if (scope.runners && (jobType === "ansible" || jobType === "awx")) {
+    let runner = null;
+    try {
+      runner = (await resolveRunner({ jobType, extravars }))?.row || null;
+    } catch {
+      // no runner at all : the dispatch fails the job and says why
+    }
+    if (runner) assertRunnerAllowed(runner.name, scope);
+  }
+}
+
+/**
+ * Put the launching user into the extravars/**
  * Put the launching user into the extravars as `ansibleforms_user`, trimmed to whatever the
  * instance and the form asked for (see Helpers.userForExtravars).
  *
@@ -1086,6 +1136,9 @@ Job.launch = async function ({
 
   pushForminfoToExtravars(formObj, extravars, creds);
 
+  // the credentials and the runner this job would use, as the user's roles allow them
+  await assertLaunchScope(user, formObj.type, extravars, creds);
+
   // we have form and we have access
   var notifications = formObj.notifications || {};
   var jobtype = formObj.type;
@@ -1156,13 +1209,15 @@ Job.launch = async function ({
     // the rest is now happening in the background : the approval gate, then the runner,
     // which resolves the credentials itself
     if (jobtype == "ansible" || jobtype == "awx") {
-      return await dispatch({
+      // outside the request's scope : assertLaunchScope checked the launching user already,
+      // and the runner resolves the credentials for the job, whoever's request this is
+      return await runWithScope(null, () => dispatch({
         jobId: jobid,
         jobType: jobtype,
         extravars,
         credentialMap: creds,
         approval: parentId ? null : formObj.approval, // if multistep: no individual approvals checks
-      });
+      }));
     }
     if (jobtype == "multistep") {
       return await Multistep.launch({
@@ -1257,14 +1312,15 @@ Job.continue = async function ({ form, user, credentials = {}, extravars = {}, j
   // Launch job in background and return immediately
   const executeApprovedJob = async () => {
     if (jobtype == "ansible" || jobtype == "awx") {
-      return await dispatch({
+      // outside the approver's scope : the job was checked against its submitter's roles
+      return await runWithScope(null, () => dispatch({
         jobId: jobid,
         jobType: jobtype,
         extravars,
         credentialMap: creds,
         approval: formObj.approval,
         approved: true,
-      });
+      }));
     }
     if (jobtype == "multistep") {
       return await Multistep.launch({
@@ -2229,4 +2285,4 @@ for (const fn of CHANGES_A_JOB) {
 // Ansible stuff
 export default Job;
 // named export for the tests
-export { Multistep, stripReservedExtravars, stripUndeclaredCredentials, filterRawFormDataOf, setUserExtravars, guardLaunch, launchValidationMode, pushForminfoToExtravars };
+export { Multistep, scopeOfUser, assertLaunchScope, stripReservedExtravars, stripUndeclaredCredentials, filterRawFormDataOf, setUserExtravars, guardLaunch, launchValidationMode, pushForminfoToExtravars };

@@ -1,5 +1,7 @@
 import RestResult from "../models/restResult.model.v2.js";
 import i18n from "./i18n.js";
+import logger from "./logger.js";
+import { scopeFromRoles, runWithScope } from "./resourceScope.js";
 
 var Middleware = function(){
 
@@ -81,5 +83,25 @@ Middleware.checkMcpMiddleware = permissionGuard(u => u.options.allowMcp !== fals
 // Either administrative right is enough to see it.
 Middleware.checkSettingsOrScheduledJobsMiddleware = permissionGuard(
   u => u.options.showSettings || u.options.allowScheduledJobs, 'errors.noSettingsAccess')
+
+// The scope of the signed-in user (lib/resourceScope.js) for the rest of the request : what
+// their roles allow of the credentials, the secret stores and the runners. Resolving a
+// credential - a form query, fnCredentials, a launch - checks it. The roles of the
+// configuration as it is now, so a changed role applies at once.
+Middleware.resourceScope = async (req, res, next) => {
+  let scope = null;
+  try {
+    const user = req?.user?.user;
+    if (user && !(user.roles || []).includes('admin')) {
+      // loaded here : the guards above must not pull the database layer in with them
+      const { default: Form } = await import("../models/form.model.js");
+      scope = scopeFromRoles(user, (await Form.load(null, null, null, true))?.roles || []);
+    }
+  } catch (e) {
+    logger.error(`Could not read the roles' resource scope : ${e.message || e}`);
+    return res.status(500).json(RestResult.error(i18n.t(req, 'errors.noAccess'), 'The roles could not be read'));
+  }
+  return runWithScope(scope, next);
+}
 
 export default Middleware
