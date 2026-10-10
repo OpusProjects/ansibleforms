@@ -1112,6 +1112,18 @@
     description: |
       Sometime, the job output is flooded with meaningless output, such as 'Gathering Facts', or 'Includes'.  You filter out these by add a piece of string in the taskname, i.e. `[low]` and then used regex `\\[low\\]` to hide this information.  
       The output has a button `Apply filter` for the filtering to take effect.
+  - name: JOBS_LIST_SIZE
+    version: 7.0.0
+    type: number
+    allowed: a whole number from 10 to 10000
+    short: Jobs shown in the jobs list
+    hint: How many of the newest jobs the jobs list loads; its pages and search cover these.
+    default: "1000"
+    description: |
+      The jobs list loads this many of the newest jobs (every job for an admin, a user's own
+      and those waiting for approval for the others) : its pages, its search and its status
+      menu cover these, an older job is not listed. A larger number reaches further back, at
+      the cost of a larger list to read each time the jobs change. Applied without a restart.
   - name: MASK_EXTRAVARS_REGEX
     type: string
     allowed: an escaped regular expression

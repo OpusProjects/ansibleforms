@@ -5,6 +5,7 @@ import logger from "../../lib/logger.js";
 import stream from 'stream';
 import Audit from "../../models/audit.model.js";
 import i18n from '../../lib/i18n.js';
+import appConfig from '../../../config/app.config.js';
 
 const abortJob = async function(req, res) {
   var jobid = req.params.id;
@@ -50,7 +51,8 @@ const getJob = async function(req, res) {
 };
 const findAllJobs = async function(req, res) {
     var user = req?.user?.user || {}
-    var records = parseInt(req.query.records) || 500
+    // how many of the newest jobs : the page may ask, else Settings > Jobs (JOBS_LIST_SIZE)
+    var records = parseInt(req.query.records) || appConfig.jobsListSize || 1000
     try{
       const jobs = await Job.findAll(user,records)
       res.status(200).json(RestResultv2.list(jobs));

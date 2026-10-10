@@ -134,7 +134,7 @@ const sections = computed(() => {
 async function loadCounts() {
   if (isJobsList.value || !can('showJobs')) return;
   try {
-    const result = await axios.get('/api/v2/job?records=500', TokenStorage.getAuthentication());
+    const result = await axios.get('/api/v2/job', TokenStorage.getAuthentication());
     ownJobs.value = result.data?.records || [];
   } catch (err) {
     // the counts are a hint : without them the menu still works
