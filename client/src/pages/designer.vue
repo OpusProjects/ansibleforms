@@ -33,7 +33,6 @@ import {
   arrayToConstants,
   flattenConstants,
 } from '@/config/constants';
-import { normalizeCategories, buildCategories } from '@/composables/useFormsConfig';
 import {
   isDefaultCategory,
   flattenCategories,
@@ -2597,26 +2596,59 @@ function showView(view) {
 // the categories' preview : the Forms page's menu, from the categories as they are now and the
 // forms (no subforms : they are not in the menu) ; a click highlights a category, as there
 const previewCategory = ref('');
+/**
+ * Categories as the menu can show them, whatever the YAML holds : only objects, at every
+ * depth, their name a string, their items a list (a bare '-', 'items: foo' or a number as a
+ * name would make the menu throw, and with it the whole designer).
+ *
+ * Args:
+ *   list (any): the categories, or anything.
+ *
+ * Returns:
+ *   object[]: the categories.
+ */
+function menuCategories(list) {
+  if (!Array.isArray(list)) return [];
+  return list
+    .filter((c) => c && typeof c === 'object' && !Array.isArray(c))
+    .map((c) => {
+      const cat = { name: String(c.name ?? '').trim(), icon: typeof c.icon === 'string' && c.icon ? c.icon : 'bars' };
+      const items = menuCategories(c.items);
+      if (items.length) cat.items = items;
+      return cat;
+    })
+    .filter((c) => c.name);
+}
 const menuPreview = computed(() => ({
-  // only the entries that are categories (a bare '-' parses to null), each as it is stored
-  categories: buildCategories(
-    normalizeCategories((categoriesObj.value || []).filter((c) => c && typeof c === 'object')),
-  ),
+  categories: menuCategories(categoriesObj.value),
   forms: formsObj.value.filter((f) => f && f.name && f.type !== 'subform'),
 }));
 
-// a link to another view while in the designer (the search's ?view=...&tab=...) : the page is
-// reused, so its query is applied here, not only when it opens
+// a link to a view (the search's ?view=...&tab=...) : applied when the designer opens (above)
+// and when it is already open (the page is reused), then taken out of the address - left in,
+// it would be carried into a form's link and pull the designer back to that view, and a second
+// click on the same link would be no navigation at all
+/**
+ * Removes the link's view and tab from the address, the rest of it kept.
+ */
+function dropViewQuery() {
+  if (route.query.view === undefined && route.query.tab === undefined) return;
+  const { view, tab, ...rest } = route.query; // eslint-disable-line no-unused-vars
+  router.replace({ query: rest });
+}
 watch(
-  () => [route.query.view, route.query.tab],
-  ([view, tab]) => {
+  () => `${route.query.view ?? ''}|${route.query.tab ?? ''}`,
+  () => {
+    const { view, tab } = route.query;
     if (!tabs.some((x) => x.name === view)) return;
     currentTab.value = view;
     nextTick(() => {
       editorView.value = tab === 'visual' && hasVisual(view) ? 'visual' : 'yaml';
+      dropViewQuery();
     });
   },
 );
+onMounted(dropViewQuery);
 // another view opens on its YAML ; the preview is a form's : no form goes back to the YAML,
 // another form is previewed in its place (the visual tab is not a form's : left as it is)
 watch(currentTab, () => (editorView.value = 'yaml'));
@@ -3537,7 +3569,8 @@ function selectForm(id) {
   currentForm.value = id;
   // get the name and update the route
   if (currentFormName.value) {
-    const query = { ...route.query };
+    // the rest of the address kept, not a link's view and tab (they would pull it back)
+    const { view, tab, ...query } = route.query; // eslint-disable-line no-unused-vars
     query.form = currentFormName.value;
     router.push({ query });
   }
