@@ -2358,8 +2358,9 @@ onBeforeUnmount(() => {
     </template>
   </BsOffCanvas>
 
-  <!-- LOAD OFF-CANVAS -->
+  <!-- LOAD OFF-CANVAS : a short list (or its empty message), at the medium width -->
   <BsOffCanvas
+    size="md"
     :show="showLoadOffcanvas"
     :title="storeCtx ? `${t('form.loadFromStore')} - ${storeCtx.title}` : t('form.loadSavedForm')"
     icon="file-import"
