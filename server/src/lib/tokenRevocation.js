@@ -173,6 +173,32 @@ export async function revokeUser(username, type, maxLifetimeSeconds) {
 }
 
 /**
+ * Takes a one-time token once : the first call for a key answers true, every later one false
+ * (on any node : the row's primary key decides). For the SSO handoff, which must not be
+ * replayed.
+ *
+ * Args:
+ *   key (string): the token's key (handoff:<jti>).
+ *   expiresAtMs (number): when the token expires (ms) ; the row goes after that.
+ *
+ * Returns:
+ *   Promise<boolean>: true the first time.
+ */
+export async function consumeOnce(key, expiresAtMs) {
+  const mysql = await db();
+  try {
+    await mysql.do(
+      "INSERT INTO AnsibleForms.`token_revocations` (`key`, expires_at) VALUES (?, FROM_UNIXTIME(?))",
+      [String(key).slice(0, 300), Math.ceil(Math.max(Date.now() + 60000, Number(expiresAtMs) || 0) / 1000)]
+    );
+    return true;
+  } catch (err) {
+    if (err?.code === "ER_DUP_ENTRY" || /Duplicate entry/i.test(err?.message || "")) return false;
+    throw err;
+  }
+}
+
+/**
  * Removes the revocations that no token can need any more.
  *
  * Returns:
@@ -190,4 +216,4 @@ export function resetRevocationsForTests() {
   loaded = null;
 }
 
-export default { newSessionId, isRevoked, revokeSession, revokeUser, purgeRevocations };
+export default { newSessionId, isRevoked, revokeSession, revokeUser, consumeOnce, purgeRevocations };

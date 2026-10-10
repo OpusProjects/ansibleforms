@@ -68,7 +68,8 @@ export function signHandoff(payload, type) {
     own.at = sealToken(azure ? payload.accessToken : payload);
   }
   return jwt.sign(
-    { ...own, sso: type },
+    // jti : the login takes a handoff once (tokenRevocation.consumeOnce)
+    { ...own, sso: type, jti: crypto.randomBytes(16).toString('hex') },
     authConfig.secret,
     { expiresIn: SSO_HANDOFF_EXPIRES_IN, issuer: authConfig.jwtIssuer },
   );

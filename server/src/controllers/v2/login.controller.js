@@ -18,7 +18,7 @@ import i18n from "../../lib/i18n.js";
 import Audit from "../../models/audit.model.js";
 import { claimsDisplayName } from "../../lib/displayName.js";
 import { loginBlocked, loginFailed, loginSucceeded } from "../../lib/loginThrottle.js";
-import { newSessionId, revokeSession } from "../../lib/tokenRevocation.js";
+import { newSessionId, revokeSession, consumeOnce } from "../../lib/tokenRevocation.js";
 
 // Login is audited here rather than by the blanket middleware, which deliberately
 // skips /auth : on a failed attempt there is no req.user, so that layer could only
@@ -333,7 +333,8 @@ const authCallback = function(req, res, next, type) {
         return next(err)
       }
       const token = signHandoff(payload, type);
-      res.redirect(`${appConfig.baseUrl}/login?token=${token}`)
+      // in the fragment : the browser keeps it, no server, proxy or access log ever sees it
+      res.redirect(`${appConfig.baseUrl}/login#token=${token}`)
     } catch (err) {
       logger.error(helpers.getError(err))
       return next(err)
@@ -347,10 +348,14 @@ const authCallback = function(req, res, next, type) {
  * has expired, or was issued for a different provider - which also stops an ACCESS token
  * being replayed here, since it carries no matching `sso` claim.
  */
-function verifyHandoff(token, type) {
+async function verifyHandoff(token, type) {
   if (!token) throw new Error('No token given');
   const payload = jwt.verify(token, authConfig.secret, { issuer: authConfig.jwtIssuer });
   if (payload.sso !== type) throw new Error('This token was not issued for this login method');
+  // once : a handoff that was seen (a browser history, a shared link) is worth nothing
+  if (!payload.jti || !(await consumeOnce(`handoff:${payload.jti}`, (Number(payload.exp) || 0) * 1000))) {
+    throw new Error('This login token was used already');
+  }
   return payload;
 }
 
@@ -445,7 +450,7 @@ const azureadoauth2callback = async function(req, res,next) {
 const azureadoauth2login = async function(req, res,_next) {
   try {
     logger.debug("Azure AD login")
-    const payload = verifyHandoff(req.body.token, 'azuread')
+    const payload = await verifyHandoff(req.body.token, 'azuread')
     const provider = await assertProviderEnabled(AzureAd, 'azuread')
     // the tenant once more, at the login itself : the handoff of a login against another tenant
     // is refused even if the strategy was reconfigured meanwhile
@@ -490,7 +495,7 @@ const oidcCallback = async function(req, res,next) {
 // callback with the OIDC user info (including groups)
 const oidcLogin = async function(req, res, _next) {
   try {
-    const payload = verifyHandoff(req.body.token, 'oidc')
+    const payload = await verifyHandoff(req.body.token, 'oidc')
     const provider = await assertProviderEnabled(OIDC, 'oidc')
     // The provider's group filter is applied HERE, on the groups we trust. It used to be
     // applied only by the browser, to the list it posts - but ssoGroups ignores that list
