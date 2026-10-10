@@ -1419,13 +1419,9 @@ onMounted(async () => {
               </template>
               <!-- nothing to show : say why, above the pagination -->
               <tr v-if="!isLoading && parentJobs.length === 0" class="af-empty-row">
-                <!-- 24px above the text ; below it 9px plus the pagination's own 16px margin, so the
-                   message sits centred between the column filters and the pagination -->
-                <td
-                  :colspan="visibleColumns.length + 2"
-                  class="text-center text-body-secondary pt-4"
-                  style="padding-bottom: 9px"
-                >
+                <!-- as much room under the text as above it : the message centred between the
+                   table's header and its frame -->
+                <td :colspan="visibleColumns.length + 2" class="text-center text-body-secondary py-4">
                   <FaIcon icon="circle-info" class="me-2" />{{ emptyMessage }}
                 </td>
               </tr>
