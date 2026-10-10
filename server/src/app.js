@@ -90,9 +90,10 @@ const load = async (app) => {
   applyTrustProxy(app);
 
   // security headers with helmet, the Content-Security-Policy included (lib/csp.js) : scripts
-  // from the app only, no framing by another site. CONTENT_SECURITY_POLICY=0 turns it off.
+  // from the app only, no framing by another site. CONTENT_SECURITY_POLICY=0 sends it report
+  // only : the browser says what it would block, and blocks nothing.
   app.use(helmet({
-    contentSecurityPolicy: appConfig.contentSecurityPolicy ? { useDefaults: false, directives: cspDirectives() } : false,
+    contentSecurityPolicy: { useDefaults: false, directives: cspDirectives(), reportOnly: !appConfig.contentSecurityPolicy },
     crossOriginEmbedderPolicy: false // allow embedding if needed
   }));
 

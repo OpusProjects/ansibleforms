@@ -12,8 +12,8 @@
 /*    - images from anywhere : a form's or a category's image may */
 /*      be any url ;                                              */
 /*    - workers from blob: : the code editor.                     */
-/*  CONTENT_SECURITY_POLICY=0 turns it off, for a setup that      */
-/*  needs to (and should say why).                                */
+/*  CONTENT_SECURITY_POLICY=0 sends it report only : the browser  */
+/*  says what it would block, and blocks nothing.                 */
 /*                                                                */
 /******************************************************************/
 

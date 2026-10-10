@@ -660,14 +660,16 @@
     type: number
     allowed: 0, 1
     default: 1
-    short: Send the Content-Security-Policy header
-    hint: 0 turns it off ; needs a restart
+    short: Enforce the Content-Security-Policy
+    hint: 0 sends it report only ; needs a restart
     description: |
       The web app is served with a Content-Security-Policy : scripts from the app itself only, so
       a script injected into a page does not run, and no other site may frame it. It allows what
       the app needs : local form expressions (evaluated in the browser), inline styles, images
-      from any url (form and category images), and the code editor's workers. Set 0 only for a
-      setup that cannot work with it - a reverse proxy that injects its own script, for example.
+      from any url (form and category images), and the code editor's workers. With 0 it is sent
+      as Content-Security-Policy-Report-Only : the browser's console says what it would block, and
+      nothing is blocked - for a setup that cannot work with it yet, a reverse proxy that injects
+      its own script for example.
   - name: AUTH_RATE_LIMIT
     version: 7.0.0
     type: number
