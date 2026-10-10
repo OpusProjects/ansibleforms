@@ -218,7 +218,6 @@ Helpers.formatOutput = (records,asText)=>{
   var filterOutput=false
   records.forEach(function(el){
     var escapedLine
-    var addedTimestamp=false
     var output2=[] // => each record can still be multiple line => so this is intermediate output array
     var lineoutput=[]
     var record = el.output.trim('\r\n').replace(/\r/g,'') // => first generalize linefeeds
@@ -340,18 +339,9 @@ Helpers.formatOutput = (records,asText)=>{
       }
       lineoutput.push(line)
     }) // end line loop
-    // we add a timestamp to the record
-    // we push it in the intermediate output array
+    // the record's lines as ansible printed them : no time of our own added (a record is a batch
+    // of output as it arrived, its time not a line's, nor a task's)
     lineoutput.forEach(function(el2){
-      if(el2!="" && !addedTimestamp){ // we only add timestamp to first non-empty line
-        if(el2.includes("class='low")){
-          el2+=" <span class='low tag is-info is-light'>"+el.timestamp+"</span>"
-        }else{
-          el2+=" <span class='tag is-info is-light'>"+el.timestamp+"</span>"
-        }
-        
-        addedTimestamp=true
-      }
       output2.push(el2)
     })
     // we merge the intermediate colorized output finally
